@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T20:45:00.719276+07:00
+Updated: 2026-10-31T20:51:00.802622+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Static6pages12casealiases10frames ACTUALLYviewed+SHA:sourceCheeroneup/benthead andFirst147soneup/onedown contradictedbynewinferredbothup despitegood2Dcost/nativepointclear. Generic2Dgoal NOTACCEPTED; originalmasks/reference unchanged. Next roi_pose_counterfactual.py/roi_pose_counterfactual NEW2Dmeasurement variant ONLY10frozenframes/all6:existingYOLO11n weights,primaryROI15pctX/10pctY,imgsz640 vsoldglobal960, explicitunique torso/nose/box association (no arm/goal-error selection), no newWORLD/training/fullreextraction. Renderclean/globalYOLO/ROIYOLO/existingMediaPipecrop markers, perjointocclusion/ambiguity remainsunknown regardlessconfidence. CPU22/23BelowNormalthreads1,allmedia/private, root/Voice/hardwareuntouched.
+ROIpose16660 COMPLETE10unique/12aliases/all6/9.409s CPU noGPU; uniqueTORSOassociation10of10 doesNOTvalidatearms. All6markerpagesACTUALLYviewed; bentheadwrists inconsistent/overlap unresolved. Next roi_source_temporal_review.py/roi_source_temporal_review cachedoriginalsource +/-0.4s fiveframes around10fixedcenters/all6, noNN. PriorFirst147oneup/onedown interpretation requires temporalownership verification: downhandmaybelongtooverlappingactor; doNOTtreatsuspectedcrosspersonerrorasproven. Preservepriorvisualnotesasreviewhistory; source/masksunchanged.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
