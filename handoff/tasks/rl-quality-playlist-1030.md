@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T19:31:14.338723+07:00
+Updated: 2026-10-31T19:35:47.539603+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Coupledrepairr3 35964 COMPLETE9cases,4keyguidecandidates (Cheerbaseline/Firstbaseline/Witsregbaseline+gated),5rejects; reused6finished+1failedoracleprefix, onlylast2newplanes, incrementalwall2.615s nottotalcost. Originalreportingfailure/r2zero-gradientfailurepreserved. Now native_mode_coupled_serialize.py/native_mode_coupled_serialization(_native) compileONLY4newcandidates actualYAML/privateproject/HOMEcontinuous/analyticv2/native18command1ms+paths/servo50Hz/parity/sourceclock. Existing23actualproofs/69hashes untouched,4boundaryservo casesstillpending. Independentkeyguideclear NOTacceptance/human/audio/final; no controller/extraction/train/GPU/hardware/rootchanges.
+CoupledR4stage4newactualshortYAML/HOME/v2/native18/servo/parity/clockPASS8.501s, old23unchanged=>27shorttechnicalcases,notfullsong/audio/human. Fixed_start_constraint_audit proves4infeasible preferredplanes atfullyfixedfirstpose:existingclearanceoverhard18=2.247/1.295/2.384/2.384mm>=UNCHANGEDacceptedreserve1, butpreferredguide3(+roundingguard) conflictswithfixed equality. Next native_mode_fixed_start_repair.py/output:ONLYomit preferredguideplane onfullyimmutablealreadygrid firstpose IF verifiedreserve>=1; keepminaccepted1/hard18/guide3onallmovables/physics/clock/quantumunchanged. Reusecachedinitialnativeplanes4, no controls/extraction/train. Freshnative/actualYAML gates required; Firstzero-gradient reject/fourvelocitycases remainexplicit.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
