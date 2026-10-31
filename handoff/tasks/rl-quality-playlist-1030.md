@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T18:33:54.696820+07:00
+Updated: 2026-10-31T18:55:55.887062+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Checkpoint: exact5924privatefileledger refreshed; all ownbounded jobs ended/CPUlease released; no activeworker/lock. Sourceinventory22358frames7.019s identifies647of6560image-up armcandidates unsupported;36actualframes12windows6pagesprepared10.385s/ACTUALLYviewed+SHA, distinctbent/straight/overlap retained, no3Dpromotion. Raw nativevias24.876s/strictv2audit.141s: all6rawThin curves violatecaps, no feasibleheightclaim. Shape_bound coarse72entries3.746s allnonzerorejected; scaledfixed3deg operator thenfresh159nativewitnesses48.925s, originaldriver29084 failedemptyhistorical2Dsummary only. Cachedr2scoring29560 COMPLETE5.856s, NOgeometry/controller rerun,71of72nonzero<=3deg,48historical2Dnotmeasured. Meantrackingregressions vsraw persist; report/matrix72/perarmP95worst/jerk retained. No winner/finalhuman/nativeexport promotion.
+Native_mode_homotopy experiment planned:36curves=18distinctshortcontexts(6hard+12historical)xbaseline/gatedcoordinate afterSAMEshape3postfilter. Preserveexistingclock,thin120/tol3,quantum.5,rig/servo/hard18. Fromconservativephysicalkeys towardoriginalsameclockkeys samplefixedlambda1/.5/.25/.125/.0625/.03125/.015625/0; recomputeACTUALStudio perjointPASS/cosine foreach, strictanalyticv2 beforefreshnative18geometry/servo gates. Largestfeasiblelambda only, no source-errorselection; reportperclip/arm/P95/worst/jerk/regressions. Mechanismstudy notactualYAML/HOME/human approval; those gates stillrequired beforefullbudget. Private native_mode_homotopy.py/.cjs/native_mode_homotopy(_native),CPU22/23BelowNormal,no models/controllers/extraction/training/GPU/hardware.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
