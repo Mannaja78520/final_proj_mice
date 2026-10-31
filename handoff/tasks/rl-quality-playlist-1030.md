@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T20:55:54.432840+07:00
+Updated: 2026-10-31T20:59:27.358528+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Cachedcamera22358/prefix18/projection22358complete; static10pointfeasible NOTacceptedreference. NewROI10CPUcalls9.409s uniqueTORSO10of10 stillbenthead/overlaperrors; 6static+6marker+6temporalpages ACTUALLYviewed,50temporalframes. First147ownershipunresolved, priorassertionnotproven; Wits66.166s corrected. No source/mask/actualsequence changes. All ownjobsended/resourcesreleased. FIRST build visible-joint/occlusion evidence for10fixedcenters/all6, hiddenwrists/overlap unknown. Short partialupperarm/elbow constrainedretarget trial only with source-confirmedmeasurements; no blind2Dconfidence/camera-depth promotion. Then physicallyconsistentin-song actualprefix/nativeconstraints for7boundarycases, originalclock/incomingvelocity/cuts/roleuncertainty; historical12differentseedmappings unproven. Keep18mm/perjointcosine/quantum/caps andall6+regression/actualYAML/HOME/parity/audio beforefullbudget.
+Newvisible_joint_review.json andpartial_pose_trial.py/partial_pose_trial: predeclareper-bone visibility/model-correspondence review for10frozenframes/all6, no manualinventedpixels/3Dtruth. Unknownhiddenwrists/overlappingfararms receiveZEROnew2Dconstraint;First147allunresolvedSKIP. Same3seeds/nativehard18/quantum.5/staticbudgetasprevious2Dpilot, allsource/worldmasksunchanged; testwhetherremovingincorrectwristconstraints avoidsfalsebothup. CPU22objective/23oracleBelowNormal/noCUDA; partial_pose_review6pagesrequired; NOTtrajectory/humanapproval. Then originalclock/incomingstate nativeprefix cases, no longtraining.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
