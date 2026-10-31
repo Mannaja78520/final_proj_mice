@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T19:37:19.467310+07:00
+Updated: 2026-10-31T19:43:44.831131+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Fixed-start trial14656 COMPLETE4cases1.684s:3keygeometrycandidates(Bloodbaseline/gated,Comegated),Comebaseline stillreject. OnlyunreachablePREFERRED3mmplane atfullyfixed .5grid/minreserve>=1 history omitted; allfutureplanes,hard18,minaccepted1,clock/caps/quantum unchanged. Cachedinitialplane inputidentityverified, no nativewitness rerun. Now native_mode_fixed_start_serialize.py/native_mode_fixed_start_serialization(_native) validatesONLY3new actualfiles/HOME/v2/native18/parity/clock;old27actualproofs untouched,Firstzero-gradient+4velocitycasesremainpending. Source/human/audio/finalOPEN, no controller/extraction/train/GPU/hardware/rootchange.
+Actualcouplednew4filesPASS8.501s=>27/36shortrest-entrytechnical,hard3/12,historical24/24. Fixed-start boundaryrule3keyguides clear butactualcompiler REJECTALL3 forHOME-entrypath;NOYAMLemitted,0actualaccepted .501s. DoNOTcountkeyguidesaspasses orsimulateHOMEresetmid-song. Remaining9:3unsafe standaloneHOMEentry,4initialservo-state,1Comebaselineprojection,1Firstcoordinatezero-gradient. Next coupled_stage_quality.py/output consolidate36 statuses/cost/margins/proofs andview2newactualhard source/twoangle samples (Cheerbaseline/Firstbaseline); nofullscope/audio/humanpromotion. Need physicallyconsistent same-role in-song prefix atcurrentclock beforefurtherdynamicclaims, preserveold27proofs. No controllers/extraction/train/GPU/hardware/rootchanges.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
