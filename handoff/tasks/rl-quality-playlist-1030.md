@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T21:15:03.285383+07:00
+Updated: 2026-10-31T21:25:32.549766+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-In-song35344 COMPLETE140.071s/10splices/8actualYAML8wholeHOME+native18/v2/servo/clock/parityPASS; Bloodcoordinate/Comecoordinate2bridgegeometrypreflightreject, Comebaseline/Firstcoordinate2knownunresolvednotrerun. ScenarioDIFFERSfromoldrestentry,doNOTadd8to27orclaimwarmstatecausality: fixed1slead-in changescommands, Bloodfirstchange22.66s beforecontext25.76s. Now in_song_prefix_review.py/in_song_prefix_review cachedfullprefixmodeltrackingmean/P95/worst/arms/timebands and6newsource-time twoangle/videos+originalaudio; includeALLmodifiedprefixfromfirstchange, rejectedpanelsnotfakecurves, audio/framechecks. No source/worldmask/NN/controller/train/GPU/hardware/Voice/rootchanges; qualityOPEN.
+In-songactualtrial35344 COMPLETE140.071s8/12technicalacross5clips,2newbridgecollisions/2knownunresolved; notsameold27/36scenario. Review32756 COMPLETE49.462s6newvideos/audio6PASS/fullaffectedprefixmodelbands,6decodedpages18framesACTUALLYviewed:stillunderreach/phase/bendwrong,7of8wholeprefixmodelmeansregress. Partialstatic9fit+1SKIPstillunderconstrainedNOTaccepted. No variant promoted/oldbestkept. Now checkpoint_in_song_work.py/ledger/status/progress/manifest/task/plan/BRIDGE/automation:verifyfrozennew+oldartifacts/reviews/noactiveworkers; ALL6human/finalOPEN. Next nativephysicalkey shape-preserving trajectory objective shortall6+historical, actualtiming/mixedPASS/servo/native18/coupledgeometry; no morestaticvariants/longtrain tohidewrongreference.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
