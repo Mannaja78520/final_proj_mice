@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T12:00:46.979992+07:00
+Updated: 2026-10-31T12:07:09.549634+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Completed bounded brake/empty-gated extra-fit-coordinate pilots (inspect receipts, never relaunch): coordinate_stall_pilot PID36164 phasecompleted live=False; coordinate_stall_regression PID25612 phasecompleted live=False. Verify current/lock/start andfrozenhashes beforeanylaunch; no duplicates. Priorungated6hard124.539s +12historical204.851s completed, native/raw/postfilter allclear but Blood/Wits/phase regressions retained,6shortsource/audio videos45.665s/audio6PASS/18decodedframes actuallyviewed. Source-stage12cases7.634s+6pages viewed, exactbank48probes5.320s/originalparity12/12 andfit12probe show singlejoint escape at18.5; reducingreservealone doesnotchange12choices. Exportcurveprobe45.256s confirms firstphysicalprojection amplitude loss atsameclock; spacing120/240/360 probe42.469s mixedregressions, notgloballyaccepted. CRITICAL correctedprivate perjoint mixedPASS analyticv2: parsednative admittedmove falsepass reproduced,40mixed runtimecurves checked; SAME10actualYAML/HOMEservo allstillPASS, R4reviewreports corrected. Gatedhard6 COMPLETE91.556s/rawmean36.430->30.283/worst60.725->44.561, historical12 COMPLETE145.485s/raw17.694->17.186/post19.270->18.711; hardBloodpost+1.236 andhistoricalpost3smallregressions remain. No activeheavyjob, no root/settings/reference edits/newtraining/GPU/hardware/Voice. Full6human/group/3D/beat/nativeexport-improvement/finalscopeOPEN.
+Cached sharedpostfilter shape-bound study next: fixed maxcommanddeviation=existingtolDeg3 degrees appliedidentically to all72pairedmethod entries across4cohorts(18distinct sourceintervals, repeatedbaselinesexplicit). Useonlyalreadychecked candidatearrays/inputSHA/native18/jerk receipts, highestfeasiblelambda withrawsafe witness; NO reference-score selector or controller/inference rerun. Independently scoreselectedcurves withsame sourceclock/masks andpreserveallregressions. New private shape_bound_study.py/shape_bound_study outputs CPU22/23BelowNormal, no newtraining/GPU/hardware/Voice or fullqualityclaim.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
