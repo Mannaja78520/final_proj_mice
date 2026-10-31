@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T20:03:40.154183+07:00
+Updated: 2026-10-31T20:13:29.342257+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Source_camera_audit.py/source_camera_audit +same_role_prefix_audit.py/same_role_prefix_audit plannedindependentcached-onlyaudits. All22358same-sourceframes:exactVideoBodyMotion torsoaxes vs hip-viewaxes, independentYOLO2D/crop2D/WORLDXYhypothesis/fitFKprojection residuals perarm/bone/confidence/shot, cropcontainment, no validitypromotion/3Dinference yet. OfficialMediaPipe docs distinguishnormalizedimage/metricworld androtation-onlyworldprojection, notcamera calibration. Prefixaudit all18contexts:hard6 SAMEfit/source anonymousroles vs12historicalunproven mappings; SHA-verify existingR4actualYAML/project andsavecontinuousHOMEprefix/laststates fromactualBoardClock onlyformatchingroles, no trajectorypatch/controlrun. OwnCPU22and23onejobeachBelowNormal/OMP1,noNN/extraction/train/GPU/hardware/rootchanges.
+Cameraaudit11360 COMPLETE22358frames15.021s/exactbodyaxesreconstruction5.58e-16;647unsupportedhigharmcandidatesallinsideoriginalreconstructedcrop(2pxtolerance), no axis/cropclippingfixhypothesis. Independent2Dvs cropmodel supportedmean12.9..21.3deg,unsupported27..46.5 not3Dtruth. Prefix33244 COMPLETE7.612s sixexactdatasetroleactualHOMEprefixstatesprepared,12historicalseed mappingsunproven;4of6hardcontexts includecuts,2others contain1/2unknownprimaryframes, no crosscutidentityapproval. Next source_projection_stages.py/source_projection_stages fromcachedcamera rows:pairedcommon-frame observed2D direction diagnostics rawWORLD/controlGoal/FK/selectedMPC_Cq/actualR4_Cq, perarm/bone/support/cut/missingcoverage/meanP95worst. Allsameclock±10ms,body-camera projection remainshypothesis; no poseconfidence/control/reference changes, no newNN/GPU/train/hardware.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
