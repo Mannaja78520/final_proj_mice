@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T18:55:55.887062+07:00
+Updated: 2026-10-31T19:01:19.984097+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Native_mode_homotopy experiment planned:36curves=18distinctshortcontexts(6hard+12historical)xbaseline/gatedcoordinate afterSAMEshape3postfilter. Preserveexistingclock,thin120/tol3,quantum.5,rig/servo/hard18. Fromconservativephysicalkeys towardoriginalsameclockkeys samplefixedlambda1/.5/.25/.125/.0625/.03125/.015625/0; recomputeACTUALStudio perjointPASS/cosine foreach, strictanalyticv2 beforefreshnative18geometry/servo gates. Largestfeasiblelambda only, no source-errorselection; reportperclip/arm/P95/worst/jerk/regressions. Mechanismstudy notactualYAML/HOME/human approval; those gates stillrequired beforefullbudget. Private native_mode_homotopy.py/.cjs/native_mode_homotopy(_native),CPU22/23BelowNormal,no models/controllers/extraction/training/GPU/hardware.
+Native_mode_homotopy24060 COMPLETE57.599s/36curves18contexts, actualnative modes27.427s+geometry26.231s; sameclock all288lambda candidates.23selected strictcommand/servo/native18clear,13rejected (hard11of12 reject, onlyCheergatedpasses). No sourcehuman/winner/fullbudgetapproval. Next native_mode_serialize.py/native_mode_compile.cjs/native_mode_serialization(_native):compileONLY23selected toactualprivateeditableproject/YAML, parseBoardClock, continuousHOMEpreroll+parity/strictanalyticv2+actual1msnative18paths andmodeledservo50Hz. Existingmid-flight warmstart proof is NOT HOME; treat newshortrest-entryscenario separately. Placeholderaudio means no audio/humanapproval or finaldelivery. No controller/extraction/training/GPU/hardware/rootchanges.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
