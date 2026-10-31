@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T11:42:26.415861+07:00
+Updated: 2026-10-31T11:46:30.547658+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Coordinatehistorical12 regression COMPLETE204.851s/24rawnativeclear, inspectmodelregressions next. Keyspacingpoint6 COMPLETE42.469s:240/360 helpsBlood butworsensGreatR; no globalspacingwinner or safetyacceptance. CRITICAL private analytic_sequence_limits legacy treatsALLjoints Hermite whenever PASS vectorexists; actualStudio/Python/firmware usescosine perjoint ifv0j=v1j=0. Preparepreserved v2checker +nativecurve counterexample/independentdense derivative tests andrescreenALL10actualYAML/HOME/fullservo files. No root/motion/settings changes, no newtraining/hardware; oldtechnicalanalytic receipt supersededpendingcorrectcheck. Newauditorfilesownprivate, allpreviousfiles/checkpoints preserved.
+Corrected mixed-joint analytic v2 verified against actualBoardClock admittedPASS/canonicalruntime and40mixedcurves; SAME10actualYAML/HOME/servo files allstillPASS, actualcommands/settings unchanged, legacychecker preserved andreviewreports corrected. Historical12coordinate regression complete204.851s/native24raw+24postclear: rawmean17.694->16.853, worst29.058->28.892; postmean19.270->18.698 BUTworst31.467->31.544, Blood+.71/Wits+.08 regressed. Short6pilot source samples alsoearly/late regressions. Next bounded brake-gated bank variant only adds fit/coordinate candidates ifoldbank best=brake or empty, preserving old8choice elsewhere; SAME18shortcontexts/native/postfilter. No fullcontroller expansion/newtraining/hardware. Globalkeyspacing120/240/360 pointstudy mixedregressions, no globalacceptance; exactPASS physicaltrajectory/export fix remainsseparate.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
