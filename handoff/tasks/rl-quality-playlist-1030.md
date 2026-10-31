@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T22:19:52.094736+07:00
+Updated: 2026-10-31T22:23:00.672326+07:00
 Branch: main bookkeeping only; private experiments; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Complete rigging, fair comparison, improvement and final editable delivery for ALL SIX lead clips. Full user scope: `.local/rl_playlist_1030/user_scope_automation_original.md`. Do not finish at extraction, training or technical native checks. User permits takeover only on verified Claude quota/limit evidence; none verified, so retain Claude/other ownership. RL first; Voice is user-paused. No autonomous hardware motion. Preserve user projects, old best versions, checkpoints and unrelated dirty work. Media/models remain private and ignored by Git.
 
 ## Doing now
-Bounded native temporal-pulse trial: native_pulse_trajectory.py/.cjs/native_pulse_trajectory. Freeze ONE Hann pulse perjoint/order0..9/1000ms halfwidth, centerlargest INPUT-commandkey residual, closedform least-squaresamplitude/existing8grid. Currentjoint selected34guides are BASE,2knownunresolvedSKIP; reusefrozen native_joint_trajectory.cjs exact evaluator/float32servo/perjointanalytic/native18 andcachedBASEgeometry. Sameclock/quantum/caps/SMOOTH/WORLDmasks, no reference/validation-errorselector. Shortall6+historical, coldentryexplicitNOTin-song/HOMEproof. CPU22/23BelowNormalthreads1,no NN/controllers/train/GPU/hardware/Voice/rootchange. Checkcoldgains/regressions beforeactualnewfilebudget; skip unchangedmotions insteadofduplicatework.
+Pulse26880 FAILED0.470s BEFORE anycandidate: hostclass extendedVM-onlyJointTrajectorySearch ReferenceError. Preservefailedscript/input/provenance/logs unchanged. Newnative_pulse_trajectory_r2.py/.cjs/native_pulse_trajectory_r2 fixesclassinheritanceONLYinsideVM, copies34preparedinputbytes+manifest EXACT andverifiesoldSHA; no extraction/controller/BASEgeometry rerun. Samepredisclosedpulsepolicy/nativefrozenoracle/clock18mm/caps/WORLDmasks. CPU22/23BelowNormalthreads1; no otherworkers/Voice/hardware/rootchanges.
 
 
 ## File status
