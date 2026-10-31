@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T11:03:40.764676+07:00
+Updated: 2026-10-31T11:11:30.080469+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Cached all6 lift/drop stage diagnosis: fixed12cases (longest highconfidence image-up/actualwrist-low withinshot window for eacharm in eachclip), keep everycase/unknown. Compare rawWORLD/currenttarget/currentfit/staticactual18IK/selecteddenseC+q/physicalkey stages/actualYAML C+q on sameclock, no new extraction/training or controller budget. New private diagnose_full_lift_stages.py +static_full_lift.cjs outputs full_lift_stage_diagnosis; CPU22/23BelowNormal single sequentialdriver/frozenSHA. Prior actual10native-safe curves and6reviewbundles preserved; no finalhuman/beat claim.
+Full_lift_stage_diagnosis COMPLETE12cases/6clips7.634s/static0.804s; all6source pages ACTUALLYviewed. Supported5arms: BloodL/GreatR loseheight afterexport, WitsL lag+export, CheerL/ComeL alreadylow densecontroller while static18mm clearupraised. Other7currentfit armsnottrusted (5zero controlweight,2inferred0.25), do NOT gradeheld/unknown asobserved. Next private probe_lift_bank.py/probe_lift_bank.cjs compareexactoldbank vs freshstaticgoal/joint-coordinatebank atsameoriginalnativeCq state, preferred18.5 vs actual18 in separatecontexts; originalchoiceparity mandatory. Finite1tick+horizon probes all12cases, notfullcontroller/training/hardware, frozeninputs/source.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
