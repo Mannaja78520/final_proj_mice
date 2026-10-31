@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T22:23:00.672326+07:00
+Updated: 2026-10-31T22:30:49.614344+07:00
 Branch: main bookkeeping only; private experiments; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Complete rigging, fair comparison, improvement and final editable delivery for ALL SIX lead clips. Full user scope: `.local/rl_playlist_1030/user_scope_automation_original.md`. Do not finish at extraction, training or technical native checks. User permits takeover only on verified Claude quota/limit evidence; none verified, so retain Claude/other ownership. RL first; Voice is user-paused. No autonomous hardware motion. Preserve user projects, old best versions, checkpoints and unrelated dirty work. Media/models remain private and ignored by Git.
 
 ## Doing now
-Pulse26880 FAILED0.470s BEFORE anycandidate: hostclass extendedVM-onlyJointTrajectorySearch ReferenceError. Preservefailedscript/input/provenance/logs unchanged. Newnative_pulse_trajectory_r2.py/.cjs/native_pulse_trajectory_r2 fixesclassinheritanceONLYinsideVM, copies34preparedinputbytes+manifest EXACT andverifiesoldSHA; no extraction/controller/BASEgeometry rerun. Samepredisclosedpulsepolicy/nativefrozenoracle/clock18mm/caps/WORLDmasks. CPU22/23BelowNormalthreads1; no otherworkers/Voice/hardware/rootchanges.
+Pulse r2 5128 COMPLETE92.158s522NEWcandidatechecks/34lowerkeySSE,EXACT34preparedinputs/cachedBASEgeometry reuse; original26880failure0.470s preserved. Coldhard10modelmean44.505->44.817 regresses6/10;historical24mean25.288->25.111 but9/24regress/worst42.289->42.426. No actual34filebudget expansion fromscalar alone. Next native_pulse_triage.py/native_pulse_triage sixsourcecenter pages jointBASE-vs-PULSE bothcontrolvariants/twoangles atsamepredisclosedregisteredtimes; nativecoldcurvesONLY/notserialized/HOME/humantruth. Model/sourceuncertainty kept,2oldguidesSKIP notfakecurves. CPU22/23BelowNormal,noNN/controller/train/GPU/hardware/Voice/rootchanges.
 
 
 ## File status
