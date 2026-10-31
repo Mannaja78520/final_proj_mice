@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T19:01:19.984097+07:00
+Updated: 2026-10-31T19:06:05.357247+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Native_mode_homotopy24060 COMPLETE57.599s/36curves18contexts, actualnative modes27.427s+geometry26.231s; sameclock all288lambda candidates.23selected strictcommand/servo/native18clear,13rejected (hard11of12 reject, onlyCheergatedpasses). No sourcehuman/winner/fullbudgetapproval. Next native_mode_serialize.py/native_mode_compile.cjs/native_mode_serialization(_native):compileONLY23selected toactualprivateeditableproject/YAML, parseBoardClock, continuousHOMEpreroll+parity/strictanalyticv2+actual1msnative18paths andmodeledservo50Hz. Existingmid-flight warmstart proof is NOT HOME; treat newshortrest-entryscenario separately. Placeholderaudio means no audio/humanapproval or finaldelivery. No controller/extraction/training/GPU/hardware/rootchanges.
+Native_mode_homotopy COMPLETE57.599s:23of36selected/13rejects, only1of12hard passes.9rejects geometry,4servoaccel atfirst2-3steps need transition-state diagnosis, notsafetyreduction. native_mode_serialization34600 COMPLETE46.844s:23actualshorteditableprojects/YAML allparity+continuousHOME+strictv2+native18command1ms/paths+servo50HzPASS; noaudio/humanapproval. Shortrest-entry differs from originalmidflight warmstate. Next native_mode_quality.py/native_mode_quality records all36 raw/physicalbaseline/mode/home metrics, everyreject and boundaryaccelerations, plus actualCheerdecoded source/twoangle image foronlyhardpass. DoNOTexpandfullbudget/claimfullsongwinner; no controller/extraction/train/GPU/hardware.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
