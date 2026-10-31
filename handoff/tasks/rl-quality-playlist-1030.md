@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T21:45:09.407145+07:00
+Updated: 2026-10-31T21:51:27.629100+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Jointtrajectory27148/native2952 COMPLETE185.776s/1407nativechecks/34of34lowerkeySSE; independentPythonv2+float32servoPASS. Hard10conditionalmodelmean45.732->44.505butCheerbaseline+.368/worst60.582->60.950;historical24mean26.175->25.288(no regress). ColdshortNOTactualin-song/nativefile/humanproof. Next native_joint_serialize.py/native_joint_serialization/native_joint_serialization_native:34NEWselectedactualprojects/YAML; hard10sameR4in-songprefix1000msjoin, historical24sameoldrestentry(differentseedidentityunproven),2oldunresolvedSKIP. ReuseoldBASEproofsONLYwhenrawmotionkeys/currentStudioK+V fingerprintmatchesimmutableoldartifacts; doNOTrerunoldgeometry. NewcurvesactualHOME/v2/servo/native18command1ms+adjacentpaths/parity/sourceclock/allrejects. No source/mask/controller/NN/train/GPU/hardware/Voice/rootchanges; CPU22/23BelowNormal.
+Jointactualserializer25364(start21:46:18) COMPLETE198.707s32actualpasses(8hardtrueprefix/24historicalrest),32BASEK+V fingerprints unchangedproofreused,nooldgeometryrerun.2hardbridgecollisionssame/2oldguidesunresolved. Actualhard8modelmean44.416->43.248butCheerbase+.368/worst60.582->60.950;historical24mean26.178->25.290no regress. Next native_joint_review.py/native_joint_review:5NEWactualBASE-vs-jointwise source/audio videos forall8acceptedhardcurves+fullaffectedprefix mean/P95/worst/arms/segments; ComeNOnewcurve reusesverifiedoldreviewvideo/page (6total/5applicable) notrerenderunchanged. Actualdecode/image/audiochecks beforebudgetexpansion; no human/beat/fullsong claim. CPU22/23BelowNormal, noNN/controller/train/GPU/hardware/Voice/rootchange.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
