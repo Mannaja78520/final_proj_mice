@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T10:46:44.702224+07:00
+Updated: 2026-10-31T10:48:38.386328+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,6 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
+Next private native_safe_challengers.py:4additional full raw-safe RL/planner cases fromsameactual18mm matrix getSAMEthin/base0.1projection/0.5key geometryrepair andactualYAML/HOME/nativepaths operator, bounded6iterations no winner/source-error selection. SingleCPU22/23BelowNormal driver, sourcecached, noNN/training/GPU/hardware. SixMPCactualfiletechnicalPASS andreview_delivery_r4 concreteSHAverified; humanquality remainsOPEN.
 Current quantized18108 nativeactual18mm andderivatives6/6 PASS255.097s; fullsourceFirstpreview/audio/report stillrunning. Prepare private review_delivery_r4 copies (editableproject/YAML/matchingmusic+preview/report) only after all6technicalreceipts, notfinalqualitydelivery; allhuman/group/beat flagsremainfalse andno winnerclaim. Preserve sourceprojects/oldbest.
 Next bounded private counterfactual native_geometry_reserve_retry.py: generic only-actual-export-failed clips receive native straight-key/path planning reserve>=1mm (target3), max6projectionsteps, hardMUSIC18 unchanged; accepted5 input bytes reused. New isolated r3 folder/compiler/replay/screen; original35864 frozen files untouched. Independent actual1ms path test all6 decides, no source-error oracle/retiming.
 Current repaired_native_driver PID35864/start10:27:39.7569608+07 verified; frozenhashes PASS. Six actualYAML + continuousHOME/parsedBoardClock/Studio parity andanalyticcommand+modeledservo limits PASS. ActualMUSIC18 1mscommand/adjacentpaths +50Hzservo nativeclear5/6; First command51743..51745ms (source50.743..50.745s) hands too close, servo clear. Preserve rejected version; actualsource/audio fullpreview chain running CPU22/23BelowNormal. No duplicate/training/GPU/hardware/Voice; fullhuman/group/depth/beat/final scope OPEN.
