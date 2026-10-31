@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T19:49:46.630262+07:00
+Updated: 2026-10-31T20:03:40.154183+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-ExistingR4coupledrepair4newactualshortfilesPASS8.501s; total27of36shortrest-entry/hard3of12/historical24of24.4fixedfirstpreferredplane conflicts proved, boundaryfilterkeepshard18/minreserve1;3newkeyguides clear butALL3actualcompileREJECTHOMEentry/0YAML .501s. Existing23/69SHAunchanged+new4/12SHAverified.2newactualsourceimagesviewedstillwrongposes, nohuman/audiofinal. All ownjobsended/CPUreleased,originalfailureprefixesretained. FIRST same-role source2D/body-camera support audit all6 before inferredreference changes; actualCheeroneup/oppositebenthead stillnotrepresented. Prepare physicallyconsistent in-songprefix atoriginalclock for3HOMEblocked+4velocityboundarycases usingexistingR4fullsafeproject ONLYwhen sameanonymousrole mappingverified; do not substitute HOMEreset or mixhistoricalseeds/Firstphases. Comebaselineprojection+Firstlocalgradient remainexplicitrejects. No newtraining/controller/fullbudget expansion; reusecacheddata.
+Source_camera_audit.py/source_camera_audit +same_role_prefix_audit.py/same_role_prefix_audit plannedindependentcached-onlyaudits. All22358same-sourceframes:exactVideoBodyMotion torsoaxes vs hip-viewaxes, independentYOLO2D/crop2D/WORLDXYhypothesis/fitFKprojection residuals perarm/bone/confidence/shot, cropcontainment, no validitypromotion/3Dinference yet. OfficialMediaPipe docs distinguishnormalizedimage/metricworld androtation-onlyworldprojection, notcamera calibration. Prefixaudit all18contexts:hard6 SAMEfit/source anonymousroles vs12historicalunproven mappings; SHA-verify existingR4actualYAML/project andsavecontinuousHOMEprefix/laststates fromactualBoardClock onlyformatchingroles, no trajectorypatch/controlrun. OwnCPU22and23onejobeachBelowNormal/OMP1,noNN/extraction/train/GPU/hardware/rootchanges.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
