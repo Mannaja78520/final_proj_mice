@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T19:26:58.967363+07:00
+Updated: 2026-10-31T19:29:45.856519+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Native_mode_coupled_repair16696 FAILEDreporting duplicate selectedLambda afterfirst finalizedcase, no activePID/lock. Firstcase cachedplanes+trace/keys persist:1pose/2pathhits,minmargin-.399mm,timing0, no successfulprojectionstored; cannotaccept. Resume native_mode_coupled_repair_r2.py/_r2 fromthiscachedfinalizedprefix (no plane rerun), correct dictmerge; freshremaining8cases sameEXISTINGR4operator/budget. Originalsource/provenance/failureimmutable, preserve23oldnativeproofs+4boundarypending. Prepared native_mode_coupled_serialize.py NOTRUN, rebindonlyr2neweligiblecases aftercompletion; no controller/train/extraction/GPU/hardware/rootchanges.
+Coupledrepair r2 23764 finalized6cachedcases,2keygeometryguidesclear,4rejects; stoppedonFirstcoordinateexistingnative-plane zero-gradient23/24 atiteration1. Preserveall6finishedrows andfailedcandidate; original16696 reportingfailureprefixreused. Now r3 resumes6finished+1explicitnativeoracle-reject WITHOUTrerunningplanes, processesremaining2Witsregressioncases only. SameR4math/6iterationclock18mmcaps; isolatepercaseoraclefailureasreject,nogaprelaxation. Preparedserializer notrun, bindr3neweligiblecasesonly after9complete. Initialfixedposeplanes conflictwithguide3 shownBlood/Come, needprefix/boundary diagnosis notlongtraining. No controller/extraction/GPU/hardware/rootchanges.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
