@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T19:13:06.353236+07:00
+Updated: 2026-10-31T19:24:45.664420+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Native-mode homotopy36curves/18contexts completed57.599s;23strict/native18pass,13reject(9geometry/4initialservo); ONLY1of12hardpass. Actualshort23editableprojects/YAML additionally HOMEcontinuous/analyticv2/native18command1ms+paths/servo50Hz/parity/sourceclockPASS46.844s. ActualonlyhardCheerimageviewedstillwrongarmheight/bentpose; nohuman/audio/final approval. No activeworkers/locks; CPUreleased. No full-controller/training expansion. FIRST reuse existingR4 coupledquantizedgeometryrepair forcached9collisioncases; thismechanismtrial omittedthatstage, notR4regression; inspectnativehits and constrainwholetrajectory rather than mix towardunsafe rawkeys. Fourservofailures occurfirst2-3steps fromexistingmovingstate; maintain initialvelocity continuity, do not substitute restedHOME as inflight proof. Source/reference bentarm vsstraightup mismatch alsoOPEN; no confidencepromotion. Retestshortall6+historical/actualYAML/HOME andsource-time audio/preview beforefullbudget.
+Native_mode_coupled_repair.py/native_mode_coupled_repair planned:reuse EXACTexistingR4 native_geometry_planes.cjs +quantizationrobust NativeKeyProjection +coalesce on9cached geometryrejects only. Fixedclock/hard18/minKey120/quantum.5/accelerationguard.8/roundreserve.6,targetguide3/minacceptedreserve1,maximum6iterations each,no reference-errorselection.23alreadyactual-nativepass artifacts preservedbyteidentity;4boundaryservo casesremainpending, noHOME substitution. Fresh9keycandidates requireactualroundedYAML/HOME/v2/native18/servo/parity gates; no claimfromguideclear. OwnCPU22/23BelowNormal,cached-only/no controllers/extraction/train/GPU/hardware/rootchanges.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
