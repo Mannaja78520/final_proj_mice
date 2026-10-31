@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T20:13:29.342257+07:00
+Updated: 2026-10-31T20:29:04.019717+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Cameraaudit11360 COMPLETE22358frames15.021s/exactbodyaxesreconstruction5.58e-16;647unsupportedhigharmcandidatesallinsideoriginalreconstructedcrop(2pxtolerance), no axis/cropclippingfixhypothesis. Independent2Dvs cropmodel supportedmean12.9..21.3deg,unsupported27..46.5 not3Dtruth. Prefix33244 COMPLETE7.612s sixexactdatasetroleactualHOMEprefixstatesprepared,12historicalseed mappingsunproven;4of6hardcontexts includecuts,2others contain1/2unknownprimaryframes, no crosscutidentityapproval. Next source_projection_stages.py/source_projection_stages fromcachedcamera rows:pairedcommon-frame observed2D direction diagnostics rawWORLD/controlGoal/FK/selectedMPC_Cq/actualR4_Cq, perarm/bone/support/cut/missingcoverage/meanP95worst. Allsameclock±10ms,body-camera projection remainshypothesis; no poseconfidence/control/reference changes, no newNN/GPU/train/hardware.
+Projectionstage27160 COMPLETE6/22358frames11.705s. Onpairedworld-supportedframes,currentcontrolGoalmean≈rawWORLD;staticFKmixedsmallchanges;selectedMPCservo adds1.7..4.5deg/body-conditioned2Derror,actualR4exportadds2.3..4.8deg. Theseareprojectionhypothesisdiagnosticsnot3Dtruth/causalproof. Next source2d_static_pilot.py/native_pose_oracle.cjs/source2d_static_pilot:12frozenoriginalcases/10uniqueframesall6,3fixedseeds/80iterSLSQP perframe; observed2Dbonedirection objectiveunderinferredcurrenttorso-camera A,weak.05current-supported3Dprior/no unknown3Dprior,fixedbody,poseprior1e-4. NativeMUSIC18+guide3/roundedminreserve1/quantum.5 independentfinalpointcheck. Staticinferred3DgoalsONLY,nomaskpromotion/no trajectory/YAML/hardwareclaim. CPU22Python/23nativeoracle, nonewNN/controllers/train/GPU/rootchanges.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
