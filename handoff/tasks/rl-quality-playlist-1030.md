@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T18:25:09.500334+07:00
+Updated: 2026-10-31T18:28:18.573099+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-raw_native_limit_audit COMPLETE0.141s:all6 hypothetical rawThin/nativePASS curves fail strictv2 (316/331/330/547/684/335 moves); peak speed1.571x/accel5.483x cap, no feasible-height claim. Source inventory6560image2Dup armframes,647currentWORLDunsupported, reasons retained notpromoted. Next source_support_review.py/source_support_review:12predeclared longest withinshot unsupported-high windows x3actualframes, cleancontext+independent2D/crop-model overlays. Readpixels before inferring3D; boundedCPU22/23 no extraction/controller/training/GPU/hardware/source changes.
+Cachedsource_support_review COMPLETE10.385s/36exactframes12windows6pages ACTUALLYviewed+SHA/notes. Raised arms observed2D, cropmodel far-arm lowconfidence/overlap, benthead poses retained; no3D/maskpromotion. RawThin strictv2 FAILall6, noheightfeasibilityclaim. Next shape_scaled_study.py/shape_scaled_study(_native):fixedalpha=min(1,tol3/maxcommanddeviation) then1,.5,.25 multipliers+raw fallback forSAME72methodcases/18intervals; replaycanonicalservo fromexactexistingqstart, samejerk gates andfreshactual18mmgeometry onnewarrays; no source-error selector/controller/training/render reruns. OwnCPU22/23BelowNormal.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
