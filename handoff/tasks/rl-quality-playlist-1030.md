@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T12:07:09.549634+07:00
+Updated: 2026-10-31T12:17:02.515752+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Cached sharedpostfilter shape-bound study next: fixed maxcommanddeviation=existingtolDeg3 degrees appliedidentically to all72pairedmethod entries across4cohorts(18distinct sourceintervals, repeatedbaselinesexplicit). Useonlyalreadychecked candidatearrays/inputSHA/native18/jerk receipts, highestfeasiblelambda withrawsafe witness; NO reference-score selector or controller/inference rerun. Independently scoreselectedcurves withsame sourceclock/masks andpreserveallregressions. New private shape_bound_study.py/shape_bound_study outputs CPU22/23BelowNormal, no newtraining/GPU/hardware/Voice or fullqualityclaim.
+Shape_bound_study COMPLETE72pairedmethodentries/18distinctintervals6clips5.967s:fixedtol3 rejectsALL nonzero cachedlambda candidates,63 selections change to raw, zero nonzeros. Notaccepted as smoothing fix; candidategrid/shape mismatch diagnosed, no controller or nativegeometry rerun. Next cached whole-source image_world_support.py counts highconfidence2Dcandidates vsrawWORLDgate/currentfit status perarm/shot/reason withoutvaliditypromotion; native_raw_via_probe.cjs collects actualnative tangents/mixedperjoint modes andstrictv2curve limits to assess PASS-aware projection BEFOREnewoptimization. IndependentCPU22/23same2corepool, noNN/extraction/training/GPU/hardware/source changes.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
