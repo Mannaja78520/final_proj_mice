@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T21:51:27.629100+07:00
+Updated: 2026-10-31T22:02:16.294099+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Jointactualserializer25364(start21:46:18) COMPLETE198.707s32actualpasses(8hardtrueprefix/24historicalrest),32BASEK+V fingerprints unchangedproofreused,nooldgeometryrerun.2hardbridgecollisionssame/2oldguidesunresolved. Actualhard8modelmean44.416->43.248butCheerbase+.368/worst60.582->60.950;historical24mean26.178->25.290no regress. Next native_joint_review.py/native_joint_review:5NEWactualBASE-vs-jointwise source/audio videos forall8acceptedhardcurves+fullaffectedprefix mean/P95/worst/arms/segments; ComeNOnewcurve reusesverifiedoldreviewvideo/page (6total/5applicable) notrerenderunchanged. Actualdecode/image/audiochecks beforebudgetexpansion; no human/beat/fullsong claim. CPU22/23BelowNormal, noNN/controller/train/GPU/hardware/Voice/rootchange.
+Jointtrajectory27148 COMPLETE185.776s; actual25364(start21:46:18)COMPLETE198.707s32newstrictactualpasses(8hardprefix+24historicalrest),2bridge/2unresolvedsame. Newreview31308 COMPLETE43.194s5NEWvideos/audio5PASS+ComeunchangedSHAreuse,5newdecodedpages15framesACTUALLYviewed:smallshape/liftchanges, stillunderreach/chestcross/forearm/phasewrong. No promotion;Cheerbase modelregression retained. Now joint_trial_report.py/checkpoint_joint_work.py/ledger/status/progress/manifest/task/plan/BRIDGE/automation verification, fullcontext+affectedprefix/meanP95worst left/right/allrejects. Next bounded smooth temporalpulse/nativekey optimization toavoidperjointworst-timeglobalshrink, input-commandobjective only; no longtrain/fullsongexpansion. All6human/group/3D/beat/finalOPEN.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
