@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T11:20:34.788042+07:00
+Updated: 2026-10-31T11:35:39.379891+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Stage12/source6pages complete; exactbank48probes originalchoice12/12, preferred18.5 vsactual18 sameall12 DISPROVES reserve-onlyhypothesis. Additionalcurrent-fit singlejoint candidateescapesCheer/Come brake at18.5 withoutmask/costchange; cachedfit choicesmatchfreshstaticpointprobe12. Next BOUNDED coordinate_pilot_driver.py/kernel/evaluator:6fixed4sfull-source warm-start windows (firstLcase perclip), scorecenter1s andretainwholecontext. Reuse exactoriginalCq/baselines; validate4tickbaselineprefix; new17candidatebank only (old8 +rawfitgoal/8singlejoint). Same18.5preferred/18hard fallback onlybankempty, samehorizon/cost/masks/gap/caps. Independentfloat32/nativeallpaths +SAME5lambda jerkpostfilter; source2Dlift diagnosticnot3Dtruth. No full rerun/newtraining/GPU/hardware; oldbest preserved.
+Coordinate6hard-window pilot COMPLETE124.539s, exactbaseline4tick parity6, independentservo/native18 raw12+postfilter12clear. Rawmodelmean improves6/6 but commonpostfilterBlood29.25->30.11regresses, Witsraw2Dup/lowwrist2->4regresses; preserveall. Six4s sourceaudio videos45.665s/6audioPASS,18decoded source-time samples6pages ACTUALLYviewed: Cheer/Come releasebrake/lift improves but descentlag, Bloodearlyrise, Great/Firstunknownarm, Witslaterise remain. Next coordinate_regression_driver.py usesSAMEbank on12historical contexts(6tuning+6former20regression), cachedbaselines and4tickprefix parity, originalscore/warmup, no2Dpersonmix or independentvalidationclaim. No fullsolver/newtraining/GPU/hardware. Exportcurveprobe6 clocks/12actualparity confirms loss chiefly firstphysicalkeyprojection; keyoperator study next afterregression.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
