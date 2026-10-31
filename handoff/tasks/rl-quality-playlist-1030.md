@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T20:59:27.358528+07:00
+Updated: 2026-10-31T21:07:16.752377+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Newvisible_joint_review.json andpartial_pose_trial.py/partial_pose_trial: predeclareper-bone visibility/model-correspondence review for10frozenframes/all6, no manualinventedpixels/3Dtruth. Unknownhiddenwrists/overlappingfararms receiveZEROnew2Dconstraint;First147allunresolvedSKIP. Same3seeds/nativehard18/quantum.5/staticbudgetasprevious2Dpilot, allsource/worldmasksunchanged; testwhetherremovingincorrectwristconstraints avoidsfalsebothup. CPU22objective/23oracleBelowNormal/noCUDA; partial_pose_review6pagesrequired; NOTtrajectory/humanapproval. Then originalclock/incomingstate nativeprefix cases, no longtraining.
+Partialvisible-bone25364 COMPLETE18.302s/1250pointqueries9fit+1unknownSKIP,6pagesACTUALLYviewed; hiddenforearm/depthstillwrong, referenceNOTaccepted. Now in_song_prefix_trial.py/in_song_prefix_trial actualR4same-policyprefix +cachedconservativekeys for10applicablehardcurves/all6,2knownunresolvedQP/oraclecasesretainednotrerun. Fixed1000mspre-scorebridge/unchangedsourceendclock, no mid-songHOMEreset; actualStudio/YAML/BoardClock/fromHOMEservo/analyticv2/native18wholepath allrequired. Preserveoriginalsourceaudio cue, noaudio/humanapprovaluntilnewpreview. Historical12differentseedprefixunproven,old24actualfilesunchanged. CPU22/23BelowNormal/noNN/train/GPU/hardware/Voice/rootchanges.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
