@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T22:12:12.355825+07:00
+Updated: 2026-10-31T22:19:52.094736+07:00
 Branch: main bookkeeping only; private experiments; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,9 +9,8 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Complete rigging, fair comparison, improvement and final editable delivery for ALL SIX lead clips. Full user scope: `.local/rl_playlist_1030/user_scope_automation_original.md`. Do not finish at extraction, training or technical native checks. User permits takeover only on verified Claude quota/limit evidence; none verified, so retain Claude/other ownership. RL first; Voice is user-paused. No autonomous hardware motion. Preserve user projects, old best versions, checkpoints and unrelated dirty work. Media/models remain private and ignored by Git.
 
 ## Doing now
-All own CPU22/23 BelowNormal jobs are COMPLETE; leases released, no active worker/lock. Latest results: `native_joint_review/report.md`, `summary.json`, `all_context_matrix.csv`, `model_matrix.csv`, `index.html`; `monitor_status.json` and `progress.html` are timestamped snapshots, not perpetual workers. Exact per-file ledger has7233 rows. No new neural extraction/controller replay/training/GPU/hardware in this round. ALL6 human/group/3D/continuous beat/final delivery remain OPEN.
+Bounded native temporal-pulse trial: native_pulse_trajectory.py/.cjs/native_pulse_trajectory. Freeze ONE Hann pulse perjoint/order0..9/1000ms halfwidth, centerlargest INPUT-commandkey residual, closedform least-squaresamplitude/existing8grid. Currentjoint selected34guides are BASE,2knownunresolvedSKIP; reusefrozen native_joint_trajectory.cjs exact evaluator/float32servo/perjointanalytic/native18 andcachedBASEgeometry. Sameclock/quantum/caps/SMOOTH/WORLDmasks, no reference/validation-errorselector. Shortall6+historical, coldentryexplicitNOTin-song/HOMEproof. CPU22/23BelowNormalthreads1,no NN/controllers/train/GPU/hardware/Voice/rootchange. Checkcoldgains/regressions beforeactualnewfilebudget; skip unchangedmotions insteadofduplicatework.
 
-Next is a bounded smooth temporal-pulse native-key trial described below. The new joint-wise exporter improves model errors slightly but still misses visible raised-arm, chestcross and forearm poses; Cheer-baseline regresses. No variant was promoted and no full-song budget expansion is justified yet.
 
 ## File status
 Per-file rows for every exact private code/input/generated/media/checkpoint path (File | Change | State | Verification | Commit | Bytes | UpdatedUtc) are in `.local/rl_playlist_1030/file_status.csv`. Refresh at each stop; existence is not completion. This external exact ledger avoids thousands of task lines. Original baseline1283955; unrelated dirty files and Voice/YOLO/user work are not owned by this task.
