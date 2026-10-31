@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T18:28:18.573099+07:00
+Updated: 2026-10-31T18:30:45.097017+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Cachedsource_support_review COMPLETE10.385s/36exactframes12windows6pages ACTUALLYviewed+SHA/notes. Raised arms observed2D, cropmodel far-arm lowconfidence/overlap, benthead poses retained; no3D/maskpromotion. RawThin strictv2 FAILall6, noheightfeasibilityclaim. Next shape_scaled_study.py/shape_scaled_study(_native):fixedalpha=min(1,tol3/maxcommanddeviation) then1,.5,.25 multipliers+raw fallback forSAME72methodcases/18intervals; replaycanonicalservo fromexactexistingqstart, samejerk gates andfreshactual18mmgeometry onnewarrays; no source-error selector/controller/training/render reruns. OwnCPU22/23BelowNormal.
+shape_scaled_study29084 completedfresh159nativewitnesses/36inputs48.925s butFAILEDsummary on empty historical2D array (must be notmeasured, notzero). Preserve originalscript/provenance/failure and ALLnative results/inputs; doNOTrerungeometry/controllers. Now shape_scaled_study_eval_r2.py/eval_r2 cached-only scoringresume switches to existing regression-aware2Dreader, verifies reconstructed inputbytes and originalnativeSHA, reruns only selector/replay/metrics. Samefixed3deg/jerk/native18, no tracking oracle/model/training/GPU/hardware.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
