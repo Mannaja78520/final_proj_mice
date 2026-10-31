@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T21:33:52.573538+07:00
+Updated: 2026-10-31T21:45:09.407145+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Nativejointtrajectory shortcounterfactual: native_joint_trajectory.py/.cjs/native_joint_trajectory. Existingprojection all-rest cosineedgecap then globalhomotopy canfreezeotherwisecontinuousjoints; testper-JOINTwhole-keytrajectory homotopy, fixedorder0..9/ONEpass/existing8lambda grid towardcachedsource-time densecommands, selectonlyclosestkeyshape withACTUALnativeperjointv2/caps/50Hzservo/18mmgeometry/no reference-errororacle.34availableexistingguides/36slots(all6+12historical x2),2knownComebaseline/FirstgatedunresolvedSKIP notrerun. Sameclock/quantum.5/nativeSMOOTH unchanged; coldfirst-keyanchor SAMEforold/new explicitlySHORTnotin-song/HOMEproof. ValidateJSanalytic/float32servo againstPythonv2/canonical before any actualexportclaim. CPU22/23BelowNormal OMP1,noNN/train/GPU/hardware/Voice/rootchanges.
+Jointtrajectory27148/native2952 COMPLETE185.776s/1407nativechecks/34of34lowerkeySSE; independentPythonv2+float32servoPASS. Hard10conditionalmodelmean45.732->44.505butCheerbaseline+.368/worst60.582->60.950;historical24mean26.175->25.288(no regress). ColdshortNOTactualin-song/nativefile/humanproof. Next native_joint_serialize.py/native_joint_serialization/native_joint_serialization_native:34NEWselectedactualprojects/YAML; hard10sameR4in-songprefix1000msjoin, historical24sameoldrestentry(differentseedidentityunproven),2oldunresolvedSKIP. ReuseoldBASEproofsONLYwhenrawmotionkeys/currentStudioK+V fingerprintmatchesimmutableoldartifacts; doNOTrerunoldgeometry. NewcurvesactualHOME/v2/servo/native18command1ms+adjacentpaths/parity/sourceclock/allrejects. No source/mask/controller/NN/train/GPU/hardware/Voice/rootchanges; CPU22/23BelowNormal.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
