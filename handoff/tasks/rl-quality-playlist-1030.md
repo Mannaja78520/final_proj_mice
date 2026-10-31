@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T10:59:58.719049+07:00
+Updated: 2026-10-31T11:03:40.764676+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Current fair_native_driver_r2 PID26472 start2026-10-31T10:54:27.276898+07:00 phasecompleted activePID/start=False; completion receipt authoritative after process exit; frozen110hashes PASS. SixMPC18108 COMPLETE401.608s actual18mm/native/YAML/HOME/parity/derivative/audio/preview technicalPASS6; review_delivery_r4 sixSHAverifiedbundles reviewONLY. Fourchallenger16348 COMPLETE149.030s native/parity/derivatives4/4PASS. Fair-r2 actual3fullsource comparisons and10curve2Dlift/audio COMPLETE187.329s (audio3/3applicable,other3noadditionalrawsafevariant); threeactualcomparisonframes viewed BOTH methods stillmissoverhead/chest-cross shapes; old20120 UTF8prep failure beforeheavywork preserved. actual_native_methods_report.md/10rowmatrix/details prepared, no scalar-model/human winner. Eight actualexportimages viewed, fullhuman/group/depth/beat quality OPEN; CPU22/23BelowNormal, noNN/training/GPU/hardware/Voice.
+Cached all6 lift/drop stage diagnosis: fixed12cases (longest highconfidence image-up/actualwrist-low withinshot window for eacharm in eachclip), keep everycase/unknown. Compare rawWORLD/currenttarget/currentfit/staticactual18IK/selecteddenseC+q/physicalkey stages/actualYAML C+q on sameclock, no new extraction/training or controller budget. New private diagnose_full_lift_stages.py +static_full_lift.cjs outputs full_lift_stage_diagnosis; CPU22/23BelowNormal single sequentialdriver/frozenSHA. Prior actual10native-safe curves and6reviewbundles preserved; no finalhuman/beat claim.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
