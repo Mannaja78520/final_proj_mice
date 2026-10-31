@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T21:25:33.184985+07:00
+Updated: 2026-10-31T21:33:52.573538+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Partialstatic25364 18.302s9pointfit+1ownershipSKIP NOTaccepted,6pagesviewed. Newin-song35344 140.071s8actualYAML+continuousHOME/perjointv2/servo/native18/clock/parityPASS across5clips;2newbridgecollisions/2knownunresolved. NEWscenario notold27/36restentry. Sixnewsource/audioactualcomparisonvideos32756 49.462s/audio6PASS,6decodedpages18framesACTUALLYviewedstillwronglift/bend/phase;7of8wholeprefixmodelmeanregress. Oldbestunchanged/no promotion. Allownjobscomplete/CPUreleased. FIRST diagnoseexact2bridgecollisions fromcachedkey87Bloodgated/key543Comegated; useexistingcouplednativeplanes ONLYonjustifiedchangedcandidatewithimmutableearlierprefix/clock/18mm/caps. Prioritize shortnativephysicalkey trajectory objective preserving supportedarm/elbow shape/time insteadofglobalhomotopy shrink; all6+exposedhistoricalregression, samecontract/uncertainty. Newentryfixed1sbridge alsochangesprefix(Blood22.66vscontext25.76), retain/show/scoreALLaffectedtime; doNOTclaimisolatedwarmstatefix. No morestaticunknownwristvariants/longtrain/fullbudget untilposeevidenceimproves. Source/group/3D/continuousbeat/finaldeliveryOPEN.
+Nativejointtrajectory shortcounterfactual: native_joint_trajectory.py/.cjs/native_joint_trajectory. Existingprojection all-rest cosineedgecap then globalhomotopy canfreezeotherwisecontinuousjoints; testper-JOINTwhole-keytrajectory homotopy, fixedorder0..9/ONEpass/existing8lambda grid towardcachedsource-time densecommands, selectonlyclosestkeyshape withACTUALnativeperjointv2/caps/50Hzservo/18mmgeometry/no reference-errororacle.34availableexistingguides/36slots(all6+12historical x2),2knownComebaseline/FirstgatedunresolvedSKIP notrerun. Sameclock/quantum.5/nativeSMOOTH unchanged; coldfirst-keyanchor SAMEforold/new explicitlySHORTnotin-song/HOMEproof. ValidateJSanalytic/float32servo againstPythonv2/canonical before any actualexportclaim. CPU22/23BelowNormal OMP1,noNN/train/GPU/hardware/Voice/rootchanges.
 
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
