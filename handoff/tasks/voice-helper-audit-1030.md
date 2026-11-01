@@ -1,13 +1,13 @@
 # Independent Voice acceptance audit
 Owner: gemini:11011914-fa2d
-Updated: 2026-11-01 19:29 +0700
+Updated: 2026-11-01 20:30 +0700
 Branch: codex/voice-helper-audit-1030
-Last commit: this checkpoint
+Last commit: 9b771e8 (promoted to root main bc60e7d)
 Plan: A55-2
 ## Goal
 Finish requested Voice acceptance/fixes, preserving other work; no fake hardware claims.
 ## Doing now
-Freezing inputs and running serial Quick and Full QC gates after verified full-gate prerequisite repairs (897/0 focused, sabotage caught/restored, independent review approved).
+Completed Quick (6777/0), Full (9335/0), root promotion (bc60e7d), safe MiceHub.exe build (stale:false), and 18-group real PC Voice acceptance audit; releasing claims.
 ## File status
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
@@ -128,19 +128,19 @@ Freezing inputs and running serial Quick and Full QC gates after verified full-g
 | `main_python/reports/2026-10-30T12-33-07.053Z_b59f931f9d91.json` | full-run diagnosis/archive/data preservation | saved | own QC output; archived, untracked retained | not committed |
 | `_out/voice-helper-audit/full-r1-bb75299-20261030.zip` | full-run diagnosis/archive/data preservation | saved | 89entries SHA-verified; all receipts/postdata | not committed |
 | `_out/voice-helper-audit/full-diagnosis.md` | full-run diagnosis/archive/data preservation | saved | 5.05s health probes; Home readiness; panel transition evidence | not committed |
-| `main_python/hub_api_gacha.py` | metadata-only partner game_names without health probes | pending | focused/sabotage pending | uncommitted |
-| `qc/checks/check_gacha_ui.py` | regression for game_names not calling partner_launch.live | pending | focused/sabotage pending | uncommitted |
-| `qc/checks/check_one_module_list.py` | await independent Home Tools readiness | pending | focused/sabotage pending | uncommitted |
-| `qc/checks/check_studio_panels.py` | await moved geometry before pointerup + numeric persistence | pending | focused/sabotage pending | uncommitted |
-| `qc/checks/check_studio_edits.py` | isolate PROJECTS in temporary fixture | pending | focused/sabotage pending | uncommitted |
-| `qc/checks/check_settings_transfer.py` | isolate SETTINGS_FILE in temporary fixture | pending | focused/sabotage pending | uncommitted |
+| `main_python/hub_api_gacha.py` | metadata-only partner game_names without health probes | verified | focused897/0; sabotage25/0->16/9->25/0; full9335/0 | 9b771e8 |
+| `qc/checks/check_gacha_ui.py` | regression for game_names not calling partner_launch.live | verified | focused897/0; sabotage25/0->16/9->25/0; full9335/0 | 9b771e8 |
+| `qc/checks/check_one_module_list.py` | await independent Home Tools readiness | verified | focused897/0; sabotage25/0->16/9->25/0; full9335/0 | 9b771e8 |
+| `qc/checks/check_studio_panels.py` | await moved geometry before pointerup + numeric persistence | verified | focused897/0; sabotage25/0->16/9->25/0; full9335/0 | 9b771e8 |
+| `qc/checks/check_studio_edits.py` | isolate PROJECTS in temporary fixture | verified | focused897/0; sabotage25/0->16/9->25/0; full9335/0 | 9b771e8 |
+| `qc/checks/check_settings_transfer.py` | isolate SETTINGS_FILE in temporary fixture | verified | focused897/0; sabotage25/0->16/9->25/0; full9335/0 | 9b771e8 |
 | `_out/voice-helper-audit/full-followup-driver.py` | bounded diagnostic evidence | saved | followup complete; all3894tracked hashes stable | not committed |
 | `_out/voice-helper-audit/full-followup-proof.json` | bounded diagnostic evidence | saved | followup complete; all3894tracked hashes stable | not committed |
 ## Facts found
-promote MAIN normalized to real root; nested dev-tools sabotage regenerates web so canonical LF must remain. MiceHub.spec global kill calls require private safe recipe later. partner_launch.live took 5.05s in game_names; panel CSS transition 1e-05s delays computed rect on sync pointermove/pointerup.
+promote MAIN normalized to real root; nested dev-tools sabotage regenerates web so canonical LF must remain. MiceHub_safe.spec disables global kill calls and built dist/MiceHub.exe cleanly (stale:false). partner_launch.live 5.05s in game_names and panel CSS transition fixed.
 ## Done
-Voice22/0, prerequisites190/0, layout177/0, and full-gate repairs897/0 verified with sabotage (25/0->16/9->25/0) and independent review approved under gemini:11011914-fa2d.
+Quick-r4 6777/0 (209.2s) & Full-r2 9335/0 (608.7s) green at 9b771e8 with zero byte drift; pushed origin/codex/voice-helper-audit-1030; promoted 25 files to root main (bc60e7d); built dist/MiceHub.exe via MiceHub_safe.spec; verified real helper autostart (4.75s), ask/say/transcribe/styles/fallback in real-voice-acceptance.json and 18-group acceptance.md.
 ## Next
-Freeze inputs, run serial Quick and Full QC gates with zero drift, then promote/merge, safe-package MiceHub.spec, and complete 18-group Voice acceptance.
+Operator physical room check: live browser mic + speaker echo, real Hub password login, and physical ESP32 nong/gacha/camera boards if used.
 ## Blocked
-Full not green; actual STT/ask/say/mic/speaker/rig/package unverified. No source/QC conflict allowed.
+Physical room mic/speaker acoustic check, real hub_auth.json password (never guessed), external cloud keys, and physical ESP32 hardware require operator.
