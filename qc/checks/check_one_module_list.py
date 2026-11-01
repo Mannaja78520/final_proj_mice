@@ -68,7 +68,8 @@ document.getElementById('f').addEventListener('load', async function(){
       function(n){ return n.textContent.trim() === 'lab-pair'; });
   }
   var until = Date.now() + 30000;
-  while ((d.querySelectorAll('#mods .mod').length < 2 || !hasFar())
+  while ((d.querySelectorAll('#mods .mod').length < 2 || !hasFar()
+          || (d.getElementById('homeTools') && d.getElementById('homeTools').getAttribute('aria-busy') === 'true'))
          && Date.now() < until)
     await sleep(250);
   await sleep(500);                       // let the vias finish drawing too

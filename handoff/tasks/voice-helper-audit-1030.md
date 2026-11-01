@@ -1,13 +1,13 @@
 # Independent Voice acceptance audit
 Owner: gemini:11011914-fa2d
-Updated: 2026-11-01 19:17 +0700
+Updated: 2026-11-01 19:29 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
 ## Goal
 Finish requested Voice acceptance/fixes, preserving other work; no fake hardware claims.
 ## Doing now
-Claimed A55-2 under gemini:11011914-fa2d after RL completion; implementing proven full-gate prerequisite repairs (metadata-only Gacha game_names, Home Tools readiness wait, realistic panel drag/rounded persistence in check_studio_panels, temporary fixtures in check_studio_edits and check_settings_transfer) + Help/systems sync before focused QC, sabotage, and independent review.
+Freezing inputs and running serial Quick and Full QC gates after verified full-gate prerequisite repairs (897/0 focused, sabotage caught/restored, independent review approved).
 ## File status
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
@@ -139,8 +139,8 @@ Claimed A55-2 under gemini:11011914-fa2d after RL completion; implementing prove
 ## Facts found
 promote MAIN normalized to real root; nested dev-tools sabotage regenerates web so canonical LF must remain. MiceHub.spec global kill calls require private safe recipe later. partner_launch.live took 5.05s in game_names; panel CSS transition 1e-05s delays computed rect on sync pointermove/pointerup.
 ## Done
-Quick6777/0 byte-stable; full9323/11 red diagnosed in full-diagnosis.md and full-followup-proof.json. Voice22/0, prerequisites190/0/layout177/0 and all mutation receipts/reviews preserved. Resumed and claimed under gemini:11011914-fa2d.
+Voice22/0, prerequisites190/0, layout177/0, and full-gate repairs897/0 verified with sabotage (25/0->16/9->25/0) and independent review approved under gemini:11011914-fa2d.
 ## Next
-Apply 5 proven repairs + Help/systems sync, run focused checks + sabotage + review, then freeze inputs and run quick/full gates.
+Freeze inputs, run serial Quick and Full QC gates with zero drift, then promote/merge, safe-package MiceHub.spec, and complete 18-group Voice acceptance.
 ## Blocked
 Full not green; actual STT/ask/say/mic/speaker/rig/package unverified. No source/QC conflict allowed.

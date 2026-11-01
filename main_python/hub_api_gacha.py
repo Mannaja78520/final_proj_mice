@@ -133,9 +133,16 @@ def voice_after_ask(sent, got):
 
 
 def game_names():
-    """Every game a partner's "play.watch" list reports (config/partners.json)."""
+    """Every game a partner's "play.watch" list reports (config/partners.json).
+    Read partner metadata through EXT.partners_here(_partner_templates())
+    without partner_launch.live() health probes, which otherwise delay status
+    polls by ~5.05 s when partner servers are offline (2026-10-30)."""
     out = []
-    for e in (_hub.read_partners().get("partners") or {}).values():
+    try:
+        partners = _hub.EXT.partners_here(_hub._partner_templates())
+    except Exception:                                        # noqa: BLE001
+        partners = {}
+    for e in (partners or {}).values():
         play = e.get("play") if isinstance(e, dict) else None
         watch = play.get("watch") if isinstance(play, dict) else None
         for w in watch or []:
