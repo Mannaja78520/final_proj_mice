@@ -1,13 +1,13 @@
 # Independent Voice acceptance audit
-Owner: codex:voice-1030-01a1891e
-Updated: 2026-11-01 15:18 +0700
+Owner: gemini:11011914-fa2d
+Updated: 2026-11-01 19:17 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
 ## Goal
 Finish requested Voice acceptance/fixes, preserving other work; no fake hardware claims.
 ## Doing now
-HANDOFF READY: user reports RL complete and requests another agent resume Voice now (2026-11-01). Receiver must use a new owner/session and fresh claims/process inventory. This session launches no driver; its heartbeat remains paused to avoid duplicate work. All previous diagnostics/source/evidence preserved.
+Claimed A55-2 under gemini:11011914-fa2d after RL completion; implementing proven full-gate prerequisite repairs (metadata-only Gacha game_names, Home Tools readiness wait, realistic panel drag/rounded persistence in check_studio_panels, temporary fixtures in check_studio_edits and check_settings_transfer) + Help/systems sync before focused QC, sabotage, and independent review.
 ## File status
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
@@ -128,18 +128,19 @@ HANDOFF READY: user reports RL complete and requests another agent resume Voice 
 | `main_python/reports/2026-10-30T12-33-07.053Z_b59f931f9d91.json` | full-run diagnosis/archive/data preservation | saved | own QC output; archived, untracked retained | not committed |
 | `_out/voice-helper-audit/full-r1-bb75299-20261030.zip` | full-run diagnosis/archive/data preservation | saved | 89entries SHA-verified; all receipts/postdata | not committed |
 | `_out/voice-helper-audit/full-diagnosis.md` | full-run diagnosis/archive/data preservation | saved | 5.05s health probes; Home readiness; panel transition evidence | not committed |
-| `qc/checks/check_gacha_ui.py` | deferred gate prerequisite repair | unchanged | user pause; no source edits/tests yet | no change |
-| `qc/checks/check_one_module_list.py` | deferred gate prerequisite repair | unchanged | user pause; no source edits/tests yet | no change |
-| `qc/checks/check_studio_panels.py` | deferred gate prerequisite repair | unchanged | user pause; no source edits/tests yet | no change |
-| `qc/checks/check_studio_edits.py` | deferred gate prerequisite repair | unchanged | user pause; no source edits/tests yet | no change |
-| `qc/checks/check_settings_transfer.py` | deferred gate prerequisite repair | unchanged | user pause; no source edits/tests yet | no change |
+| `main_python/hub_api_gacha.py` | metadata-only partner game_names without health probes | pending | focused/sabotage pending | uncommitted |
+| `qc/checks/check_gacha_ui.py` | regression for game_names not calling partner_launch.live | pending | focused/sabotage pending | uncommitted |
+| `qc/checks/check_one_module_list.py` | await independent Home Tools readiness | pending | focused/sabotage pending | uncommitted |
+| `qc/checks/check_studio_panels.py` | await moved geometry before pointerup + numeric persistence | pending | focused/sabotage pending | uncommitted |
+| `qc/checks/check_studio_edits.py` | isolate PROJECTS in temporary fixture | pending | focused/sabotage pending | uncommitted |
+| `qc/checks/check_settings_transfer.py` | isolate SETTINGS_FILE in temporary fixture | pending | focused/sabotage pending | uncommitted |
 | `_out/voice-helper-audit/full-followup-driver.py` | bounded diagnostic evidence | saved | followup complete; all3894tracked hashes stable | not committed |
 | `_out/voice-helper-audit/full-followup-proof.json` | bounded diagnostic evidence | saved | followup complete; all3894tracked hashes stable | not committed |
 ## Facts found
-promote MAIN normalized to real root; nested dev-tools sabotage regenerates web so canonical LF must remain. MiceHub.spec global kill calls require private safe recipe later. Actual human RLchat userturn01a18cbd-b220-7b53-b40b-2f44d6ca9c9c authorizes peerCPU22/23; overlap not established failure cause.
+promote MAIN normalized to real root; nested dev-tools sabotage regenerates web so canonical LF must remain. MiceHub.spec global kill calls require private safe recipe later. partner_launch.live took 5.05s in game_names; panel CSS transition 1e-05s delays computed rect on sync pointermove/pointerup.
 ## Done
-Quick6777/0 byte-stable; full9323/11 red,1144QC inputs stable,2private data drifts. Voice22/0, prerequisites190/0/layout177/0 and all mutation receipts/reviews preserved.
+Quick6777/0 byte-stable; full9323/11 red diagnosed in full-diagnosis.md and full-followup-proof.json. Voice22/0, prerequisites190/0/layout177/0 and all mutation receipts/reviews preserved. Resumed and claimed under gemini:11011914-fa2d.
 ## Next
-User reports RL complete; receiver now re-claims resources/files; implement proved metadata-only Gacha game names, Home readiness, realistic panel drag/persistence and2temporary data fixtures. Focus/sabotage/review, then fresh quick/full stable manifests; PR/package/authenticated real Voice acceptance remain later.
+Apply 5 proven repairs + Help/systems sync, run focused checks + sabotage + review, then freeze inputs and run quick/full gates.
 ## Blocked
 Full not green; actual STT/ask/say/mic/speaker/rig/package unverified. No source/QC conflict allowed.
