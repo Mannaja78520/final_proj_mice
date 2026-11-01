@@ -116,29 +116,49 @@ def drop_repeats(text):
 
 
 def detect_lang(text):
-    """Detect 'th', 'ja', 'zh', or 'en' based on script analysis."""
+    """Detect 'th', 'ko', 'ja', 'zh', 'ru', 'ar', 'hi', or 'en' based on script analysis."""
     has_thai = False
+    has_ko = False
     has_kana = False
     has_cjk = False
+    has_ru = False
+    has_ar = False
+    has_hi = False
     has_latin = False
     for ch in text or "":
         cp = ord(ch)
         if 0x0E00 <= cp <= 0x0E7F:
             has_thai = True
             break
+        elif (0xAC00 <= cp <= 0xD7AF) or (0x1100 <= cp <= 0x11FF) or (0x3130 <= cp <= 0x318F):
+            has_ko = True
         elif (0x3040 <= cp <= 0x309F) or (0x30A0 <= cp <= 0x30FF):
             has_kana = True
         elif 0x4E00 <= cp <= 0x9FFF:
             has_cjk = True
-        elif ("a" <= ch <= "z") or ("A" <= ch <= "Z"):
+        elif 0x0400 <= cp <= 0x04FF:
+            has_ru = True
+        elif 0x0600 <= cp <= 0x06FF:
+            has_ar = True
+        elif 0x0900 <= cp <= 0x097F:
+            has_hi = True
+        elif ("a" <= ch <= "z") or ("A" <= ch <= "Z") or (0x00C0 <= cp <= 0x024F):
             has_latin = True
 
     if has_thai:
         return "th"
+    if has_ko:
+        return "ko"
     if has_kana:
         return "ja"
     if has_cjk:
         return "zh"
+    if has_ru:
+        return "ru"
+    if has_ar:
+        return "ar"
+    if has_hi:
+        return "hi"
     if has_latin:
         return "en"
     return "th"
@@ -164,6 +184,9 @@ SENTENCE_END = {
     "en": (".", "!", "?", "\n"),
     "ja": ("。", "！", "？", "\n"),
     "zh": ("。", "！", "？", "\n"),
+    "ko": (".", "!", "?", "。", "！", "？", "요", "다", "까", "\n"),
+    "ar": (".", "!", "?", "؟", "\n"),
+    "hi": (".", "!", "?", "।", "\n"),
 }
 DEF_PARTICLES = ("ครับ", "คร้าบ", "ค่ะ", "คะ", "ฮะ", "จ้า", "จ้ะ", "จ๊ะ")
 
@@ -195,7 +218,7 @@ def answers_in(text, lang, particles=None):
     got = scripts_in(bare)
     if not got:
         return False               # digits, punctuation or a bare particle
-    if lang in ("th", "ja", "zh"):
+    if lang in ("th", "ja", "zh", "ko", "ru", "ar", "hi"):
         return lang in got
     return "en" in got or not got - {"en"}
 
@@ -342,11 +365,19 @@ def scripts_in(text):
         cp = ord(ch)
         if 0x0E00 <= cp <= 0x0E7F:
             found.add("th")
+        elif (0xAC00 <= cp <= 0xD7AF) or (0x1100 <= cp <= 0x11FF) or (0x3130 <= cp <= 0x318F):
+            found.add("ko")
         elif (0x3040 <= cp <= 0x309F) or (0x30A0 <= cp <= 0x30FF):
             found.add("ja")
         elif 0x4E00 <= cp <= 0x9FFF:
             found.add("zh")
-        elif ("a" <= ch <= "z") or ("A" <= ch <= "Z"):
+        elif 0x0400 <= cp <= 0x04FF:
+            found.add("ru")
+        elif 0x0600 <= cp <= 0x06FF:
+            found.add("ar")
+        elif 0x0900 <= cp <= 0x097F:
+            found.add("hi")
+        elif ("a" <= ch <= "z") or ("A" <= ch <= "Z") or (0x00C0 <= cp <= 0x024F):
             found.add("en")
     return found
 
@@ -803,7 +834,7 @@ class Brain:
                         coverage = max(len(got), len(norm_got)) / max(len(qc), 1)
                         sub_score = 0.75 + 0.15 * min(1.0, coverage)
                         score = max(score, sub_score)
-                elif len(qc) >= 3 and detect_lang(qc) in ("th", "ja", "zh"):
+                elif len(qc) >= 3 and detect_lang(qc) in ("th", "ja", "zh", "ko"):
                     if qc in got or (norm_got and qc in norm_got):
                         coverage = len(qc) / max(len(got), 1)
                         sub_score = 0.80 + 0.15 * min(1.0, coverage)
@@ -817,13 +848,27 @@ class Brain:
                 # "ไป" would match half the store. A quarter, because a saved
                 # question is often long: "ไวไฟ" is 4 of the 14 in
                 # "รหัสไวไฟคืออะไร".
-                if (detect_lang(qc) in ("th", "ja", "zh") and len(got) >= 3
+                if (detect_lang(qc) in ("th", "ja", "zh", "ko") and len(got) >= 3
                         and got not in stops
                         and got in qc and len(got) / max(len(qc), 1) >= 0.25):
                     score = max(score, 0.76 + 0.15 * (len(got) / max(len(qc), 1)))
                 if score > best:
                     best, hit = score, item
         return best, hit
+
+    def supported_langs(self):
+        """Every language configured in this store (defaulting to th, en, ja, zh first)."""
+        out = ["th", "en", "ja", "zh"]
+        cfg = getattr(self, "cfg", None) or {}
+        for d in ((cfg.get("tts") or {}).get("voices") or {},
+                  (cfg.get("stt") or {}).get("languages") or {},
+                  (cfg.get("answer") or {}).get("onlyThisLanguage") or {},
+                  (cfg.get("answer") or {}).get("cannotAnswer") or {}):
+            if isinstance(d, dict):
+                for k in d:
+                    if k and k not in out:
+                        out.append(k)
+        return out
 
     def match_faq(self, text, lang=""):
         """The closest saved ENTRY over the threshold, or (None, score).
@@ -837,7 +882,7 @@ class Brain:
             eff_lang = lang or detect_lang(text)
             ans_key = f"answer_{eff_lang}"
             ans = hit.get(ans_key)
-            if not ans and eff_lang in ("th", "en", "ja", "zh"):
+            if not ans and eff_lang in self.supported_langs():
                 base_ans = hit.get("answer", "")
                 if base_ans:
                     base_lang = detect_lang(base_ans)
@@ -2545,6 +2590,16 @@ class Brain:
                     "en": "English",
                     "ja": "Japanese",
                     "zh": "Chinese",
+                    "ko": "Korean",
+                    "fr": "French",
+                    "de": "German",
+                    "es": "Spanish",
+                    "ru": "Russian",
+                    "ar": "Arabic",
+                    "hi": "Hindi",
+                    "vi": "Vietnamese",
+                    "id": "Indonesian",
+                    "ms": "Malay",
                 }
                 tname = target_names.get(target, target)
                 messages = [
@@ -2562,10 +2617,11 @@ class Brain:
         return text.strip(), "translation unavailable"
 
     def translate_all(self, text, source="auto"):
-        """Return dict of {th: ..., en: ..., ja: ..., zh: ...} for given text."""
+        """Return dict of {lang: ...} across all configured languages for given text."""
+        langs = self.supported_langs() if hasattr(self, "supported_langs") else ("th", "en", "ja", "zh")
         src = detect_lang(text) if source in ("auto", "") else source
         results = {src: text.strip()}
-        targets = [t for t in ("th", "en", "ja", "zh") if t != src]
+        targets = [t for t in langs if t != src]
         def translate(target):
             try:
                 trans, _ = self.translate_text(text, target=target, source=src)
@@ -2574,7 +2630,7 @@ class Brain:
                 return target, text.strip()
         for target, translated in self._resources.map(translate, targets):
             results[target] = translated
-        for t in ("th", "en", "ja", "zh"):
+        for t in langs:
             if t not in results:
                 results[t] = text.strip()
         return results

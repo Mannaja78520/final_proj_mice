@@ -136,10 +136,11 @@ Completed Quick (6777/0), Full (9335/0), root promotion (bc60e7d), safe MiceHub.
 | `qc/checks/check_settings_transfer.py` | isolate SETTINGS_FILE in temporary fixture | verified | focused897/0; sabotage25/0->16/9->25/0; full9335/0 | 9b771e8 |
 | `_out/voice-helper-audit/full-followup-driver.py` | bounded diagnostic evidence | saved | followup complete; all3894tracked hashes stable | not committed |
 | `_out/voice-helper-audit/full-followup-proof.json` | bounded diagnostic evidence | saved | followup complete; all3894tracked hashes stable | not committed |
+| `apps/voice/{service.py,app.js,index.html}`, `qc/checks/check_voice_answers.py`, `docs/systems/app-voice.md`, `main_python/web/help{.html,/parts/voice.html}` | 5th+ language extensibility (ko/ru/ar/hi/accented Latin, Brain.supported_langs, VoiceApp.answerKeys) | verified | focused621/0; mutation57/0-&gt;56/1-&gt;57/0 exact SHA; review APPROVED; quick6783/0; full9341/0 no drift | see Done |
 ## Facts found
 promote MAIN normalized to real root; nested dev-tools sabotage regenerates web so canonical LF must remain. MiceHub_safe.spec disables global kill calls and built dist/MiceHub.exe cleanly (stale:false). partner_launch.live 5.05s in game_names and panel CSS transition fixed.
 ## Done
-Quick-r4 6777/0 (209.2s) & Full-r2 9335/0 (608.7s) green at 9b771e8 with zero byte drift; pushed origin/codex/voice-helper-audit-1030; promoted 25 files to root main (bc60e7d); built dist/MiceHub.exe via MiceHub_safe.spec; verified real helper autostart (4.75s), ask/say/transcribe/styles/fallback in real-voice-acceptance.json and 18-group acceptance.md.
+Quick-r4 6777/0 (209.2s) & Full-r2 9335/0 (608.7s) green at 9b771e8 with zero byte drift; pushed origin/codex/voice-helper-audit-1030; promoted 25 files to root main (bc60e7d); built dist/MiceHub.exe via MiceHub_safe.spec; verified real helper autostart (4.75s), ask/say/transcribe/styles/fallback in real-voice-acceptance.json and 18-group acceptance.md. Follow-up: Studio serial 1247/0; 5th+ language extensibility gated quick6783/0 + full9341/0 (no drift), promoted to root and dist/MiceHub.exe rebuilt via MiceHub_safe.spec.
 ## Next
 Operator physical room check: live browser mic + speaker echo, real Hub password login, and physical ESP32 nong/gacha/camera boards if used.
 ## Blocked

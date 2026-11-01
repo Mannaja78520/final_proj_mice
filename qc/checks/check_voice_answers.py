@@ -135,6 +135,19 @@ def run(t):
          "digits alone are not an answer in any language")
     t.ok(v.answers_in("Hello, how can I help?", "en"),
          "an English question still gets its English answer")
+    t.eq(v.detect_lang("안녕하세요 환영합니다"), "ko",
+         "Korean Hangul is detected as ko without falling back to Thai")
+    t.eq(v.detect_lang("Привет мир"), "ru",
+         "Cyrillic is detected as ru")
+    t.eq(v.detect_lang("مرحبا بكم"), "ar",
+         "Arabic is detected as ar")
+    t.eq(v.detect_lang("नमस्ते"), "hi",
+         "Devanagari is detected as hi")
+    t.ok(v.answers_in("안녕하세요 Mice 로봇입니다.", "ko") and not v.answers_in("Hello Mice", "ko"),
+         "answers_in enforces Korean script for ko and refuses English")
+    b_ko = _brain({"faqThreshold": 0.75, "tts": {"voices": {"ko": "ko-KR-SunHiNeural"}}})
+    t.ok("ko" in b_ko.supported_langs(),
+         "adding a fifth language in config/voice.json adds it to supported_langs automatically")
 
     # ONE WORD FOR ITSELF. Measured against the real model 2026-09-18: one
     # answer said ครับ ฉันสามารถ... and the next ผมสามารถ.... In Thai the
