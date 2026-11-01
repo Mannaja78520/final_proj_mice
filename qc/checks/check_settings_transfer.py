@@ -20,6 +20,8 @@ Sequences and projects are NOT in the bundle: those are files on the hub and
 travel with it already.
 """
 import json
+from pathlib import Path
+import tempfile
 import urllib.parse
 
 import browser
@@ -81,6 +83,16 @@ def run(t):
     # ---- the hub side: store, serve, refuse rubbish ---------------------
     fake_serial.reset()
     base, main = F.start_hub()
+    old_settings = main.SETTINGS_FILE
+    with tempfile.TemporaryDirectory(prefix="mice_settings_transfer_") as tmp:
+        main.SETTINGS_FILE = Path(tmp) / "settings_shared.json"
+        try:
+            _run_settings_transfer(t, base, main)
+        finally:
+            main.SETTINGS_FILE = old_settings
+
+
+def _run_settings_transfer(t, base, main):
     if main.SETTINGS_FILE.exists():
         main.SETTINGS_FILE.unlink()
 

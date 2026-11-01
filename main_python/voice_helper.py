@@ -135,6 +135,11 @@ class VoiceHelper:
                 limit = float(self.settings().get("startSeconds") or 60)
                 if self.clock() - self._since < limit:
                     return {"ok": True, "starting": True, "message": "the voice helper is starting"}
+                # A late health reply does not mean the child exited. Retain
+                # its handle so repeated requests cannot load another copy.
+                self._why = ("the voice helper did not answer within %d seconds; "
+                             "it is still running (see %s)" % (limit, self.log_path()))
+                return {"ok": False, "error": self._why}
             script = self.root / "apps" / "voice" / "service.py"
             if not script.is_file():
                 self._why = "apps/voice/service.py not found on disk"

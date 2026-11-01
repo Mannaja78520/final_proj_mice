@@ -47,15 +47,18 @@ window.addEventListener("load", async function(){
     w.showTab("pose");
     await say("float", card(f).classList.contains("floating") + "!" + (card(f).offsetWidth > 0));
     var h = card(f).querySelector("h2"), r = h.getBoundingClientRect();
-    var want = Math.round(card(f).getBoundingClientRect().left + 320 - (r.left + 20)) + "px";
+    var wantPx = Math.round(card(f).getBoundingClientRect().left + 320 - (r.left + 20));
+    var want = wantPx + "px";
     var o = {bubbles: true, pointerId: 1, isPrimary: true};
     h.dispatchEvent(new w.PointerEvent("pointerdown", Object.assign({clientX: r.left + 20, clientY: r.top + 8}, o)));
     h.dispatchEvent(new w.PointerEvent("pointermove", Object.assign({clientX: 320, clientY: 210}, o)));
+    await qcWaitFor(function(){ return Math.round(card(f).getBoundingClientRect().left) === wantPx; }, 2000);
     h.dispatchEvent(new w.PointerEvent("pointerup", Object.assign({clientX: 320, clientY: 210}, o)));
-    var spot = card(f).style.left + "," + card(f).style.top;
+    var spot = Math.round(parseFloat(card(f).style.left)) + "px," + Math.round(parseFloat(card(f).style.top)) + "px";
     await say("moved", card(f).style.left === want);   // grabbed 20 px in, let go at x 320   // grabbed 20 px in, let go at x 320
     await reload(f);
-    await say("kept", card(f).classList.contains("floating") + "!" + (card(f).style.left + "," + card(f).style.top === spot));
+    var afterSpot = Math.round(parseFloat(card(f).style.left)) + "px," + Math.round(parseFloat(card(f).style.top)) + "px";
+    await say("kept", card(f).classList.contains("floating") + "!" + (afterSpot === spot));
     card(f).querySelector(".popout").click();
     await reload(f);
     await say("docked", card(f).classList.contains("floating"));
