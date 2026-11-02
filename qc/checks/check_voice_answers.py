@@ -148,6 +148,23 @@ def run(t):
     b_ko = _brain({"faqThreshold": 0.75, "tts": {"voices": {"ko": "ko-KR-SunHiNeural"}}})
     t.ok("ko" in b_ko.supported_langs(),
          "adding a fifth language in config/voice.json adds it to supported_langs automatically")
+    # Extreme cases (2026-11-02 probe): the whole script counts, nothing
+    # readable stays th, and a key that is not a language never becomes a column.
+    t.eq([v.detect_lang(x) for x in ("ｺﾝﾆﾁﾊ", "\u3400", "\uFEFB\uFE8E", "ặ", "ＡＢＣ", "", None, "😀 123")],
+         ["ja", "zh", "ar", "en", "en", "th", "th", "th"],
+         "half-width kana, CJK ext A, Arabic presentation forms, Vietnamese-only letters (U+1Exx) and full-width Latin; empty/emoji/digits stay th")
+    t.eq(v.scripts_in("3 × 4 ÷ 2"), set(), "× and ÷ are not Latin letters")
+    t.eq(v.trim_unfinished("좋아요. 다음에 만나", "ko"), "좋아요.",
+         "a Korean reply cut short is trimmed at punctuation, never inside 다음")
+    t.eq(v.trim_unfinished("여기서 역까지 가려면", "ko"), "",
+         "a Korean reply with no finished sentence is dropped, not cut at 까지")
+    b_odd = _brain({"faqThreshold": 0.75,
+                    "tts": {"voices": {"ko-KR": "x", "KO": "y", " ": 1, "../x": 1, "answer": 1}},
+                    "stt": {"languages": ["ru", "fr_FR"]}})
+    t.eq(b_odd.supported_langs(), ["th", "en", "ja", "zh", "ko", "ru", "fr"],
+         "region codes normalize, a list does not break it, and non-language keys are skipped")
+    t.eq(_brain({"faqThreshold": 0.75, "tts": None, "stt": "x", "answer": []}).supported_langs(),
+         ["th", "en", "ja", "zh"], "broken config sections fall back to the four defaults")
 
     # ONE WORD FOR ITSELF. Measured against the real model 2026-09-18: one
     # answer said ครับ ฉันสามารถ... and the next ผมสามารถ.... In Thai the
