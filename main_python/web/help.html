@@ -1282,7 +1282,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        again to stop, and your words appear in the box ready to send. The
        listening runs on this PC too. Which languages it hears — and the words
        each language gets wrong often — live in <code>config/voice.json</code>;
-       adding a language in <code>config/voice.json</code> (<code>tts.voices</code> / <code>stt.languages</code>) automatically adds its column and translation target in the Answers sheet and script detector.</p></div>
+       adding a language in <code>config/voice.json</code> (<code>tts.voices</code> / <code>stt.languages</code>) automatically adds its column and translation target in the Answers sheet and script detector. Use a plain code such as <code>ko</code>. The detector reads the alphabet, not the exact language: French, German, Spanish or Vietnamese questions land in the English column, and kanji with no kana lands in Chinese.</p></div>
   <div class="f"><h3>The rig speaks one thing at a time<span class="tag t-new">new</span></h3>
     <p>Everything the rig says goes through <b>one queue</b> on the hub: a
        greeting, an answer from this page spoken through a robot, a message

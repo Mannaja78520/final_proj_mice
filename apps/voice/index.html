@@ -2043,19 +2043,25 @@ static ANSWER_KEYS = [["th", "answer"], ["en", "answer_en"],
 // The store keeps ONE `questions` list (every reader matches against all of
 // it); the sheet only splits it per language (A42-2, user 2026-10-15).
 static askLang(text){
-  let ko = false, kana = false, han = false, ru = false, ar = false, hi = false, latin = false;
+  // Same ranges and order as service.py scripts_in / detect_lang.
+  const R = [
+    ["th", [[0x0E00, 0x0E7F]]],
+    ["ko", [[0xAC00, 0xD7AF], [0x1100, 0x11FF], [0x3130, 0x318F], [0xA960, 0xA97F], [0xD7B0, 0xD7FF], [0xFFA0, 0xFFDC]]],
+    ["ja", [[0x3040, 0x309F], [0x30A0, 0x30FF], [0x31F0, 0x31FF], [0xFF66, 0xFF9F]]],
+    ["zh", [[0x4E00, 0x9FFF], [0x3400, 0x4DBF], [0xF900, 0xFAFF], [0x20000, 0x3134F]]],
+    ["ru", [[0x0400, 0x052F], [0x2DE0, 0x2DFF], [0xA640, 0xA69F]]],
+    ["ar", [[0x0600, 0x06FF], [0x0750, 0x077F], [0x08A0, 0x08FF], [0xFB50, 0xFDFF], [0xFE70, 0xFEFF]]],
+    ["hi", [[0x0900, 0x097F], [0xA8E0, 0xA8FF]]],
+    ["en", [[0x41, 0x5A], [0x61, 0x7A], [0x00C0, 0x024F], [0x1E00, 0x1EFF], [0xFF21, 0xFF3A], [0xFF41, 0xFF5A]]],
+  ];
+  const found = new Set();
   for (const ch of String(text || "")) {
     const cp = ch.codePointAt(0);
-    if (cp >= 0x0E00 && cp <= 0x0E7F) return "th";
-    if ((cp >= 0xAC00 && cp <= 0xD7AF) || (cp >= 0x1100 && cp <= 0x11FF) || (cp >= 0x3130 && cp <= 0x318F)) ko = true;
-    else if (cp >= 0x3040 && cp <= 0x30FF) kana = true;
-    else if (cp >= 0x4E00 && cp <= 0x9FFF) han = true;
-    else if (cp >= 0x0400 && cp <= 0x04FF) ru = true;
-    else if (cp >= 0x0600 && cp <= 0x06FF) ar = true;
-    else if (cp >= 0x0900 && cp <= 0x097F) hi = true;
-    else if (/[A-Za-zÀ-ɏ]/.test(ch)) latin = true;
+    if (cp === 0xD7 || cp === 0xF7) continue;
+    const hit = R.find(([, spans]) => spans.some(([lo, hi]) => cp >= lo && cp <= hi));
+    if (hit) found.add(hit[0]);
   }
-  return ko ? "ko" : kana ? "ja" : han ? "zh" : ru ? "ru" : ar ? "ar" : hi ? "hi" : latin ? "en" : "th";
+  return R.map(([l]) => l).find(l => found.has(l)) || "th";
 }
 
 // A language in its own words ("th" -> "ไทย"), from the browser, so a fifth
@@ -2067,9 +2073,17 @@ static langName(code){
 
   // Every language the store speaks: its voice map first, then the answers'.
   langs(){
-  const out = Object.keys(((this.cfg || {}).tts || {}).voices || {});
-  Object.keys(((this.cfg || {}).stt || {}).languages || {}).forEach(l => { if (!out.includes(l)) out.push(l); });
-  VoiceApp.ANSWER_KEYS.forEach(([l]) => { if (!out.includes(l)) out.push(l); });
+  // A key becomes a column (answer_<code>): "ko-KR"/"KO" are ko, and a key
+  // that is not a language code (" ", "../x", "answer") is skipped - the same
+  // rule as service.py Brain.supported_langs.
+  const code = k => String(k).trim().replace(/_/g, "-").split("-")[0].toLowerCase();
+  const ok = c => /^[a-z]{2,3}$/.test(c);
+  const keys = v => Array.isArray(v) ? v : Object.keys(v || {});
+  const out = [];
+  const add = k => { const c = code(k); if (ok(c) && !out.includes(c)) out.push(c); };
+  keys(((this.cfg || {}).tts || {}).voices).forEach(add);
+  keys(((this.cfg || {}).stt || {}).languages).forEach(add);
+  VoiceApp.ANSWER_KEYS.forEach(([l]) => add(l));
   return out;
 }
 
