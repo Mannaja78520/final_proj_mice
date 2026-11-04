@@ -109,6 +109,22 @@ from profiles import Profiles, ProfileError, guarded  # noqa: E402
 import intents                                       # noqa: E402
 
 
+def drop_ghosts(text, phrases):
+    """Take out what whisper makes up from silence and noise.
+
+    On a quiet or noisy clip whisper writes the closing words of the videos it
+    was trained on (PC test 2026-11-04: "ขอบคุณที่รับชม อย่าลืมกดติดตามช่อง"),
+    and the robot then answered that as if a visitor had said it. The phrases
+    are DATA (stt.ghostPhrases in voice.json); nothing left means nothing heard.
+    """
+    out = text or ""
+    for p in phrases or ():
+        if p:
+            out = out.replace(p, " ")
+    out = re.sub(r"\s+", " ", out).strip()
+    return out if re.search(r"\w", out) else ""
+
+
 def drop_repeats(text):
     """A word or phrase said over and over is the listener stuck, not the visitor."""
     text = re.sub(r'(\b\S+)(?:\s+\1\b)+', r'\1', (text or "").strip())
@@ -1150,7 +1166,7 @@ class Brain:
         segments, info = self._fallback_transcribe(path, segments, info, lang, scfg)
         valid = [seg.text for seg in segments if getattr(seg, "no_speech_prob", 0) <= 0.6]
         self._stt_last = self._stt_attempt
-        return drop_repeats("".join(valid)), info
+        return drop_ghosts(drop_repeats("".join(valid)), scfg.get("ghostPhrases")), info
 
     def _listen_local(self, audio, resolved, scfg):
         """This PC's whisper. Bias words apply only when the language is
@@ -2245,6 +2261,9 @@ class Brain:
         if person:
             reply = personalize_answer(reply, person, lang=lang,
                                        address=self.address_words())
+            # the name is added with ครับ; a woman's voice must not say it
+            # (PC test 2026-11-04: "คุณผู้ทดสอบครับ เดินตรงไป...ค่ะ")
+            reply = self.manner_saved(reply, lang)
         return reply, None
 
     def free_think(self, system, text, limit=200):
@@ -2377,6 +2396,8 @@ class Brain:
                 ans = item.get("answer_ja") or item.get("answer")
             elif lang == "zh":
                 ans = item.get("answer_zh") or item.get("answer")
+            elif lang == "ko":
+                ans = item.get("answer_ko") or item.get("answer")
             else:
                 ans = item.get("answer")
             faq_lines.append("%d. %s\n   %s" % (i, q, ans))
@@ -2418,6 +2439,12 @@ class Brain:
                       + person_hint
                       + ("\n相关FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
                       + "请尽可能紧密依据所给的FAQ答案回答，切勿偏离主题。如果问题与FAQ相关则按FAQ回答，否则作为Mice机器人用1句简短回答。不要编造FAQ中没有的密码、价格、时间、地点或活动；不知道就说不知道，请询问工作人员。")
+        elif lang == "ko":
+            system = ("You are the Mice robot assistant. Answer ONLY in Korean, in one short polite sentence, no emojis.\n"
+                      + scenario_hint
+                      + person_hint
+                      + ("\nRelevant FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
+                      + "Follow the FAQ answers closely. NEVER invent a password, price, time, floor, place or event that is not in the FAQ above - say in Korean that you do not know and to ask a member of staff.")
         elif is_verse and lang == "th":
             system = ("คุณคือหุ่นยนต์ Mice เมื่อผู้ใช้ขอให้อ่านหรือท่องบทกลอน จงท่องบทกลอนภาษาไทยที่ไพเราะ 1 บท (4 วรรค) แบ่งบรรทัดละวรรค ห้ามปฏิเสธ ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
                       + scenario_hint
@@ -2443,7 +2470,7 @@ class Brain:
         # word, so the same budget stopped Thai answers in the middle of a
         # word (user 2026-09-18: *it cuts replies off*). The budget is DATA
         # so it can be tuned per language without touching this file.
-        if lang in ("en", "ja", "zh"):
+        if lang in ("en", "ja", "zh", "ko"):
             wording = self.manner_answer(lang)[2]
             if wording:
                 system += "\n" + wording
@@ -2511,8 +2538,10 @@ class Brain:
     def cannot_answer(self, lang):
         """What the robot says when it has nothing whole to say."""
         said = (self.answer_cfg().get("cannotAnswer") or {})
-        return (said.get(lang) or said.get("th")
-                or "ขออภัยครับ ผมยังไม่เข้าใจคำถามนี้ ลองถามใหม่อีกครั้งได้ไหมครับ")
+        got = (said.get(lang) or said.get("th")
+               or "ขออภัยครับ ผมยังไม่เข้าใจคำถามนี้ ลองถามใหม่อีกครั้งได้ไหมครับ")
+        # saved in the male ending: a female voice says it with its own
+        return self.manner_saved(got, lang) if lang in said or lang == "th" else got
 
     def only_this_language(self, lang):
         said = (self.answer_cfg().get("onlyThisLanguage") or {})

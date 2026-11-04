@@ -10,7 +10,8 @@
       "answer": "เดินตรงไปจะเห็นป้ายห้องน้ำทางซ้ายครับ",
       "answer_en": "Go straight and you will see the restroom sign on your left.",
       "answer_ja": "まっすぐ進むと、左側にお手洗いの案内があります。",
-      "answer_zh": "一直往前走，左边就能看到洗手间的指示牌。"
+      "answer_zh": "一直往前走，左边就能看到洗手间的指示牌。",
+      "answer_ko": "곧장 가시면 왼쪽에 화장실 표지판이 보입니다."
     },
     {
       "questions": [
@@ -21,7 +22,8 @@
       "answer": "ที่จอดรถอยู่ด้านหลังอาคารครับ เดินผ่านประตูทางออกด้านขวาได้เลย",
       "answer_en": "Parking is behind the building. Go out through the exit door on the right.",
       "answer_ja": "駐車場は建物の裏にあります。右側の出口から出てください。",
-      "answer_zh": "停车场在大楼后面，从右边的出口出去就是。"
+      "answer_zh": "停车场在大楼后面，从右边的出口出去就是。",
+      "answer_ko": "주차장은 건물 뒤쪽에 있습니다. 오른쪽 출구로 나가시면 됩니다."
     },
     {
       "questions": [
@@ -33,7 +35,8 @@
       "answer": "เปิดทำการทุกวันจันทร์ถึงศุกร์ เวลา 8:00 - 17:00 น. ครับ",
       "answer_en": "We are open Monday to Friday, 8:00 to 17:00.",
       "answer_ja": "営業時間は月曜から金曜の8:00〜17:00です。",
-      "answer_zh": "营业时间为周一至周五，8:00 至 17:00。"
+      "answer_zh": "营业时间为周一至周五，8:00 至 17:00。",
+      "answer_ko": "월요일부터 금요일까지 8시부터 17시까지 운영합니다."
     },
     {
       "questions": [
@@ -45,7 +48,8 @@
       "answer": "รหัส WiFi คือ Welcome2024 ครับ",
       "answer_en": "The WiFi password is Welcome2024.",
       "answer_ja": "WiFiのパスワードはWelcome2024です。",
-      "answer_zh": "WiFi 密码是 Welcome2024。"
+      "answer_zh": "WiFi 密码是 Welcome2024。",
+      "answer_ko": "와이파이 비밀번호는 Welcome2024입니다."
     }
   ]
 }
