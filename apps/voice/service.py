@@ -187,6 +187,8 @@ def answers_in(text, lang, particles=None):
     got = scripts_in(bare)
     if not got:
         return False               # digits, punctuation or a bare particle
+    if lang != "en" and got == {"en"} and re.fullmatch(r"[^\s]*\d[^\s]*[.!?]?", bare.strip()):
+        return True                # the answer IS a code, e.g. a WiFi password: Welcome2024
     if lang in ("th", "ja", "zh", "ko", "ru", "ar", "hi"):
         return lang in got
     return "en" in got or not got - {"en"}
@@ -218,7 +220,7 @@ def trim_unfinished(text, lang, particles=None):
     return text[:cut].strip() if cut > 0 else ""
 
 
-def one_particle(text, keep, particles=None):
+def one_particle(text, keep, particles=None, ask_words=None):
     """One voice, one polite particle.
 
     The robot is one character, and the saved answers all end in ครับ. The
@@ -237,7 +239,12 @@ def one_particle(text, keep, particles=None):
     if not others:
         return text or ""
     pat = re.compile("(?:%s)(?=$|[\\s\\.,!?ฯ])" % "|".join(re.escape(p) for p in others))
-    return pat.sub(keep, text or "")
+    out = pat.sub(keep, text or "")
+    if keep == "ค่ะ" and ask_words:
+        # A woman says คะ after นะ / ไหม / อะไร, not ค่ะ (PC test 2026-11-04 found
+        # "นะค่ะ", "ไหมค่ะ"). The words are DATA: answer.askWords in voice.json.
+        out = re.sub("(%s)ค่ะ" % "|".join(re.escape(w) for w in ask_words), r"\1คะ", out)
+    return out
 
 
 # หนู is a first-person word too, and also means mouse - this robot is called
@@ -267,12 +274,14 @@ def one_pronoun(text, keep, pronouns=None):
     keep = (keep or "").strip()
     if not keep:
         return text or ""
-    others = sorted((p for p in (pronouns or DEF_PRONOUNS) if p and p != keep),
-                    key=len, reverse=True)      # ดิฉัน before ฉัน
+    others = [p for p in (pronouns or DEF_PRONOUNS) if p and p != keep]
     if not others:
         return text or ""
-    pat = re.compile(r"(?:%s)(?!ท)"
-                     % "|".join(re.escape(p) for p in others))
+    # keep joins the list so a longer pronoun that CONTAINS a shorter one
+    # (ดิฉัน holds ฉัน) is matched whole and put back as itself, not as ดิ+ดิฉัน
+    # (PC test 2026-11-04: every female-voice answer said "ดิดิฉัน").
+    every = sorted(set(others) | {keep}, key=len, reverse=True)
+    pat = re.compile(r"(?:%s)(?!ท)" % "|".join(re.escape(p) for p in every))
     return pat.sub(keep, text or "")
 
 
@@ -1809,7 +1818,7 @@ class Brain:
         w = self.gender_words("th", g if voice else None)
         if not w:
             return text
-        text = one_particle(text, w.get("particle") or "", self.particles())
+        text = one_particle(text, w.get("particle") or "", self.particles(), self.ask_words())
         return one_pronoun(text, w.get("pronoun") or "", self.pronouns())
 
     def manner_saved(self, text, lang):
@@ -1820,7 +1829,7 @@ class Brain:
         if lang != "th" or not ((sty.get("answer") or {}).get("saved") or self.gender_words("th")):
             return text
         keep, me, _w = self.manner_answer("th")
-        text = one_particle(text, keep, self.particles())
+        text = one_particle(text, keep, self.particles(), self.ask_words())
         return one_pronoun(text, me, self.pronouns())
 
     def style_steps(self, rate, pitch, sty):
@@ -2438,6 +2447,13 @@ class Brain:
             wording = self.manner_answer(lang)[2]
             if wording:
                 system += "\n" + wording
+        shots = (self.answer_cfg().get("examples") or {}).get(lang) or []
+        if shots and not is_verse:
+            # Three short Q/A pairs per language: on the PC bench (2026-11-04)
+            # Typhoon 4B went Thai 24 -> 28 of 30 and invented 4 -> 0 facts. They
+            # sit AFTER the FAQ and hold no facts, only manner and "I do not know".
+            system += "\n\n" + self.answer_cfg().get("examplesTitle", {}).get(lang, "Examples:") + "\n" + "\n".join(
+                "Q: %s\nA: %s" % (q, a) for q, a in shots)
         limit = 96 if is_verse else self.token_budget(lang)
         return system, limit, is_verse
 
@@ -2485,6 +2501,9 @@ class Brain:
         a = self.answer_cfg()
         return tuple(a.get("politeParticles") or DEF_PARTICLES)
 
+    def ask_words(self):
+        return tuple(self.answer_cfg().get("askWords") or ())
+
     def pronouns(self):
         a = self.answer_cfg()
         return tuple(a.get("politePronouns") or DEF_PRONOUNS)
@@ -2507,7 +2526,7 @@ class Brain:
             return ""
         if lang == "th":
             keep, me, _w = self.manner_answer("th")
-            reply = one_particle(reply, keep, self.particles())
+            reply = one_particle(reply, keep, self.particles(), self.ask_words())
             reply = one_pronoun(reply, me, self.pronouns())
         # A verse is lines, not sentences - trimming it to a particle would eat
         # the poem. Its budget is larger for the same reason.

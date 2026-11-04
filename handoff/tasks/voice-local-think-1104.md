@@ -24,6 +24,10 @@ Start the second Ollama before the Voice app needs "think", PowerShell:
 Models there: typhoon25-4b (used), typhoon25-30b, qwen3-30b-a3b. GGUF files: D:\local-ai\models.
 Without it, think falls back to the local Qwen 0.5B by itself.
 
+## Follow-up (branch followup, after #116 merges)
+Few-shot examples (answer.examples in voice.json: th 24->28/30, invented facts 4->0 on the PC bench), temp 0 for ollama, one_pronoun no longer doubles ดิฉัน, คะ after นะ/ไหม (answer.askWords), code-only reply passes answers_in. Gender test on the PC: 24/24 endings right.
+Not done: PC items 2-5 (multi-camera load, extreme cases, Drive videos then delete, friend list across all apps); /ask is 2.5 s slower when apps/faces/service.py (8769) is not running.
+
 ## Next
 1. PC: keep the 11435 Ollama running (or move models into the 11434 one), re-bench with the face app on.
 2. Add answer_ko / answer_lo and Korean/Lao prompts (service.py _think_prompt has en/ja/zh only).

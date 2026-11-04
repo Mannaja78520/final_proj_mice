@@ -132,6 +132,7 @@ def run(t):
             _hearing(t, brain, svc)
             _jobs(t, brain)
             _retry_keeps_faq(t, brain)
+            _manner_fixes(t, brain, svc)
         finally:
             httpd.shutdown()
             httpd.server_close()
@@ -279,4 +280,28 @@ def _retry_keeps_faq(t, brain):
         brain._complete = old
     t.ok(len(seen) == 2 and "FAQ-MARK" in seen[1],
          "wrong-language retry keeps the FAQ in its system prompt", seen)
+
+
+def _manner_fixes(t, brain, svc):
+    """Found on the PC 2026-11-04 with the female voice and Typhoon 4B."""
+    # this check's brain runs on a tiny config; the shipped answer block is the thing under test
+    brain.cfg["answer"] = json.loads((F.CODE / "config" / "voice.json").read_text(encoding="utf-8"))["answer"]
+    t.eq(svc.one_pronoun("ดิฉันช่วยได้ค่ะ", "ดิฉัน", svc.DEF_PRONOUNS), "ดิฉันช่วยได้ค่ะ",
+         "a pronoun that holds a shorter one (ดิฉัน holds ฉัน) is not doubled")
+    t.eq(svc.one_pronoun("ผมช่วยได้", "ดิฉัน", svc.DEF_PRONOUNS), "ดิฉันช่วยได้",
+         "   and a different pronoun is still swapped")
+    words = brain.ask_words()
+    t.ok("นะ" in words and "ไหม" in words, "ask words come from voice.json", words)
+    t.eq(svc.one_particle("อากาศร้อนนะครับ มีอะไรให้ช่วยไหมครับ", "ค่ะ", svc.DEF_PARTICLES, words),
+         "อากาศร้อนนะคะ มีอะไรให้ช่วยไหมคะ", "woman: คะ after นะ / ไหม, not ค่ะ")
+    t.eq(svc.one_particle("ได้ค่ะ", "ค่ะ", svc.DEF_PARTICLES, words), "ได้ค่ะ",
+         "   ค่ะ elsewhere stays")
+    t.ok(svc.answers_in("Welcome2024", "ja") and not svc.answers_in("Hello there", "ja"),
+         "a reply that is only a code passes the language guard; English words still do not")
+    for lang in ("th", "en", "ja", "zh"):
+        system, _limit, _verse = brain._think_prompt(
+            [{"role": "user", "content": "hello"}], lang, "", "")
+        shots = brain.answer_cfg().get("examples", {}).get(lang) or []
+        t.ok(shots and shots[0][1] in system, "few-shot examples reach the model prompt: %s" % lang,
+             system[-200:])
 
