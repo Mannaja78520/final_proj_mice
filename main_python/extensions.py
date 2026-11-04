@@ -189,29 +189,57 @@ class Extensions:
                         "path": cfg.get("url") or "/app/%s/" % app_id, "added": True})
         return out
 
+    @staticmethod
+    def same_folder(path):
+        """One spelling for a folder: case, slashes and ".." folded, so
+        two paths to the same folder compare equal (2026-11-05)."""
+        try:
+            return os.path.normcase(os.path.realpath(str(path)))
+        except (OSError, ValueError):
+            return os.path.normcase(os.path.normpath(str(path)))
+
     def candidates(self):
         """Folders on this PC that hold an app not on the list yet: beside
-        the hub's tree, and where each partner is configured."""
-        st, seen, out = self.state(), set(), []
+        the hub's tree, and where each partner is configured.
+
+        Not offered again (user 2026-11-05: Reconize, All-Jao Games and
+        Photobooth showed as "ready to add" while already in All apps):
+        an app already added, a partner already installed here (it is listed
+        from its template, so it is never in "added"), any folder that is one
+        of those by real path, and parked copies (names starting "_" or ".").
+        One entry per app id: a second folder holding the same app collapses."""
+        st = self.state()
+        known_ids = set(st["added"])
+        known_dirs = {self.same_folder(self.expand(e.get("folder")))
+                      for e in st["added"].values() if e.get("folder")}
+        for pid, entry in (self.partners() or {}).items():
+            mine = self.partner(pid, entry)
+            if isinstance(mine, dict) and mine.get("installed"):
+                known_ids.add(pid)
+                known_dirs.add(self.same_folder(mine["folder"]))
         spots = []
         parent = self.data_root.parent
         if parent.is_dir():
             spots += [d for d in sorted(parent.iterdir()) if d.is_dir()
+                      and not d.name.startswith(("_", "."))
                       and d.resolve() != self.data_root.resolve()]
         for entry in (self.partners() or {}).values():
             if isinstance(entry, dict) and entry.get("folder"):
                 spots.append(Path(self.expand(entry["folder"])))
+        seen, out = set(), []
         for d in spots:
-            key = str(d).lower()
-            if key in seen:
+            key = self.same_folder(d)
+            if key in seen or key in known_dirs:
                 continue
             seen.add(key)
             try:
                 got = self.detect(d)
             except OSError:
                 continue
-            if got and not got.get("error") and got["id"] not in st["added"]:
-                out.append(got)
+            if not got or got.get("error") or got["id"] in known_ids:
+                continue
+            known_ids.add(got["id"])
+            out.append(got)
         return out
 
     # ---- update -----------------------------------------------------------------------
