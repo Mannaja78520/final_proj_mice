@@ -36,7 +36,7 @@ The hub's routes for Nong Studio's files, shared settings and the list of other 
 
 - [hub](hub.md)
 
-## Checks that test it (45)
+## Checks that test it (46)
 
 - `check_gesture_legs`
 - `check_gesture_make`
@@ -59,6 +59,7 @@ The hub's routes for Nong Studio's files, shared settings and the list of other 
 - `check_studio_freeze_watch`
 - `check_studio_layout`
 - `check_studio_leak`
+- `check_studio_library_audio`
 - `check_studio_limit_mismatch`
 - `check_studio_live`
 - `check_studio_login_resume`
@@ -84,4 +85,4 @@ The hub's routes for Nong Studio's files, shared settings and the list of other 
 - `check_voice_settings`
 - `check_voice_source`
 
-Run them: `python qc/run_qc.py --no-build check_gesture_legs check_gesture_make check_gestures check_hub_api check_hub_auth check_no_data_loss check_persistence check_seq_delete check_settings_transfer check_show_music check_studio_auto_route check_studio_boot check_studio_bug_sweep check_studio_cost check_studio_distances check_studio_edits check_studio_escape check_studio_fold check_studio_freeze_watch check_studio_layout check_studio_leak check_studio_limit_mismatch check_studio_live check_studio_login_resume check_studio_modlink check_studio_music check_studio_music_ui check_studio_notice check_studio_open_settings check_studio_panels check_studio_peer check_studio_playback check_studio_render_idle check_studio_resume check_studio_rs485_dongle check_studio_tabs check_studio_wifi_after_cable check_tv_remote check_video_page check_voice_gestures`
+Run them: `python qc/run_qc.py --no-build check_gesture_legs check_gesture_make check_gestures check_hub_api check_hub_auth check_no_data_loss check_persistence check_seq_delete check_settings_transfer check_show_music check_studio_auto_route check_studio_boot check_studio_bug_sweep check_studio_cost check_studio_distances check_studio_edits check_studio_escape check_studio_fold check_studio_freeze_watch check_studio_layout check_studio_leak check_studio_library_audio check_studio_limit_mismatch check_studio_live check_studio_login_resume check_studio_modlink check_studio_music check_studio_music_ui check_studio_notice check_studio_open_settings check_studio_panels check_studio_peer check_studio_playback check_studio_render_idle check_studio_resume check_studio_rs485_dongle check_studio_tabs check_studio_wifi_after_cable check_tv_remote check_video_page`

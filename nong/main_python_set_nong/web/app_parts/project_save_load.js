@@ -1,11 +1,6 @@
-// --- project save/load ---
-// opts.keepDraft: saveAll() clears the draft itself, only once BOTH files are
-// on disk. Returns true when the project reached the disk.
-async function saveProject(opts) {
-  opts = opts || {};
-  const name = ($("projName").value || "project").trim();
-  const sig = workSig();                  // what THIS save writes, before any await
-  const project = {
+function projectSnapshot() {
+  return {
+    sourceAudioAsset: typeof sequenceAudio !== "undefined" ? sequenceAudio.serializable() : null,
     keys, speedDps: speedDps(), maxDps: maxDps(), loop: $("loopChk").checked,
     // The planning peak limit rides with the project: without it, reopening a
     // project re-times every automatic move against a different 60 °/s default
@@ -21,6 +16,16 @@ async function saveProject(opts) {
     // The video the moves were made from, and how (A44-8); null if none.
     video: vidSettings(),
   };
+}
+// --- project save/load ---
+// opts.keepDraft: saveAll() clears the draft itself, only once BOTH files are
+// on disk. Returns true when the project reached the disk.
+async function saveProject(opts) {
+  if (typeof sequenceAudio !== "undefined" && !sequenceAudio.readyForSave()) return false;
+  opts = opts || {};
+  const name = ($("projName").value || "project").trim();
+  const sig = workSig();                  // what THIS save writes, before any await
+  const project = projectSnapshot();
   // The draft is NOT cleared on a failure: the work is still only in this
   // browser. Mice.Api never throws, and words both "no answer" and "said no".
   const a = await Mice.Api.post("/api/save", { name, project });
@@ -42,39 +47,44 @@ async function saveProject(opts) {
   refreshProjects();
   return true;
 }
+let projectLoadGeneration = 0;
 async function loadProject(file) {
   if (!file) return;
-  if (!(await askUnsaved("open " + file))) {
-    if ($("projList")) $("projList").value = "";
-    return;
-  }
-  // NOTHING is replaced until the whole file has been read and understood.
-  //
-  // Three ways this used to destroy work, all from assigning as it went:
-  //   * a 404 or a renamed file still parses as JSON (the hub answers
-  //     {"ok":false,...} and fetch does not reject), so `p.keys || []` wiped
-  //     the timeline to empty and said nothing. Pressing Save afterwards wrote
-  //     the empty version over a real project.
-  //   * a project from before WAIST and SHRUG carries 8-value poses. minTime()
-  //     then subtracted two undefined values, and the NaN it produced was
-  //     written into EVERY keyframe time by clampKeyTimes() — so the export
-  //     carried "T NaN" and that went down the cable to the robot.
-  //   * the project's rig replaced the live rig outright. Hours of tuning
-  //     (zero, tilt, dims, jointR, neutral, invert, shrugCurve exist nowhere
-  //     else) vanished with no prompt and no undo.
+  const generation = ++projectLoadGeneration;
   const a = await Mice.Api.get("/api/load?name=" + encodeURIComponent(file));
-  if (!a.ok) {
-    const st = $("tlStat");
-    if (st) st.textContent = "could not load " + file + " — " + a.says
-      + ". Nothing on screen was changed.";
-    return;                              // the timeline stays exactly as it was
+  if (generation !== projectLoadGeneration) return;
+  if (!a.ok) { $("tlStat").textContent = "could not load " + file + " — " + a.says + ". Nothing on screen was changed."; notice($("tlStat").textContent); return; }
+  try { return await applyProjectData(a.data, file, { generation }); }
+  catch (e) { if (generation === projectLoadGeneration) notice("เปิดโปรเจกต์ไม่ได้: " + e.message + " งานเดิมยังอยู่"); }
+}
+async function applyProjectData(p, file, opts = {}) {
+  const generation = opts.generation == null ? ++projectLoadGeneration : opts.generation;
+  if (!p || !Array.isArray(p.keys) || (p.keys.length && !p.keys.some(k => k && Array.isArray(k.pose) && k.pose.some(v => Number.isFinite(Number(v))))))
+    throw new Error("ไฟล์ไม่มีท่าที่อ่านได้");
+  // Reject malformed supported fields before replacing rig, keys, or audio.
+  for (const field of ['seqName', 'seqNext', 'robotIp'])
+    if (p[field] != null && typeof p[field] !== 'string') throw new Error('ข้อมูล ' + field + ' ไม่ถูกต้อง');
+  if (p.addons != null && !Array.isArray(p.addons)) throw new Error('ข้อมูล addons ไม่ถูกต้อง');
+  for (const field of ['rig', 'meshes', 'video'])
+    if (p[field] != null && (typeof p[field] !== 'object' || Array.isArray(p[field]))) throw new Error('ข้อมูล ' + field + ' ไม่ถูกต้อง');
+  for (const key of p.keys) for (const field of ['cues', 'cuesAfter'])
+    if (key && key[field] != null && (!Array.isArray(key[field]) || key[field].some(v => typeof v !== 'string')))
+      throw new Error('ข้อมูลคำสั่งในคีย์ไม่ถูกต้อง');
+  const preparedAudio = typeof sequenceAudio !== "undefined" ? await sequenceAudio.prepare(p.sourceAudioAsset) : null;
+  await refreshModels();  // Resolve fallible model-list work before replacing any project state.
+  if (generation !== projectLoadGeneration) return false;
+  if (typeof sequenceAudio !== 'undefined' && sequenceAudio.pendingRef && preparedAudio &&
+      sequenceAudio.pendingRef.sha256 === preparedAudio.asset.sha256 &&
+      confirm('พบเพลงที่ตรงกับงานกู้คืน ใช้เพลงนี้กับท่าที่แก้ค้างไว้หรือไม่?\n\nOK — กู้เฉพาะเพลงและเก็บท่าปัจจุบันทั้งหมด\nCancel — เปิดโปรเจกต์ตามปกติ')) {
+    sequenceAudio.commit(preparedAudio, keys); saveDraft();
+    notice('กู้เพลงกลับแล้ว ท่าที่แก้ค้างไว้ยังอยู่ กด Save เพื่อเก็บงาน');
+    return true;
   }
-  const p = a.data;
-  if (!Array.isArray(p.keys)) {
-    const st = $("tlStat");
-    if (st) st.textContent = file + " has no keyframes in it, so nothing was loaded.";
-    return;
-  }
+  if (timelinePreparing) throw new Error("กำลังตรวจเส้นทาง กดหยุดตรวจให้เสร็จก่อนเปิดโปรเจกต์ใหม่");
+  if (!(await askUnsaved("open " + file))) { if ($("projList")) $("projList").value = ""; return false; }
+  if (generation !== projectLoadGeneration) return false;
+  if (playing && !previewOnly) throw new Error("หยุดการเล่นท่าปัจจุบันก่อนเปิดโปรเจกต์ใหม่");
+  if (playing) { playing = false; keepAwake(false); $("playBtn").textContent = "▶ Play"; }
   // A project carries the rig it was built with. That is worth having, but it
   // is not worth losing today's tuning to — so ask, and default to keeping
   // what is on screen.
@@ -109,6 +119,7 @@ async function loadProject(file) {
              t: Number.isFinite(t) ? Math.max(0, Math.round(t)) : 0,
              hold: Number.isFinite(hold) ? Math.max(0, Math.round(hold)) : 0 };
   });
+  if (typeof sequenceAudio !== "undefined") sequenceAudio.commit(preparedAudio, loaded);
   keys = loaded;
   bumpKeys();
   $("speedDps").value = p.speedDps || 120;
@@ -148,18 +159,21 @@ async function loadProject(file) {
   // What was opened, taken before the awaits below: an edit made while the
   // models load is the person's new work, never "saved".
   const openedSig = workSig();
-  await refreshModels();
+  if (generation !== projectLoadGeneration) return false;
   renderRigUI();
   buildRobot(); // re-applies meshes + rig in one pass
   selKey = 0;
   if (keys.length) { pose = [...keys[0].pose]; }
-  poseChanged(false); renderTimeline();
+  poseChanged(false, 0, { previewOnly: true }); renderTimeline();
   // Only a project whose YAML already had its own name owns NAME.yaml; for any
   // other, Save still asks before replacing a NAME.yaml that is somebody else's.
-  markSaved(openedSig, oldSeq === pname ? pname : "", 0);
+  if (opts.imported) { markClean("", ""); loadedSkipped = 0; saveDraft(); }
+  else markSaved(openedSig, oldSeq === pname ? pname : "", 0);
   if (oldSeq && oldSeq !== pname)
     $("tlStat").textContent = "opened " + file + ". It used to save its moves as "
       + oldSeq + ".yaml; Save now writes " + pname + ".json and " + pname + ".yaml together.";
+  if (opts.imported) $("tlStat").textContent = "เปิดท่าและเพลงแล้ว — กด Save เพื่อเก็บเป็นงานของคุณ";
+  return true;
 }
 
 // ---- one Save, and a question before unsaved work is replaced (A31-18) ----
@@ -175,7 +189,8 @@ let savedName = "";        // the file the timeline came from or last went to
 let loadedSkipped = 0;     // steps that file holds which this editor cannot read
 function workSig() {
   return keysSignature() + "|" + (($("loopChk") && $("loopChk").checked) ? 1 : 0)
-    + "|" + (($("seqNext") && $("seqNext").value) || "").trim();
+    + "|" + (($("seqNext") && $("seqNext").value) || "").trim()
+    + "|" + (typeof sequenceAudio !== "undefined" ? sequenceAudio.signature() : "");
 }
 // The page now matches a file on disk. markClean leaves an earlier session's
 // draft alone; only a real save or load (markSaved) retires it.
@@ -211,6 +226,7 @@ function setWorkName(v) {
 // Save = the project (.json) AND the robot's file (.yaml), under one name.
 // True only when everything that should be on disk is.
 async function saveAll() {
+  if (typeof sequenceAudio !== "undefined" && !sequenceAudio.readyForSave()) return false;
   const name = cleanName($("projName").value || "my_move");
   setWorkName(name);
   const sig = workSig();

@@ -17,7 +17,7 @@ def run(t):
         source = runner.CODE / "main.py"
         source.write_bytes(b"source = 1\n")
         baseline = runner.tree_fingerprint()
-        for rel in (".local/voice/questions.csv", "qc/_urdf_real.json",
+        for rel in (".local/voice/questions.csv", "results/bundles/show.nong.json", "qc/_urdf_real.json",
                     "scratch/continue-urdf-1023/full-exit.txt"):
             output = runner.CODE / rel
             output.parent.mkdir(parents=True, exist_ok=True)

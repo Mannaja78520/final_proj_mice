@@ -119,7 +119,7 @@ function gotoXyz(arm) {
 }
 
 let liveTimer = 0, colTimer = 0;
-function poseChanged(throttled, liveMs) {
+function poseChanged(throttled, liveMs, opts = {}) {
   applyPose();
   renderSliders();
   const now = performance.now();
@@ -141,7 +141,7 @@ function poseChanged(throttled, liveMs) {
   // move travels — at the speed set for that move, or the sequence's — so what
   // you see is what the show will do. Sending it down the drag path made the
   // arm snap there at full speed however slow the move was set to be.
-  if ($("liveChk").checked) {
+  if ($("liveChk").checked && !opts.previewOnly) {
     if (liveMs > 0) liveSend("POSE " + pose.map(fmtA).join(" ") + " T " + Math.round(liveMs));
     else sendPoseLive();
   }

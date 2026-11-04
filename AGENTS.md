@@ -103,3 +103,18 @@ concrete action, blockers. For unfinished owned work, also use
 tools/plan.py handoff; completed tasks stay done. `docs/BRIDGE.md` is only
 for live file/QC claims between agents running at the same time on the PC.
 Never transfer another active agent's task or infer its resource release.
+
+## Put delivered work where the user can find it (user 2026-11-05)
+
+After a verified fix or deliverable, update its normal user-facing entry and the
+selected current version. On this PC use the Hub Home app “ผลงานล่าสุด”
+(`E:/final_proj/mice/mice_system/results/index.html`) for saved results;
+keep editable files, audio/motion pairs, previews and reports reachable there.
+For Nong Studio use portable `.nong.json` projects containing their source song.
+Register a checked version explicitly with its status/limitations; do not infer
+best quality from filename or modification time. Preserve earlier versions and
+private media/models outside public Git. Complete the existing promotion/build
+workflow so the app the user opens contains the fix, and verify that entry.
+A deep `.local` path or a staging-only fix is not the sole delivery destination.
+
+User clarification 2026-11-05: keep one organized results/ folder inside mice_system. Do not create Desktop shortcuts unless explicitly requested. Keep the root free of loose delivery files; results/index.html is the common entry.

@@ -116,7 +116,7 @@ STAGING = _pick_staging(None)
 SKIP_DIRS = {".git", ".pio", "__pycache__", "node_modules",
              ".vscode", "dist", "build",
              # _out  what tools and tests write on one PC (config/layout.json)
-             "_out",
+             "_out", ".local", "results",
              # .claude  this machine's Claude Code settings and permissions.
              # Staging's copy is stale the moment it is made, and promoting it
              # put an old permissions file over the live one. Machine-local
@@ -247,6 +247,10 @@ def init(force=False):
         shutil.copy2(src, dst)
         base[key] = file_hash(dst)
         copied += 1
+    # Keep mapped local-output folders present without copying private contents.
+    for name in ("dist", "results"):
+        if (MAIN / name).is_dir():
+            (STAGING / name).mkdir(exist_ok=True)
     save_base(base)
     listed = _book("trees", TREES_LIST)
     known = listed.read_text(encoding="utf-8").split("\n") if listed.is_file() else []

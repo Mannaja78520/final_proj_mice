@@ -24,7 +24,13 @@ function safeMotionNote(text, warning = false) {
   if ($("tlStat")) $("tlStat").textContent = text;
   if (warning) notice(text);
 }
-function cancelSafeMotion(reason) {
+function cancelSafeMotion(reason, opts = {}) {
+  if (opts.previewOnly) {
+    safeMotionEpoch++; playing=false; entryHold=false; seekToken++;
+    if (typeof sequenceAudio !== 'undefined') sequenceAudio.pausePreview();
+    if ($('playBtn')) $('playBtn').textContent='▶ Play'; keepAwake(false);
+    return Promise.resolve(false);  // No liveAbort, hub Stop or device command.
+  }
   const device=safeActiveDevice || (haveRobot() ? safeDevice() : null);
   liveAbort();
   if(reason!=='sequence takeover') {

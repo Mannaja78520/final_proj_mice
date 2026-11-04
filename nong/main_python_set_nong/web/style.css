@@ -510,3 +510,5 @@ body.vidpage #viewCube:not(.open) .vcRow{display:none}
 #side .card.floating>h2{cursor:move;user-select:none}
 #side .card.floating.folded{height:auto!important;resize:none}
 @media (max-width:860px){ #side .card>h2 .popout{display:none} }
+
+.project-library{max-width:min(92vw,760px);max-height:88vh;overflow:auto}.library-list{display:grid;gap:12px;margin:16px 0}.library-item{display:grid;gap:6px;padding:12px;border:1px solid var(--line,#506070);border-radius:8px}.library-selected{outline:2px solid var(--accent,#62c5a3)}#sequenceAudioBar{flex-wrap:wrap;padding:8px 14px}#sequenceAudioTitle{overflow-wrap:anywhere}

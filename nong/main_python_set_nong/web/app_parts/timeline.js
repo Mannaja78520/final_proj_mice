@@ -123,6 +123,7 @@ function keyIndexAtMs(ms) {
 // reached, and carry on from there once the arm has arrived.
 let seekToken = 0;
 function selectKey(i) {
+  if (typeof sequenceAudio !== "undefined" && sequenceAudio.preview) { selKey = i; sequenceAudio.rewind(keyStartMs(i)); return; }
   const was = playing;
   let token = ++seekToken;
   if (was) {
@@ -543,6 +544,7 @@ function renderTimeBar() {
 // the module's own sequence and lets the tab idle. Setting playT directly would
 // leave the robot running its copy of the show from the old position.
 function rewind() {
+  if (typeof sequenceAudio !== "undefined" && sequenceAudio.preview) { sequenceAudio.rewind(0); return; }
   scrubTo(0);
   $("scrub").value = 0;
   _lastScrub = 0;
@@ -584,7 +586,8 @@ function bumpKeys() {
   // the timeline changed: a "yes, run it anyway" given for the old one does
   // not carry over to this
   crashForced = false;
-  if(playing && safeTimelineCache)cancelSafeMotion('timeline edited');
+  if (typeof sequenceAudio !== 'undefined') sequenceAudio.keysChanged(keys);
+  if(playing && safeTimelineCache)cancelSafeMotion('timeline edited', { previewOnly });
   _pkCache = null;                          // kept for explicit invalidation
   saveDraft();                              // and it is no longer only in RAM
 }
@@ -615,6 +618,9 @@ function saveDraft() {
         at: Date.now(),
         name: ($("projName") && $("projName").value) || "",
         keys: keys,
+        rig: RIG, safeDps: SAFE_DPS, musicDps: SEQ_MUSIC_DPS,
+        speedDps: speedDps(), maxDps: maxDps(), loop: $("loopChk").checked, seqNext: $("seqNext").value,
+        sourceAudioAsset: typeof sequenceAudio !== "undefined" ? sequenceAudio.draftRef() : null,
       }));
     } catch (e) {
       // storage full or blocked: the draft is a safety net, never a blocker
@@ -637,12 +643,20 @@ function offerDraft() {
     const yes = document.createElement("button");
     yes.textContent = "Restore it";
     yes.onclick = () => {
+      if (d.rig) { try { localStorage.setItem("nong_rig_prev", JSON.stringify(RIG)); } catch (e) {} RIG = mergeRig(d.rig); saveRig(); renderRigUI(); buildRobot(); }
       keys = d.keys;
+      if (d.safeDps >= 5 && !boardSafeDpsMax) { SAFE_DPS = Math.round(d.safeDps); $("safeDpsInput").value = String(SAFE_DPS); }
+      if (Number.isFinite(d.musicDps)) SEQ_MUSIC_DPS = d.musicDps;
+      if (d.speedDps) $("speedDps").value = d.speedDps;
+      if (d.maxDps) $("maxDps").value = d.maxDps;
+      if (d.loop != null) $("loopChk").checked = !!d.loop;
+      if (d.seqNext != null) $("seqNext").value = d.seqNext;
       // an older draft kept the name twice (name + seq): either one will do
       if ((d.name || d.seq) && $("projName")) $("projName").value = d.name || d.seq;
       selKey = 0;
       if (keys.length) pose = [...keys[0].pose];
-      bumpKeys(); poseChanged(false); renderTimeline(); renderSliders();
+      bumpKeys(); poseChanged(false, 0, { previewOnly: true }); renderTimeline(); renderSliders();
+      if (typeof sequenceAudio !== "undefined") sequenceAudio.restore(d.sourceAudioAsset).then(() => saveDraft());
       st.textContent = "Restored the unsaved timeline. Save it to keep it.";
     };
     const no = document.createElement("button");
@@ -861,7 +875,9 @@ function keepAwake(on) {
 
 // opts.previewOnly: draw only, never drive the arm (the talk card's Show, A46-4)
 async function togglePlay(opts = {}) {
-  if (timelinePreparing) { timelinePreparing=false;cancelSafeMotion("planning cancelled");return; }
+  if (typeof sequenceAudio !== "undefined" && sequenceAudio.pendingRef) { sequenceAudio.readyForSave(); return; }
+  if (!opts.sequenceAudio && typeof sequenceAudio !== "undefined" && sequenceAudio.asset && sequenceAudio.preview) return sequenceAudio.toggle();
+  if (timelinePreparing) { timelinePreparing=false;cancelSafeMotion("planning cancelled", { previewOnly: !!opts.previewOnly || previewOnly });return; }
   if (!playing) {
     const epoch=safeMotionEpoch;
     timelinePreparing=true;$("playBtn").textContent="⏹ Stop planning";
@@ -1083,6 +1099,7 @@ function segRemaining(ms) {
   return 0;
 }
 function scrubTo(v) {
+  if (typeof sequenceAudio !== "undefined" && sequenceAudio.preview) { sequenceAudio.rewind(totalMs() * (+v / 1000)); return; }
   const was = playing;
   ++seekToken;                       // a scrub cancels a pending resume
   const from = pose.slice();

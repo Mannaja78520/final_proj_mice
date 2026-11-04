@@ -28,6 +28,7 @@
     <p class="hint">Choose a joint, then drag its ring or use the sliders. Add a keyframe to keep a pose.</p>
     <span class="hint">Click a joint to show its rings · drag a ring to turn that servo · <b>Shift+drag</b> 🟢 wrist / 🟠 elbow = move arm (IK) · left-drag = orbit · wheel = zoom · right-drag = pan</span>
   </details>
+  <button id="openProjectLibrary" onclick="projectLibrary.open()">📂 เปิดผลงานพร้อมเพลง</button>
   <span class="topbar-gap"></span>
   <input id="projName" aria-label="Name of these moves" placeholder="name" value="my_move"
          title="One name for both files: NAME.json to edit later, NAME.yaml, the file the robot plays.">
@@ -35,6 +36,13 @@
   <select id="projList" aria-label="Open saved moves" onchange="loadProject(this.value)"><option value="">Load…</option></select>
   <button id="projRetry" hidden onclick="refreshProjects()">Retry saved moves</button>
 </header>
+<dialog id="projectLibrary" class="askdlg project-library" aria-labelledby="projectLibraryTitle">
+  <div class="row"><h2 id="projectLibraryTitle">ผลงานล่าสุด — ท่าและเพลง</h2><button onclick="document.getElementById('projectLibrary').close()" aria-label="ปิดรายการผลงาน">×</button></div>
+  <p id="projectLibraryStatus" class="hint" role="status"></p>
+  <div id="projectLibraryList" class="library-list"></div>
+  <div class="row"><button onclick="document.getElementById('projectBundleFile').click()">นำเข้าไฟล์ท่าและเพลง .nong.json</button><input id="projectBundleFile" type="file" accept=".json,.nong.json" onchange="projectLibrary.importFile(this.files[0]);this.value=''" hidden><a href="/app/latest-results/" target="_blank" rel="noopener">ดูผลงานและรายงานทั้งหมด ↗</a></div>
+  <p class="hint">ชุดงานมีทั้งท่าและเพลงในไฟล์เดียว เปิดแล้วแก้ท่าและทดลองพร้อมเสียงได้ การสั่งหุ่นจริงอยู่แยกในปุ่มควบคุมหุ่น</p>
+</dialog>
 <div id="main">
   <!-- The Video tab's stage (A44-8): the person, their music and the skeleton
        found on them, beside the 3D robot. Shown only while that tab is open
@@ -826,6 +834,7 @@
 
 <div id="timeDrag" title="drag to make the timeline taller or shorter"></div>
 <div id="timeline">
+  <div id="sequenceAudioBar" class="row" hidden><span id="sequenceAudioTitle"></span><button id="sequenceAudioPlay" onclick="sequenceAudio.toggle()">▶ ทดลองพร้อมเพลง</button><button onclick="sequenceAudio.rewind(0)">⏹ กลับต้น</button><button onclick="projectLibrary.downloadProject()">ดาวน์โหลดท่า+เพลง</button><button onclick="sequenceAudio.downloadSong()">ดาวน์โหลดเพลง</button><span id="sequenceAudioStatus" class="hint" role="status"></span></div>
   <!-- One row of what you do to the timeline (A41-4). It was four rows at
        1280x800 and left the 3D view ~200 px tall: the name box and Save are
        the head's, the saved-file list and the chain sit in the Sequence tab. -->

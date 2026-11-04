@@ -80,6 +80,7 @@
       "llm": "the voice helper's local model data",
       "scient_test": "measured experiments (results + scripts)",
       "dist": "the built MiceHub.exe and its shortcuts",
+      "results": "selected private deliverables: index.html, portable Studio motion+song files, previews and reports",
       ".staging": "working copies (git-ignored), one folder per task",
       "_out": "what tools and tests write on this PC (git-ignored)",
       ".claude": "Claude Code project settings and agents",
