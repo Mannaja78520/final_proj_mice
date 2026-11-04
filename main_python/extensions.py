@@ -189,29 +189,57 @@ class Extensions:
                         "path": cfg.get("url") or "/app/%s/" % app_id, "added": True})
         return out
 
+    @staticmethod
+    def same_folder(path):
+        """One spelling for a folder: case, slashes and ".." folded, so
+        two paths to the same folder compare equal (2026-11-05)."""
+        try:
+            return os.path.normcase(os.path.realpath(str(path)))
+        except (OSError, ValueError):
+            return os.path.normcase(os.path.normpath(str(path)))
+
     def candidates(self):
         """Folders on this PC that hold an app not on the list yet: beside
-        the hub's tree, and where each partner is configured."""
-        st, seen, out = self.state(), set(), []
+        the hub's tree, and where each partner is configured.
+
+        Not offered again (user 2026-11-05: Reconize, All-Jao Games and
+        Photobooth showed as "ready to add" while already in All apps):
+        an app already added, a partner already installed here (it is listed
+        from its template, so it is never in "added"), any folder that is one
+        of those by real path, and parked copies (names starting "_" or ".").
+        One entry per app id: a second folder holding the same app collapses."""
+        st = self.state()
+        known_ids = set(st["added"])
+        known_dirs = {self.same_folder(self.expand(e.get("folder")))
+                      for e in st["added"].values() if e.get("folder")}
+        for pid, entry in (self.partners() or {}).items():
+            mine = self.partner(pid, entry)
+            if isinstance(mine, dict) and mine.get("installed"):
+                known_ids.add(pid)
+                known_dirs.add(self.same_folder(mine["folder"]))
         spots = []
         parent = self.data_root.parent
         if parent.is_dir():
             spots += [d for d in sorted(parent.iterdir()) if d.is_dir()
+                      and not d.name.startswith(("_", "."))
                       and d.resolve() != self.data_root.resolve()]
         for entry in (self.partners() or {}).values():
             if isinstance(entry, dict) and entry.get("folder"):
                 spots.append(Path(self.expand(entry["folder"])))
+        seen, out = set(), []
         for d in spots:
-            key = str(d).lower()
-            if key in seen:
+            key = self.same_folder(d)
+            if key in seen or key in known_dirs:
                 continue
             seen.add(key)
             try:
                 got = self.detect(d)
             except OSError:
                 continue
-            if got and not got.get("error") and got["id"] not in st["added"]:
-                out.append(got)
+            if not got or got.get("error") or got["id"] in known_ids:
+                continue
+            known_ids.add(got["id"])
+            out.append(got)
         return out
 
     # ---- update -----------------------------------------------------------------------
@@ -229,6 +257,32 @@ class Extensions:
         if not argv and (Path(folder) / ".git").exists():
             argv = ["git", "pull", "--ff-only"]
         return folder, argv
+
+    def check(self, app_id, entry=None):
+        """Is a newer version waiting? Only a git folder can say so without
+        running the app's own update: fetch, then count the commits we lack.
+        {"state": "new" | "current" | "unknown" | "error"} - an app with its
+        own update command but no git cannot be checked, so it stays "unknown"
+        (user 2026-11-05: Update must not sit on every app)."""
+        folder, argv = self.update_command(app_id, entry)
+        if not folder or not argv:
+            return {"state": "none"}
+        own = bool(((self.detect(folder) or {}).get("manifest") or {}).get("update")
+                   or (entry or {}).get("update"))
+        if own or not (Path(folder) / ".git").exists():
+            return {"state": "unknown"}
+        try:
+            for cmd in (["git", "fetch", "--quiet"],
+                        ["git", "rev-list", "--count", "HEAD..@{u}"]):
+                r = subprocess.run(cmd, cwd=folder, capture_output=True, text=True,
+                                   encoding="utf-8", errors="replace", timeout=60,
+                                   stdin=subprocess.DEVNULL, creationflags=NO_WINDOW)
+                if r.returncode != 0:
+                    return {"state": "error", "detail": (r.stderr or r.stdout)[-300:]}
+            behind = int((r.stdout or "0").strip() or 0)
+        except (OSError, ValueError, subprocess.SubprocessError) as e:
+            return {"state": "error", "detail": str(e)}
+        return {"state": "new" if behind else "current", "behind": behind}
 
     def update(self, app_id, entry=None):
         folder, argv = self.update_command(app_id, entry)

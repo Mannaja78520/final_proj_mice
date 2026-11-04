@@ -88,8 +88,26 @@ def run(t):
              "their own mice-app.json says what the app is", got)
         t.eq(E.detect(box / "Holiday photos"), None, "a folder with no app is not an app")
         found = sorted(c["id"] for c in E.candidates())
-        t.ok("lucky-draw" in found and "reconize" in found,
+        t.ok("lucky-draw" in found,
              "apps beside the tree are offered before anyone types a folder", found)
+        # 2026-11-05: an app already in All apps was offered again as "ready to add"
+        t.ok("reconize" not in found,
+             "a partner already installed here is not offered again", found)
+        copy = box / "Face_Regonize_copy"          # same app, second folder
+        shutil.copytree(friend, copy)
+        parked = box / "_to_delete" / "Face_Regonize_crash"   # parked copy: never offered
+        shutil.copytree(friend, parked)
+        t.eq(sorted(c["id"] for c in E.candidates()), ["lucky-draw"],
+             "a second or parked copy of an installed app is not offered")
+        E.remove("reconize")                       # hidden: findable again, once
+        again = [c["id"] for c in E.candidates()]
+        t.eq(again.count("reconize"), 1,
+             "a removed partner is offered once, its duplicate folders collapse")
+        E.restore("reconize")
+        t.ok(E.same_folder(str(friend).upper().replace("\\", "/")) == E.same_folder(friend),
+             "folder paths compare equal whatever the case or slashes", "")
+        shutil.rmtree(copy)
+        shutil.rmtree(box / "_to_delete")
 
         # ---- add / remove / restore -------------------------------------------
         E.add(str(theirs))
@@ -126,6 +144,29 @@ def run(t):
              and here["reconize"].get("detect") == templates["reconize"]["detect"],
              "a friend's own mice-app.json overrides our template field by field",
              here["reconize"])
+
+        # ---- check: only a real newer version is called new (2026-11-05) -----
+        import subprocess as sp
+        up_src, up_clone = box / "up_src", box / "up_clone"
+        def git(cwd, *a):
+            sp.run(["git", "-c", "user.name=qc", "-c", "user.email=qc@x", *a], cwd=cwd,
+                   check=True, capture_output=True)
+        up_src.mkdir()
+        git(up_src, "init", "-q")
+        _write(up_src / "a.txt", "1")
+        git(up_src, "add", "."); git(up_src, "commit", "-qm", "one")
+        sp.run(["git", "clone", "-q", str(up_src), str(up_clone)], check=True, capture_output=True)
+        t.eq(E.check("x", {"folder": str(up_clone)}).get("state"), "current",
+             "a git folder with nothing new is up to date")
+        _write(up_src / "a.txt", "2")
+        git(up_src, "commit", "-qam", "two")
+        got = E.check("x", {"folder": str(up_clone)})
+        t.ok(got.get("state") == "new" and got.get("behind") == 1,
+             "a git folder behind its remote is marked as having an update", got)
+        E.add(str(theirs))                         # back on the list for this test
+        t.eq(E.check("lucky-draw").get("state"), "unknown",
+             "an app with only its own update command cannot be checked")
+        t.eq(E.check("gacha").get("state"), "none", "an app with no way to update is not marked")
 
         # ---- update ---------------------------------------------------------------
         E.add(str(theirs))

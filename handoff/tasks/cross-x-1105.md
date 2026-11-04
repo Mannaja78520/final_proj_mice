@@ -3,7 +3,7 @@ Owner: codex:cross-1105-01a1891f
 Updated: 2026-11-05T05:01:28.182300+07:00
 Branch: private candidate work; shared source read-only
 Last commit: this checkpoint
-Plan: A56-2
+Plan: A57-2
 
 ## Goal
 User says front-body/face cross-X poses are missing and requests copying those as well as raised arms. User adds backward hand/arm flick, anchor Come and Cheer1:50(110s), similar gesture in nearly allclips. Diagnose against original source across6; correct supported crossing/elbow/wrist/forearm relations using bounded work, preserve oldbest. Previous stop of broad RL loops stays: no new training, NN extraction, confidence promotion, hardware motion or Voice. User explicitly authorizes this targeted correction; do not restart old heartbeat trials.
@@ -15,7 +15,7 @@ Confirmed actual Blood27.8..29s comparison: source chestcross28.63 vs actualR4 o
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | handoff/tasks/cross-x-1105.md | task/scope/facts | current | oldtasks/rules/claims read | this checkpoint |
-| docs/PLAN.html | A56-2 | shared update | Plan under mutex | uncommitted |
+| docs/PLAN.html | A57-2 | shared update | Plan under mutex | uncommitted |
 | docs/plan_state.js | generated plan | shared update | Plan under mutex | uncommitted |
 | docs/BRIDGE.md | own claim | shared append | mutex | uncommitted |
 

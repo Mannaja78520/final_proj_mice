@@ -259,7 +259,7 @@ def openai_think(prov, key, job, system, history, max_tokens, timeout):
     msgs = [{"role": "system", "content": system}] + [
         {"role": "assistant" if m.get("role") != "user" else "user",
          "content": str(m.get("content") or "")} for m in history]
-    body = {"model": model, "messages": msgs, "temperature": 0.2,
+    body = {"model": model, "messages": msgs, "temperature": job.get("temperature", 0.2),
             "max_tokens": max(int(max_tokens or 0), int(job.get("maxTokens") or 0))}
     got = _call(base + "/chat/completions", body, _auth(key), timeout=timeout)
     text = ((((got.get("choices") or [{}])[0]).get("message") or {}).get("content") or "").strip()

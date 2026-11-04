@@ -109,6 +109,22 @@ from profiles import Profiles, ProfileError, guarded  # noqa: E402
 import intents                                       # noqa: E402
 
 
+def drop_ghosts(text, phrases):
+    """Take out what whisper makes up from silence and noise.
+
+    On a quiet or noisy clip whisper writes the closing words of the videos it
+    was trained on (PC test 2026-11-04: "ขอบคุณที่รับชม อย่าลืมกดติดตามช่อง"),
+    and the robot then answered that as if a visitor had said it. The phrases
+    are DATA (stt.ghostPhrases in voice.json); nothing left means nothing heard.
+    """
+    out = text or ""
+    for p in phrases or ():
+        if p:
+            out = out.replace(p, " ")
+    out = re.sub(r"\s+", " ", out).strip()
+    return out if re.search(r"\w", out) else ""
+
+
 def drop_repeats(text):
     """A word or phrase said over and over is the listener stuck, not the visitor."""
     text = re.sub(r'(\b\S+)(?:\s+\1\b)+', r'\1', (text or "").strip())
@@ -187,6 +203,8 @@ def answers_in(text, lang, particles=None):
     got = scripts_in(bare)
     if not got:
         return False               # digits, punctuation or a bare particle
+    if lang != "en" and got == {"en"} and re.fullmatch(r"[^\s]*\d[^\s]*[.!?]?", bare.strip()):
+        return True                # the answer IS a code, e.g. a WiFi password: Welcome2024
     if lang in ("th", "ja", "zh", "ko", "ru", "ar", "hi"):
         return lang in got
     return "en" in got or not got - {"en"}
@@ -218,7 +236,7 @@ def trim_unfinished(text, lang, particles=None):
     return text[:cut].strip() if cut > 0 else ""
 
 
-def one_particle(text, keep, particles=None):
+def one_particle(text, keep, particles=None, ask_words=None):
     """One voice, one polite particle.
 
     The robot is one character, and the saved answers all end in ครับ. The
@@ -236,8 +254,17 @@ def one_particle(text, keep, particles=None):
     others = [p for p in (particles or DEF_PARTICLES) if p and p != keep]
     if not others:
         return text or ""
+    # Two particles in a row (ครับค่ะ) are one ending said twice: PC test
+    # 2026-11-04 on #118, the model copied "...ประชาสัมพันธ์ครับ" and a ค่ะ was added.
+    every = sorted({p for p in (particles or DEF_PARTICLES) if p} | {keep}, key=len, reverse=True)
+    run = re.compile("(?:%s){2,}(?=$|[\\s\\.,!?ฯ])" % "|".join(re.escape(p) for p in every))
     pat = re.compile("(?:%s)(?=$|[\\s\\.,!?ฯ])" % "|".join(re.escape(p) for p in others))
-    return pat.sub(keep, text or "")
+    out = pat.sub(keep, run.sub(keep, text or ""))
+    if keep == "ค่ะ" and ask_words:
+        # A woman says คะ after นะ / ไหม / อะไร, not ค่ะ (PC test 2026-11-04 found
+        # "นะค่ะ", "ไหมค่ะ"). The words are DATA: answer.askWords in voice.json.
+        out = re.sub("(%s)ค่ะ" % "|".join(re.escape(w) for w in ask_words), r"\1คะ", out)
+    return out
 
 
 # หนู is a first-person word too, and also means mouse - this robot is called
@@ -267,12 +294,14 @@ def one_pronoun(text, keep, pronouns=None):
     keep = (keep or "").strip()
     if not keep:
         return text or ""
-    others = sorted((p for p in (pronouns or DEF_PRONOUNS) if p and p != keep),
-                    key=len, reverse=True)      # ดิฉัน before ฉัน
+    others = [p for p in (pronouns or DEF_PRONOUNS) if p and p != keep]
     if not others:
         return text or ""
-    pat = re.compile(r"(?:%s)(?!ท)"
-                     % "|".join(re.escape(p) for p in others))
+    # keep joins the list so a longer pronoun that CONTAINS a shorter one
+    # (ดิฉัน holds ฉัน) is matched whole and put back as itself, not as ดิ+ดิฉัน
+    # (PC test 2026-11-04: every female-voice answer said "ดิดิฉัน").
+    every = sorted(set(others) | {keep}, key=len, reverse=True)
+    pat = re.compile(r"(?:%s)(?!ท)" % "|".join(re.escape(p) for p in every))
     return pat.sub(keep, text or "")
 
 
@@ -1141,7 +1170,7 @@ class Brain:
         segments, info = self._fallback_transcribe(path, segments, info, lang, scfg)
         valid = [seg.text for seg in segments if getattr(seg, "no_speech_prob", 0) <= 0.6]
         self._stt_last = self._stt_attempt
-        return drop_repeats("".join(valid)), info
+        return drop_ghosts(drop_repeats("".join(valid)), scfg.get("ghostPhrases")), info
 
     def _listen_local(self, audio, resolved, scfg):
         """This PC's whisper. Bias words apply only when the language is
@@ -1809,7 +1838,7 @@ class Brain:
         w = self.gender_words("th", g if voice else None)
         if not w:
             return text
-        text = one_particle(text, w.get("particle") or "", self.particles())
+        text = one_particle(text, w.get("particle") or "", self.particles(), self.ask_words())
         return one_pronoun(text, w.get("pronoun") or "", self.pronouns())
 
     def manner_saved(self, text, lang):
@@ -1820,7 +1849,7 @@ class Brain:
         if lang != "th" or not ((sty.get("answer") or {}).get("saved") or self.gender_words("th")):
             return text
         keep, me, _w = self.manner_answer("th")
-        text = one_particle(text, keep, self.particles())
+        text = one_particle(text, keep, self.particles(), self.ask_words())
         return one_pronoun(text, me, self.pronouns())
 
     def style_steps(self, rate, pitch, sty):
@@ -2236,6 +2265,9 @@ class Brain:
         if person:
             reply = personalize_answer(reply, person, lang=lang,
                                        address=self.address_words())
+            # the name is added with ครับ; a woman's voice must not say it
+            # (PC test 2026-11-04: "คุณผู้ทดสอบครับ เดินตรงไป...ค่ะ")
+            reply = self.manner_saved(reply, lang)
         return reply, None
 
     def free_think(self, system, text, limit=200):
@@ -2368,6 +2400,8 @@ class Brain:
                 ans = item.get("answer_ja") or item.get("answer")
             elif lang == "zh":
                 ans = item.get("answer_zh") or item.get("answer")
+            elif lang == "ko":
+                ans = item.get("answer_ko") or item.get("answer")
             else:
                 ans = item.get("answer")
             faq_lines.append("%d. %s\n   %s" % (i, q, ans))
@@ -2409,6 +2443,12 @@ class Brain:
                       + person_hint
                       + ("\n相关FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
                       + "请尽可能紧密依据所给的FAQ答案回答，切勿偏离主题。如果问题与FAQ相关则按FAQ回答，否则作为Mice机器人用1句简短回答。不要编造FAQ中没有的密码、价格、时间、地点或活动；不知道就说不知道，请询问工作人员。")
+        elif lang == "ko":
+            system = ("You are the Mice robot assistant. Answer ONLY in Korean, in one short polite sentence, no emojis.\n"
+                      + scenario_hint
+                      + person_hint
+                      + ("\nRelevant FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
+                      + "Follow the FAQ answers closely. NEVER invent a password, price, time, floor, place or event that is not in the FAQ above - say in Korean that you do not know and to ask a member of staff.")
         elif is_verse and lang == "th":
             system = ("คุณคือหุ่นยนต์ Mice เมื่อผู้ใช้ขอให้อ่านหรือท่องบทกลอน จงท่องบทกลอนภาษาไทยที่ไพเราะ 1 บท (4 วรรค) แบ่งบรรทัดละวรรค ห้ามปฏิเสธ ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
                       + scenario_hint
@@ -2434,10 +2474,17 @@ class Brain:
         # word, so the same budget stopped Thai answers in the middle of a
         # word (user 2026-09-18: *it cuts replies off*). The budget is DATA
         # so it can be tuned per language without touching this file.
-        if lang in ("en", "ja", "zh"):
+        if lang in ("en", "ja", "zh", "ko"):
             wording = self.manner_answer(lang)[2]
             if wording:
                 system += "\n" + wording
+        shots = (self.answer_cfg().get("examples") or {}).get(lang) or []
+        if shots and not is_verse:
+            # Three short Q/A pairs per language: on the PC bench (2026-11-04)
+            # Typhoon 4B went Thai 24 -> 28 of 30 and invented 4 -> 0 facts. They
+            # sit AFTER the FAQ and hold no facts, only manner and "I do not know".
+            system += "\n\n" + self.answer_cfg().get("examplesTitle", {}).get(lang, "Examples:") + "\n" + "\n".join(
+                "Q: %s\nA: %s" % (q, a) for q, a in shots)
         limit = 96 if is_verse else self.token_budget(lang)
         return system, limit, is_verse
 
@@ -2458,7 +2505,9 @@ class Brain:
             if not answers_in(reply, lang, self.particles()) and not is_verse:
                 # ONE retry, with the language demand on its own line where a
                 # small model cannot lose it among the FAQ and the persona.
-                again = [{"role": "system", "content": self.only_this_language(lang)}] + history
+                # The FAQ stays: with only the language line a small model invented
+                # facts (opens 9:00, parking in the basement; PC bench 2026-11-04).
+                again = [{"role": "system", "content": system + "\n" + self.only_this_language(lang)}] + history
                 reply2, ran2 = self._complete(again, max_tokens=limit, details=True)
                 reply2 = self.tidy_answer(reply2, lang, ran_out=ran2)
                 reply = reply2 if reply2 and answers_in(reply2, lang, self.particles()) else ""
@@ -2483,6 +2532,9 @@ class Brain:
         a = self.answer_cfg()
         return tuple(a.get("politeParticles") or DEF_PARTICLES)
 
+    def ask_words(self):
+        return tuple(self.answer_cfg().get("askWords") or ())
+
     def pronouns(self):
         a = self.answer_cfg()
         return tuple(a.get("politePronouns") or DEF_PRONOUNS)
@@ -2490,8 +2542,10 @@ class Brain:
     def cannot_answer(self, lang):
         """What the robot says when it has nothing whole to say."""
         said = (self.answer_cfg().get("cannotAnswer") or {})
-        return (said.get(lang) or said.get("th")
-                or "ขออภัยครับ ผมยังไม่เข้าใจคำถามนี้ ลองถามใหม่อีกครั้งได้ไหมครับ")
+        got = (said.get(lang) or said.get("th")
+               or "ขออภัยครับ ผมยังไม่เข้าใจคำถามนี้ ลองถามใหม่อีกครั้งได้ไหมครับ")
+        # saved in the male ending: a female voice says it with its own
+        return self.manner_saved(got, lang) if lang in said or lang == "th" else got
 
     def only_this_language(self, lang):
         said = (self.answer_cfg().get("onlyThisLanguage") or {})
@@ -2505,7 +2559,7 @@ class Brain:
             return ""
         if lang == "th":
             keep, me, _w = self.manner_answer("th")
-            reply = one_particle(reply, keep, self.particles())
+            reply = one_particle(reply, keep, self.particles(), self.ask_words())
             reply = one_pronoun(reply, me, self.pronouns())
         # A verse is lines, not sentences - trimming it to a particle would eat
         # the poem. Its budget is larger for the same reason.

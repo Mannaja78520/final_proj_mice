@@ -4,7 +4,7 @@ Status: complete
 Updated: 2026-11-05T04:27:39.176691+07:00
 Branch: isolated .staging/latest-results-1105; live bookkeeping only
 Last commit: this checkpoint
-Plan: A56-1
+Plan: A57-1
 
 ## Goal
 User2026-11-05: expose latest/best results on a simple front page across tasks; open current6cheer outputs in Nong Studio WITH matching originalaudio and motion. Modify Studio as needed; no new RL training or autonomous robot motion. Stable results catalog/Home app; user steering Nov5: NO Desktop shortcut, single organized results/ folder inside mice_system; Studio library/project+audio load/playback/save with unsaved-work protection. Isolated staging latest-results-1105; preserve unrelated dirty source and other owners.
@@ -67,9 +67,9 @@ COMPLETE. Latest user scope delivered: one organized root/results entry; no Desk
 
 | dist/MiceHub.exe | rebuild current UI bundle | installed | guarded build success; actualstale:false; previous exactbackup | machine artifact |
 
-| docs/BRIDGE.md | A56 progress/release; prior edits preserved | shared update | plan done; own leases released | uncommitted shared bookkeeping |
-| docs/PLAN.html | A56 progress/release; prior edits preserved | shared update | plan done; own leases released | uncommitted shared bookkeeping |
-| docs/plan_state.js | A56 progress/release; prior edits preserved | shared update | plan done; own leases released | uncommitted shared bookkeeping |
+| docs/BRIDGE.md | A57 progress/release; prior edits preserved | shared update | plan done; own leases released | uncommitted shared bookkeeping |
+| docs/PLAN.html | A57 progress/release; prior edits preserved | shared update | plan done; own leases released | uncommitted shared bookkeeping |
+| docs/plan_state.js | A57 progress/release; prior edits preserved | shared update | plan done; own leases released | uncommitted shared bookkeeping |
 
 Patch snapshots0117/0118 are intentionally Git-ignored machine history; retained with exact SHA, not forced into Git. Source commit excludes these12files.
 
