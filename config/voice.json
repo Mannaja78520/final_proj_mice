@@ -126,6 +126,7 @@
    "local"
   ],
   "think": [
+   "ollama",
    "local"
   ],
   "speak": [

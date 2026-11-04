@@ -2427,7 +2427,9 @@ class Brain:
             if not answers_in(reply, lang, self.particles()) and not is_verse:
                 # ONE retry, with the language demand on its own line where a
                 # small model cannot lose it among the FAQ and the persona.
-                again = [{"role": "system", "content": self.only_this_language(lang)}] + history
+                # The FAQ stays: with only the language line a small model invented
+                # facts (opens 9:00, parking in the basement; PC bench 2026-11-04).
+                again = [{"role": "system", "content": system + "\n" + self.only_this_language(lang)}] + history
                 reply2, ran2 = self._complete(again, max_tokens=limit, details=True)
                 reply2 = self.tidy_answer(reply2, lang, ran_out=ran2)
                 reply = reply2 if reply2 and answers_in(reply2, lang, self.particles()) else ""
