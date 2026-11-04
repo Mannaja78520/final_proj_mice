@@ -294,6 +294,10 @@ def _manner_fixes(t, brain, svc):
     t.ok("นะ" in words and "ไหม" in words, "ask words come from voice.json", words)
     t.eq(svc.one_particle("อากาศร้อนนะครับ มีอะไรให้ช่วยไหมครับ", "ค่ะ", svc.DEF_PARTICLES, words),
          "อากาศร้อนนะคะ มีอะไรให้ช่วยไหมคะ", "woman: คะ after นะ / ไหม, not ค่ะ")
+    t.eq(svc.one_particle("สอบถามที่จุดประชาสัมพันธ์ครับค่ะ", "ค่ะ", svc.DEF_PARTICLES, words),
+         "สอบถามที่จุดประชาสัมพันธ์ค่ะ", "two particles in a row become one ending")
+    t.eq(svc.one_particle("คะแนนดีครับ", "ค่ะ", svc.DEF_PARTICLES, words), "คะแนนดีค่ะ",
+         "   and คะ inside a word is left alone")
     t.eq(svc.one_particle("ได้ค่ะ", "ค่ะ", svc.DEF_PARTICLES, words), "ได้ค่ะ",
          "   ค่ะ elsewhere stays")
     t.ok(svc.answers_in("Welcome2024", "ja") and not svc.answers_in("Hello there", "ja"),
