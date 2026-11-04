@@ -88,8 +88,26 @@ def run(t):
              "their own mice-app.json says what the app is", got)
         t.eq(E.detect(box / "Holiday photos"), None, "a folder with no app is not an app")
         found = sorted(c["id"] for c in E.candidates())
-        t.ok("lucky-draw" in found and "reconize" in found,
+        t.ok("lucky-draw" in found,
              "apps beside the tree are offered before anyone types a folder", found)
+        # 2026-11-05: an app already in All apps was offered again as "ready to add"
+        t.ok("reconize" not in found,
+             "a partner already installed here is not offered again", found)
+        copy = box / "Face_Regonize_copy"          # same app, second folder
+        shutil.copytree(friend, copy)
+        parked = box / "_to_delete" / "Face_Regonize_crash"   # parked copy: never offered
+        shutil.copytree(friend, parked)
+        t.eq(sorted(c["id"] for c in E.candidates()), ["lucky-draw"],
+             "a second or parked copy of an installed app is not offered")
+        E.remove("reconize")                       # hidden: findable again, once
+        again = [c["id"] for c in E.candidates()]
+        t.eq(again.count("reconize"), 1,
+             "a removed partner is offered once, its duplicate folders collapse")
+        E.restore("reconize")
+        t.ok(E.same_folder(str(friend).upper().replace("\\", "/")) == E.same_folder(friend),
+             "folder paths compare equal whatever the case or slashes", "")
+        shutil.rmtree(copy)
+        shutil.rmtree(box / "_to_delete")
 
         # ---- add / remove / restore -------------------------------------------
         E.add(str(theirs))
