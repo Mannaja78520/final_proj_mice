@@ -116,31 +116,18 @@ def drop_repeats(text):
 
 
 def detect_lang(text):
-    """Detect 'th', 'ja', 'zh', or 'en' based on script analysis."""
-    has_thai = False
-    has_kana = False
-    has_cjk = False
-    has_latin = False
-    for ch in text or "":
-        cp = ord(ch)
-        if 0x0E00 <= cp <= 0x0E7F:
-            has_thai = True
-            break
-        elif (0x3040 <= cp <= 0x309F) or (0x30A0 <= cp <= 0x30FF):
-            has_kana = True
-        elif 0x4E00 <= cp <= 0x9FFF:
-            has_cjk = True
-        elif ("a" <= ch <= "z") or ("A" <= ch <= "Z"):
-            has_latin = True
+    """Detect 'th', 'ko', 'ja', 'zh', 'ru', 'ar', 'hi', or 'en' from the letters.
 
-    if has_thai:
-        return "th"
-    if has_kana:
-        return "ja"
-    if has_cjk:
-        return "zh"
-    if has_latin:
-        return "en"
+    One script per language family, so a script tells which column, not which
+    exact language: Ukrainian reads as ru, Persian/Urdu as ar, Marathi/Nepali
+    as hi, and French, German, Spanish or Vietnamese as en (same alphabet).
+    Kanji with no kana is zh. Nothing readable (digits, emoji, "") is th, the
+    robot's home language, as before.
+    """
+    found = scripts_in(text)
+    for lang in ("th", "ko", "ja", "zh", "ru", "ar", "hi", "en"):
+        if lang in found:
+            return lang
     return "th"
 
 
@@ -164,6 +151,11 @@ SENTENCE_END = {
     "en": (".", "!", "?", "\n"),
     "ja": ("。", "！", "？", "\n"),
     "zh": ("。", "！", "？", "\n"),
+    # Korean ends on 요/다/까 too, but those syllables also sit inside words
+    # (다음, 까지), so cutting on them broke words. Punctuation only.
+    "ko": (".", "!", "?", "。", "！", "？", "\n"),
+    "ar": (".", "!", "?", "؟", "\n"),
+    "hi": (".", "!", "?", "।", "\n"),
 }
 DEF_PARTICLES = ("ครับ", "คร้าบ", "ค่ะ", "คะ", "ฮะ", "จ้า", "จ้ะ", "จ๊ะ")
 
@@ -195,7 +187,7 @@ def answers_in(text, lang, particles=None):
     got = scripts_in(bare)
     if not got:
         return False               # digits, punctuation or a bare particle
-    if lang in ("th", "ja", "zh"):
+    if lang in ("th", "ja", "zh", "ko", "ru", "ar", "hi"):
         return lang in got
     return "en" in got or not got - {"en"}
 
@@ -336,18 +328,33 @@ def scripts_in(text):
     question for a sentence like *Hello พุฒิพงศ์, welcome*: it is two, and a
     voice tied to either one drops the other half (user 2026-09-18: *make TTS
     can read all lang in the same time*).
+
+    The ranges are the whole script, not only its common block: half-width
+    katakana, CJK extension A, Arabic presentation forms, Vietnamese letters
+    and full-width Latin all count (apps/voice/app.js askLang mirrors them).
     """
+    ranges = (
+        ("th", ((0x0E00, 0x0E7F),)),
+        ("ko", ((0xAC00, 0xD7AF), (0x1100, 0x11FF), (0x3130, 0x318F), (0xA960, 0xA97F),
+                (0xD7B0, 0xD7FF), (0xFFA0, 0xFFDC))),
+        ("ja", ((0x3040, 0x309F), (0x30A0, 0x30FF), (0x31F0, 0x31FF), (0xFF66, 0xFF9F))),
+        ("zh", ((0x4E00, 0x9FFF), (0x3400, 0x4DBF), (0xF900, 0xFAFF), (0x20000, 0x3134F))),
+        ("ru", ((0x0400, 0x052F), (0x2DE0, 0x2DFF), (0xA640, 0xA69F))),
+        ("ar", ((0x0600, 0x06FF), (0x0750, 0x077F), (0x08A0, 0x08FF), (0xFB50, 0xFDFF),
+                (0xFE70, 0xFEFF))),
+        ("hi", ((0x0900, 0x097F), (0xA8E0, 0xA8FF))),
+        ("en", ((0x41, 0x5A), (0x61, 0x7A), (0x00C0, 0x024F), (0x1E00, 0x1EFF),
+                (0xFF21, 0xFF3A), (0xFF41, 0xFF5A))),
+    )
     found = set()
     for ch in text or "":
         cp = ord(ch)
-        if 0x0E00 <= cp <= 0x0E7F:
-            found.add("th")
-        elif (0x3040 <= cp <= 0x309F) or (0x30A0 <= cp <= 0x30FF):
-            found.add("ja")
-        elif 0x4E00 <= cp <= 0x9FFF:
-            found.add("zh")
-        elif ("a" <= ch <= "z") or ("A" <= ch <= "Z"):
-            found.add("en")
+        if cp == 0xD7 or cp == 0xF7:          # × and ÷ sit inside Latin-1
+            continue
+        for lang, spans in ranges:
+            if any(a <= cp <= b for a, b in spans):
+                found.add(lang)
+                break
     return found
 
 
@@ -803,7 +810,7 @@ class Brain:
                         coverage = max(len(got), len(norm_got)) / max(len(qc), 1)
                         sub_score = 0.75 + 0.15 * min(1.0, coverage)
                         score = max(score, sub_score)
-                elif len(qc) >= 3 and detect_lang(qc) in ("th", "ja", "zh"):
+                elif len(qc) >= 3 and detect_lang(qc) in ("th", "ja", "zh", "ko"):
                     if qc in got or (norm_got and qc in norm_got):
                         coverage = len(qc) / max(len(got), 1)
                         sub_score = 0.80 + 0.15 * min(1.0, coverage)
@@ -817,13 +824,37 @@ class Brain:
                 # "ไป" would match half the store. A quarter, because a saved
                 # question is often long: "ไวไฟ" is 4 of the 14 in
                 # "รหัสไวไฟคืออะไร".
-                if (detect_lang(qc) in ("th", "ja", "zh") and len(got) >= 3
+                if (detect_lang(qc) in ("th", "ja", "zh", "ko") and len(got) >= 3
                         and got not in stops
                         and got in qc and len(got) / max(len(qc), 1) >= 0.25):
                     score = max(score, 0.76 + 0.15 * (len(got) / max(len(qc), 1)))
                 if score > best:
                     best, hit = score, item
         return best, hit
+
+    def supported_langs(self):
+        """Every language configured in this store, th, en, ja, zh first.
+
+        A key becomes a column name (answer_<code>), so only a real language
+        code counts: "ko-KR" and "KO" are ko; " ", "../x" or "answer" are not
+        languages and are skipped. A list instead of a map does not break
+        this (other readers still expect a map).
+        """
+        out = ["th", "en", "ja", "zh"]
+        cfg = getattr(self, "cfg", None) or {}
+        tts = cfg.get("tts") if isinstance(cfg.get("tts"), dict) else {}
+        stt = cfg.get("stt") if isinstance(cfg.get("stt"), dict) else {}
+        ans = cfg.get("answer") if isinstance(cfg.get("answer"), dict) else {}
+        for d in (tts.get("voices"), stt.get("languages"),
+                  ans.get("onlyThisLanguage"), ans.get("cannotAnswer")):
+            if not isinstance(d, (dict, list, tuple)):
+                continue
+            for k in d:
+                code = str(k).strip().replace("_", "-").split("-")[0].lower()
+                if 2 <= len(code) <= 3 and code.isascii() and code.isalpha() \
+                        and code not in out:
+                    out.append(code)
+        return out
 
     def match_faq(self, text, lang=""):
         """The closest saved ENTRY over the threshold, or (None, score).
@@ -837,7 +868,7 @@ class Brain:
             eff_lang = lang or detect_lang(text)
             ans_key = f"answer_{eff_lang}"
             ans = hit.get(ans_key)
-            if not ans and eff_lang in ("th", "en", "ja", "zh"):
+            if not ans and eff_lang in self.supported_langs():
                 base_ans = hit.get("answer", "")
                 if base_ans:
                     base_lang = detect_lang(base_ans)
@@ -2545,6 +2576,16 @@ class Brain:
                     "en": "English",
                     "ja": "Japanese",
                     "zh": "Chinese",
+                    "ko": "Korean",
+                    "fr": "French",
+                    "de": "German",
+                    "es": "Spanish",
+                    "ru": "Russian",
+                    "ar": "Arabic",
+                    "hi": "Hindi",
+                    "vi": "Vietnamese",
+                    "id": "Indonesian",
+                    "ms": "Malay",
                 }
                 tname = target_names.get(target, target)
                 messages = [
@@ -2562,10 +2603,11 @@ class Brain:
         return text.strip(), "translation unavailable"
 
     def translate_all(self, text, source="auto"):
-        """Return dict of {th: ..., en: ..., ja: ..., zh: ...} for given text."""
+        """Return dict of {lang: ...} across all configured languages for given text."""
+        langs = self.supported_langs() if hasattr(self, "supported_langs") else ("th", "en", "ja", "zh")
         src = detect_lang(text) if source in ("auto", "") else source
         results = {src: text.strip()}
-        targets = [t for t in ("th", "en", "ja", "zh") if t != src]
+        targets = [t for t in langs if t != src]
         def translate(target):
             try:
                 trans, _ = self.translate_text(text, target=target, source=src)
@@ -2574,7 +2616,7 @@ class Brain:
                 return target, text.strip()
         for target, translated in self._resources.map(translate, targets):
             results[target] = translated
-        for t in ("th", "en", "ja", "zh"):
+        for t in langs:
             if t not in results:
                 results[t] = text.strip()
         return results

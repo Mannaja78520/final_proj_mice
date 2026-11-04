@@ -56,6 +56,8 @@ def _layout():
 
 
 LAYOUT = _layout()
+if LAYOUT is not None:
+    MAIN = LAYOUT.real
 # Which working copy to promote. `.staging/main` unless told otherwise, so two
 # trees can be worked and verified at the same time:
 #

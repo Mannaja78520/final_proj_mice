@@ -4,6 +4,9 @@ Prize machines (gachapon): several gacha boards, kinds, hand-over when one is em
 
 ## Rules and traps
 
+- `cfg` and `save_cfg` share the same RLock: an open Windows read handle can otherwise block the atomic config replacement.
+- `game_names` reads partner metadata via `EXT.partners_here(_partner_templates())` without `partner_launch.live()` health probes, so `/api/gacha` status polls do not block when partner servers are offline.
+
 - The page is in tabs (A47-14): every card carries `data-tab`, the row is drawn from `TABS`;
   a new card without a tab is caught by check_gacha_sheet.
 - Sheet writes go through `gacha_sheet.py` ways (link / script / service); a write that
@@ -45,9 +48,10 @@ Prize machines (gachapon): several gacha boards, kinds, hand-over when one is em
 
 - nothing
 
-## Checks that test it (12)
+## Checks that test it (13)
 
 - `check_gacha`
+- `check_gacha_config_concurrency`
 - `check_gacha_event_order`
 - `check_gacha_motion`
 - `check_gacha_routes`
@@ -60,4 +64,4 @@ Prize machines (gachapon): several gacha boards, kinds, hand-over when one is em
 - `check_studio_wifi_after_cable`
 - `check_zero_lock`
 
-Run them: `python qc/run_qc.py --no-build check_gacha check_gacha_event_order check_gacha_motion check_gacha_routes check_gacha_sheet check_gacha_ui check_game_prize check_monitor_link check_remote_scripts check_rig_presets check_studio_wifi_after_cable check_zero_lock`
+Run them: `python qc/run_qc.py --no-build check_gacha check_gacha_config_concurrency check_gacha_event_order check_gacha_motion check_gacha_routes check_gacha_sheet check_gacha_ui check_game_prize check_monitor_link check_remote_scripts check_rig_presets check_studio_wifi_after_cable check_zero_lock`

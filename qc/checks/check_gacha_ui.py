@@ -133,10 +133,19 @@ def run(t):
             return line(c)
 
         board.line, board.status = command, motion_status
+        old_live, live_calls = main.partner_launch.live, []
+
+        def tracked_live(pid, entry):
+            live_calls.append(pid)
+            return old_live(pid, entry)
+
+        main.partner_launch.live = tracked_live
         try:
             browser.raw_page(DRIVER, base, seconds=40)
+            names = main.hub_api_gacha.game_names()
         finally:
             browser.kill()
+            main.partner_launch.live = old_live
             board.line, board.status = line, status
             main.module_ui_html = module_page
             for k, v in old.items():
@@ -144,6 +153,7 @@ def run(t):
                     os.environ.pop(k, None)
                 else:
                     os.environ[k] = v
+    t.ok(not live_calls and "wheel" in names, "Gacha status and game_names read partner metadata without live health probes", (live_calls, names))
     got = dict(m[4:].split("=", 1) for m in fake_serial.qc_marks if m.startswith("GUI~") and "=" in m)
     t.ok("error" not in got and bool(got), "actual Gacha page runs", got)
     for key in ("tuning", "zero_tuning", "phase", "narrow", "module_zero", "module_narrow"):

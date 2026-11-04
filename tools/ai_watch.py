@@ -58,7 +58,12 @@ def lower_priority(name):
     try:
         if os.name == "nt":
             import ctypes
+            from ctypes import wintypes
             k = ctypes.windll.kernel32
+            k.GetCurrentProcess.argtypes = []
+            k.GetCurrentProcess.restype = wintypes.HANDLE
+            k.SetPriorityClass.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+            k.SetPriorityClass.restype = wintypes.BOOL
             k.SetPriorityClass(k.GetCurrentProcess(), cls)
         elif nice:
             os.nice(nice)

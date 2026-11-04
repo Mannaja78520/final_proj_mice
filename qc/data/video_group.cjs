@@ -1,7 +1,7 @@
 const fs = require('fs'), path = require('path'), vm = require('vm'), {performance} = require('perf_hooks');
 const ROOT=path.resolve(__dirname,'../..'), STUDIO=path.join(ROOT,'nong/main_python_set_nong');
 const THREE=require(path.join(STUDIO,'web/vendor/three.min.js'));
-const read=name=>fs.readFileSync(path.join(STUDIO,'web/app_parts',name+'.js'),'utf8');
+const read=name=>fs.readFileSync(path.join(STUDIO,'web/app_parts',name+'.js'),'utf8').replace(/\r\n/g,'\n');
 function context() {
   const config=JSON.parse(fs.readFileSync(path.join(STUDIO,'web/video_follow.json')));
   const safe=JSON.parse(fs.readFileSync(path.join(STUDIO,'web/safe_path.json')));

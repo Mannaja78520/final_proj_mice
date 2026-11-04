@@ -1788,15 +1788,25 @@ static ANSWER_KEYS = [["th", "answer"], ["en", "answer_en"],
 // The store keeps ONE `questions` list (every reader matches against all of
 // it); the sheet only splits it per language (A42-2, user 2026-10-15).
 static askLang(text){
-  let kana = false, han = false, latin = false;
+  // Same ranges and order as service.py scripts_in / detect_lang.
+  const R = [
+    ["th", [[0x0E00, 0x0E7F]]],
+    ["ko", [[0xAC00, 0xD7AF], [0x1100, 0x11FF], [0x3130, 0x318F], [0xA960, 0xA97F], [0xD7B0, 0xD7FF], [0xFFA0, 0xFFDC]]],
+    ["ja", [[0x3040, 0x309F], [0x30A0, 0x30FF], [0x31F0, 0x31FF], [0xFF66, 0xFF9F]]],
+    ["zh", [[0x4E00, 0x9FFF], [0x3400, 0x4DBF], [0xF900, 0xFAFF], [0x20000, 0x3134F]]],
+    ["ru", [[0x0400, 0x052F], [0x2DE0, 0x2DFF], [0xA640, 0xA69F]]],
+    ["ar", [[0x0600, 0x06FF], [0x0750, 0x077F], [0x08A0, 0x08FF], [0xFB50, 0xFDFF], [0xFE70, 0xFEFF]]],
+    ["hi", [[0x0900, 0x097F], [0xA8E0, 0xA8FF]]],
+    ["en", [[0x41, 0x5A], [0x61, 0x7A], [0x00C0, 0x024F], [0x1E00, 0x1EFF], [0xFF21, 0xFF3A], [0xFF41, 0xFF5A]]],
+  ];
+  const found = new Set();
   for (const ch of String(text || "")) {
     const cp = ch.codePointAt(0);
-    if (cp >= 0x0E00 && cp <= 0x0E7F) return "th";
-    if (cp >= 0x3040 && cp <= 0x30FF) kana = true;
-    else if (cp >= 0x4E00 && cp <= 0x9FFF) han = true;
-    else if (/[A-Za-z]/.test(ch)) latin = true;
+    if (cp === 0xD7 || cp === 0xF7) continue;
+    const hit = R.find(([, spans]) => spans.some(([lo, hi]) => cp >= lo && cp <= hi));
+    if (hit) found.add(hit[0]);
   }
-  return kana ? "ja" : han ? "zh" : latin ? "en" : "th";
+  return R.map(([l]) => l).find(l => found.has(l)) || "th";
 }
 
 // A language in its own words ("th" -> "ไทย"), from the browser, so a fifth
@@ -1808,8 +1818,25 @@ static langName(code){
 
   // Every language the store speaks: its voice map first, then the answers'.
   langs(){
-  const out = Object.keys(((this.cfg || {}).tts || {}).voices || {});
-  VoiceApp.ANSWER_KEYS.forEach(([l]) => { if (!out.includes(l)) out.push(l); });
+  // A key becomes a column (answer_<code>): "ko-KR"/"KO" are ko, and a key
+  // that is not a language code (" ", "../x", "answer") is skipped - the same
+  // rule as service.py Brain.supported_langs.
+  const code = k => String(k).trim().replace(/_/g, "-").split("-")[0].toLowerCase();
+  const ok = c => /^[a-z]{2,3}$/.test(c);
+  const keys = v => Array.isArray(v) ? v : Object.keys(v || {});
+  const out = [];
+  const add = k => { const c = code(k); if (ok(c) && !out.includes(c)) out.push(c); };
+  keys(((this.cfg || {}).tts || {}).voices).forEach(add);
+  keys(((this.cfg || {}).stt || {}).languages).forEach(add);
+  VoiceApp.ANSWER_KEYS.forEach(([l]) => add(l));
+  return out;
+}
+
+  answerKeys(){
+  const out = VoiceApp.ANSWER_KEYS.map(([l, k]) => [l, k]);
+  this.langs().forEach(l => {
+    if (!out.some(([x]) => x === l)) out.push([l, l === "th" ? "answer" : "answer_" + l]);
+  });
   return out;
 }
 
@@ -2088,7 +2115,7 @@ static langName(code){
   head.textContent = "";
   const th = t => { const e = document.createElement("th"); e.textContent = t; head.appendChild(e); };
   ["#"].forEach(th);
-  VoiceApp.ANSWER_KEYS.forEach(([l]) => {
+  this.answerKeys().forEach(([l]) => {
     const e = document.createElement("th");
     e.textContent = VoiceApp.langName(l);
     e.dataset.lang = l;
@@ -2119,13 +2146,14 @@ static langName(code){
   // says under it. The asks are ONE list in the store, joined back here.
   row.asks = {};
   row.says = {};
+  const aKeys = this.answerKeys();
   const joinAsks = () => {
-    row.item.questions = VoiceApp.ANSWER_KEYS
+    row.item.questions = aKeys
       .flatMap(([l]) => row.asks[l].value.split("\n"))
       .map(s => s.trim()).filter(Boolean);
     changed();
   };
-  VoiceApp.ANSWER_KEYS.forEach(([lang, key]) => {
+  aKeys.forEach(([lang, key]) => {
     const c = td();
     c.dataset.lang = lang;
     const ask = this.cell(this.asksIn(row.item.questions, lang).join("\n"),
@@ -2210,8 +2238,8 @@ static langName(code){
   // the first language.
   firstAsk(row){
   if (!row || !row.asks) return null;
-  const ls = VoiceApp.ANSWER_KEYS.map(([l]) => l);
-  return row.asks[ls.find(l => row.asks[l].value.trim()) || ls[0]];
+  const ls = this.answerKeys().map(([l]) => l);
+  return row.asks[ls.find(l => row.asks[l] && row.asks[l].value.trim()) || ls[0]];
 }
 
   cell(value, hint, onInput){
@@ -2270,7 +2298,7 @@ static langName(code){
   this.sheet.forEach(row => {
     if (!row.tr) return;
     const text = [(row.item.questions || []).join(" ")]
-      .concat(VoiceApp.ANSWER_KEYS.map(([, k]) => row.item[k] || "")).join(" ").toLowerCase();
+      .concat(this.answerKeys().map(([, k]) => row.item[k] || "")).join(" ").toLowerCase();
     row.tr.hidden = !!want && !row.dirty && !text.includes(want);
   });
 }
@@ -2300,7 +2328,8 @@ static langName(code){
   // (the row's 🌐 button) the ways of asking gain each language too.
   async translateRow(row, questions){
   const stat = this.$("ansStat");
-  const src = VoiceApp.ANSWER_KEYS.map(([, k]) => (row.item[k] || "").trim()).find(Boolean);
+  const aKeys = this.answerKeys();
+  const src = aKeys.map(([, k]) => (row.item[k] || "").trim()).find(Boolean);
   const qs = row.item.questions || [];
   if (!src && !qs.length) { stat.textContent = "Type a way of asking or a reply first."; return false; }
   if (questions) stat.textContent = "translating…";
@@ -2312,7 +2341,7 @@ static langName(code){
     const res = await post({text: src, all: true});
     if (res && res.ok && res.translations) {
       ok = true;
-      VoiceApp.ANSWER_KEYS.forEach(([lang, key]) => {
+      aKeys.forEach(([lang, key]) => {
         const t = (res.translations[lang] || "").trim();
         if (t && !(row.item[key] || "").trim()) {
           row.item[key] = t;
@@ -2328,7 +2357,7 @@ static langName(code){
       const all = new Set(qs);
       res.results.forEach(t => t && Object.values(t).forEach(q => { if (q && String(q).trim()) all.add(String(q).trim()); }));
       row.item.questions = [...all];
-      if (row.asks) VoiceApp.ANSWER_KEYS.forEach(([l]) => {
+      if (row.asks) aKeys.forEach(([l]) => {
         row.asks[l].value = this.asksIn(row.item.questions, l).join("\n");
         this.grow(row.asks[l]);
       });
@@ -2346,7 +2375,7 @@ static langName(code){
   cleanItem(item){
   const out = Object.assign({}, item);
   out.questions = (item.questions || []).map(s => String(s).trim()).filter(Boolean);
-  VoiceApp.ANSWER_KEYS.forEach(([, k]) => {
+  this.answerKeys().forEach(([, k]) => {
     const v = String(item[k] || "").trim();
     if (v) out[k] = v; else delete out[k];
   });
@@ -2362,13 +2391,14 @@ static langName(code){
 
   async saveAnswers(){
   const stat = this.$("ansStat");
+  const aKeys = this.answerKeys();
   const blank = it => !(it.questions || []).length
-                      && !VoiceApp.ANSWER_KEYS.some(([, k]) => (it[k] || "").trim());
+                      && !aKeys.some(([, k]) => (it[k] || "").trim());
   const before = this.sheet.length;
   this.sheet = this.sheet.filter(r => !blank(r.item));   // an untouched new row is no answer
   if (this.sheet.length !== before) this.drawSheet();
   const bad = this.sheet.filter(r => !(r.item.questions || []).length
-                                     || !VoiceApp.ANSWER_KEYS.some(([, k]) => (r.item[k] || "").trim()));
+                                     || !aKeys.some(([, k]) => (r.item[k] || "").trim()));
   if (bad.length) {
     bad.forEach(r => { r.tr.classList.add("bad"); r.tr.hidden = false; });
     stat.textContent = "Row " + (this.sheet.indexOf(bad[0]) + 1)
@@ -2381,7 +2411,7 @@ static langName(code){
   btn.disabled = true;
   // An empty language is translated before saving, so the rig has it ready
   // (the helper would translate it at the first question, and make someone wait).
-  const todo = this.sheet.filter(r => r.dirty && VoiceApp.ANSWER_KEYS.some(([, k]) => !(r.item[k] || "").trim()));
+  const todo = this.sheet.filter(r => r.dirty && aKeys.some(([, k]) => !(r.item[k] || "").trim()));
   for (let i = 0; i < todo.length; i++) {
     stat.textContent = "translating " + (i + 1) + " of " + todo.length + "…";
     await this.translateRow(todo[i], false);

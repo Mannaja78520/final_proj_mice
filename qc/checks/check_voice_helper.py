@@ -22,6 +22,7 @@ folder) stands in for the real one, so no model ever loads here:
    same model twice at once (both ran, one without the GPU lock).
 """
 import importlib.util
+import io
 import json
 import os
 import threading
@@ -73,9 +74,56 @@ def _helper(vh, root, port, mode="ok", delay=0, **cfg):
                           root=root, data=root, env=lambda: env, frozen=False)
 
 
+def _check_expired_start(t, vh):
+    """A timeout reports an error; only an exited child may be replaced."""
+    class Process:
+        returncode = None
+
+        def poll(self):
+            return self.returncode
+
+    now, ready, spawned = [0.0], [False], []
+
+    def spawn(*args, **kwargs):
+        spawned.append(Process())
+        return spawned[-1]
+
+    h = vh.VoiceHelper(lambda: ("", ""), lambda: {"startSeconds": 60},
+                       F.CODE, F.CODE, popen=spawn, clock=lambda: now[0], frozen=False)
+    h.alive = lambda *args, **kwargs: ready[0]
+    h._open_log = lambda: io.BytesIO()
+    h.start()
+    original = h._proc
+    now[0] = 59
+    t.ok(h.start().get("starting"), "before the timeout the same child is starting")
+    expired = []
+    for now[0] in (60, 61, 600):
+        expired.append(h.start())
+    t.ok(all(not r.get("ok") and "still running" in r.get("error", "") for r in expired),
+         "at and after the timeout an alive child gives a clear error", expired)
+    threads = [threading.Thread(target=h.start) for _ in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(2)
+    t.ok(all(not thread.is_alive() for thread in threads),
+         "concurrent expired starts finish without deadlock")
+    t.ok(len(spawned) == 1 and h._proc is original,
+         "repeated and concurrent timed-out starts retain ONE alive child", len(spawned))
+    ready[0] = True
+    t.ok(h.start().get("already_running") and h.ensure()[0] and len(spawned) == 1,
+         "the original child can become healthy late without another start")
+    ready[0] = False
+    h._proc.returncode = 3
+    previous = len(spawned)
+    t.ok(h.start().get("started") and len(spawned) == previous + 1,
+         "a child that really exited can be restarted")
+
+
 def run(t):
     sys.path.insert(0, str(F.CODE / "main_python"))
     import voice_helper as vh
+    _check_expired_start(t, vh)
     procs = []
     try:
         # ---- 1 + 2: one start, then it answers ----------------------------

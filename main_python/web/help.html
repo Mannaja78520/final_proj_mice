@@ -376,6 +376,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 
 <!-- ===================== HUB ===================== -->
 <section id="hub">
+  <details><summary>สำหรับผู้ดูแล: โฟลเดอร์อัปเดตระบบ</summary><p>เครื่องมือนำงานที่ตรวจผ่านเข้าระบบอ้างอิงโฟลเดอร์หลักของโครงการ แม้เรียกจากสำเนาทำงาน โฟลเดอร์งานและบันทึกการอัปเดตจึงไม่ซ้อนอยู่ในสำเนาอีกชั้น</p></details>
+  <p><b>AI Watch:</b> ใช้ทางลัด ON / OFF บนเดสก์ท็อปเพื่อเปิดหรือหยุดตัวติดตามลิมิต ตัวติดตามทำงานด้วยลำดับความสำคัญต่ำเพื่อลดการแย่งทรัพยากร การกด OFF หยุดตัวติดตาม แต่งาน AI ที่เริ่มไปแล้วจะทำต่อ</p>
   <div class="info-box"><h3>ประสิทธิภาพตามเครื่องที่ใช้</h3><p>Settings → ประสิทธิภาพของเครื่อง Hub มีอัตโนมัติ ประหยัด สมดุล และเร็วขึ้น ตั้งหน่วยประมวลผล จำนวนเธรด งานพร้อมกัน และหน่วยความจำที่เว้นไว้ได้ในรายละเอียดทางเทคนิค ค่าแต่ละเครื่องแยกกันและยังคงโมเดลที่เลือกไว้ การบันทึกมีผลต่อการโหลดงานครั้งถัดไป ส่วนเธรดและชุดงานแปลที่เปิดแล้วต้องเปิดตัวช่วยเสียงใหม่ ไม่ปิดงานที่กำลังรัน</p><p>ภาพ 3D เลือกตามอุปกรณ์ที่เปิดเว็บและปรับเองได้ ภาพประหยัดลดความละเอียดและจำนวนภาพที่วาด โดยคงการเคลื่อนไหวและการตรวจชนเดิมไว้ ขอบภาพใช้ค่าใหม่เมื่อโหลดหน้าใหม่</p><p>งบ RAM/VRAM ใช้ช่วยเลือกวิธีโหลด ไม่รับประกันเพดานการใช้ทั้งหมด GPU ที่ตรวจพบยังต้องมีไลบรารีพร้อมใช้ หากใช้ไม่ได้จะกลับมาใช้ CPU</p></div>
   <div class="shead">
     <span class="where tech">code/main_python · MiceHub.exe · port 8642</span>
@@ -1267,7 +1269,11 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        needs a voice: opening the Voice app, a line the rig must say, or a talk
        gesture in Studio. The Voice page shows <b>starting the voice helper…</b>
        with the seconds counting; a question asked meanwhile waits and is then
-       answered. If it cannot start, the page says why (its last lines are
+       answered. If startup takes too long, the page says why. The hub keeps
+       the same helper while it is still running, so another request cannot
+       open a second copy. A late healthy reply lets the app continue; a
+       helper that has stopped can be started again. If it cannot start,
+       the page says why (its last lines are
        behind the technical switch, the full log is in
        <code>.local/voice/helper.log</code>). Which Python it uses and how long
        it may take are in <code>config/voice_helper.json</code>.</p></div>
@@ -1276,7 +1282,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        again to stop, and your words appear in the box ready to send. The
        listening runs on this PC too. Which languages it hears — and the words
        each language gets wrong often — live in <code>config/voice.json</code>;
-       adding a language is one entry there.</p></div>
+       adding a language in <code>config/voice.json</code> (<code>tts.voices</code> / <code>stt.languages</code>) automatically adds its column and translation target in the Answers sheet and script detector. Use a plain code such as <code>ko</code>. The detector reads the alphabet, not the exact language: French, German, Spanish or Vietnamese questions land in the English column, and kanji with no kana lands in Chinese.</p></div>
   <div class="f"><h3>The rig speaks one thing at a time<span class="tag t-new">new</span></h3>
     <p>Everything the rig says goes through <b>one queue</b> on the hub: a
        greeting, an answer from this page spoken through a robot, a message
@@ -1360,6 +1366,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 
 </section>
 <section id="gacha">
+  <p>บันทึกการตั้งค่าได้ขณะระบบอ่านสถานะรางวัล รวมถึงรางวัลจาก Voice ระบบจะอ่านและบันทึกไฟล์ตามลำดับเพื่อให้ได้การตั้งค่าครบชุด และอ่านรายชื่อเกมจากข้อมูลตั้งค่าโดยไม่รอตรวจสถานะเซิร์ฟเวอร์ภายนอก</p>
   <div class="shead">
     <span class="where tech">code/apps/gacha · /app/gacha/ · firmware type gacha</span>
     <h2>🎁 แจกของรางวัล — Prize machines</h2>

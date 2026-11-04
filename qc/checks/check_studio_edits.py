@@ -15,6 +15,8 @@ It asserts on page state via marks and on what the hub itself reports
 (GET /api/play), not on what the UI says about itself.
 """
 import json
+from pathlib import Path
+import tempfile
 import browser
 import fake_serial
 import qc as F
@@ -126,8 +128,14 @@ def run(t):
         t.give_up("headless Edge not found — install Edge or run --quick")
     fake_serial.reset()
     base, main = F.start_hub()
-    browser.page(DRIVER, query="%s/studio/_qcdriver.html?dev=usb%%3A%s"
-                 % (base, fake_serial.PORT), seconds=40)
+    old_projects = main.PROJECTS
+    with tempfile.TemporaryDirectory(prefix="mice_studio_edits_") as tmp:
+        main.PROJECTS = Path(tmp)
+        try:
+            browser.page(DRIVER, query="%s/studio/_qcdriver.html?dev=usb%%3A%s"
+                         % (base, fake_serial.PORT), seconds=40)
+        finally:
+            main.PROJECTS = old_projects
 
     marks = fake_serial.qc_marks
     t.ok(not any(m.startswith("ERROR") for m in marks),

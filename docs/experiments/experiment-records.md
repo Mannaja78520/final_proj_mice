@@ -289,3 +289,24 @@ Notes
 - Board files (private): .local/robot_1030/{moves,music} + README_TH.md; prefixes fc/fl/wc/wl, caps 120/240/0,
   14-15 chained files each, largest 8.1 KB (come_and_cheer). Studio 0 flags at 5 mm for every file set.
 - Sim only. Nothing run on the robot.
+
+### Re-run with the jerk-guarded smoother (main 5bc6d2e, PC, 2026-10-30 05:47-05:52 Bangkok)
+Same trained policies as the four-dance final (no retrain); rl_compare re-scored with
+jerkGuard + followDensePath, then to_sequence rebuilt the board files. jerk = RMS 3rd derivative of the
+servo-model angles at 50 Hz. "board" = the chained board files played on BoardClock + servo model.
+
+| dance | rl (policy) | rl_smooth before fix | rl_smooth after fix | board before fix | board after fix | Studio flags (board) |
+|---|---|---|---|---|---|---|
+| come_and_cheer center | 25033 | 33168 | 29989 | 33168 | 29976 | 0 |
+| come_and_cheer left | 23096 | 31751 | 28225 | 31753 | 28215 | 0 |
+| witsawa center (hybrid) | 29812 | 39922 | 37685 | 39827 | 37582 | 0 |
+| witsawa left | 30274 | 40008 | 38394 | 40010 | 38393 | 0 |
+
+- The fix lowers the board jerk 4-11 %, but the keyed, pass-smoothed file is still 20-27 % rougher than
+  the 50 Hz policy itself (checked 2026-11-05 against rl_final_1030/*_score.json jerkRms) (keys every ~190 ms; a joint that turns back still stops). Music-clock error
+  vs the fitted target moved +0.3 to +0.7 deg. All board files stay collision-free at 5 mm.
+- Hybrids still touch on three dances (Studio 17-32 flagged frames); those board files use rl.
+- New board files replace .local/robot_1030 (the previous set kept in .local/robot_1030_old_smoother).
+- The new files are bigger: largest 9.9 KB (fc000_00; was 8.1 KB). Old firmware hung on a 30 KB show and
+  played 2 KB; 5-10 KB is untested on old firmware (the PASS firmware streams per step). README_TH.md
+  in .local/robot_1030 still says 8 KB.
