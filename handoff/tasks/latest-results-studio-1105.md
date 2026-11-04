@@ -6,10 +6,10 @@ Last commit: this checkpoint
 Plan: A56-1
 
 ## Goal
-User2026-11-05: expose latest/best results on a simple front page across tasks; open current6cheer outputs in Nong Studio WITH matching originalaudio and motion. Modify Studio as needed; no new RL training or autonomous robot motion. Stable results catalog/Home app + desktop shortcut; Studio library/project+audio load/playback/save with unsaved-work protection. Isolated staging latest-results-1105; preserve unrelated dirty source and other owners.
+User2026-11-05: expose latest/best results on a simple front page across tasks; open current6cheer outputs in Nong Studio WITH matching originalaudio and motion. Modify Studio as needed; no new RL training or autonomous robot motion. Stable results catalog/Home app; user steering Nov5: NO Desktop shortcut, single organized results/ folder inside mice_system; Studio library/project+audio load/playback/save with unsaved-work protection. Isolated staging latest-results-1105; preserve unrelated dirty source and other owners.
 
 ## Doing now
-Final source stable. Focused68/0; actual six MP3s browser-decoded and imported in two widths (12/12 exact motion/time/SHA/portable, zero transport helpers). Review R4 APPROVED after matching-audio recovery preserves edited draft. Final3/3 mutation caught/restoredgreen. Full gate now RUNNING207checks, exclusive lease held; frozen38sourcepaths manifest saved. Earlier quick6720/9 identified own notice+newA56heading and stage-only missingruntime/profile/model-copy setup; those fixed/restored without root user-data changes. Home stores + Desktop shortcut installed; Studio promotion still pending.
+Final source stable. Focused68/0; actual six MP3s browser-decoded and imported in two widths (12/12 exact motion/time/SHA/portable, zero transport helpers). Review R4 APPROVED after matching-audio recovery preserves edited draft. Final3/3 mutation caught/restoredgreen. Full pre-organization gate PASS9383/0 893.1s exact stable tree; check_game_prize/check_help_groups were flaky parallel and passed alone. Latest user steering requires results/inside root and noDesktop; ownassets already moved unchanged. Apply metadata/private-output exclusions and fresh-stage placeholders, then focused/tool review and refreshed full3browser gate. Earlier quick6720/9 identified own notice+newA56heading and stage-only missingruntime/profile/model-copy setup; those fixed/restored without root user-data changes. Home stores installed; own Desktop shortcut removed per latest user. After current gate, update layout/ignore/guidance and move own catalog into root/results (no loose root files), then refreshed gate/promotion.
 
 ## File status
 | File | Change | State | Verification | Commit |
@@ -54,6 +54,16 @@ Final source stable. Focused68/0; actual six MP3s browser-decoded and imported i
 | nong/main_python_set_nong/patches/0118_latest-results-motion-audio-recovery-verified/style.css | Studio/library or generated/snapshot | staged | focused68/0; actual6x2 PASS; review R4 approved; full pending | uncommitted |
 | nong/main_python_set_nong/PATCHES.md | append snapshots0117/0118 | live bookkeeping | originals preserved | uncommitted |
 | handoff/tasks/latest-results-studio-1105.md | scope/evidence | current | exact owned source paths reconciled | this checkpoint |
+
+| .gitignore | organized private results folder | pending | full pre-organization9383/0; new checks not run | uncommitted |
+| README.md | organized private results folder | pending | full pre-organization9383/0; new checks not run | uncommitted |
+| config/layout.json | organized private results folder | pending | full pre-organization9383/0; new checks not run | uncommitted |
+| docs/LAYOUT.md | organized private results folder | pending | full pre-organization9383/0; new checks not run | uncommitted |
+| docs/systems.json | organized private results folder | pending | full pre-organization9383/0; new checks not run | uncommitted |
+| promote.py | organized private results folder | pending | full pre-organization9383/0; new checks not run | uncommitted |
+| qc/run_qc.py | organized private results folder | pending | full pre-organization9383/0; new checks not run | uncommitted |
+| qc/checks/check_promote_pipeline.py | organized private results folder | pending | full pre-organization9383/0; new checks not run | uncommitted |
+| qc/checks/check_qc_receipt.py | organized private results folder | pending | full pre-organization9383/0; new checks not run | uncommitted |
 
 ## Facts found
 Existing Extensions installs app folders without root code change and Home draws them. Hub8642 not running at last check; no real password touched. Entry main_python/main.py; EXE extension store dist/extensions.json vs source main_python/extensions.json. loadProject currently ignores sourceAudioAsset metadata, so audio/timeline feature is needed. Current full6R4 deliverable is available with known pose limitations; do not retrain. Other owner promoted Voice/Studio fixes through Nov2; preserve them and do not start Voice for viewing output.
