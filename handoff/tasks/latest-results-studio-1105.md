@@ -9,7 +9,7 @@ Plan: A56-1
 User2026-11-05: expose latest/best results on a simple front page across tasks; open current6cheer outputs in Nong Studio WITH matching originalaudio and motion. Modify Studio as needed; no new RL training or autonomous robot motion. Stable results catalog/Home app + desktop shortcut; Studio library/project+audio load/playback/save with unsaved-work protection. Isolated staging latest-results-1105; preserve unrelated dirty source and other owners.
 
 ## Doing now
-Read exact loader/audio/clock/contracts; own new staging init running. Bounded design review before implementation. No source edits yet. Initial console encoding bookkeeping failure corrected, no ownership transfer.
+Source-only staging initialized11084files with existing promotion tool runtime skip.local wrapper; redundant copied private data retained after automatic cleanup rejection, not source. Design consultation completed (gpt-6-astra/high, child studio_library_design_review): shared load generation, validate/decode project+audio before final unsaved prompt; media-clock preview isolated from hardware; persist audio in project/draft; guard key normalization and native duration changes. Implement self-contained .nong.json with embedded audio plus latest catalog/visible Studio library. No changes to old motion/audio source assets. Files planned in .local/latest-results-1105/file_status.csv and source claim in BRIDGE.
 
 ## File status
 | File | Change | State | Verification | Commit |
