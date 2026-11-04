@@ -57,6 +57,7 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `handoff/tasks/voice-helper-audit-1030.md`
 - `handoff/tasks/voice-human-tone.md`
 - `handoff/tasks/voice-keys.md`
+- `handoff/tasks/voice-local-think-1104.md`
 - `tools/ai_brief.txt`
 - `tools/ai_panel.py`
 - `tools/branch.py`

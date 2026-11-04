@@ -131,6 +131,7 @@ def run(t):
             _verse(t, port, model, intents)
             _hearing(t, brain, svc)
             _jobs(t, brain)
+            _retry_keeps_faq(t, brain)
         finally:
             httpd.shutdown()
             httpd.server_close()
@@ -258,3 +259,24 @@ def _jobs(t, brain):
     t.eq(brain.chain("compose"), ["groq", "local"],
          "a stronger writer can be picked for verse alone (per situation)")
     brain.cfg.pop("use", None)
+
+
+def _retry_keeps_faq(t, brain):
+    """The wrong-language retry still carries the FAQ (PC bench 2026-11-04: with
+    only the language line the small models invented 'opens 9:00', 'parking in
+    the basement'). Assert on what reached the model, not on the answer."""
+    seen = []
+
+    def complete(messages, max_tokens=0, details=False):
+        seen.append(messages[0]["content"])
+        return ("สวัสดีครับ" if len(seen) == 1 else "The restroom is on the left."), False
+    old = brain._complete
+    brain._complete = complete
+    try:
+        brain._generate_local("FAQ-MARK persona", [{"role": "user", "content": "where is the restroom?"}],
+                              60, False, "en")
+    finally:
+        brain._complete = old
+    t.ok(len(seen) == 2 and "FAQ-MARK" in seen[1],
+         "wrong-language retry keeps the FAQ in its system prompt", seen)
+

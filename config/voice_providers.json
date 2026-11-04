@@ -130,9 +130,13 @@
     },
     "ollama": {
       "says": "Ollama on this PC", "kind": "openai",
-      "base": "http://127.0.0.1:11434/v1",
+      // Typhoon 2.5 4B (Q4_K_M, Apache-2.0): 38 questions in th/en/zh/ja/ko/lo on the PC
+      // (2026-11-04): Thai 24/30 vs 10/30 for Qwen 0.5B, "ครับ" 15/15 vs 8/15, 0.12 s, 3.2 GB.
+      // Port 11435 = the second Ollama with models on D:\local-ai (the PC's own
+      // 11434 holds none of them). Lao is weak in every model tried.
+      "base": "http://127.0.0.1:11435/v1",
       "free": "Free and offline: answers with a model you pulled into Ollama (empty model = the first one it has).",
-      "jobs": {"think": {"model": "", "maxTokens": 256}}
+      "jobs": {"think": {"model": "typhoon25-4b", "maxTokens": 256}}
     }
   }
 }
