@@ -9,7 +9,7 @@ Plan: A56-1
 User2026-11-05: expose latest/best results on a simple front page across tasks; open current6cheer outputs in Nong Studio WITH matching originalaudio and motion. Modify Studio as needed; no new RL training or autonomous robot motion. Stable results catalog/Home app + desktop shortcut; Studio library/project+audio load/playback/save with unsaved-work protection. Isolated staging latest-results-1105; preserve unrelated dirty source and other owners.
 
 ## Doing now
-Studio implementation and catalog6 complete in isolated stage; five review issues patched. Focused browser+compatibility64/0 after fixes. Capturing mutation proof (prior session output lost), then actual6 bundle integration, final review, quick/full QC, explicit-file promotion, Home registration and Desktop shortcut. No hardware/training.
+Studio implementation and catalog6 complete in isolated stage; five review issues patched. Focused browser+compatibility64/0 after fixes. Mutation2/2 caught/restored green. Actual6 bundles decoded/imported with exact keys/time/song; initial private aggregation dropped first layout run, corrected capture pending. Review R2 fixes pass66/0 (pending draft preview/save reservation, schema validation). R3 asks matching-audio recovery to preserve edited draft keys; fix prepared, wait current quick gate before editing. Home registered in dist/source stores, Desktop shortcut verified. Then focused/integration/final-review/full gate and explicit-file promotion. No hardware/training.
 
 ## File status
 | File | Change | State | Verification | Commit |
@@ -37,10 +37,10 @@ Studio implementation and catalog6 complete in isolated stage; five review issue
 | main_python/web/help.html | motion/music library or generated parity | staged | focused64/0; mutation/re-review pending | uncommitted |
 
 ## Facts found
-Existing Extensions installs app folders without root code change and Home draws them. Hub8642 is not running. Entry main_python/main.py; EXE extension store dist/extensions.json vs source main_python/extensions.json. loadProject currently ignores sourceAudioAsset metadata, so audio/timeline feature is needed. Current full6R4 deliverable is available with known pose limitations; do not retrain. Other owner promoted Voice/Studio fixes through Nov2; preserve them and do not start Voice for viewing output.
+Existing Extensions installs app folders without root code change and Home draws them. Hub8642 not running at last check; no real password touched. Entry main_python/main.py; EXE extension store dist/extensions.json vs source main_python/extensions.json. loadProject currently ignores sourceAudioAsset metadata, so audio/timeline feature is needed. Current full6R4 deliverable is available with known pose limitations; do not retrain. Other owner promoted Voice/Studio fixes through Nov2; preserve them and do not start Voice for viewing output.
 
 ## Done
-Built sibling latest-results app and 6 portable original-motion+embedded-song files. Studio library/media clock/save/draft/preview isolation and Help staged. 64 focused assertions pass after five review fixes. Not promoted/installed yet.
+Built sibling latest-results app and 6 portable original-motion+embedded-song files. Studio library/media clock/save/draft/preview isolation and Help staged. 64 focused assertions pass after five review fixes. Catalog registered in both machine stores with prior entries preserved; Desktop shortcut installed (COM direct Unicode Save failed, ASCII intermediary renamed successfully). Studio source not promoted yet.
 
 ## Next
 Implement/review/verify/land latest catalog+Studio audio library, exactfileledger, Help parity, tests dirtycancel/missingaudio/clock/pause/seek/loop/save-reopen/no commands. Required mutation/QC/review/promotion. Add stable Home/desktop entry and future delivery guidance.
