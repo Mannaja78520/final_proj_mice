@@ -136,7 +136,7 @@
       // 11434 holds none of them). Lao is weak in every model tried.
       "base": "http://127.0.0.1:11435/v1",
       "free": "Free and offline: answers with a model you pulled into Ollama (empty model = the first one it has).",
-      "jobs": {"think": {"model": "typhoon25-4b", "maxTokens": 256}}
+      "jobs": {"think": {"model": "typhoon25-4b", "maxTokens": 256, "temperature": 0}}
     }
   }
 }

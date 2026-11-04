@@ -132,6 +132,7 @@ def run(t):
             _hearing(t, brain, svc)
             _jobs(t, brain)
             _retry_keeps_faq(t, brain)
+            _manner_fixes(t, brain, svc)
         finally:
             httpd.shutdown()
             httpd.server_close()
@@ -279,4 +280,46 @@ def _retry_keeps_faq(t, brain):
         brain._complete = old
     t.ok(len(seen) == 2 and "FAQ-MARK" in seen[1],
          "wrong-language retry keeps the FAQ in its system prompt", seen)
+
+
+def _manner_fixes(t, brain, svc):
+    """Found on the PC 2026-11-04 with the female voice and Typhoon 4B."""
+    # this check's brain runs on a tiny config; the shipped answer block is the thing under test
+    brain.cfg["answer"] = json.loads((F.CODE / "config" / "voice.json").read_text(encoding="utf-8"))["answer"]
+    t.eq(svc.one_pronoun("ดิฉันช่วยได้ค่ะ", "ดิฉัน", svc.DEF_PRONOUNS), "ดิฉันช่วยได้ค่ะ",
+         "a pronoun that holds a shorter one (ดิฉัน holds ฉัน) is not doubled")
+    t.eq(svc.one_pronoun("ผมช่วยได้", "ดิฉัน", svc.DEF_PRONOUNS), "ดิฉันช่วยได้",
+         "   and a different pronoun is still swapped")
+    words = brain.ask_words()
+    t.ok("นะ" in words and "ไหม" in words, "ask words come from voice.json", words)
+    t.eq(svc.one_particle("อากาศร้อนนะครับ มีอะไรให้ช่วยไหมครับ", "ค่ะ", svc.DEF_PARTICLES, words),
+         "อากาศร้อนนะคะ มีอะไรให้ช่วยไหมคะ", "woman: คะ after นะ / ไหม, not ค่ะ")
+    t.eq(svc.one_particle("ได้ค่ะ", "ค่ะ", svc.DEF_PARTICLES, words), "ได้ค่ะ",
+         "   ค่ะ elsewhere stays")
+    t.ok(svc.answers_in("Welcome2024", "ja") and not svc.answers_in("Hello there", "ja"),
+         "a reply that is only a code passes the language guard; English words still do not")
+    ghosts = json.loads((F.CODE / "config" / "voice.json").read_text(encoding="utf-8"))["stt"]["ghostPhrases"]
+    t.eq(svc.drop_ghosts("ขอบคุณที่รับชม อย่าลืมกดติดตามช่อง", ghosts), "",
+         "whisper's made-up sign-off is heard as nothing")
+    t.eq(svc.drop_ghosts("ห้องน้ำไปทางไหน ขอบคุณที่รับชม", ghosts), "ห้องน้ำไปทางไหน",
+         "   and a real question next to it is kept")
+    old_gw = brain.gender_words
+    brain.gender_words = lambda lang, gender=None: {"particle": "ค่ะ", "pronoun": "ดิฉัน"}
+    try:
+        sorry = brain.cannot_answer("th")
+    finally:
+        brain.gender_words = old_gw
+    t.ok("ดิฉัน" in sorry and "ครับ" not in sorry and "ผม" not in sorry,
+         "the 'I did not understand' line is said in a woman's voice's ending", sorry)
+    t.eq(svc.detect_lang("화장실이 어디예요?"), "ko", "Korean is told apart from Japanese and Chinese")
+    t.ok(svc.answers_in("화장실은 왼쪽입니다.", "ko") and not svc.answers_in("ห้องน้ำอยู่ซ้าย", "ko"),
+         "   and a Korean reply passes the guard, a Thai one does not")
+    sys_ko, _l, _v = brain._think_prompt([{"role": "user", "content": "화장실이 어디예요?"}], "ko", "", "")
+    t.ok("Korean" in sys_ko and "ภาษาไทย" not in sys_ko, "   and Korean gets its own prompt, not the Thai one", sys_ko[:120])
+    for lang in ("th", "en", "ja", "zh", "ko"):
+        system, _limit, _verse = brain._think_prompt(
+            [{"role": "user", "content": "hello"}], lang, "", "")
+        shots = brain.answer_cfg().get("examples", {}).get(lang) or []
+        t.ok(shots and shots[0][1] in system, "few-shot examples reach the model prompt: %s" % lang,
+             system[-200:])
 
