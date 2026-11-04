@@ -3,6 +3,8 @@
 Owner: claude (cloud thread "Judge local AI and voice from Short")
 Updated: 2026-11-04
 Branch: claude/project-thread-vevw1p
+Last commit: 396b89d
+Plan: A56-1
 
 ## Goal
 User 2026-11-04: try a better local "think" model for all languages; "ถ้าดีก็จัด".
