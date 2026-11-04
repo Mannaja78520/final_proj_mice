@@ -39,6 +39,22 @@ def listing():
             "added": st["added"], "found": ext.candidates()}
 
 
+def check_all():
+    """Ask every app that can be updated whether a newer version is waiting.
+    Keyed by the id the page uses for its Update button (partner id, or the
+    added app's id)."""
+    ext = _hub.EXT
+    partners = _hub.read_partners().get("partners") or {}
+    out = {}
+    for pid, v in partners.items():
+        if isinstance(v, dict) and v.get("installed"):
+            out[pid] = ext.check(pid, v)
+    for aid in ext.state()["added"]:
+        if aid not in out:
+            out[aid] = ext.check(aid)
+    return {"ok": True, "results": out}
+
+
 class ExtensionRoutes:
     def _ext_body(self):
         try:
@@ -70,6 +86,8 @@ class ExtensionRoutes:
                 pid = d.get("id") or ""
                 entry = (_hub.read_partners().get("partners") or {}).get(pid)
                 return self.send_json(ext.update(pid, entry))
+            if path == "/api/extensions/check":
+                return self.send_json(check_all())
             if path == "/api/extensions/pick":
                 return self.send_json(self._pick_folder())
         except ValueError as e:

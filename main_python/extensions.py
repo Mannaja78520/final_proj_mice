@@ -258,6 +258,32 @@ class Extensions:
             argv = ["git", "pull", "--ff-only"]
         return folder, argv
 
+    def check(self, app_id, entry=None):
+        """Is a newer version waiting? Only a git folder can say so without
+        running the app's own update: fetch, then count the commits we lack.
+        {"state": "new" | "current" | "unknown" | "error"} - an app with its
+        own update command but no git cannot be checked, so it stays "unknown"
+        (user 2026-11-05: Update must not sit on every app)."""
+        folder, argv = self.update_command(app_id, entry)
+        if not folder or not argv:
+            return {"state": "none"}
+        own = bool(((self.detect(folder) or {}).get("manifest") or {}).get("update")
+                   or (entry or {}).get("update"))
+        if own or not (Path(folder) / ".git").exists():
+            return {"state": "unknown"}
+        try:
+            for cmd in (["git", "fetch", "--quiet"],
+                        ["git", "rev-list", "--count", "HEAD..@{u}"]):
+                r = subprocess.run(cmd, cwd=folder, capture_output=True, text=True,
+                                   encoding="utf-8", errors="replace", timeout=60,
+                                   stdin=subprocess.DEVNULL, creationflags=NO_WINDOW)
+                if r.returncode != 0:
+                    return {"state": "error", "detail": (r.stderr or r.stdout)[-300:]}
+            behind = int((r.stdout or "0").strip() or 0)
+        except (OSError, ValueError, subprocess.SubprocessError) as e:
+            return {"state": "error", "detail": str(e)}
+        return {"state": "new" if behind else "current", "behind": behind}
+
     def update(self, app_id, entry=None):
         folder, argv = self.update_command(app_id, entry)
         if not folder or not argv:
