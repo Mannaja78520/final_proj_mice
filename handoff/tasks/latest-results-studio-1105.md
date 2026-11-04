@@ -9,7 +9,7 @@ Plan: A56-1
 User2026-11-05: expose latest/best results on a simple front page across tasks; open current6cheer outputs in Nong Studio WITH matching originalaudio and motion. Modify Studio as needed; no new RL training or autonomous robot motion. Stable results catalog/Home app + desktop shortcut; Studio library/project+audio load/playback/save with unsaved-work protection. Isolated staging latest-results-1105; preserve unrelated dirty source and other owners.
 
 ## Doing now
-Final source stable. Focused68/0; actual six MP3s browser-decoded and imported in two widths (12/12 exact motion/time/SHA/portable, zero transport helpers). Review R4 APPROVED after matching-audio recovery preserves edited draft. Final3mutation running; full gate next. Earlier quick6720/9 identified own notice+newA56heading and stage-only missingruntime/profile/model-copy setup; those fixed/restored without root user-data changes. Home stores + Desktop shortcut installed; Studio promotion still pending.
+Final source stable. Focused68/0; actual six MP3s browser-decoded and imported in two widths (12/12 exact motion/time/SHA/portable, zero transport helpers). Review R4 APPROVED after matching-audio recovery preserves edited draft. Final3/3 mutation caught/restoredgreen. Full gate now RUNNING207checks, exclusive lease held; frozen38sourcepaths manifest saved. Earlier quick6720/9 identified own notice+newA56heading and stage-only missingruntime/profile/model-copy setup; those fixed/restored without root user-data changes. Home stores + Desktop shortcut installed; Studio promotion still pending.
 
 ## File status
 | File | Change | State | Verification | Commit |
