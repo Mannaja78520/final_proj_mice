@@ -302,8 +302,11 @@ servo-model angles at 50 Hz. "board" = the chained board files played on BoardCl
 | witsawa center (hybrid) | 29812 | 39922 | 37685 | 39827 | 37582 | 0 |
 | witsawa left | 30274 | 40008 | 38394 | 40010 | 38393 | 0 |
 
-- The fix lowers the board jerk 4-11 %, but the keyed, pass-smoothed file is still 15-29 % rougher than
-  the 50 Hz policy itself (keys every ~190 ms; a joint that turns back still stops). Music-clock error
+- The fix lowers the board jerk 4-11 %, but the keyed, pass-smoothed file is still 20-27 % rougher than
+  the 50 Hz policy itself (checked 2026-11-05 against rl_final_1030/*_score.json jerkRms) (keys every ~190 ms; a joint that turns back still stops). Music-clock error
   vs the fitted target moved +0.3 to +0.7 deg. All board files stay collision-free at 5 mm.
 - Hybrids still touch on three dances (Studio 17-32 flagged frames); those board files use rl.
 - New board files replace .local/robot_1030 (the previous set kept in .local/robot_1030_old_smoother).
+- The new files are bigger: largest 9.9 KB (fc000_00; was 8.1 KB). Old firmware hung on a 30 KB show and
+  played 2 KB; 5-10 KB is untested on old firmware (the PASS firmware streams per step). README_TH.md
+  in .local/robot_1030 still says 8 KB.
