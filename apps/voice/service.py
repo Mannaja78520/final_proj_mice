@@ -254,8 +254,12 @@ def one_particle(text, keep, particles=None, ask_words=None):
     others = [p for p in (particles or DEF_PARTICLES) if p and p != keep]
     if not others:
         return text or ""
+    # Two particles in a row (ครับค่ะ) are one ending said twice: PC test
+    # 2026-11-04 on #118, the model copied "...ประชาสัมพันธ์ครับ" and a ค่ะ was added.
+    every = sorted({p for p in (particles or DEF_PARTICLES) if p} | {keep}, key=len, reverse=True)
+    run = re.compile("(?:%s){2,}(?=$|[\\s\\.,!?ฯ])" % "|".join(re.escape(p) for p in every))
     pat = re.compile("(?:%s)(?=$|[\\s\\.,!?ฯ])" % "|".join(re.escape(p) for p in others))
-    out = pat.sub(keep, text or "")
+    out = pat.sub(keep, run.sub(keep, text or ""))
     if keep == "ค่ะ" and ask_words:
         # A woman says คะ after นะ / ไหม / อะไร, not ค่ะ (PC test 2026-11-04 found
         # "นะค่ะ", "ไหมค่ะ"). The words are DATA: answer.askWords in voice.json.
