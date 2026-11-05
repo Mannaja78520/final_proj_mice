@@ -1,6 +1,6 @@
 # Follow front chest/face cross-X choreography
 Owner: codex:cross-1105-01a1891f
-Updated: 2026-11-05T20:12:43.742064+07:00
+Updated: 2026-11-06T01:44:48.001043+07:00
 Branch: PC main/private experiments; remote wip/cross-x-1105-review is task-only backup on canonical origin/main, not production merge request
 Last commit: this checkpoint
 Plan: A57-2
@@ -11,7 +11,7 @@ Latest2026-11-05: userprefers earlyRL Come timing while newerheightbetter; prese
 User says front-body/face cross-X poses are missing and requests copying those as well as raised arms. User adds backward hand/arm flick, anchor song Come and Cheer (I0lCxX8373M)1:50(110s), similar gesture in nearly allclips. Diagnose against original source across6; correct supported crossing/elbow/wrist/forearm relations using bounded work, preserve oldbest. Previous stop of broad RL loops stays: no broad training, NN re-extraction, confidence promotion, hardware motion or Voice; modest trials remain authorized and training requires a diagnosed need. User explicitly authorizes this targeted correction; do not restart old heartbeat trials.
 
 ## Doing now
-User accepted BOTH oldRL center/left independently. Two frozen-command retarget pilots, source96..118 core100..116, standaloneHOME entry/exit (notmidflight/fullsong). NoNN/train/controllerrollout. Perpolicy1candidate/60snumeric, existingthin/projection2000/.8/.5/.6 thenactualYAML/v2/servo/native18. Sameoldclockoffset4.938; no person/phaseaveraging, allaffectedcontextshown. Restoretimingfirst, no gain-heightoptimizationyet.
+Two separate useraccepted teacher pilots COMPLETE; no active own worker. Published two short editable/song/actualpreview diagnostics at results/come-timing-review/pilots/index.html and rootfrontlink. ActualStudio import pending normalHub return: externalQC PID28728 observed, do not restart shared services during gate. No further motion search/budget expansion; no fullsong promotion.
 
 ## File status
 Exactperfileledger `.local/cross_x_1105/file_ledger.csv` includesprivate/generated/reports, hashes/scopes; volatilebrowserfixture rows are notimmutableproof. Media/models remainoutsideGit.
@@ -57,7 +57,23 @@ Exactperfileledger `.local/cross_x_1105/file_ledger.csv` includesprivate/generat
 | .local/cross_x_1105/replay_projected.py | bounded separate-teacher pilot | pending numerical checks | syntax PASS; default Blood folder preserved | git-ignored |
 | .local/cross_x_1105/screen_projected.cjs | bounded separate-teacher pilot | pending numerical checks | syntax PASS; default Blood folder preserved | git-ignored |
 
+| .local/cross_x_1105/come_audio_binding_fix.py | two independent diagnostic pilots | retained | native/audio/asset checks; actualStudio pending | git-ignored |
+
+| .local/cross_x_1105/review_come_pilots.py | two independent diagnostic pilots | retained | native/audio/asset checks; actualStudio pending | git-ignored |
+
+| .local/cross_x_1105/publish_come_pilots.py | two independent diagnostic pilots | retained | native/audio/asset checks; actualStudio pending | git-ignored |
+
+| .local/cross_x_1105/verify_studio_import.cjs | two independent diagnostic pilots | retained | native/audio/asset checks; actualStudio pending | git-ignored |
+
+| .local/cross_x_1105/come_pilot_checkpoint.json | two independent diagnostic pilots | retained | native/audio/asset checks; actualStudio pending | git-ignored |
+
+| .local/cross_x_1105/come_pilot_visual_review.json | two independent diagnostic pilots | retained | native/audio/asset checks; actualStudio pending | git-ignored |
+
+| .local/cross_x_1105/come_pilot_failures.json | two independent diagnostic pilots | retained | native/audio/asset checks; actualStudio pending | git-ignored |
+
 ## Facts found
+NEW two frozenRL teachers independently native technicalPASS: source96..118/core100..116; thin3/min120ms/projection2000/.8/.5/.6, unchangedclock/18mm/caps. Numericalcumulative11.148scenter/10.798sleft; perpolicy1candidateunder60s. InitialplaycueNonefailure retained; correctionONLYplaycue, sameposes/times/rig. ActualYAML/fullHOME/perjointv2/float32servo/command1ms+paths/servo50Hz+pathsPASS. Render659frames/audioPASSboth,48.683/42.172s. No training/NN/controller inference.
+Nativeprojectionstilllosesrange: centerL76.6%/R67.5%,leftL70.8%/R69.4% ofteacherrange (not humanaccuracy). Fixedapexmatchesallow600ms, NOT beataccuracy. ACTUALLYviewed4pages104.6045/111.111 confirmsoldoverhead->lowbent afterprojection; loweringclosertoteacherthanR4at111.1butcross/forearmimperfect. No winner/promotion. Old24protectedSHAunchanged. come_pilot_checkpoint.json/currentcodeSHA + come_pilot_visual_review.json + come_pilot_failures.json authoritative; report+codeZIP+metrics publiclocalonly.
 LATEST Come: original20RLcenter/left available in .local/rl_final_1030 and common_audit; source4.9382667..163.43s vs currentfull0..168.28s; rig13fields EXACT. currentfullfrozenRL native18unsafe evidence is a DIFFERENT cohort; do not assert original20already18tested. See come_timing/audit.json input/dependencySHA, causal_cases.json, fixed_time_matrix.csv/timing.png.
 At104.6/106.14 source-modeledLreference/controlGoalup+supported(inferred), Runknown; currentdenseMPCservoflatlow evenBEFOREexport, whileoriginalRLhasraises. Exportalsoflattensrange/speed; at110.7rawlowering/nativeexportstillraising, notproofold/rawbetterthaneveryhumanevent. Per5svelocitylagcorrelationonly-60..+40ms hidesmissed/changedmotifs; notappliedastimewarp oroptimizationselector. Exactsourceevents needhumanlabels, notheight-onlyscore.
 results/come-timing-review serves2archivalmovies + currentexistingR4 + onesourceMP3master. Old5mm/err/lateburnedcaptionsarelegacy, notnative18/human3D/physicalproof. Playerusesmetadataoffsetonly, rate1, videosmuted;HTTPmediafirstseekstayed0 caughttest, fixedseekableBlob; filemodeusesdirectmedia. Online/offlinecenter-leftseek110.7PASS; screenshotACTUALLYviewed; no movie rerender. PreferredrolesBOTH_USER_CONFIRMED, no sourceconfidencepromotion.
@@ -66,6 +82,7 @@ Cached13.174s all6 source/actual lineage checks pass. Blood28.629 reference/cont
 Current results6 are accepted best-available R4, not choreography-perfect. Prior chestcross/forearm/phase defects acknowledged. Original cached person22358frames77chunks; no need NN rerun. Actual safety normal11/MUSIC18mm; analytic_sequence_limits_v2 is authoritative per-joint cosine. Existing current Studio/bundles passed software/clock persistence, not human fidelity. All old full data exposed development/regression.
 
 ## Done
+Two independent pilots and portable22soriginalsong excerpts saved; native proofs/audio/video hashes+allpublicrelative links+protected24PASS. Originalinputs/cuefailure/publisherPathfailure retained. Actualappimportattempt hit no normalHub, NOT projectrejection; no service/processinterference with externalQC, no secondtest yet. Publicpage clearlyREVIEWONLY, actualStudioimportpending.
 NEW Come cacheddiagnosis2.330s numeric(afterimports); originalreportpassmetadataKeyErrorL/R fixedtoarmslist; originalplot/matrixSHAunchanged andfailurestored. No training/NN/controller/geometryredo. BuiltsynchronizedreviewfromoldMP4bytecopiesandcurrentvideo/audio, sourceoffset4.9382667; realbrowserHTTP+filetestsPASS andHTTP4/frontlink/localhref/SHA/protected24PASS. Generatedresulthelpupdatedalongsidegenerator, no mainappUI/API/transportchange. Repaircontract/timinggatesrecorded, asyncpreferencequestionissued; no newmotioncandidate.
 LATEST DELIVERY: projectedvariant technicalPASS:89projectioniterations/.029s, actualanalytic7.951s, compile3.445s, parsedHOMEreplay.518s/parity4.17e-11deg/v2+float32servoPASS; actualMUSIC18 command94001x1ms+adjacentpaths andservo4701x50Hz+pathsPASS44.398s. Fullsongpreview2788frames/sourceMP3clock10active+9silentfixed5swindowsPASS. Legacy3fractionaudioassertcoveragefailure retained; cached-onlyaudio audit fixed, no rerender. Renderwall/peakRSS NOTMEASURED, not guessed.
 ActualservedStudioimport PASS452exactmotionkeys/rig/song93.065583s/portableDataURL/0helpercalls; screenshotviewed. Livepreview8timesdelta0 againstcheckedNativecommands; no newrobot send. FirstCDPloadcontextfailure retained; explicitload-eventfixed, isolatedprofilesonly. NormalHub startedhidden Voiceautostart0, leftforuser; actualHTTP6+rootdirectlinkPASS. Selected24oldproject/YAML/MP3/bundlesSHAunchanged.
@@ -92,9 +109,7 @@ No RL heartbeat was found in the local automation inventory (only Voice PAUSED);
 User permits modest experiments/training, not zero experiments. For this gesture task: one stated hypothesis/variant, existing short contexts and cached inputs, explicit time/evaluation cap, report improvement plus regressions; negligible gain or failed hypothesis stops that approach. New training requires a diagnosed training limitation, not unresolved source/retarget/export defects. Preserve original safety and final export checks.
 
 ## Next
-Run the two independent frozen-command native pilots (center/left), 1candidate and60s each; source96..118/core100..116. Check actualYAML/wholeHOME/v2/servo/native18 before timing/source review. No averaging, newtraining or fullsong selection.
-After preferredversion/sourceevents confirmed, one SHORT pilot100..116s: keepvalidatedraise/apex/lower/reversal timingperarm asnonregressiongates; addheight onlywhereeventtiming/shape preserved. First diagnose currentcontroller stall on modeled-validLgoal104.6/106.14 (Runknown notgraded), then nativeexport flattening/reversal. Rootcausebeyondlossstage(bank/collision/cost/goal)notyetproved; no automatic longtraining. See come_timing/repair_contract.json forhard18/perjointv2/clock/HOME/servo/actualYAML/audio/human gates. Numericbudget upfrontdefaultmax3/<2pctstop; no candidate run inthisdiagnosis.
-Blood3variantseries remainscomplete; donotrerunitsfailedprojections/render/geometry. TechnicalreviewBloodfileimports/plays butcrossFAIL/notselected. All6source/group/continuoushuman/beat/finalqualitystillOPEN. KeepVoicepaused/otherownersreadonly. No automationstarted.
+When normalHub8642 returns after externalQC, run actual servedStudio import/8preview samples for each NEWpilot (.local/cross_x_1105/verify_studio_import.cjs --pilot=center|left); no controller/projection/geometry/render rerun. Priorcenterattempt failed beforeStudio load, preserved in come_pilot_failures.json. Verify embedded22sWAV/140center137leftkeys/rig/previewparity0/nohelpers; copy actualreceipts to publicdiagnostics afterPASS. No fullsong selection: conservativeprojectionlostoverhead; budget1candidate/policy complete. Source/reference/cross/backwardflick and all6 quality remainOPEN.
 
 ## Blocked
 No technical resourceblocker. Preferred oldversion/group requires useridentification before blending components; explicitasyncquestion asked withworkingviewer. Source/role/depthuncertainty persists. Overallgesturefixnotcomplete; currentdiagnosticandcomparisonready, no workersactive. Alloldselectedresultsandcheckpoints preserved.
