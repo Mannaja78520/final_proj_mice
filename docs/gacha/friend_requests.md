@@ -52,6 +52,30 @@ hub ของเราอยู่ที่ `http://<เครื่อง PC>:8
 4. **(ไม่ด่วน) webhook ตอนจำคนได้** `POST <url ของเรา>` `{"name", "person_id", "node_id", "tags", "time"}`
    ตอนนี้เราถามซ้ำเป็นระยะแทน
 
+## อัปเดต 2026-11-05 — รับ G1-G6 แล้ว + สัญญา G4 (ร่างจากฝั่งเรา)
+
+ฝั่งเรารับ `alljao:win` รูปแบบใหม่ (`playerName`, `result.label` / `result.score`) แล้ว
+และส่ง `gacha.out` ไป `POST /api/gacha/webhook` พร้อม Bearer token (token อยู่ใน env
+`GACHA_WEBHOOK_TOKEN` หรือไฟล์ `.local/gacha/game_webhook_token.txt` ฝั่งเรา ไม่อยู่ใน git)
+ตั้งใน `config/gacha.json`: `"webhooks": {"out": [{"url": "http://<เครื่องเกม>:4173/api/gacha/webhook", "format": "alljao"}]}`
+
+**G4 สัญญา `POST /api/gacha/game` (ถ้าเพื่อนอยากให้เกมเรียก hub ตรง ไม่บังคับ)**
+- Request: `POST http://<hub>:8642/api/gacha/game` JSON
+  `{"game":"quiz","result":"8","person":"<playerName>","ref":"<detail.id>"}`
+- Auth: header `X-Mice-Key: <กุญแจที่สร้างในหน้า Prize machines ▸ Other PCs and forms>`
+  (เก็บเป็น env/ไฟล์ฝั่งเซิร์ฟเวอร์ของเกม ห้ามใส่ในหน้าเว็บหรือ git)
+- Idempotency: `ref` ซ้ำ (ต่อ game) = ตอบ `{"ok":true,"repeat":true}` ไม่แจกซ้ำ จึง retry ได้เมื่อ timeout
+  ใช้ `detail.id` เป็น `ref`
+- Response 200: `{"ok":true,"machine":"g2","message":"..."}` แจกแล้ว (แสดง `message` บอกที่รับ)
+  `{"ok":false,"reason":"no prize for this result"}` ไม่ถึงเกณฑ์ (ไม่ใช่ error)
+  409 `{"ok":false,"reason":"person limit reached"|"event closed"|"out of stock"|...,"message":"..."}`
+  401 key ผิด; ไม่ต้อง retry เมื่อ 4xx
+- เกณฑ์ชนะ (เช่น quiz คะแนนขั้นต่ำ) ตั้งฝั่ง hub ไม่ใช่ฝั่งเกม
+
+**ที่ยังขอเพิ่ม (ไม่บังคับ)**: ใน `gacha.out` webhook ให้เกมรับ field เสริม `item` (ชนิดที่หมด) และ
+`machines` จะได้เลิกสุ่มรางวัลชนิดนั้นตรงตัว (ตอนนี้เรายิงเพิ่มให้ ถ้า server ปฏิเสธ field แปลกให้บอก);
+และให้มี `gacha.dispensed` ด้วย ถ้าอยากโชว์ตู้ที่ปล่อยของ
+
 ## ฝั่งเราเตรียมไว้แล้ว (ไม่ต้องทำอะไร)
 
 - กติกาแจกของต่องาน/ต่อคน/คนพิเศษ ตั้งในหน้า Prize machines หรือดึงจาก Google Sheet
