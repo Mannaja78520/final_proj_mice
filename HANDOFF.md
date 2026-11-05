@@ -71,7 +71,7 @@ Every line printed stays in the context and is paid again on every later call.
 - Experiments: numeric budget + stop rule before starting (default max 3
   rounds, stop if gain < 2%).
 - No polling: run blocking, or run in background with
-  `python qc/run_qc.py --quiet --done-file done.json ...` (writes
+  `python qc/run_qc.py --quiet --done-file qc/done.json ...` (writes
   {"code","when"}) and wait once. If you must check: every 5-10 min, tail only.
 - Size: this file and each task file stay under 150 lines
   (check_handoff_first holds it). BRIDGE over ~400 lines: move old entries to
