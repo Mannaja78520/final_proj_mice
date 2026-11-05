@@ -56,8 +56,10 @@ DEFAULT_CFG = {
     # A result containing one of these words never gives a prize, whatever the
     # rules say (the wheel pays out every slice, "try again" too: found 2026-11-05).
     "games_skip": ["ลองใหม่", "ไม่ได้รางวัล", "เสียใจ", "try again", "no prize", "better luck"],
-    # Highest score a game can give: a rule's "min" above it could never win, so
-    # it is lowered to it. Quiz = ROUND_SIZE 5 (All-Jao-Games quiz-game.js:9).
+    # Highest score a game gives, used ONLY when the game does not say so itself
+    # (the win carries `total`, e.g. questions in the round): a rule's "min"
+    # above it could never win, so it is lowered to it. Quiz = 5 questions today
+    # (All-Jao-Games quiz-game.js:9); more questions only need the game to send total.
     "game_score_max": {"quiz": 5},
 }
 
@@ -78,6 +80,13 @@ def _int(v, default=0):
         return int(float(str(v).strip()))
     except (TypeError, ValueError):
         return default
+
+
+def _is_num(v):
+    try:
+        return v not in (None, "", True, False) and float(v) > 0
+    except (TypeError, ValueError):
+        return False
 
 
 def _yes(v):
@@ -706,6 +715,18 @@ class Gacha:
 
     # ---- games that give a prize (A47-6) -------------------------------------
     @staticmethod
+    def _bound(v, top):
+        """A rule's min/max: a number, or "80%" of the top score (False = cannot tell)."""
+        if isinstance(v, str) and v.strip().endswith("%"):
+            if top is None:
+                return False
+            try:
+                return float(v.strip()[:-1]) / 100.0 * float(top)
+            except ValueError:
+                return False
+        return v
+
+    @staticmethod
     def _score_fits(rule, result, top=None):
         """Rule "min"/"max" is a score range (quiz: the friend's game ends every
         round with a score, 2026-11-05, so the hub decides what is a win). A
@@ -715,19 +736,22 @@ class Gacha:
             return True
         try:
             n = float(str(result).strip())
+            lo, hi = Gacha._bound(lo, top), Gacha._bound(hi, top)
+            if lo is False or hi is False:
+                return False                     # a percent with no top score known
             if top is not None and lo not in (None, ""):
                 lo = min(float(lo), float(top))
             return (lo in (None, "") or n >= float(lo)) and (hi in (None, "") or n <= float(hi))
         except ValueError:
             return False
 
-    def game_item(self, game, result):
+    def game_item(self, game, result, total=None):
         """(rule) the first "games" rule whose game and result pattern fit, or None."""
         cfg = self.cfg()
         text = str(result or "").lower()
         if any(str(w).lower() in text for w in cfg.get("games_skip") or [] if str(w).strip()):
             return None
-        top = (cfg.get("game_score_max") or {}).get(str(game or "").lower())
+        top = total if _is_num(total) else (cfg.get("game_score_max") or {}).get(str(game or "").lower())
         for r in cfg.get("games") or []:
             if not isinstance(r, dict) or not r.get("item"):
                 continue
@@ -744,14 +768,14 @@ class Gacha:
             return r
         return None
 
-    def game_win(self, game, result, person="", ref="", by="game"):
+    def game_win(self, game, result, person="", ref="", by="game", total=None):
         """A game says someone won: give what the rules name, once per `ref`."""
         game = str(game or "").strip()
         key = game + ":" + str(ref) if ref else ""
         with self.lock:
             if key and key in self.wins_seen:
                 return {"ok": True, "repeat": True, "message": ""}
-            rule = self.game_item(game, result)
+            rule = self.game_item(game, result, total)
             if not rule:
                 self.log_event({"kind": "game", "app": "game:" + game, "person": person,
                                 "reason": "no prize for this result", "result": str(result)})

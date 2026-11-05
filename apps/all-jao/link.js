@@ -44,9 +44,10 @@
     show.t = setTimeout(() => { box.hidden = true; }, 12000);
   }
 
-  async function won(w, result, person, ref) {
+  async function won(w, result, person, ref, total) {
     const body = {game: w.game, result: String(result == null ? "" : result),
                   person: person || w.defaultPerson || "", ref: String(ref || Date.now())};
+    if (total != null && total !== "") body.total = total;     // the game's own top score, so nothing is hardcoded here
     try {
       const r = await fetch(P.api || "/api/gacha/game", {method: "POST",
         headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
@@ -110,7 +111,10 @@
       if (id != null && done.has(id)) return;
       if (id != null) done.add(id);
       const game = w.game || d.game || "game";
-      won(Object.assign({}, w, {game}), resultOf(w, d, game), pick(d, w.person || "person"), id);
+      // `result.noPrize: true` (asked of the friend) = a slice that gives nothing
+      if (pick(d, w.noPrize || "result.noPrize") === true) return;
+      won(Object.assign({}, w, {game}), resultOf(w, d, game), pick(d, w.person || "person"), id,
+          pick(d, w.total || "result.total"));
     });
   });
 

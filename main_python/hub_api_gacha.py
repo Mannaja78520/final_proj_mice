@@ -299,7 +299,8 @@ class GachaRoutes:
             if person == "@face":
                 person = face_now()
             got = g.game_win(d.get("game"), d.get("result"), person=person,
-                             ref=str(d.get("ref") or ""), by=who or app_key or "game")
+                             ref=str(d.get("ref") or ""), by=who or app_key or "game",
+                             total=d.get("total"))
             if got.get("reason") == "no prize for this result":
                 return self.send_json(got)               # a loss is not an error
             return self.send_json(got, 200 if got.get("ok") else 409)

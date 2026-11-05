@@ -202,8 +202,7 @@
     fits gives its kind; the rules above still apply. <b>Result</b>: words in what the game shows, for example the
     wheel's prize name, the quiz score <code>5</code> or <code>won</code> for the memory game; empty = any win.
     <b>Who</b>: the person when the game does not name one (empty = whoever the camera sees).
-    <b>Score from / to</b>: the quiz reports a score on every round; a prize only from the score you set (the quiz has 5
-    questions, so 5 is the most). A &ldquo;try again&rdquo; slice of the wheel never gives a prize.</p>
+    <b>Score from / to</b>: the quiz reports a score on every round; a prize only from the score you set: a number, or a percent of the top score such as <code>80%</code> (the game says its top score, for example how many questions the round had, so adding questions needs no change here). A &ldquo;try again&rdquo; slice of the wheel never gives a prize.</p>
   <div class="wrapx"><table class="gt" id="gmT"><thead><tr><th>Game</th><th>Result</th><th>Score from</th><th>Score to</th><th>Kind</th><th>Machine</th><th>Who</th><th></th></tr></thead><tbody></tbody></table></div>
   <div class="row"><button onclick="gmRow({})">+ Row</button><button class="primary" onclick="gmSave()">Save</button>
     <a href="/app/all-jao/">Play the games</a></div>
@@ -767,8 +766,8 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
     this.$("gmT").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' +
       '<td><input data-k="game" list="gmNames" value="' + this.esc(r.game) + '" placeholder="any game"></td>' +
       '<td><input data-k="result" value="' + this.esc(r.result) + '" placeholder="any win"></td>' +
-      '<td><input data-k="min" type="number" value="' + this.esc(r.min) + '" placeholder="any"></td>' +
-      '<td><input data-k="max" type="number" value="' + this.esc(r.max) + '" placeholder="any"></td>' +
+      '<td><input data-k="min" type="text" value="' + this.esc(r.min) + '" placeholder="any"></td>' +
+      '<td><input data-k="max" type="text" value="' + this.esc(r.max) + '" placeholder="any"></td>' +
       '<td><input data-k="item" value="' + this.esc(r.item) + '"></td>' +
       '<td><input data-k="machine" value="' + this.esc(r.machine) + '" placeholder="any"></td>' +
       '<td><input data-k="person" value="' + this.esc(r.person) + '" placeholder="the camera"></td>' +
