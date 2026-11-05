@@ -135,5 +135,3 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0059 | 2026-10-23 00:15 | A48-4 URDF look: one download per mesh file |
 | 0056 | 2026-10-23 14:05 | CAD HOME fallback and late floor config verified; preserve computed axis sense |
 | 0057 | 2026-10-25 07:44 | Redraw idle CAD updates and preserve selected native HOME controls |
-| 0117 | 2026-11-05 03:32 | Latest results library opens editable motion and original music together |
-| 0118 | 2026-11-05 03:42 | Latest results motion audio recovery verified |

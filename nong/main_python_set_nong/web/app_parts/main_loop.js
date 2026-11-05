@@ -67,23 +67,21 @@ function playTick() {
   // When the HUB is the clock that reasoning flips — the robot DID keep
   // moving — so the visibilitychange handler asks the hub where the show got
   // to and moves the play head there. Clamping still applies in between.
-  const audioMs = typeof sequenceAudio !== "undefined" ? sequenceAudio.clock(playT) : null;
-  const dt = audioMs == null ? Math.min(now - lastPlayMs, MAX_TICK_MS) : Math.max(0, audioMs - playT);
+  const dt = Math.min(now - lastPlayMs, MAX_TICK_MS);
   lastPlayMs = now;
   if (dt <= 0) return;
 
   playT += dt;
   const total = totalMs();
   if (playT >= total) {
-    if ($("loopChk").checked) { playT = 0; lastLiveSeg = -1; if (typeof sequenceAudio !== "undefined" && sequenceAudio.preview && sequenceAudio.media) sequenceAudio.restart(); }  // re-send seg 1
+    if ($("loopChk").checked) { playT = 0; lastLiveSeg = -1; }  // re-send seg 1
     else {
       playT = total; playing = false;
       $("playBtn").textContent = "▶ Play";
-      if (typeof sequenceAudio !== "undefined") sequenceAudio.pausePreview();
       keepAwake(false);                    // the show is over: let the tab idle
     }
   }
-  pose = (audioMs == null ? servoPlayPose(poseAt(playT), dt) : sequenceAudio.visualPose(playT)).map((v, i) => clampJ(i, v));
+  pose = servoPlayPose(poseAt(playT), dt).map((v, i) => clampJ(i, v));
   // DRAW only from the animation frame. Both rAF and the keep-awake interval
   // call this, so the picture was being redrawn ~76 times a second when the
   // screen can only show 60 — the extra passes were pure cost. Time still

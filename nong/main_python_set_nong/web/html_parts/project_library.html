@@ -1,7 +1,0 @@
-<dialog id="projectLibrary" class="askdlg project-library" aria-labelledby="projectLibraryTitle">
-  <div class="row"><h2 id="projectLibraryTitle">ผลงานล่าสุด — ท่าและเพลง</h2><button onclick="document.getElementById('projectLibrary').close()" aria-label="ปิดรายการผลงาน">×</button></div>
-  <p id="projectLibraryStatus" class="hint" role="status"></p>
-  <div id="projectLibraryList" class="library-list"></div>
-  <div class="row"><button onclick="document.getElementById('projectBundleFile').click()">นำเข้าไฟล์ท่าและเพลง .nong.json</button><input id="projectBundleFile" type="file" accept=".json,.nong.json" onchange="projectLibrary.importFile(this.files[0]);this.value=''" hidden><a href="/app/latest-results/" target="_blank" rel="noopener">ดูผลงานและรายงานทั้งหมด ↗</a></div>
-  <p class="hint">ชุดงานมีทั้งท่าและเพลงในไฟล์เดียว เปิดแล้วแก้ท่าและทดลองพร้อมเสียงได้ การสั่งหุ่นจริงอยู่แยกในปุ่มควบคุมหุ่น</p>
-</dialog>

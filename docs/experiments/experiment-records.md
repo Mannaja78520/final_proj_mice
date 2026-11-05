@@ -290,29 +290,6 @@ Notes
   14-15 chained files each, largest 8.1 KB (come_and_cheer). Studio 0 flags at 5 mm for every file set.
 - Sim only. Nothing run on the robot.
 
-## 2026-11-04 think-model bench (PC, voice "think" job, no robot)
-
-Setup: RTX 5070 Ti Laptop 12 GB (0 MiB used before each run, face app not running), Core Ultra 9 275HX, 31 GB RAM.
-Same system prompts as apps/voice/service.py, 4 FAQ items (llm/qa_data.json), greedy, budget th 96 / en 48 /
-ja,zh 64 / ko,lo 96, one wrong-language retry. 38 questions: th 15, en 5, zh 5, ja 5, ko 5, lo 3.
-Runner: Ollama 0.34.2 second instance 127.0.0.1:11435, models on D:\local-ai, num_ctx 2048. llama.cpp download
-was blocked (permissions), so the 30B MoE models were split by layers (num_gpu 14/48), not --n-cpu-moe.
-Raw rows + answers: .local/think_bench_2026-11-04/*.json (not in git), script bench.py, SUMMARY.md.
-
-| model | GPU layers | VRAM MB | median 1st token s | median tok/s | median answer s | lang ok 1st try | Thai ends ครับ | Thai grade /30 | other grade /46 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Qwen/Qwen2.5-0.5B-Instruct (transformers) | all | 1214 | 0.13 | 35 | 0.45 | 35/38 | 8/15 | 10 | - |
-| typhoon-ai/typhoon2.5-qwen3-4b-gguf q4_k_m | all | 3198 | 0.03 | 169 | 0.12 | 37/38 | 15/15 | 24 | 33 |
-| typhoon-ai/typhoon2.5-qwen3-30b-a3b-gguf q4_k_m | 14/48 | 5598 | 0.19 | 33 | 0.82 | 31/38 | 15/15 | 23 | 29 |
-| same, Ollama auto split (54% GPU) | auto | 10184 | 0.12 | 58 | 0.57 | 15/15 (th only) | 15/15 | - | - |
-| unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF Q4_K_M | 14/48 | 5598 | 0.20 | 32 | 0.80 | 32/38 | 15/15 | 26 | 33 |
-
-Notes
-- Grade = 2 right / 1 weak / 0 wrong or invented, on the answer the robot would speak (after retry). By hand, one grader.
-- Wrong-language answers of both 30B models are the Thai FAQ answer copied: qa_data.json has Thai answers only.
-- The retry sends no FAQ, and retries invented facts (wifi refused, opens 9:00, parking in basement).
-- All three new models invented a coffee shop for "แถวนี้มีร้านกาแฟไหม". Lao weak in all models.
-
 ### Re-run with the jerk-guarded smoother (main 5bc6d2e, PC, 2026-10-30 05:47-05:52 Bangkok)
 Same trained policies as the four-dance final (no retrain); rl_compare re-scored with
 jerkGuard + followDensePath, then to_sequence rebuilt the board files. jerk = RMS 3rd derivative of the
@@ -333,3 +310,25 @@ servo-model angles at 50 Hz. "board" = the chained board files played on BoardCl
 - The new files are bigger: largest 9.9 KB (fc000_00; was 8.1 KB). Old firmware hung on a 30 KB show and
   played 2 KB; 5-10 KB is untested on old firmware (the PASS firmware streams per step). README_TH.md
   in .local/robot_1030 still says 8 KB.
+
+## Ollama KV-cache quantization, typhoon25-4b (PC, 2026-11-05)
+Ollama 0.34.2, RTX 5070 Ti Laptop 12 GB, model typhoon25-4b Q4_K_M, temp 0, 2 runs per config (both gave identical VRAM and
+identical answers). Bench = 38 questions (th/en/zh/ja/ko/lo, num_ctx 2048); VRAM test = 8192 ctx (4098 prompt tokens).
+Raw: .local/kv_bench_2026-11-05/ (PC only). Backend log confirmed the KV type each time. TurboQuant itself is not in Ollama;
+q8_0/q4_0 KV with flash attention is the closest built-in.
+
+| cfg | KV in log | VRAM @2k (MB over idle) | VRAM @8k | 8k prefill s | tok/s | first token s | lang ok /38 | Thai ครับ | invented (Thai unknowns) |
+|---|---|---|---|---|---|---|---|---|---|
+| A flash0 f16 (old default) | 576 MiB | 3276 | 5574 | 4.53 / 4.56 | 68 / 63 | 0.052 / 0.054 | 37 / 37 | 15/15 | 0 |
+| B flash1 f16 | 576 MiB | 3188 | 5018 | 1.84 / 1.67 | 59 / 62 | 0.047 / 0.045 | 37 / 37 | 15/15 | 0 |
+| C flash1 q8_0 | 306 MiB | 2922 | 3942 | 1.69 / 1.87 | 64 / 63 | 0.047 / 0.049 | 37 / 37 | 15/15 | 0 |
+| D flash1 q4_0 | 162 MiB | 2778 | 3366 | 1.71 / 1.90 | 65 / 63 | 0.046 / 0.058 | 36 / 36 | 14/15 | 0 |
+
+- C equals A on the Thai score, ครับ and invented facts. 5 of 38 replies differ in wording (th10 still correct; ko01, ko04, lo01, lo03):
+  flash attention changes numerics slightly. Lao answers were not graded (Lao is weak in every model). Not byte-identical to A.
+- D REJECTED: 19/38 replies differ, th03 garbled, ko01 says right instead of left (wrong fact), ครับ 14/15.
+- Saving of C: ~350 MB at 2k ctx, ~1.6 GB at 8k ctx (5574 -> 3942); 8k prefill 2.5x faster. Robot normally uses ctx 2048, so the gain is modest there.
+- tok/s ~63 here vs 169 in an earlier run: same for all configs (comparison holds); cause not chased.
+- Decision: config/local_ai.json default = flash on + q8_0. Takes effect when Ollama is restarted with tools/ollama_serve.py.
+- Not applicable: Face_Regonize (ONNX CNNs, no KV cache; see docs/friend/face_regonize_perf_2026-11-05.md) and Whisper/TTS (their
+  decoder cache is small; faster-whisper/CT2 has no KV-quant option; not measured).

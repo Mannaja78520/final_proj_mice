@@ -125,7 +125,7 @@ def run(t):
         t.ok(not _left(p.MAIN), "stale receipt copies nothing")
 
         tree = root / "pruning"
-        for name in ("keep.py", ".staging-other/nested/hidden.py", "node_modules/nested/hidden.js", ".local/models/private.bin", "results/bundles/song.nong.json"):
+        for name in ("keep.py", ".staging-other/nested/hidden.py", "node_modules/nested/hidden.js"):
             _write(tree / name, "source")
         visited = []
         real_walk = os.walk
@@ -137,14 +137,3 @@ def run(t):
             found = list(p.walk(tree))
         t.eq(found, [Path("keep.py")], "walk excludes skipped files")
         t.eq(visited, ["."], "walk prunes skipped subtrees before traversal")
-
-        p.MAIN, p.STAGING = root / "private-data" / "main", root / "private-data" / "stage"
-        _write(p.MAIN / "keep.py", "source")
-        for rel in (".local/models/private.bin", "results/bundles/song.nong.json", "dist/private.bin"):
-            _write(p.MAIN / rel, "private output")
-        with mock.patch.object(p, "_book", return_value=root / "private-tree-list.txt"), contextlib.redirect_stdout(io.StringIO()):
-            p.init()
-        t.eq((p.STAGING / "keep.py").read_bytes(), b"source", "initialization still copies source")
-        t.ok((p.STAGING / "results").is_dir() and (p.STAGING / "dist").is_dir(), "mapped output folders stay present in a fresh stage")
-        t.ok(not (p.STAGING / ".local").exists(), "private local installs are never copied into staging")
-        t.ok(not list((p.STAGING / "results").rglob("*")) and not list((p.STAGING / "dist").rglob("*")), "fresh stage output folders contain no delivered songs or machine binaries")

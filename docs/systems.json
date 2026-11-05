@@ -6,7 +6,7 @@
               "tts_cache/", "reports/", "scratch/", "_video_test/", "sequences/", "projects/", "shows/",
               "models/", "vendor/", "APPDATA/", ".staging", "firmware/lib/",
               "firmware/sd_card_example/", "scient_test/results/", ".unsnooze/",
-              "docs/systems/", ".local/", "_out/", "results/",
+              "docs/systems/", ".local/", "_out/",
               "hub_auth.json."],
   "excludeNames": ["promt.md", "PATCHES.md", "hub_auth.json", "hub_password.txt", "extensions.json",
                    "faces_login.json", "known_hubs.json", "settings_shared.json",
@@ -133,15 +133,15 @@
      "depends": []},
 
     {"id": "app-voice", "summary": "Voice helper: speech in, answers, speech out.",
-     "files": ["apps/voice/", "main_python/voice_helper.py", "config/voice_helper.json", "config/voice.json", "config/voice_intents.json", "config/voice_providers.json", "config/voice_styles.json", "config/voice_profiles.json", "config/voice_profiles/", "config/voice_people.json", "llm/", "qc/data/voice_conversation.mjs"],
-     "checks": ["check_voice*"],
+     "files": ["apps/voice/", "main_python/voice_helper.py", "config/voice_helper.json", "config/voice.json", "config/voice_intents.json", "config/voice_providers.json", "config/voice_styles.json", "config/voice_profiles.json", "config/voice_profiles/", "config/voice_people.json", "llm/", "config/local_ai.json", "tools/ollama_serve.py", "qc/data/voice_conversation.mjs"],
+     "checks": ["check_voice*", "check_ollama_kv"],
      "depends": []},
 
     {"id": "app-gacha", "summary": "Prize machines (gachapon): several gacha boards, kinds, hand-over when one is empty, rules per event and person (local or Google Sheet), webhooks, the prize log; and which Voice answers give a prize plus the Voice question log (A47-2, A47-3); wins in the friend's games (/play/<id>/ + apps/all-jao/link.js) and app keys for other PCs (A47-6, A47-7).",
      "files": ["apps/gacha/", "config/gacha.json", "config/voice_topics.json", "config/voice_prizes.json",
                "main_python/gacha.py", "main_python/gacha_sheet.py", "main_python/hub_api_gacha.py", "main_python/voice_prizes.py",
                "docs/gacha/", "apps/all-jao/link.js"],
-     "checks": ["check_gacha*", "check_game_prize", "check_remote_scripts"],
+     "checks": ["check_gacha*", "check_game_prize", "check_game_friend_contract", "check_remote_scripts"],
      "depends": ["fw-gacha", "app-voice", "app-faces"]},
 
     {"id": "app-faces", "summary": "Face recognition app.",

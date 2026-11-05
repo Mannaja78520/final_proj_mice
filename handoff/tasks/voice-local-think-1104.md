@@ -19,8 +19,12 @@ Full QC running, then merge PR #116 and rebuild the hub on the PC. Bench ran on 
 - llama.cpp download was blocked; second Ollama on 127.0.0.1:11435, models in D:\local-ai\ollama-models (not autostart).
 
 ## After a PC reboot (manual, no autostart: user rule)
-Start the second Ollama before the Voice app needs "think", PowerShell:
-`$env:OLLAMA_HOST="127.0.0.1:11435"; $env:OLLAMA_MODELS="D:\local-ai\ollama-models"; ollama serve`
+Start the second Ollama before the Voice app needs "think":
+`python tools/ollama_serve.py` (reads config/local_ai.json: port 11435, models in D:\local-ai\ollama-models,
+flash attention on, KV cache q8_0; PC bench 2026-11-05: Thai score equal to f16, q4_0 rejected).
+Check the server log for `flash_attn = enabled` and `K (q8_0)`. To restart: stop the process on 11435 and any
+orphan `llama-server.exe` (they keep GPU memory after the parent dies), then run the launcher again.
+Old manual way (flash off, f16): `$env:OLLAMA_HOST="127.0.0.1:11435"; $env:OLLAMA_MODELS="D:\local-ai\ollama-models"; ollama serve`
 Models there: typhoon25-4b (used), typhoon25-30b, qwen3-30b-a3b. GGUF files: D:\local-ai\models.
 Without it, think falls back to the local Qwen 0.5B by itself.
 

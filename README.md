@@ -17,12 +17,6 @@ Module types today:
 | `nong` | humanoid upper body — 2 arms (universal shoulder + universal elbow), waist, shrug |
 | `blank` | fresh board, not configured yet |
 
-## ผลงานที่เปิดใช้งานได้
-
-เปิด [ผลงานล่าสุด](results/index.html) หรือเลือก “ผลงานล่าสุด” ในหน้าแรก Hub
-ไฟล์เปิดใน Nong Studio พร้อมเพลงอยู่ใน `results/bundles/` วิดีโอและรายงานอยู่ใน `results/cheer/`
-โฟลเดอร์นี้เป็นข้อมูลเฉพาะเครื่อง ไม่รวมเพลงหรือไฟล์ผู้ใช้เข้า Git และไม่มีไอคอน Desktop ที่สร้างให้อัตโนมัติ
-
 ## Folders
 
 ```

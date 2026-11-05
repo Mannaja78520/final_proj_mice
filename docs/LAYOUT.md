@@ -25,7 +25,6 @@ Where things live. Edit `config/layout.json`, then `python tools/layout.py build
 | `main_python/` | the hub (MiceHub): server, device routes, web pages |
 | `nong/` | Nong Studio (nong/main_python_set_nong): moves, sequences, simulator UI |
 | `qc/` | the QC suite (qc/run_qc.py, qc/checks/) |
-| `results/` | selected private deliverables: index.html, portable Studio motion+song files, previews and reports |
 | `scient_test/` | measured experiments (results + scripts) |
 | `shared/` | web parts every page uses (shared/web/mice-ui.js) |
 | `tools/` | developer tools: plan, handoff, build, bench, layout |
