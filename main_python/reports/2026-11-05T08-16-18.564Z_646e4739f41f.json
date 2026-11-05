@@ -1,0 +1,11 @@
+{
+  "id": "646e4739f41f",
+  "time": "2026-11-05T08:16:18.564Z",
+  "text": "STUDIO FREEZE {\"gapMs\":2033,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":false,\"wifi\":false,\"keys\":1,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":6,\"longTasks\":[{\"ms\":1483,\"at\":1846},{\"ms\":545,\"at\":3329}],\"slowCalls\":[{\"u\":\"/api/shows\",\"ms\":638,\"at\":3253},{\"u\":\"/api/list?kind=models\",\"ms\":637,\"at\":3255},{\"u\":\"/api/list?kind=projects\",\"ms\":642,\"at\":3250},{\"u\":\"/api/list?kind=sequences\",\"ms\":668,\"at\":3252},{\"u\":\"/api/ports\",\"ms\":601,\"at\":3318},{\"u\":\"/api/ports\",\"ms\":600,\"at\":3320},{\"u\":\"/api/list?kind=sequences\",\"ms\":696,\"at\":3254}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36"
+}

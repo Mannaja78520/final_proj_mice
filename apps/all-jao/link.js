@@ -6,9 +6,9 @@
 //   {game, key, list, id, result, person}  a localStorage record list: every NEW
 //                                          record (by id) is a win
 //   {game, text, match, result}            an element's text starting to match
-//   {event, game?, result, person, id}     a window event the game fires itself
-//                                          (asked of the friend: "alljao:win";
-//                                          detail.game names the game)
+//   {event, game?, result, results?, person, id}  a window event the game fires itself
+//                                          ("alljao:win"; detail.game names the game;
+//                                          results = per-game path into detail)
 // Each win goes to POST /api/gacha/game; the hub's "games" rules (Prize
 // machines page) decide which kind, and the answer says where to collect it.
 (function () {
@@ -93,7 +93,15 @@
       was = now;
     }).observe(el, {childList: true, characterData: true, subtree: true});
   }
-  // An event the game itself fires: the steadiest link, once the friend adds it.
+  // An event the game itself fires: the steadiest link (friend's G1, 2026-11-05).
+  // detail = {game, id, playerName, result:{label|score|...}}: `results` maps a game
+  // to a path in detail ("=won" = that word as it is); `result` is the fallback.
+  // A page that lies in an iframe of another origin never reaches here: the hub
+  // injects this script into the game page itself, so the listener is on its window.
+  function resultOf(w, d, game) {
+    const path = (w.results && w.results[game]) || w.result || "result";
+    return path.charAt(0) === "=" ? path.slice(1) : pick(d, path);
+  }
   (P.watch || []).filter(w => w.event).forEach(w => {
     const done = new Set();
     window.addEventListener(w.event, e => {
@@ -101,8 +109,8 @@
       const id = pick(d, w.id || "id");
       if (id != null && done.has(id)) return;
       if (id != null) done.add(id);
-      won(Object.assign({}, w, {game: w.game || d.game || "game"}), pick(d, w.result || "result"),
-          pick(d, w.person || "person"), id);
+      const game = w.game || d.game || "game";
+      won(Object.assign({}, w, {game}), resultOf(w, d, game), pick(d, w.person || "person"), id);
     });
   });
 

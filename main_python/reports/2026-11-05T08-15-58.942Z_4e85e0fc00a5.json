@@ -1,0 +1,11 @@
+{
+  "id": "4e85e0fc00a5",
+  "time": "2026-11-05T08:15:58.942Z",
+  "text": "STUDIO FREEZE {\"gapMs\":1800,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":1,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":7,\"longTasks\":[{\"ms\":486,\"at\":1972},{\"ms\":250,\"at\":2458},{\"ms\":78,\"at\":2951},{\"ms\":916,\"at\":3402}],\"slowCalls\":[{\"u\":\"/api/shows\",\"ms\":351,\"at\":2390},{\"u\":\"/api/list?kind=sequences\",\"ms\":351,\"at\":2389},{\"u\":\"/api/ports\",\"ms\":293,\"at\":2448},{\"u\":\"/api/list?kind=sequences\",\"ms\":352,\"at\":2390},{\"u\":\"/api/whoami\",\"ms\":299,\"at\":2730},{\"u\":\"/api/list?kind=models&deep=1\",\"ms\":82,\"at\":3031},{\"u\":\"video_motion_policy.json\",\"ms\":98,\"at\":3032},{\"u\":\"/api/gestures\",\"ms\":101,\"at\":3288},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=INFO\",\"ms\":341,\"at\":3056},{\"u\":\"/api/voice/config\",\"ms\":915,\"at\":3403},{\"u\":\"/api/gestures\",\"ms\":14,\"at\":4317},{\"u\":\"/api/gestures\",\"ms\":24,\"at\":4320},{\"u\":\"/api/gestures\",\"ms\":107,\"at\":4331},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=LIMIT%3F\",\"ms\":220,\"at\":4329},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=FILES%20%2Fmoves\",\"ms\":226,\"at\":4330}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36"
+}

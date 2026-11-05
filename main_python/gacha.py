@@ -51,7 +51,7 @@ DEFAULT_CFG = {
     "busy_wait_s": 8,
     "given_results": ["done", "timed"],
     "messages": {},
-    # games that give a prize (A47-6): [{game, result (pattern), item, person}]
+    # games that give a prize (A47-6): [{game, result (pattern), min, max (score range), item, person}]
     "games": [],
 }
 
@@ -228,9 +228,9 @@ class Gacha:
         with urllib.request.urlopen(req, timeout=15) as r:
             return r.read().decode("utf-8-sig", errors="replace")
 
-    def _post(self, url, body):
+    def _post(self, url, body, headers=None):
         req = urllib.request.Request(url, data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
-                                     headers={"Content-Type": "application/json"})
+                                     headers=dict({"Content-Type": "application/json"}, **(headers or {})))
         with urllib.request.urlopen(req, timeout=10) as r:
             return r.status
 
@@ -319,24 +319,56 @@ class Gacha:
         """POST to every webhook registered for `kind` (config webhooks.<kind>),
         in the background: a slow app must not hold a prize up."""
         urls = self.cfg().get("webhooks", {}).get(kind) or []
-        if isinstance(urls, str):
+        if isinstance(urls, (str, dict)):
             urls = [urls]
-        body = dict(payload, type="gacha." + kind)
+        base = dict(payload, type="gacha." + kind)
 
         def go(u):
+            # An entry is an address, or {url, format: "alljao", token_file}: the
+            # friend's game takes {event, id} with "Authorization: Bearer <token>"
+            # (their handoff 2026-11-05). The token is read from the environment
+            # (GACHA_WEBHOOK_TOKEN) or <data>/<token_file>, never from this config:
+            # the repo is public.
+            e = u if isinstance(u, dict) else {"url": u}
+            url, body, hdr = str(e.get("url") or ""), base, None
+            if e.get("format") == "alljao":
+                body = {"event": base["type"], "id": "%s-%d-%s" % (kind, int(self.clock() * 1000),
+                                                                    secrets.token_hex(4))}
+                for k in ("item", "machines", "machine"):
+                    if k in payload:
+                        body[k] = payload[k]
+                tok = self.webhook_token(e)
+                if not tok:
+                    res = {"url": url, "kind": kind, "ok": False,
+                           "error": "no webhook token (set GACHA_WEBHOOK_TOKEN or the token file)"}
+                    return self._hook_done(kind, url, res)
+                hdr = {"Authorization": "Bearer " + tok}
             try:
-                st = self.post(u, body)
-                res = {"url": u, "kind": kind, "ok": True, "status": st}
-            except Exception as e:                               # noqa: BLE001
-                res = {"url": u, "kind": kind, "ok": False, "error": str(e)}
-            self.hook_log.append(dict(res, time=self.clock()))
-            del self.hook_log[:-50]
-            self.log_event({"kind": "webhook", "reason": kind,
-                            "result": "ok" if res["ok"] else "failed",
-                            "message": res.get("error") or u})
+                st = self.post(url, body, hdr) if hdr else self.post(url, body)
+                res = {"url": url, "kind": kind, "ok": True, "status": st}
+            except Exception as ex:                              # noqa: BLE001
+                res = {"url": url, "kind": kind, "ok": False, "error": str(ex)}
+            self._hook_done(kind, url, res)
         for u in urls:
             threading.Thread(target=go, args=(u,), daemon=True).start()
         return len(urls)
+
+    def _hook_done(self, kind, url, res):
+        self.hook_log.append(dict(res, time=self.clock()))
+        del self.hook_log[:-50]
+        self.log_event({"kind": "webhook", "reason": kind,
+                        "result": "ok" if res["ok"] else "failed",
+                        "message": res.get("error") or url})
+
+    def webhook_token(self, entry):
+        tok = os.environ.get("GACHA_WEBHOOK_TOKEN", "").strip()
+        if tok:
+            return tok
+        name = Path(str(entry.get("token_file") or "game_webhook_token.txt")).name
+        try:
+            return (self.data / name).read_text(encoding="utf-8").strip()
+        except OSError:
+            return ""
 
     # ---- machines -----------------------------------------------------------------
     def machine(self, mid):
@@ -667,12 +699,28 @@ class Gacha:
         return per
 
     # ---- games that give a prize (A47-6) -------------------------------------
+    @staticmethod
+    def _score_fits(rule, result):
+        """Rule "min"/"max" is a score range (quiz: the friend's game ends every
+        round with a score, 2026-11-05, so the hub decides what is a win). A
+        result that is not a number fails a rule that has a range."""
+        lo, hi = rule.get("min"), rule.get("max")
+        if lo in (None, "") and hi in (None, ""):
+            return True
+        try:
+            n = float(str(result).strip())
+            return (lo in (None, "") or n >= float(lo)) and (hi in (None, "") or n <= float(hi))
+        except ValueError:
+            return False
+
     def game_item(self, game, result):
         """(rule) the first "games" rule whose game and result pattern fit, or None."""
         for r in self.cfg().get("games") or []:
             if not isinstance(r, dict) or not r.get("item"):
                 continue
             if r.get("game") and not _same(r["game"], game):
+                continue
+            if not self._score_fits(r, result):
                 continue
             pat = str(r.get("result") or "")
             try:

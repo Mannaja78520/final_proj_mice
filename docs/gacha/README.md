@@ -118,6 +118,11 @@ this hub), a program on this PC, a key, or a login.
 Each gets `POST` JSON with `type` = `gacha.dispensed` (fell; `result` done),
 `gacha.jam` (stuck), `gacha.empty` (a machine ran out), `gacha.out` (a kind
 ran out on every machine), `gacha.low` (few balls left), `gacha.refused`.
+An entry may also be `{"url": ..., "format": "alljao"}` for the friend's game
+(All-Jao-Games `POST /api/gacha/webhook`): the body is `{event, id, item, machines}`
+and the request carries `Authorization: Bearer <token>`; the token comes from
+the environment `GACHA_WEBHOOK_TOKEN` or `.local/gacha/game_webhook_token.txt`,
+never from `gacha.json` (public repo). No token = nothing sent, logged as failed.
 The other fields are the log row: `machine, item, person, app, seq, stock,
 result, reason, message, event, time`.
 
