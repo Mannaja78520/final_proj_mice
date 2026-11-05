@@ -98,6 +98,30 @@ Continue authorized work through verification. Report what changed, evidence,
 and any remaining limits. A failed model call is not an approving review, and
 a simulated module check is not a hardware measurement.
 
+## Automatic model routing in Codex (user 2026-11-06)
+
+The user requests automatic task-based delegation; do not ask them to pick a
+model for each step. The primary chat's model is not changed by this policy.
+
+- Keep complex diagnosis, algorithm design, cross-system fixes, conflicting
+  evidence and safety decisions with GPT-6.1 Sol. If the primary is already Sol,
+  do that work directly rather than spawning another Sol to repeat it.
+- Delegate a bounded batch of clear checks, specified QC commands, file/link/SHA
+  verification, or report extraction to one GPT-6 Luna worker when the batch
+  justifies worker startup cost. Use low effort for mechanical extraction and
+  medium for checks with explicit criteria; provide exact paths and stop rules.
+- For model overrides use a fresh worker context (`fork_turns="none"`) with a
+  compact brief, current task/evidence pointers and applicable repository rules;
+  do not copy the whole chat or launch a worker per command. Reuse that worker
+  for the same bounded batch. Report only failures, evidence paths and a summary.
+- Run tiny deterministic checks and blocking job waits with scripts directly;
+  do not create a model worker merely to wait, poll, or validate these rules.
+- Escalate an ambiguous failure to Sol once; do not have Luna guess a safety
+  waiver, weaken tests, or repeat experiments. All ownership, mutex, QC-driver,
+  review and safety rules still apply. Other AI providers use their own models.
+- This does not authorize new user-owned chats, scheduled automations, global
+  model/config edits, hardware motion or extra experiment budgets.
+
 ## Plan ownership, every agent and session (user 2026-09-16)
 
 Every task goes into the plan the moment it is asked, owned by
