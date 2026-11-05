@@ -332,3 +332,20 @@ q8_0/q4_0 KV with flash attention is the closest built-in.
 - Decision: config/local_ai.json default = flash on + q8_0. Takes effect when Ollama is restarted with tools/ollama_serve.py.
 - Not applicable: Face_Regonize (ONNX CNNs, no KV cache; see docs/friend/face_regonize_perf_2026-11-05.md) and Whisper/TTS (their
   decoder cache is small; faster-whisper/CT2 has no KV-quant option; not measured).
+
+### Round 2: q8_0 vs f16 with the face app running, 93 extra cases, real browser (PC, 2026-11-05)
+Same Ollama 0.34.2 / typhoon25-4b. A = flash off + f16 (old), C = flash on + q8_0 (new). Cases went through the voice helper `/ask`
+(33 own + 60 proposed by Codex CLI 0.166 and reviewed by hand: mixed languages, long context, 8-turn history, exact copy, noise,
+injection, language switch). Face_Regonize backend (port 8000) was running; an extra read-only loop of its det+rec models
+(~12 ms/image) ran on the same GPU during the "face" runs. Raw: .local/kv_bench_2026-11-05/verify2/ (PC only).
+- Answers: 81 of 93 identical A vs C; the 12 that differ are wording, except one price case (see below). Language of reply equal in both.
+- Unknown-price questions (25 asks, run twice per config): invented-looking numbers A 10 and 3, C 4 and 4. A is not repeatable at
+  temperature 0 either (11 of 25 same on repeat), so one case where C invented a price (x02) is noise, not a q8_0 effect.
+  Both configs invent a number when the prompt forces "exact baht"; wifi password asked in Lao is wrong in both.
+- Speed: median /ask 2.98 s (C) vs 3.89 s (A) alone; 3.29 s vs 4.50 s beside the face loop. 6 asks at once: same wall time (15.4 s).
+- VRAM total on the 12 GB card (face backend + voice helper Qwen + Ollama): peak 10.44 GB (C) vs 10.87 GB (A) with the face loop;
+  idle-ish 9.72 vs 10.54 GB. Headroom with face load: C ~1.8 GB, A ~1.4 GB. Face speed unaffected (12.1 vs 12.5 ms median).
+- Browser (Edge via Playwright, throwaway QC hub, Voice page): 13 typed questions th/en/lo/zh/ja/ko/mixed, repeat, language
+  switch, injection: all replied, language and source badge right, text box cleared, no console error except favicon 404.
+  Ollama stopped: saved answers unchanged, model questions answered by the Qwen fallback (slower, 4-7 s, weaker Lao/injection reply).
+- Verdict: nothing clearly worse on q8_0; config/local_ai.json stays q8_0 + flash.
