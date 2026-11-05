@@ -53,6 +53,12 @@ DEFAULT_CFG = {
     "messages": {},
     # games that give a prize (A47-6): [{game, result (pattern), min, max (score range), item, person}]
     "games": [],
+    # A result containing one of these words never gives a prize, whatever the
+    # rules say (the wheel pays out every slice, "try again" too: found 2026-11-05).
+    "games_skip": ["ลองใหม่", "ไม่ได้รางวัล", "เสียใจ", "try again", "no prize", "better luck"],
+    # Highest score a game can give: a rule's "min" above it could never win, so
+    # it is lowered to it. Quiz = ROUND_SIZE 5 (All-Jao-Games quiz-game.js:9).
+    "game_score_max": {"quiz": 5},
 }
 
 # Every log row has these columns, in this order (one source for the CSV
@@ -700,7 +706,7 @@ class Gacha:
 
     # ---- games that give a prize (A47-6) -------------------------------------
     @staticmethod
-    def _score_fits(rule, result):
+    def _score_fits(rule, result, top=None):
         """Rule "min"/"max" is a score range (quiz: the friend's game ends every
         round with a score, 2026-11-05, so the hub decides what is a win). A
         result that is not a number fails a rule that has a range."""
@@ -709,18 +715,25 @@ class Gacha:
             return True
         try:
             n = float(str(result).strip())
+            if top is not None and lo not in (None, ""):
+                lo = min(float(lo), float(top))
             return (lo in (None, "") or n >= float(lo)) and (hi in (None, "") or n <= float(hi))
         except ValueError:
             return False
 
     def game_item(self, game, result):
         """(rule) the first "games" rule whose game and result pattern fit, or None."""
-        for r in self.cfg().get("games") or []:
+        cfg = self.cfg()
+        text = str(result or "").lower()
+        if any(str(w).lower() in text for w in cfg.get("games_skip") or [] if str(w).strip()):
+            return None
+        top = (cfg.get("game_score_max") or {}).get(str(game or "").lower())
+        for r in cfg.get("games") or []:
             if not isinstance(r, dict) or not r.get("item"):
                 continue
             if r.get("game") and not _same(r["game"], game):
                 continue
-            if not self._score_fits(r, result):
+            if not self._score_fits(r, result, top):
                 continue
             pat = str(r.get("result") or "")
             try:

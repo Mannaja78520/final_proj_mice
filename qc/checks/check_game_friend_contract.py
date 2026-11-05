@@ -43,13 +43,17 @@ def run(t):
             root, posts = Path(folder), []
             hook = {"url": "http://game.invalid/api/gacha/webhook", "format": "alljao"}
             g = _engine(root, {"machines": [], "items": {"k": {"label": "K"}}, "event": {"open": True},
-                               "games": [{"game": "quiz", "min": 8, "item": "k"},
+                               "games": [{"game": "quiz", "min": 8, "item": "k"}, {"game": "big", "min": 8, "item": "k"}, {"game": "spin", "item": "k"},
                                          {"game": "wheel", "result": "x", "item": "k"}],
                                "webhooks": {"out": [hook]}}, posts)
             fits = lambda game, r: bool(g.game_item(game, r))          # noqa: E731
-            t.ok(fits("quiz", "8") and fits("quiz", 10) and not fits("quiz", "7") and not fits("quiz", "abc"),
-                 "quiz rule min 8: 8 and 10 win, 7 and a non-number do not",
-                 [fits("quiz", v) for v in ("8", 10, "7", "abc")])
+            t.ok(fits("big", "8") and fits("big", 10) and not fits("big", "7") and not fits("big", "abc"),
+                 "a rule min 8 (no top known): 8 and 10 win, 7 and a non-number do not",
+                 [fits("big", v) for v in ("8", 10, "7", "abc")])
+            t.ok(fits("quiz", 5) and not fits("quiz", 4),
+                 "a quiz rule min 8 is lowered to the top score 5, so a full score still wins", [fits("quiz", 5), fits("quiz", 4)])
+            t.ok(fits("spin", "ส่วนลด 10%") and not fits("spin", "ลองใหม่") and not fits("spin", "Try again!"),
+                 "a rule without a pattern pays a real slice, but a try-again slice never gives a prize")
             t.ok(fits("wheel", "xx") and not fits("wheel", "y"), "a rule without a range still matches by result")
 
             g.hook("out", {"item": "k", "machines": ["g1"]})
