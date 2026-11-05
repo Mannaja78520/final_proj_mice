@@ -655,7 +655,25 @@ class _Quiet:
         self.log.close()
 
 
-if __name__ == "__main__":
+def _done_file(argv):
+    """`--done-file path`: write {code, when} when the run ends, so a background
+    run is waited on once instead of polled (user 2026-11-05, tokens)."""
+    for i, a in enumerate(argv):
+        if a == "--done-file" and i + 1 < len(argv):
+            return argv[i + 1]
+        if a.startswith("--done-file="):
+            return a.split("=", 1)[1]
+    return None
+
+
+def _write_done(path, code):
+    if path:
+        import json, time
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"code": code, "when": time.strftime("%Y-%m-%d %H:%M:%S")}, f)
+
+
+def _run():
     if "--quiet" in sys.argv or "-q" in sys.argv:
         quiet = sys.stdout = _Quiet(sys.stdout, QUIET_LOG)
         try:
@@ -663,5 +681,19 @@ if __name__ == "__main__":
         finally:
             sys.stdout = quiet.screen
             quiet.close()
-        sys.exit(code)
-    sys.exit(main(sys.argv[1:]))
+        return code
+    return main(sys.argv[1:])
+
+
+if __name__ == "__main__":
+    _df = _done_file(sys.argv)
+    if _df:                       # strip it so main() never sees an unknown flag
+        _i = sys.argv.index("--done-file") if "--done-file" in sys.argv else None
+        sys.argv = [a for j, a in enumerate(sys.argv)
+                    if not a.startswith("--done-file") and (_i is None or j != _i + 1)]
+    try:
+        _code = _run()
+    except SystemExit as e:
+        _code = e.code if isinstance(e.code, int) else 1
+    _write_done(_df, _code)
+    sys.exit(_code)
