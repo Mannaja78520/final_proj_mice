@@ -1,21 +1,33 @@
 # Follow front chest/face cross-X choreography
 Owner: codex:cross-1105-01a1891f
-Updated: 2026-11-05T12:19:51.032040+07:00
+Updated: 2026-11-05T12:35:54.243538+07:00
 Branch: private candidate work; shared source read-only
 Last commit: this checkpoint
 Plan: A57-2
 
 ## Goal
-User says front-body/face cross-X poses are missing and requests copying those as well as raised arms. User adds backward hand/arm flick, anchor Come and Cheer1:50(110s), similar gesture in nearly allclips. Diagnose against original source across6; correct supported crossing/elbow/wrist/forearm relations using bounded work, preserve oldbest. Previous stop of broad RL loops stays: no broad training, NN re-extraction, confidence promotion, hardware motion or Voice; modest trials remain authorized and training requires a diagnosed need. User explicitly authorizes this targeted correction; do not restart old heartbeat trials.
+User says front-body/face cross-X poses are missing and requests copying those as well as raised arms. User adds backward hand/arm flick, anchor song Come and Cheer (I0lCxX8373M)1:50(110s), similar gesture in nearly allclips. Diagnose against original source across6; correct supported crossing/elbow/wrist/forearm relations using bounded work, preserve oldbest. Previous stop of broad RL loops stays: no broad training, NN re-extraction, confidence promotion, hardware motion or Voice; modest trials remain authorized and training requires a diagnosed need. User explicitly authorizes this targeted correction; do not restart old heartbeat trials.
 
 ## Doing now
-Workflow/token update complete; numerical work stopped at a documented checkpoint, not quality completion. User allows modest bounded trials; no broad training, unbounded optimization, old heartbeat restart or hardware. Current selected R4 results unchanged.
+Bounded round COMPLETE, gesture task OPEN. Published source comparison/report linked at results/index.html; current24 selected project/YAML/audio/bundle files byte-identical. No worker active. Replay50+12 point checks yielded partial front-body point improvement, not human/trajectory pass. One fixed-pulse key proposal rejected for10bounds violations; no YAML, scale sweep, new training, GPU or hardware. PR123 verified draft/unmerged this round; wait for its owner to merge, then canonical HANDOFF rules for all3AIs, no duplicate guide edits.
 
 ## File status
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
+| .local/cross_x_1105/review_back_anchor.py | cached hand/source review | done | 8validComeframes; otherCheer outofrange excluded | git-ignored |
+| .local/cross_x_1105/back_anchor_review/measurements_r2.json | validity correction / original retained | done | 8Come valid / otherCheer110 OUTOFRANGE excluded | git-ignored |
+| .local/latest-results-1105/build_catalog.py | stable review report link | done | exact marker replacement; old bytes backed up | git-ignored |
+| results/index.html | current report link | done | actual HTTP / relative links PASS | git-ignored |
+| results/cross-x-review/index.html | bounded gesture findings | done | HTTP/link/SHA; images actually viewed | git-ignored |
+| results/cross-x-review/report.md | bounded gesture findings | done | HTTP/link/SHA; images actually viewed | git-ignored |
+| results/cross-x-review/matrix.csv | bounded gesture findings | done | HTTP/link/SHA; images actually viewed | git-ignored |
+| results/cross-x-review/receipt.json | bounded gesture findings | done | HTTP/link/SHA; images actually viewed | git-ignored |
+| results/cross-x-review/blood_front_review.png | bounded gesture findings | done | HTTP/link/SHA; images actually viewed | git-ignored |
+| results/cross-x-review/come110_source.png | bounded gesture findings | done | HTTP/link/SHA; images actually viewed | git-ignored |
+| .local/cross_x_1105/replay_trace.py | instrumentation-only frozen R2 replay | done | 50objective +12rounded queries; 5.233s worker wall | git-ignored |
+| .local/cross_x_1105/point_trial_trace/manifest.json | frozen input / trace ledger | done | 10/10 bounded evidence checks | git-ignored |
 | AGENTS.md | evidence reuse / short heartbeat / OOP boundaries | done | focused handoff QC83/0; final diff inspected | this checkpoint |
-| .local/cross_x_1105/file_ledger.csv | exact private artifact inventory | done | 28 exact files / SHA256 | git-ignored |
+| .local/cross_x_1105/file_ledger.csv | exact private + public artifact inventory | done | 58 exact files / SHA256; self excluded | git-ignored |
 | handoff/tasks/cross-x-1105.md | task/scope/facts | current | oldtasks/rules/claims read | this checkpoint |
 | docs/PLAN.html | A57-2 workflow checkpoint / gesture OPEN | done | Plan under mutex | this checkpoint |
 | docs/plan_state.js | generated plan | done | Plan under mutex | this checkpoint |
@@ -37,6 +49,7 @@ Cached13.174s all6 source/actual lineage checks pass. Blood28.629 reference/cont
 Current results6 are accepted best-available R4, not choreography-perfect. Prior chestcross/forearm/phase defects acknowledged. Original cached person22358frames77chunks; no need NN rerun. Actual safety normal11/MUSIC18mm; analytic_sequence_limits_v2 is authoritative per-joint cosine. Existing current Studio/bundles passed software/clock persistence, not human fidelity. All old full data exposed development/regression.
 
 ## Done
+Current bounded round: exact50 R2 evaluations retained, native50queries;12 rounded point checks; one static front-body point selected (native18+2.421mm), projected wrist model error1.589->.379 but viewed still too low/wrongbend, no human promotion. One fixed1sHann delta-to-key proposal10bounds violations REJECTED before compile; no more parameters. 8new Come110 sourceframes viewed; mistaken second-title Cheer beyond100.167s excluded, retained privately. Front results report published, HTTP5/5+relative links PASS, selected24SHAs unchanged; bounded evidence10/10. Exact ledger covers every private/public file.
 User workflow change saved in AGENTS: evidence validity/reuse, focused OOP modules, short pointer-only recurring prompts, bounded trials and stop rules. Focused instruction/handoff QC83/0; no source build/full motion verification needed for instruction-only change. Gesture fix remains OPEN; no numerical trial launched this round.
 Cachedall6 audit13.174s complete,14diagnosticcases. Coupled2point3.237s84nativequeries bothnativeclear, but ACTUALLYviewed Bloodpoint isREJECTED as sourcecopy: unconstraineddepth putsLwristbehind(-1.149shoulderwidth) andRfront(+1.367); 2Dfit underbodyframe hides this. Comeup-point visuallycloser butnotbackwardsweep/trajectoryproof. No currentoutputchanged. R2 correction exhausted declared budget; no trajectory accepted and no global front-bias applied to backward gestures.
 Read current delivery/handoff and relevant debugging/contract rules; no source modification.
@@ -56,8 +69,9 @@ No RL heartbeat was found in the local automation inventory (only Voice PAUSED);
 User permits modest experiments/training, not zero experiments. For this gesture task: one stated hypothesis/variant, existing short contexts and cached inputs, explicit time/evaluation cap, report improvement plus regressions; negligible gain or failed hypothesis stops that approach. New training requires a diagnosed training limitation, not unresolved source/retarget/export defects. Preserve original safety and final export checks.
 
 ## Next
-Only if continuing the gesture task: one instrumented replay of the exact R2 Blood first50 evaluations/60s, unchanged seed/weights/solver/constraints, persist all candidate traces, deduplicate rounded poses and cap rounded-point screening separately. No new scales/iterations. Stop if no source-consistent feasible pose; keep unknown depth/ownership unknown. Then only a justified original-clock/incoming-state short trajectory across supported events, not automatic full expansion.
-Any NEW selected motion needs actual rounded YAML/Studio-parsed BoardClock, continuous HOME and in-song incoming state, per-joint v2/caps/quantum/native18 command+paths+servo/parity/audio and source-view proof. Point clearance alone is not trajectory or human quality. Keep all6/regression and all affected prefix visible; no new full budget before meaningful evidence.
+Do NOT rerun replay or the rejected pulse; both are complete. User permits modest trials, but stop this failed command-delta-to-preprojection-key approach. If continuing, design ONE stage-consistent short trajectory targeting executable FK hand/elbow/cross relations with original incoming state and source clock; disclose numeric round/evaluation/time budget and improvement/stop metric first. No expanded search or full training to hide reference/retarget/export defects. Current round's static improvement is not a reason to accept unsafe movement.
+PR123 remains another owner's draft/unmerged at last check; do not poll/merge or overwrite their files. On the next genuinely needed sync after merge, read HANDOFF Save tokens and follow single canonical rules for GPT/Claude/Gemini. No --done-file option is assumed available in this local checkout yet. Blocking completion/receipts preferred; no frequent polling.
+Any NEW selected motion needs actual rounded YAML/Studio-parsed BoardClock, continuous HOME/in-song incoming state, per-jointv2/caps/quantum/native18 command+paths+servo/parity/audio/source-view proof and allaffectedprefix/all6 regressions. No new motion is selected this round.
 
 ## Blocked
 Human source depth/occlusion and executable cross/back gesture fidelity unresolved; best-available delivery remains usable with disclosed limits. No worker running at this checkpoint.
