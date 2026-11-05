@@ -7,10 +7,11 @@
   // kvCache   f16 (Ollama default) | q8_0 (about half the KV memory) | q4_0 (about a quarter)
   //           Anything but f16 needs flashAttention = true (Ollama ignores it otherwise).
   //           Ollama has no "TurboQuant"; this is its built-in KV quantization.
-  // The default stays f16 until the PC bench (docs/experiments/experiment-records.md)
-  // shows the Thai 30-question score does not drop.
+  // Default q8_0 + flash (user 2026-11-05: only if quality does not drop). PC bench
+  // 2026-11-05 (docs/experiments/experiment-records.md): Thai score, ครับ 15/15 and
+  // invented facts equal to f16; q4_0 REJECTED (garbled Thai, one wrong fact).
   "host": "127.0.0.1:11435",
   "modelsDir": "D:\\local-ai\\ollama-models",
-  "kvCache": "f16",
-  "flashAttention": false
+  "kvCache": "q8_0",
+  "flashAttention": true
 }
