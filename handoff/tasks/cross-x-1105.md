@@ -12,6 +12,7 @@ User says front-body/face cross-X poses are missing and requests copying those a
 Bounded3-variant series COMPLETE, overallcross/back task OPEN. New Bloodreview portableproject+originalsong+actualYAML+full93s comparison+code/algorithms delivered at results/cross-x-review/Blood_projected_v1/index.html, directfrontlink. TechnicalPASS/fullnative18/actualStudioimport+preview witness; humanCrossFAIL, notselected. Variant3 relationprojection nonconverged2000iterations/.492s, no uncheckedoutput. No worker/lock active. NormalHub left running Voiceautostart0, no hardware motion.
 
 ## File status
+Exact per-file ledger (including private/generated/volatile fixtures): `.local/cross_x_1105/file_ledger.csv`; one row per path, SHA snapshot and verification scope. No media/models in Git.
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | results/cross-x-review/played_key_result.json | actual rejection receipt | done | done0/parity0/analytic reject | git-ignored |
@@ -30,23 +31,18 @@ Bounded3-variant series COMPLETE, overallcross/back task OPEN. New Bloodreview p
 | .local/cross_x_1105/replay_trace.py | instrumentation-only frozen R2 replay | done | 50objective +12rounded queries; 5.233s worker wall | git-ignored |
 | .local/cross_x_1105/point_trial_trace/manifest.json | frozen input / trace ledger | done | 10/10 bounded evidence checks | git-ignored |
 | AGENTS.md | evidence reuse / short heartbeat / OOP boundaries | done | focused handoff QC83/0; final diff inspected | this checkpoint |
-| .local/cross_x_1105/file_ledger.csv | exact private + public artifact inventory | done | 67 exact files / SHA256; self excluded | git-ignored |
+| .local/cross_x_1105/file_ledger.csv | exact private + public artifact inventory | done | 933 exact files / SHA256; self excluded | git-ignored |
 | handoff/tasks/cross-x-1105.md | task/scope/facts | current | oldtasks/rules/claims read | this checkpoint |
 | docs/PLAN.html | A57-2 workflow checkpoint / gesture OPEN | done | Plan under mutex | this checkpoint |
 | docs/plan_state.js | generated plan | done | Plan under mutex | this checkpoint |
 | docs/BRIDGE.md | workflow claim / CPU release | done | mutex; no matching worker | this checkpoint |
-
 | .local/cross_x_1105/inspect_cross.py | exact frame review | done | no NN/controller | git-ignored |
 | .local/cross_x_1105/blood_source_contact.png | source+current preview4times | viewed | exact sourceclock decode | git-ignored |
-
 | .local/cross_x_1105/come110_source_contact.png | user110s anchor source/actual frames | viewed | originalsourceclock decode | git-ignored |
-
 | .local/cross_x_1105/audit_relations.py | cached all6 cross/depth stage audit | done | no NN/controller search | git-ignored |
 | .local/cross_x_1105/relations.json | source candidates/paired stage values | done | source/frame/lineage assertions | git-ignored |
-
 | .local/cross_x_1105/coupled_point_trial.py | one bounded source cross coupled IK | done | actual native18 point oracle, no trajectory claim | git-ignored |
 | .local/cross_x_1105/point_trial/results.json | point feasible candidate+all failures | retained/rejected | budget60s/50objectiveeval per anchor | git-ignored |
-
 | results/cross-x-review/Blood_projected_v1/index.html | new editable/fullpreview review entry | delivered | actualHTTP200 / 17deliverychecks | git-ignored |
 | .local/cross_x_1105/studio_preview_parity_receipt.json | actualapp preview witness | done | 8timesdelta0 / helpercalls0 | git-ignored |
 
@@ -85,4 +81,4 @@ Anyfurtherdifferenthypothesis needs fresh predeclared maxround/time/metric/stop 
 UI/mathproofs and privateevidence are indexed in exactfile_ledger.csv. Browserprofile scratch rows are volatilefixturemetadata, notimmutableinputevidence; no userprofile/tab touched. WorkflowcanonicalPR123merged rulesadopted; no automationcreated/restarted. Keep Voicepaused and otherowners readonly.
 
 ## Blocked
-No current resource/service blocker. Technical projectedtrial works and imports, but source-cross fidelity/forearm relation/phase still fails; sourcecamera/depth/occlusion uncertainties unresolved. Full6human/reference/beat/finalquality stillOPEN. Stop this3-variantmethodseries perbudget, not entiretask or automation goal. No own workers active; normaluserHub remainsrunning.
+No current resource/service blocker. Technical projectedtrial works and imports, but source-cross fidelity/forearm relation/phase still fails; sourcecamera/depth/occlusion uncertainties unresolved. Full6human/reference/beat/finalquality stillOPEN. Stop this3-variantmethodseries perbudget, not entiretask or automation goal. No own workers active; normaluserHub remainsrunning. Delivery verification19checks/HTTPfront+6assets+actualStudioimport/previewPASS; humanCrossFAIL remains explicit.
