@@ -133,8 +133,8 @@
      "depends": []},
 
     {"id": "app-voice", "summary": "Voice helper: speech in, answers, speech out.",
-     "files": ["apps/voice/", "main_python/voice_helper.py", "config/voice_helper.json", "config/voice.json", "config/voice_intents.json", "config/voice_providers.json", "config/voice_styles.json", "config/voice_profiles.json", "config/voice_profiles/", "config/voice_people.json", "llm/", "qc/data/voice_conversation.mjs"],
-     "checks": ["check_voice*"],
+     "files": ["apps/voice/", "main_python/voice_helper.py", "config/voice_helper.json", "config/voice.json", "config/voice_intents.json", "config/voice_providers.json", "config/voice_styles.json", "config/voice_profiles.json", "config/voice_profiles/", "config/voice_people.json", "llm/", "config/local_ai.json", "tools/ollama_serve.py", "qc/data/voice_conversation.mjs"],
+     "checks": ["check_voice*", "check_ollama_kv"],
      "depends": []},
 
     {"id": "app-gacha", "summary": "Prize machines (gachapon): several gacha boards, kinds, hand-over when one is empty, rules per event and person (local or Google Sheet), webhooks, the prize log; and which Voice answers give a prize plus the Voice question log (A47-2, A47-3); wins in the friend's games (/play/<id>/ + apps/all-jao/link.js) and app keys for other PCs (A47-6, A47-7).",
