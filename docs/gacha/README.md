@@ -113,6 +113,20 @@ Games call this without any change on their side: the hub serves their folder at
 memory game's status text). Allowed for a hub page in this PC's browser (Origin =
 this hub), a program on this PC, a key, or a login.
 
+### Stock both ways, play only, other programs, the random box (gacha_stock.py)
+
+* `GET /api/gacha/stock?game=<name>|source=<app>`: per kind `{item, label, stock, odds, available, machines}`
+  (stock `null` = the board does not count; an event `total` caps it) and `play_only`. A game reads it to offer
+  only what exists; webhook `webhooks.stock` pushes the same list (`type gacha.stock`) after a prize, a load or a draw.
+* `POST /api/gacha/game` may carry `item` (a kind the hub knows: given directly) and `play_only` (this request only).
+* `config play_only` `{"game:quiz": true, "*": false}` and a games row `play_only: true`: the win is counted and
+  answered, no machine turns (`play_only: true` in the answer). `sources` `{name: {enabled, items}}`: a program may be
+  closed or limited to some kinds; a program nobody wrote down is allowed. Dispense takes `play_only` too.
+* A machine with `mode: "random"` is a mixed box. `POST /api/gacha/load {machine, items: {kind: n}, mode: set|add}`
+  (login) stores the counts in `.local/gacha/boxes.json` and tells the board `GSTOCK`. A press
+  (`/api/gacha/random {machine}` or a normal dispense on it) turns the board once and picks the item weighted by what
+  is left (`drawn` in the answer); an empty box is refused (`box empty`). New modes: one entry in `gacha_stock.MODES`.
+
 ### Webhooks (config `webhooks.<kind>`: list of addresses)
 
 Each gets `POST` JSON with `type` = `gacha.dispensed` (fell; `result` done),

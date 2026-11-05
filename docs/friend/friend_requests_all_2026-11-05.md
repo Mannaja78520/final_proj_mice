@@ -77,7 +77,7 @@ hub โชว์ปุ่ม admin ของแอพเฉพาะแอดม
 
 ### A5. Webhook (hub → แอพ)
 แอพส่ง URL มา เราตั้งใน `webhooks.<kind>` แล้ว `POST` JSON `{type, machine, item, person, app, seq, stock, result, reason, message, event, time}`
-`type` = `gacha.dispensed | gacha.jam | gacha.empty | gacha.out | gacha.low | gacha.refused`
+`type` = `gacha.dispensed | gacha.jam | gacha.empty | gacha.out | gacha.low | gacha.refused | gacha.stock` (`gacha.stock` = รายการของที่มีทั้งหมด ดู B1 ข้อ 7)
 ส่งพร้อม `Authorization: Bearer mice1...` (A4) ให้แอพเช็คว่ามาจาก hub จริง ตอบ 2xx ภายใน 5 วิ ไม่เช่นนั้นเราทิ้ง ไม่ retry รัว
 
 ### A6. ข้อตกลงที่ทุกแอพถือเหมือนกัน
@@ -102,6 +102,7 @@ hub โชว์ปุ่ม admin ของแอพเฉพาะแอดม
 | 4 | **admin ของเกม**: ตอนนี้ `admin/1234` เช็คในเบราว์เซอร์ ไม่ได้ป้องกันอะไรจริง → ให้รับ admin flag จากหน้าที่ hub เสิร์ฟ (`/play/all-jao/`) หรือยอมรับว่าเกมไม่มี admin จริง | admin เป็นของ hub เจ้าเดียว | script.js:143-152 | P2 |
 | 5 | **(ไม่ต้องทำก็ได้)** ถ้าเปิดเกมบนเครื่องอื่นแล้วอยากให้ตู้ปล่อยของ ให้เรียก A2 ตรงๆ ด้วยกุญแจ | เล่นบนเครื่องอื่นได้โดยไม่ต้องผ่าน `/play/` | ส่วน A | P3 |
 | 6 | **(ไม่ต้องทำก็ได้)** ส่ง URL webhook มาถ้าอยากรู้ว่าของหมด (`gacha.out`, `gacha.dispensed`) | เกมเลิกสุ่มรางวัลที่หมดแล้ว | ส่วน A5 | P3 |
+| 7 | **สต็อกสองทางกับตู้** อ่านรายการของที่มีจาก `GET /api/gacha/stock?game=<ชื่อ>` (หรือรับ webhook `gacha.stock`) ให้รางวัล/โอกาสในเกมตามนั้น ส่ง `item` กลับใน `POST /api/gacha/game` และถ้า `play_only: true` อย่าสัญญาของจริง | รางวัลในเกมตามของจริงในตู้ ของหมดก็หายจากเกม และเล่นสนุกโดยไม่แจกของได้ | `docs/gacha/friend_requests.md` อัปเดต (2) | P2 |
 
 ### B2. Face_Regonize (Reconize)
 
