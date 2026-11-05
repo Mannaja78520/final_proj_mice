@@ -179,6 +179,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/checks/check_nong_dupes.py`
 - `qc/checks/check_nong_sim.py`
 - `qc/checks/check_offset.py`
+- `qc/checks/check_ollama_kv.py`
 - `qc/checks/check_one_cable.py`
 - `qc/checks/check_one_call_path.py`
 - `qc/checks/check_one_hub.py`

@@ -310,3 +310,25 @@ servo-model angles at 50 Hz. "board" = the chained board files played on BoardCl
 - The new files are bigger: largest 9.9 KB (fc000_00; was 8.1 KB). Old firmware hung on a 30 KB show and
   played 2 KB; 5-10 KB is untested on old firmware (the PASS firmware streams per step). README_TH.md
   in .local/robot_1030 still says 8 KB.
+
+## Ollama KV-cache quantization, typhoon25-4b (PC, 2026-11-05)
+Ollama 0.34.2, RTX 5070 Ti Laptop 12 GB, model typhoon25-4b Q4_K_M, temp 0, 2 runs per config (both gave identical VRAM and
+identical answers). Bench = 38 questions (th/en/zh/ja/ko/lo, num_ctx 2048); VRAM test = 8192 ctx (4098 prompt tokens).
+Raw: .local/kv_bench_2026-11-05/ (PC only). Backend log confirmed the KV type each time. TurboQuant itself is not in Ollama;
+q8_0/q4_0 KV with flash attention is the closest built-in.
+
+| cfg | KV in log | VRAM @2k (MB over idle) | VRAM @8k | 8k prefill s | tok/s | first token s | lang ok /38 | Thai ครับ | invented (Thai unknowns) |
+|---|---|---|---|---|---|---|---|---|---|
+| A flash0 f16 (old default) | 576 MiB | 3276 | 5574 | 4.53 / 4.56 | 68 / 63 | 0.052 / 0.054 | 37 / 37 | 15/15 | 0 |
+| B flash1 f16 | 576 MiB | 3188 | 5018 | 1.84 / 1.67 | 59 / 62 | 0.047 / 0.045 | 37 / 37 | 15/15 | 0 |
+| C flash1 q8_0 | 306 MiB | 2922 | 3942 | 1.69 / 1.87 | 64 / 63 | 0.047 / 0.049 | 37 / 37 | 15/15 | 0 |
+| D flash1 q4_0 | 162 MiB | 2778 | 3366 | 1.71 / 1.90 | 65 / 63 | 0.046 / 0.058 | 36 / 36 | 14/15 | 0 |
+
+- C equals A on the Thai score, ครับ and invented facts. 5 of 38 replies differ in wording (th10 still correct; ko01, ko04, lo01, lo03):
+  flash attention changes numerics slightly. Lao answers were not graded (Lao is weak in every model). Not byte-identical to A.
+- D REJECTED: 19/38 replies differ, th03 garbled, ko01 says right instead of left (wrong fact), ครับ 14/15.
+- Saving of C: ~350 MB at 2k ctx, ~1.6 GB at 8k ctx (5574 -> 3942); 8k prefill 2.5x faster. Robot normally uses ctx 2048, so the gain is modest there.
+- tok/s ~63 here vs 169 in an earlier run: same for all configs (comparison holds); cause not chased.
+- Decision: config/local_ai.json default = flash on + q8_0. Takes effect when Ollama is restarted with tools/ollama_serve.py.
+- Not applicable: Face_Regonize (ONNX CNNs, no KV cache; see docs/friend/face_regonize_perf_2026-11-05.md) and Whisper/TTS (their
+  decoder cache is small; faster-whisper/CT2 has no KV-quant option; not measured).
