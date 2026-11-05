@@ -16,6 +16,8 @@ keep it short and link evidence. Read HANDOFF.md for the full contract.
 Tokens: run QC as `python qc/run_qc.py --quiet <check names>` for the files
 you touched (full log in qc/last_run.log), full QC once before merge; grep or
 tail big files (BRIDGE, PLAN.html, app.js, reports/), never read them whole.
+Token rules (all AIs, same text): HANDOFF.md section "Save tokens" (short heartbeat, no polling,
+experiment budget + stop rule, --done-file).
 
 ## Find the subsystem first (A26-76, user 2026-09-21)
 
