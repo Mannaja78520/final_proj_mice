@@ -63,7 +63,11 @@ def run(t):
             t.ok(fits("wheel", "xx") and not fits("wheel", "y"), "a rule without a range still matches by result")
 
             g.hook("out", {"item": "k", "machines": ["g1"]})
-            time.sleep(0.5)
+            for _ in range(60):                   # the hook runs in a thread: wait for its log
+                if g.hook_log:
+                    break
+                time.sleep(0.1)
+            time.sleep(0.2)                       # and for it to finish writing the event log
             t.ok(not posts, "no token: nothing is sent", posts)
             t.ok(any(h.get("ok") is False and "token" in h.get("error", "") for h in g.hook_log),
                  "and the missing token shows in the hook log", g.hook_log)
@@ -71,10 +75,11 @@ def run(t):
             os.environ["GACHA_WEBHOOK_TOKEN"] = "qc-secret"
             g.hook("out", {"item": "k", "machines": ["g1"]})
             g.hook("out", {"item": "k", "machines": ["g1"]})
-            for _ in range(40):
-                if len(posts) >= 2:
+            for _ in range(60):
+                if len(posts) >= 2 and len(g.hook_log) >= 3:
                     break
                 time.sleep(0.1)
+            time.sleep(0.2)
             t.ok(len(posts) == 2 and posts[0][0] == hook["url"], "gacha.out is posted to their webhook", posts)
             if len(posts) == 2:
                 b0, b1 = posts[0][1], posts[1][1]
