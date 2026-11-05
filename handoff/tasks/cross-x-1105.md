@@ -31,7 +31,7 @@ Exact per-file ledger (including private/generated/volatile fixtures): `.local/c
 | .local/cross_x_1105/replay_trace.py | instrumentation-only frozen R2 replay | done | 50objective +12rounded queries; 5.233s worker wall | git-ignored |
 | .local/cross_x_1105/point_trial_trace/manifest.json | frozen input / trace ledger | done | 10/10 bounded evidence checks | git-ignored |
 | AGENTS.md | evidence reuse / short heartbeat / OOP boundaries | done | focused handoff QC83/0; final diff inspected | this checkpoint |
-| .local/cross_x_1105/file_ledger.csv | exact private + public artifact inventory | done | 933 exact files / SHA256; self excluded | git-ignored |
+| .local/cross_x_1105/file_ledger.csv | exact private + public artifact inventory | done | exact per-path SHA256 snapshot; self excluded; volatile fixtures labeled | git-ignored |
 | handoff/tasks/cross-x-1105.md | task/scope/facts | current | oldtasks/rules/claims read | this checkpoint |
 | docs/PLAN.html | A57-2 workflow checkpoint / gesture OPEN | done | Plan under mutex | this checkpoint |
 | docs/plan_state.js | generated plan | done | Plan under mutex | this checkpoint |
