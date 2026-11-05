@@ -1,7 +1,7 @@
 # Follow front chest/face cross-X choreography
 Owner: codex:cross-1105-01a1891f
 Updated: 2026-11-05T18:52:50.526611+07:00
-Branch: private candidate work; shared source read-only
+Branch: PC main/private experiments; remote wip/cross-x-1105-review is task-only backup on canonical origin/main, not production merge request
 Last commit: this checkpoint
 Plan: A57-2
 
@@ -47,6 +47,7 @@ Exact per-file ledger (including private/generated/volatile fixtures): `.local/c
 | .local/cross_x_1105/studio_preview_parity_receipt.json | actualapp preview witness | done | 8timesdelta0 / helpercalls0 | git-ignored |
 
 ## Facts found
+Remote WIP backup stores this task on canonical origin/main; PC plan/BRIDGE/source checkpoints are in local parent history, not overwritten into shared main. No experiment media/models/keys are pushed. One shell chaining guard failed to stop a push of existing tracked app-binary ancestry; corrected by checked Python orchestration and a task-only fastforward merge tree, preserving local EXE and all history.
 Cached13.174s all6 source/actual lineage checks pass. Blood28.629 reference/control cross+.74, staticfit+.55, inputMPC-1.69, actual-2.14 shoulder widths (body-frame comparative, not source3Dtruth): first cross loss is control and export worsens it. Source2D confirms actualCross despite strict both-hands-midline metric missing partial crosses; retain wrist-order/forearm crossing separately. Come110.51 currentreference higher/lessforward than actual; source depth still inferred. Actualrig has no independent wrist, fixed palm mount; arm sweep canbe corrected, purewrist snap cannot be invented.
 Current results6 are accepted best-available R4, not choreography-perfect. Prior chestcross/forearm/phase defects acknowledged. Original cached person22358frames77chunks; no need NN rerun. Actual safety normal11/MUSIC18mm; analytic_sequence_limits_v2 is authoritative per-joint cosine. Existing current Studio/bundles passed software/clock persistence, not human fidelity. All old full data exposed development/regression.
 
