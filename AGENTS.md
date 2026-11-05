@@ -31,6 +31,17 @@ add it to `docs/systems.json`, then `python tools/systems.py build`.
 - `rg` the name, then read 40-100 lines around the hit. Never a whole file
   over 300 lines (main.py is ~38k tokens; one function is ~1k).
 - Never re-read a file already read or just edited.
+  Start with the active task Facts found / evidence pointers. Reopen only the relevant
+  class or method when its inputs, source fingerprint, settings or dependencies changed,
+  a check failed, or new evidence conflicts. Record that invalidation reason and the new proof.
+- Keep reusable logic in focused OOP modules; reuse existing evaluators and interfaces.
+  Do not refactor unrelated code or repeat whole-pipeline runs merely to recover context.
+- Recurring prompts, when already authorized, point to the current task and next action;
+  do not repeat experiment history. Latest human scope overrides stale automation text.
+  This rule does not authorize creating or restarting an automation.
+- Before a trial, state its hypothesis, fixed inputs, evaluation/time budget and stop rule.
+  Reuse cached evidence; retain failures and regressions. Negligible gains end that approach
+  rather than starting another parameter sweep. Required safety and final checks still apply.
 - Logs: print the failing line only (tail / grep), never the full run.
 - Moving code: write a script that moves exact lines; do not retype it.
 - Strict OOP & modularity (user 2026-10-24, all AIs): code MUST follow OOP and modularity. Never dump features into monolithic main files (e.g. main.py) — create small, focused classes and modules (token-friendly). Never edit built web files (hub.html, help.html, app.js) directly; edit their sources in parts/ and run `tools/build_web.py`.
