@@ -24,7 +24,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 
 - nothing
 
-## Checks that test it (179)
+## Checks that test it (180)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -139,6 +139,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_pinned_mods`
 - `check_pinout`
 - `check_plan_live`
+- `check_play_proxy`
 - `check_play_stop_order`
 - `check_post_keepalive`
 - `check_promote_pipeline`

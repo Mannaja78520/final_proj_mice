@@ -121,6 +121,7 @@ import extensions                                          # noqa: E402
 import hub_auth                                            # noqa: E402
 import hub_pair                                            # noqa: E402
 import partner_launch                                      # noqa: E402
+import play_proxy                                          # noqa: E402
 import partner_version                                     # noqa: E402
 import route_latency                                       # noqa: E402
 import shows as shows_mod                                  # noqa: E402
@@ -275,6 +276,7 @@ def _partner_templates():
 
 # This PC's apps (A51-2): which are installed here and where. Written at
 # runtime beside hub_auth.json, like it never promoted and never in git.
+PLAY_GAMES = play_proxy.Games(lambda: _partner_templates())
 EXT = extensions.Extensions(
     os.environ.get("MICE_EXTENSIONS") or (HERE / "extensions.json"), DATA,
     partners=lambda: _partner_templates(),
@@ -1778,6 +1780,13 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         except Exception as e:  # noqa: BLE001
             self.send_err(e, 500)
 
+    def do_PUT(self):             # only a proxied friend's game saves with PUT
+        self._body_read = False
+        try:
+            self.route("PUT")
+        except Exception as e:  # noqa: BLE001
+            self.send_err(e, 500)
+
     def dev_route(self, method: str, what: str, q):
         """One call to a module, whichever way it is reached.
 
@@ -1998,6 +2007,14 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         url = urllib.parse.urlparse(self.path)
         q = urllib.parse.parse_qs(url.query)
         path = url.path
+
+        # A friend's game behind its own server (play_proxy.py): before the hub's
+        # own routes, so its /api/state/* is not taken for one of ours.
+        hit = play_proxy.target(PLAY_GAMES.of(), path)
+        if hit:
+            return play_proxy.forward(self, hit[0], hit[1], hit[2], url.query, method)
+        if method == "PUT":
+            return self.send_err("not found", 404)
 
         if path.startswith("/api/"):
             # LOGIN FIRST, for anything that changes something. Reading stays
@@ -2244,14 +2261,8 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         if not f.is_file():
             return self.send_err("not found: " + path, 404)
         data = f.read_bytes()
-        if f.suffix.lower() in (".html", ".htm") and play.get("inject"):
-            cfg = json.dumps({"partner": pid, "watch": play.get("watch") or []},
-                             ensure_ascii=False).replace("</", "<\\/")
-            tag = ('<script>window.MICE_PLAY=%s;</script><script src="%s"></script>'
-                   % (cfg, html.escape(str(play["inject"]), quote=True))).encode("utf-8")
-            low = data.lower()
-            at = low.rfind(b"</body>")
-            data = data[:at] + tag + data[at:] if at >= 0 else data + tag
+        if f.suffix.lower() in (".html", ".htm"):
+            data = play_proxy.inject(data, pid, play)
         return self.send_bytes(data, MIME.get(f.suffix.lower())
                                or mimetypes.guess_type(f.name)[0] or "application/octet-stream")
 

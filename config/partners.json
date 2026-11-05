@@ -15,8 +15,11 @@
 
   "all-jao": {
     "name": "All-Jao Games",
-    "open": "http://127.0.0.1:8080",
-    "api": "http://127.0.0.1:8080",
+    // Since the friend's G1-G6 (2026-11-05) the game needs its own server.cjs
+    // (state in /api/state/*, default port 4173; PORT changes it). The hub
+    // starts it and shows it through /play/all-jao/ (main_python/play_proxy.py).
+    "open": "http://127.0.0.1:4173",
+    "api": "http://127.0.0.1:4173",
     "health": "/",
     // {parent} = the folder the hub's tree sits in (A51-2): survives the
     // tree being moved or renamed. A PC that keeps it elsewhere picks the
@@ -24,7 +27,9 @@
     "folder": "{parent}/All-Jao-Games",
     // how Add app knows a folder is this app without a file of ours in it
     "detect": ["index.html", "claw-game.js", "wheel-engine.js"],
-    "start": "python -m http.server 8080",
+    "launch": [
+      { "name": "game", "cwd": "", "run": ["node", "server.cjs"], "check": "http://127.0.0.1:4173/" }
+    ],
     "login": { "kind": "none", "path": "" },
     // A WIN GIVES A PRIZE (A47-6). The hub serves this folder read-only at
     // /play/all-jao/ and adds `inject` to its pages; the script reports each
@@ -36,6 +41,10 @@
     // own copy at :8080 are not seen here (Help says so).
     "play": {
       "page": "index.html",
+      // forwarded to their server.cjs; the root paths are the ones their own
+      // scripts call (shared-store.js:16,56, hub-integration.js:23)
+      "proxy": "http://127.0.0.1:4173",
+      "proxy_paths": ["/api/state/", "/api/versions", "/api/gacha/events"],
       "inject": "/app/all-jao/link.js",
       "watch": [
         // The friend fires `alljao:win` in every game since their G1 (2026-11-05,

@@ -43,17 +43,31 @@ def run(t):
             root, posts = Path(folder), []
             hook = {"url": "http://game.invalid/api/gacha/webhook", "format": "alljao"}
             g = _engine(root, {"machines": [], "items": {"k": {"label": "K"}}, "event": {"open": True},
-                               "games": [{"game": "quiz", "min": 8, "item": "k"},
+                               "games": [{"game": "quiz", "min": 8, "item": "k"}, {"game": "big", "min": 8, "item": "k"}, {"game": "spin", "item": "k"}, {"game": "pct", "min": "80%", "item": "k"},
                                          {"game": "wheel", "result": "x", "item": "k"}],
                                "webhooks": {"out": [hook]}}, posts)
-            fits = lambda game, r: bool(g.game_item(game, r))          # noqa: E731
-            t.ok(fits("quiz", "8") and fits("quiz", 10) and not fits("quiz", "7") and not fits("quiz", "abc"),
-                 "quiz rule min 8: 8 and 10 win, 7 and a non-number do not",
-                 [fits("quiz", v) for v in ("8", 10, "7", "abc")])
+            fits = lambda game, r, total=None: bool(g.game_item(game, r, total))   # noqa: E731
+            t.ok(fits("big", "8") and fits("big", 10) and not fits("big", "7") and not fits("big", "abc"),
+                 "a rule min 8 (no top known): 8 and 10 win, 7 and a non-number do not",
+                 [fits("big", v) for v in ("8", 10, "7", "abc")])
+            t.ok(fits("quiz", 5) and not fits("quiz", 4),
+                 "a quiz rule min 8 is lowered to the top score 5, so a full score still wins", [fits("quiz", 5), fits("quiz", 4)])
+            t.ok(fits("quiz", 8, 10) and not fits("quiz", 7, 10),
+                 "the game's own top score (10 questions) replaces the built-in 5: min 8 means 8 of 10",
+                 [fits("quiz", 8, 10), fits("quiz", 7, 10)])
+            t.ok(fits("pct", 8, 10) and not fits("pct", 7, 10) and not fits("pct", 8),
+                 "min 80% is 80 percent of the top score the game reports; with no top score it cannot win",
+                 [fits("pct", 8, 10), fits("pct", 7, 10), fits("pct", 8)])
+            t.ok(fits("spin", "ส่วนลด 10%") and not fits("spin", "ลองใหม่") and not fits("spin", "Try again!"),
+                 "a rule without a pattern pays a real slice, but a try-again slice never gives a prize")
             t.ok(fits("wheel", "xx") and not fits("wheel", "y"), "a rule without a range still matches by result")
 
             g.hook("out", {"item": "k", "machines": ["g1"]})
-            time.sleep(0.5)
+            for _ in range(60):                   # the hook runs in a thread: wait for its log
+                if g.hook_log:
+                    break
+                time.sleep(0.1)
+            time.sleep(0.2)                       # and for it to finish writing the event log
             t.ok(not posts, "no token: nothing is sent", posts)
             t.ok(any(h.get("ok") is False and "token" in h.get("error", "") for h in g.hook_log),
                  "and the missing token shows in the hook log", g.hook_log)
@@ -61,10 +75,11 @@ def run(t):
             os.environ["GACHA_WEBHOOK_TOKEN"] = "qc-secret"
             g.hook("out", {"item": "k", "machines": ["g1"]})
             g.hook("out", {"item": "k", "machines": ["g1"]})
-            for _ in range(40):
-                if len(posts) >= 2:
+            for _ in range(60):
+                if len(posts) >= 2 and len(g.hook_log) >= 3:
                     break
                 time.sleep(0.1)
+            time.sleep(0.2)
             t.ok(len(posts) == 2 and posts[0][0] == hook["url"], "gacha.out is posted to their webhook", posts)
             if len(posts) == 2:
                 b0, b1 = posts[0][1], posts[1][1]
