@@ -38,13 +38,15 @@
       "page": "index.html",
       "inject": "/app/all-jao/link.js",
       "watch": [
-        { "game": "wheel", "key": "all-jao-games.wheel.v2", "list": "logs", "id": "id", "result": "label", "defaultPerson": "@face" },
-        { "game": "claw", "key": "all-jao-games.claw.v1", "list": "logs", "id": "id", "result": "label", "defaultPerson": "@face" },
-        { "game": "quiz", "key": "all-jao-games.quiz.v1", "list": "players", "id": "id", "result": "score", "person": "name" },
-        { "game": "memory", "text": "memory-status-text", "match": "ครบทุกคู่", "result": "won", "defaultPerson": "@face" },
-        // asked of the friend (docs/gacha/friend_requests.md): one event for every
-        // game; when it comes, the rows above can go
-        { "event": "alljao:win", "result": "result", "person": "player", "id": "id", "defaultPerson": "@face" }
+        // The friend fires `alljao:win` in every game since their G1 (2026-11-05,
+        // wheel/claw after the stock is taken, memory when all pairs match, quiz
+        // after the score is saved; quiz of ANY score: our "games" rules decide).
+        // detail = {game, id, playerName, result:{label|score|...}}. The older
+        // watchers of their localStorage lists were removed: both firing for one
+        // win could give the prize without the player's name. Needs their G1 pulled.
+        { "event": "alljao:win", "id": "id", "person": "playerName", "defaultPerson": "@face",
+          "result": "result.label",
+          "results": { "wheel": "result.label", "claw": "result.label", "quiz": "result.score", "memory": "=won" } }
       ]
     },
     "events": [

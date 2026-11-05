@@ -146,8 +146,12 @@ def game_names():
         play = e.get("play") if isinstance(e, dict) else None
         watch = play.get("watch") if isinstance(play, dict) else None
         for w in watch or []:
-            if isinstance(w, dict) and w.get("game") and w["game"] not in out:
-                out.append(w["game"])
+            if not isinstance(w, dict):
+                continue
+            # an event watcher names its games through "results" (game -> path)
+            for name in [w.get("game")] + list((w.get("results") or {}).keys()):
+                if name and name not in out:
+                    out.append(name)
     return out
 
 

@@ -141,7 +141,7 @@
      "files": ["apps/gacha/", "config/gacha.json", "config/voice_topics.json", "config/voice_prizes.json",
                "main_python/gacha.py", "main_python/gacha_sheet.py", "main_python/hub_api_gacha.py", "main_python/voice_prizes.py",
                "docs/gacha/", "apps/all-jao/link.js"],
-     "checks": ["check_gacha*", "check_game_prize", "check_remote_scripts"],
+     "checks": ["check_gacha*", "check_game_prize", "check_game_friend_contract", "check_remote_scripts"],
      "depends": ["fw-gacha", "app-voice", "app-faces"]},
 
     {"id": "app-faces", "summary": "Face recognition app.",
