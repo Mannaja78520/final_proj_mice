@@ -14,11 +14,13 @@
   //   minLogprob      whisper avg_logprob must be at least this
   //   maxNoSpeech     whisper no_speech_prob must be at most this
   //   maxClipFraction share of samples at full scale; 0 = none allowed
-  //   maxLevelSpreadDb  loudest minus quietest 0.5 s window: a steady level
+  //   maxLevelSpreadDb  p90 minus p10 of the 0.1 s speech levels: a steady level. The
+  //                   recording 2026-11-05 had median 15.5, p90 20 (88 clips), so 18 drops the uneven third
+  //   minRmsDb        quieter than this overall = too faint to copy a voice from
   //   maxCompression  whisper compression_ratio; high = looping text, i.e. noise or music
   "cut": {"noiseDb": -35, "silenceSeconds": 0.3, "minSeconds": 3, "maxSeconds": 15,
           "leadSeconds": 0.12, "tailSeconds": 0.2, "rate": 24000},
-  "keep": {"minLogprob": -0.5, "maxNoSpeech": 0.3, "maxClipFraction": 0, "maxLevelSpreadDb": 12,
+  "keep": {"minLogprob": -0.5, "maxNoSpeech": 0.3, "maxClipFraction": 0, "maxLevelSpreadDb": 18, "minRmsDb": -30,
            "maxCompression": 2.4},
 
   // reference: Spark-TTS copies WHO it sounds like from a reference clip. OFF =

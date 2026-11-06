@@ -223,6 +223,8 @@ def cmd_rank(a):
             why.append("unsure words")
         if r["noSpeechProb"] > keep["maxNoSpeech"]:
             why.append("maybe no speech")
+        if r["rmsDb"] < keep["minRmsDb"]:
+            why.append("too quiet")
         if r["clipFraction"] > keep["maxClipFraction"]:
             why.append("clipping")
         if r["levelSpreadDb"] > keep["maxLevelSpreadDb"]:

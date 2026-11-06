@@ -53,6 +53,7 @@ def main():
     ap.add_argument("folder")
     ap.add_argument("--runtime", default=str(CODE / ".local" / "tts_spark"))
     ap.add_argument("--names", nargs="*", help="clip names instead of the config's")
+    ap.add_argument("--out", default="", help="where to write the speaker (default <folder>/speaker.json)")
     a = ap.parse_args()
     sys.path.insert(0, str(CODE / "tools"))
     import registry
@@ -71,7 +72,7 @@ def main():
         tokens, _sem = codec.tokenize(path)
     out = {"speaker": [int(v) for v in tokens.squeeze().tolist()], "clips": names,
            "seconds": round(seconds, 1), "text": ref.get("text") or ""}
-    (folder / "speaker.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+    Path(a.out or folder / "speaker.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
     print("speaker.json: %d tokens from %d clips (%.1f s)" % (len(out["speaker"]), len(names), seconds))
 
 
