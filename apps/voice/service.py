@@ -3721,8 +3721,8 @@ class VoiceHandler(BaseHTTPRequestHandler):
                 text = self.brain.agree_text(text, req.get("lang") or "", voice_name)
             # "speed" / "pitch": the page's Try it, heard before saving.
             # Not "rate" - that is the robot speaker's sample rate below.
-            recorded = UserVoice(CODE / "config" / "voice_clips.json").event_clip(
-                self.brain.user_voice_folder(), req.get("event"))
+            folder = getattr(self.brain, "user_voice_folder", lambda: None)()
+            recorded = UserVoice(CODE / "config" / "voice_clips.json").event_clip(folder, req.get("event"))
             if recorded:                            # a line the user recorded for this event
                 wav, why_not = recorded.read_bytes(), ""
                 self.brain._style_done = {}

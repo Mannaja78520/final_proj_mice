@@ -13,7 +13,7 @@ into 3-15 s clips, transcribe, rank, then make two switchable uses as DATA (defa
 Test Spark-TTS with the best reference vs Edge by whisper CER; record in experiment-records.md.
 
 ## Doing now
-Step 2 running: `python tools/voice_clips.py transcribe` (CPU, resumable, ~10 min) -> clips_all/clips.json; then `rank`. Next: speaker.py + Spark test (step 5).
+Nothing: all 5 steps done; waiting for the coordinator/user to review the branch (not merged).
 
 ## File status
 Baseline: 6d94a50
@@ -26,9 +26,11 @@ Baseline: 6d94a50
 | `config/voice_profiles.json` | asset kind `voice` (.wav) | done | QC voice_profiles quick | this checkpoint |
 | `apps/voice/user_voice.py` | UserVoice: reference person + event clip | done | QC voice_user_clips | this checkpoint |
 | `apps/voice/service.py` | people() lists person:user-voice; /speak `event` | done | QC voice_people, voice_profiles quick | this checkpoint |
-| `apps/voice/tts_spark/speaker.py` | clips -> speaker.json (Spark venv) | written, not run | not run | this checkpoint |
+| `apps/voice/tts_spark/speaker.py` | clips -> speaker.json (Spark venv, CPU) | done | ran for 3 variants in the Spark test (needs the torchaudio shim, see Facts) | not run | this checkpoint |
 | `qc/checks/check_voice_user_clips.py` | new check | done | 6/6 + traversal sabotage caught | this checkpoint |
-| `docs/systems.json`, `docs/systems/app-voice.md`, `docs/systems/qc.md` | register new files | done | tools/systems.py build | this checkpoint |
+| `tools/voice_spark_test.py` | Edge vs Spark-reference CER test | done | run 2026-11-06, numbers in experiment-records.md | this checkpoint |
+| `docs/experiments/experiment-records.md` | 2026-11-06 section appended | done | raw numbers from spark_test.log | this checkpoint |
+| `docs/systems.json`, `docs/systems/app-voice.md`, `docs/systems/qc.md`, `agents.md`, `fw-registry.md`, `hub-show.md` | register new files | done | tools/systems.py build | this checkpoint |
 
 ## Facts found
 - .local is git-ignored (.gitignore:105) and lives in the MAIN repo root E:/final_proj/mice/mice_system/.local, not in this worktree.
@@ -36,11 +38,16 @@ Baseline: 6d94a50
 - Spark runtime: .local/tts_spark (venv, Spark-TTS, reference.wav). Reference clip -> 32 global tokens (server.py load/prompt); saved voices = config/voice_people.json `speaker` tokens.
 
 ## Done
-- Cut: 88 clips, 946 s, 4.3-14.5 s (cut.json). Torch here is CPU-only (no cublas64_12.dll): whisper and Spark run on CPU; tools/voice_clips.py falls back by itself (cpu_threads=16: 7 s/clip).
-- QC voice_user_clips passes; sabotage caught all 7 breaks.
+- Cut 88 clips (.local/voice_source/clips_all/, cut.json + clips.json with text, duration, rmsDb, clipFraction, levelSpreadDb, whisper avgLogprob/noSpeechProb/compression, keep/why/rank). 36 kept. Top: clip_0059, 0082, 0049, 0046, 0047.
+- Two switchable uses, DATA in config/voice_clips.json (both off, empty): reference (-> person:user-voice via apps/voice/user_voice.py + tts_spark/speaker.py -> voice/speaker.json) and events (event -> clip in the character's voice/ folder, `event` field of POST /speak; falls back to TTS).
+- QC voice_user_clips: 18 asserts; break-proved 7 sabotages all caught. Quick suite: 6799 pass, 6 fail then; since fixed: voice_guard 500 (service handler used a brain stub without user_voice_folder) and the system map. Remaining fail: "this PC has a full nong image" (needs `pio run -e mice_nong`, unrelated).
+- Spark test (3 sentences, 3 reference variants): Edge 6.3, A 5.3, B 4.6, C 7.5 mean CER %. Best gain 1.7 < 2: stopped. Inside the whisper noise (~2 points).
 
 ## Next
-1. cut, 2. transcribe, 3. rank, 4. config + QC, 5. Spark test.
+1. A person listens to .local/voice_source/spark_test/ (spark_A/B/C_*.wav vs edge_*.wav): does it sound like the user? CER cannot say.
+2. Check the recording has only the user's voice (it is a talk with another person); speaker.py joins clips blind.
+3. Fix the broken Spark venv (torchaudio 2.11+cu128 vs torch 2.15 cpu in user site): the feeling server does not start today without a shim.
+4. To use: copy clips to <data>/voice_profiles/<character>/voice/, run speaker.py, set reference.enabled / events in a per-PC override.
 
 ## Blocked
 - nothing

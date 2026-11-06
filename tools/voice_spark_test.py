@@ -69,7 +69,7 @@ def server_up(venv_python, runtime):
     if alive():
         return None
     proc = subprocess.Popen([venv_python, str(HERE.parent / "apps/voice/tts_spark/server.py"),
-                             "--runtime", str(runtime), "--port", str(PORT)],
+                             "--runtime", str(runtime), "--port", str(PORT), "--device", "cpu"],
                             creationflags=voice_clips.NO_WINDOW)
     for _ in range(300):
         time.sleep(2)
