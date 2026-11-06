@@ -104,6 +104,7 @@ from face_history import HistoryCursor, local_when    # noqa: E402
 sys.path.insert(0, str(CODE / "apps" / "voice"))
 import providers                                     # noqa: E402
 from profiles import Profiles, ProfileError, guarded  # noqa: E402
+from user_voice import UserVoice, PERSON as USER_PERSON  # noqa: E402
 # What a question asks for beyond its words (A45-24): reply language,
 # read-aloud, a new verse, Thai-letter loanwords. Data in voice_intents.json.
 import intents                                       # noqa: E402
@@ -1676,7 +1677,21 @@ class Brain:
             except (OSError, ValueError):
                 got = (m, {"people": {}})
             self._people = got
+        mine = self.user_voice_folder()
+        extra = UserVoice(CODE / "config" / "voice_clips.json").person(mine)
+        if extra:                                    # the user's own recorded voice, if switched on
+            return dict(got[1], people=dict(got[1].get("people") or {}, **{USER_PERSON: extra}))
         return got[1]
+
+    def user_voice_folder(self):
+        """The active character's `voice/` folder (the user's recorded clips), or None."""
+        store = getattr(self, "profiles", None)
+        if not store:
+            return None
+        try:
+            return store.confined(store.folder(store.active) / "voice")
+        except (OSError, ValueError):
+            return None
 
     def person(self, name):
         """The saved voice a voice name means ("person:<id>"), or None."""
@@ -3706,7 +3721,12 @@ class VoiceHandler(BaseHTTPRequestHandler):
                 text = self.brain.agree_text(text, req.get("lang") or "", voice_name)
             # "speed" / "pitch": the page's Try it, heard before saving.
             # Not "rate" - that is the robot speaker's sample rate below.
-            if req.get("clip") and self.brain.profiles:
+            folder = getattr(self.brain, "user_voice_folder", lambda: None)()
+            recorded = UserVoice(CODE / "config" / "voice_clips.json").event_clip(folder, req.get("event"))
+            if recorded:                            # a line the user recorded for this event
+                wav, why_not = recorded.read_bytes(), ""
+                self.brain._style_done = {}
+            elif req.get("clip") and self.brain.profiles:
                 store = getattr(self.brain, "profiles", None)
                 path = store.asset(req.get("profile") or store.active, "audio", req["clip"])
                 wav, why_not = path.read_bytes(), ""

@@ -13,6 +13,9 @@
       ".wav",
       ".ogg"
     ],
+    "voice": [
+      ".wav"
+    ],
     "motions": [
       ".yaml",
       ".yml"
