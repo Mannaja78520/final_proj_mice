@@ -59,7 +59,7 @@ def post(path, body, timeout=600):
         return r.read()
 
 
-def server_up(venv_python, runtime):
+def server_up(venv_python, runtime, device):
     def alive():
         try:
             urllib.request.urlopen("http://127.0.0.1:%d/health" % PORT, timeout=3).read()
@@ -69,7 +69,7 @@ def server_up(venv_python, runtime):
     if alive():
         return None
     proc = subprocess.Popen([venv_python, str(HERE.parent / "apps/voice/tts_spark/server.py"),
-                             "--runtime", str(runtime), "--port", str(PORT), "--device", "cpu"],
+                             "--runtime", str(runtime), "--port", str(PORT), "--device", device],
                             creationflags=voice_clips.NO_WINDOW)
     for _ in range(300):
         time.sleep(2)
@@ -91,6 +91,7 @@ def main():
     ap.add_argument("--runtime", required=True)
     ap.add_argument("--variant", action="append", default=[], help="NAME=clip,clip")
     ap.add_argument("--gender", default="male")
+    ap.add_argument("--device", default="cpu", help="where Spark runs: cpu or cuda")
     ap.add_argument("--temperature", type=float, default=0.3)
     a = ap.parse_args()
     out, runtime = Path(a.out_dir), Path(a.runtime)
@@ -127,7 +128,7 @@ def main():
                        check=True, creationflags=voice_clips.NO_WINDOW)
         record("edge", k, wav.read_bytes(), made)
 
-    proc = server_up(venv_python, runtime)
+    proc = server_up(venv_python, runtime, a.device)
     try:
         for spec in a.variant:
             name, names = spec.split("=", 1)

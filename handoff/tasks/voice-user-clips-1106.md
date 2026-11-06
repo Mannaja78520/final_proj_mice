@@ -43,6 +43,8 @@ Baseline: 6d94a50
 - QC voice_user_clips: 18 asserts; break-proved 7 sabotages all caught. Quick suite: 6799 pass, 6 fail then; since fixed: voice_guard 500 (service handler used a brain stub without user_voice_folder) and the system map. Remaining fail: "this PC has a full nong image" (needs `pio run -e mice_nong`, unrelated).
 - Spark test (3 sentences, 3 reference variants): Edge 6.3, A 5.3, B 4.6, C 7.5 mean CER %. Best gain 1.7 < 2: stopped. Inside the whisper noise (~2 points).
 
+- GPU rerun (1 round): Edge 4.0, Spark A 8.5, B 12.6, C 8.5 mean CER %; run-to-run spread ~8 points > gaps between references (numbers in experiment-records.md). Full QC 2026-11-06: 9431 pass, 0 fail (903 s). Both features still OFF by default.
+
 ## Next
 1. A person listens to .local/voice_source/spark_test/ (spark_A/B/C_*.wav vs edge_*.wav): does it sound like the user? CER cannot say.
 2. Check the recording has only the user's voice (it is a talk with another person); speaker.py joins clips blind.

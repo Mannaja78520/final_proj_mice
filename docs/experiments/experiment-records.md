@@ -367,3 +367,14 @@ q8_0/q4_0 KV with flash attention is the closest built-in.
 - Speed: Spark on CPU 8-18 s for a 4-6 s line; Edge 0.6-1.0 s.
 - C's first line came out as "สวัสดีค่ะ" (whisper heard ค่ะ): the reference mix (one clip may be a different speaker or a woman) leaked into the sentence ending. Not verified by ear.
 - Not measured: whether it sounds like the user (CER only tests clarity). Needs a person's ear.
+
+### 2026-11-06 rerun on GPU (one round, same sentences and references)
+- Spark venv repaired first: torch 2.11.0+cu128 + torchvision 0.26.0+cu128 in `.local/tts_spark/venv`; server on cuda:0 (RTX 5070 Ti), `tools/voice_spark_test.py --device cuda`.
+| voice | CER s1 | CER s2 | CER s3 | mean CER % | make s (s1/s2/s3) | audio s (s1/s2/s3) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Edge Niwat | 11.9 | 0.0 | 0.0 | 4.0 | 0.8 / 0.6 / 0.8 | 5.1 / 4.2 / 3.7 |
+| Spark ref A | 16.7 | 8.7 | 0.0 | 8.5 | 7.5 / 4.1 / 2.6 | 6.6 / 5.6 / 3.8 |
+| Spark ref B | 16.7 | 15.2 | 5.9 | 12.6 | 4.2 / 3.4 / 2.7 | 5.5 / 4.7 / 3.9 |
+| Spark ref C | 16.7 | 8.7 | 0.0 | 8.5 | 3.7 / 3.4 / 2.7 | 4.9 / 4.9 / 3.7 |
+- Spark is sampled: the same references gave A 5.3 / B 4.6 / C 7.5 on CPU and 8.5 / 12.6 / 8.5 here, so run-to-run spread (about 8 points) is larger than any gap between references. No reference beats Edge in either run on both.
+- GPU speed: 2.6-7.5 s per line (first line includes warm-up) against 8-18 s on CPU; Edge 0.6-0.8 s.
