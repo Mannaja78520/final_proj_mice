@@ -1,0 +1,37 @@
+{
+  // THE USER'S OWN VOICE as a recording (2026-11-06). Settings and switches
+  // only: the audio, the transcripts and the speaker tokens made from them are
+  // personal data and live in the data folder (.local, never in Git; this repo
+  // is public). Clip files sit in the character's `voice/` folder
+  // (config/voice_profiles.json assets.voice); names here are file names in it.
+  //
+  // cut: how tools/voice_clips.py cuts one long recording into clips
+  //   noiseDb / silenceSeconds   ffmpeg silencedetect: quieter than this for this long = a gap
+  //   minSeconds / maxSeconds    clip length; a longer run is split at its quietest point
+  //   leadSeconds / tailSeconds  room kept before and after the words
+  //   rate                       clip sample rate (mono wav)
+  // keep: which clips count as "clear" (measured by whisper + the samples)
+  //   minLogprob      whisper avg_logprob must be at least this
+  //   maxNoSpeech     whisper no_speech_prob must be at most this
+  //   maxClipFraction share of samples at full scale; 0 = none allowed
+  //   maxLevelSpreadDb  loudest minus quietest 0.5 s window: a steady level
+  //   maxCompression  whisper compression_ratio; high = looping text, i.e. noise or music
+  "cut": {"noiseDb": -35, "silenceSeconds": 0.3, "minSeconds": 3, "maxSeconds": 15,
+          "leadSeconds": 0.12, "tailSeconds": 0.2, "rate": 24000},
+  "keep": {"minLogprob": -0.5, "maxNoSpeech": 0.3, "maxClipFraction": 0, "maxLevelSpreadDb": 12,
+           "maxCompression": 2.4},
+
+  // reference: Spark-TTS copies WHO it sounds like from a reference clip. OFF =
+  // the voice stays exactly as it is now. On: `clips` (names in voice/) are
+  // turned into one speaker (voice/speaker.json, made by
+  // `python tools/voice_clips.py speaker`) listed as the voice "person:user-voice".
+  // text: what the clips say (kept for models that read it). backup: an Edge voice
+  // that speaks while the feeling voice is off; gender: female or male, or empty.
+  "reference": {"enabled": false, "clips": [], "text": "", "says": "Own voice (recorded)",
+                "gender": "", "backup": ""},
+
+  // events: a line a person recorded for a moment (an event name from the rig
+  // or the voice page) is played as it is. A name with no file, or enabled
+  // false, goes to the speak voice as before. {"event name": "file in voice/"}
+  "events": {"enabled": false, "clips": {}}
+}
