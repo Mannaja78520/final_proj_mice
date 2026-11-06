@@ -342,7 +342,7 @@ q8_0/q4_0 KV with flash attention is the closest built-in.
   torch is `2.15.0+cpu` (no `cublas64_12.dll`), so faster-whisper falls back to CPU by itself.
 - Filter (`config/voice_clips.json` keep): 36 of 88 kept. Reasons (a clip can have several): unsure words 37, uneven level 23,
   looping text 6, no words 4, maybe no speech 4, too quiet 4. Level spread over all 88: p10 11.7, median 15.5, p90 20.0 dB.
-- The recording is a talk with at least one other person ("ใช่ครับ ถูกไหม"): speaker identity of each clip is NOT verified. 19 clips say ครับ, 3 say ค่ะ/คะ.
+- The recording is a talk with at least one other person (question and answer turns in the text): speaker identity of each clip is NOT verified. 19 clips say ครับ, 3 say ค่ะ/คะ.
 - Spark server: `apps/voice/tts_spark/server.py --device cpu`, emotion neutral, temperature 0.3, gender male, speaker tokens from
   `apps/voice/tts_spark/speaker.py` (clips joined with 0.3 s pause, 30 s at most). Edge baseline: th-TH-NiwatNeural.
 - Env fix needed to run it at all: the Spark venv's `torchaudio 2.11.0+cu128` cannot load its native lib against the user-site torch 2.15
