@@ -34,6 +34,7 @@ import urllib.request
 from pathlib import Path
 
 import gacha_sheet as gs
+from gacha_stock import GachaStock, MODES, MESSAGES as STOCK_MESSAGES
 
 DEFAULT_CFG = {
     "machines": [],
@@ -61,6 +62,12 @@ DEFAULT_CFG = {
     # above it could never win, so it is lowered to it. Quiz = 5 questions today
     # (All-Jao-Games quiz-game.js:9); more questions only need the game to send total.
     "game_score_max": {"quiz": 5},
+    # gacha_stock.py: play only {"game:quiz": true, "*": false} = the source gets
+    # no real prize (a request can also say play_only for one session);
+    # sources {name: {label, enabled, items}} = which programs may ask for what
+    # (a source nobody wrote down is allowed).
+    "play_only": {},
+    "sources": {},
 }
 
 # Every log row has these columns, in this order (one source for the CSV
@@ -145,7 +152,7 @@ def rules_to_csv(rules):
     return out
 
 
-class Gacha:
+class Gacha(GachaStock):
     def __init__(self, cfg_path, data_dir, send, find_dev, fetch=None, post=None,
                  clock=time.time, sleep=time.sleep):
         self.cfg_path = Path(cfg_path)
@@ -349,7 +356,7 @@ class Gacha:
             if e.get("format") == "alljao":
                 body = {"event": base["type"], "id": "%s-%d-%s" % (kind, int(self.clock() * 1000),
                                                                     secrets.token_hex(4))}
-                for k in ("item", "machines", "machine"):
+                for k in ("item", "machines", "machine", "stock", "why"):
                     if k in payload:
                         body[k] = payload[k]
                 tok = self.webhook_token(e)
@@ -599,6 +606,7 @@ class Gacha:
                 if why == "out everywhere":
                     self.hook("out", {"item": item, "machines": [t["machine"] for t in tried]})
                 return dict(detail, ok=False, reason=why, tried=tried, message=row["message"])
+        self.settle_draw(out, person, app, by)         # a random box says which item it was
         if wait:
             out["result"] = self.wait_done(m, seq)
         else:
@@ -630,6 +638,7 @@ class Gacha:
         return st
 
     def _after(self, m, item, stock, row):
+        self.push_stock("dispense")                          # webhooks.stock, if any
         low = _int(self.cfg().get("low_stock"), 0)
         if stock == 0:
             self.hook("empty", {"machine": m["id"], "label": self.label(m), "item": item})
@@ -839,3 +848,4 @@ DEFAULT_MESSAGES = {
     "refused_busy": "ตู้กำลังปล่อยของอยู่ รอสักครู่แล้วลองใหม่นะ",
     "refused_no_item": "ไม่ได้บอกว่าจะให้ของอะไร",
 }
+DEFAULT_MESSAGES.update({k: v for k, v in STOCK_MESSAGES.items() if k not in DEFAULT_MESSAGES})

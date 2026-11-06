@@ -24,7 +24,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 
 - nothing
 
-## Checks that test it (180)
+## Checks that test it (181)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -75,6 +75,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_gacha`
 - `check_gacha_motion`
 - `check_gacha_sheet`
+- `check_gacha_stock`
 - `check_gate_order`
 - `check_gesture_make`
 - `check_gestures`

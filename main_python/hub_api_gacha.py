@@ -19,6 +19,12 @@
     GET  /api/gacha/log             the dispense log, newest last (?limit=, &csv=1)  (login)
     GET  /api/gacha/stats           counts per item / machine / person / app (login)
     GET  /api/gacha/voice           which Voice answers give a prize (config/voice_prizes.json)
+    GET  /api/gacha/stock           ?source=&game= what is in stock per kind with odds, and
+                                    whether that source is play only (the game's prize list)
+    POST /api/gacha/load            {machine, count | items:{kind:n}, mode:set|add}  put stock in;
+                                    a random box takes the count of every item     (login)
+    POST /api/gacha/random          {machine, person, app, play_only?} press a random box
+                                    (same door as dispense; the answer has `drawn`)
     POST /api/gacha/voice           {enabled, say, rules} save it                (login)
     POST /api/gacha/game            {game, result, person?, ref?} a game says someone won;
                                     config "games" names the kind (A47-6). Login, a
@@ -231,7 +237,15 @@ class GachaRoutes:
                                    "messages": c.get("messages") or {},
                                    "games": c.get("games") or [],
                                    "game_names": game_names(),
-                                   "low_stock": c.get("low_stock")})
+                                   "low_stock": c.get("low_stock"),
+                                   "play_only": c.get("play_only") or {},
+                                   "sources": c.get("sources") or {},
+                                   "modes": list(gm.MODES),
+                                   "boxes": g.boxes()})
+        if path == "/api/gacha/stock":
+            src = (q.get("source") or [""])[0] or (
+                "game:" + (q.get("game") or [""])[0] if (q.get("game") or [""])[0] else "")
+            return self.send_json(g.stock_view(src))
         if path == "/api/gacha/stats":
             return self.send_json({"ok": True, "stats": g.stats(), "hooks": g.hook_log[-20:]})
         if path == "/api/gacha/log":
@@ -278,7 +292,14 @@ class GachaRoutes:
         if path == "/api/gacha/config":
             ok, why = g.save_cfg(d)
             return self.send_json({"ok": ok, "error": why}, 200 if ok else 400)
-        if path in ("/api/gacha/dispense", "/api/gacha/can"):
+        if path == "/api/gacha/load":
+            if not who:
+                return self.send_json({"ok": False, "need_login": True,
+                                       "error": "log in to put stock in"}, 401)
+            got = g.load(str(d.get("machine") or ""), count=d.get("count"), items=d.get("items"),
+                         mode=str(d.get("mode") or "set"), by=who)
+            return self.send_json(got, 200 if got.get("ok") else 409)
+        if path in ("/api/gacha/dispense", "/api/gacha/can", "/api/gacha/random"):
             person = str(d.get("person") or "")
             if person == "@face":
                 person = face_now()
@@ -289,18 +310,20 @@ class GachaRoutes:
             if path == "/api/gacha/can":
                 ok, why, detail = g.check(str(d.get("item") or ""), person, force)
                 return self.send_json(dict(detail, ok=ok, reason=why, person=person))
-            got = g.dispense(item=str(d.get("item") or ""), person=person,
-                             app=str(d.get("app") or ("hub" if who else app_key or "program")),
-                             machine=d.get("machine") or None, force=force,
-                             by=who or "program", wait=bool(d.get("wait")))
+            got = g.give(item=str(d.get("item") or ""), person=person,
+                         app=str(d.get("app") or ("hub" if who else app_key or "program")),
+                         machine=d.get("machine") or None, force=force,
+                         by=who or "program", wait=bool(d.get("wait")),
+                         play_only=d.get("play_only"))
             return self.send_json(got, 200 if got.get("ok") else 409)
         if path == "/api/gacha/game":
             person = str(d.get("person") or "")
             if person == "@face":
                 person = face_now()
-            got = g.game_win(d.get("game"), d.get("result"), person=person,
-                             ref=str(d.get("ref") or ""), by=who or app_key or "game",
-                             total=d.get("total"))
+            got = g.game_event(d.get("game"), d.get("result"), person=person,
+                               ref=str(d.get("ref") or ""), by=who or app_key or "game",
+                               total=d.get("total"), item=str(d.get("item") or ""),
+                               play_only=d.get("play_only"))
             if got.get("reason") == "no prize for this result":
                 return self.send_json(got)               # a loss is not an error
             return self.send_json(got, 200 if got.get("ok") else 409)

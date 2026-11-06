@@ -75,7 +75,7 @@
   <p class="mini">Each machine is one prize board. <b>Kind</b> is what it holds; machines with the same kind
     stand in for each other when one runs out, nearest first (<b>Next to</b>).</p>
   <div class="wrapx"><table class="gt" id="mTable"><thead><tr>
-    <th>Name on screen</th><th>Board</th><th>Kind</th><th>Where</th><th>Next to</th>
+    <th>Name on screen</th><th>Board</th><th>Kind</th><th>Mode</th><th>Where</th><th>Next to</th>
     <th>Balls left</th><th>Given</th><th>Now</th><th></th></tr></thead><tbody></tbody></table></div>
   <div class="row">
     <button onclick="addMachine()">+ Machine</button>
@@ -84,6 +84,24 @@
     <span class="mini">use the buttons in each row to put balls in</span>
   </div>
   <div class="statline" id="mStat"></div>
+</div>
+
+<div class="card" data-tab="machines" id="stock">
+  <h2>Stock and random boxes</h2>
+  <p class="mini">What the machines hold now, per kind. A game or another program reads this list
+    (<code>/api/gacha/stock</code>) or is told through the <b>stock</b> webhook, so what it offers follows the real stock.
+    <b>Odds</b> is each kind's share of everything that can be won now. A machine in <b>random</b> mode holds a mix:
+    tell it how many of each kind you put in, and one press gives one of them, more likely the more is left.</p>
+  <div class="wrapx"><table class="gt" id="stT"><thead><tr><th>Kind</th><th>In stock</th><th>Odds</th><th>Machines</th></tr></thead><tbody></tbody></table></div>
+  <div class="row"><button onclick="stockLoad()">Refresh</button></div>
+  <h3>Put items in a random box</h3>
+  <div class="row"><span class="lbl">Box</span><select id="bxMachine"></select>
+    <button onclick="bxRow({})">+ Item</button>
+    <button class="primary" onclick="bxLoad('set')">Set what is in it now</button>
+    <button onclick="bxLoad('add')">Add these</button>
+    <button onclick="bxPress()">Press random</button></div>
+  <div class="wrapx"><table class="gt" id="bxT"><thead><tr><th>Kind</th><th>How many</th><th></th></tr></thead><tbody></tbody></table></div>
+  <div class="statline" id="bxStat"></div>
 </div>
 
 <div class="card" data-tab="machines">
@@ -203,11 +221,24 @@
     wheel's prize name, the quiz score <code>5</code> or <code>won</code> for the memory game; empty = any win.
     <b>Who</b>: the person when the game does not name one (empty = whoever the camera sees).
     <b>Score from / to</b>: the quiz reports a score on every round; a prize only from the score you set: a number, or a percent of the top score such as <code>80%</code> (the game says its top score, for example how many questions the round had, so adding questions needs no change here). A &ldquo;try again&rdquo; slice of the wheel never gives a prize.</p>
-  <div class="wrapx"><table class="gt" id="gmT"><thead><tr><th>Game</th><th>Result</th><th>Score from</th><th>Score to</th><th>Kind</th><th>Machine</th><th>Who</th><th></th></tr></thead><tbody></tbody></table></div>
+  <div class="wrapx"><table class="gt" id="gmT"><thead><tr><th>Game</th><th>Result</th><th>Score from</th><th>Score to</th><th>Kind</th><th>Machine</th><th>Who</th><th>Play only</th><th></th></tr></thead><tbody></tbody></table></div>
   <div class="row"><button onclick="gmRow({})">+ Row</button><button class="primary" onclick="gmSave()">Save</button>
     <a href="/app/all-jao/">Play the games</a></div>
   <datalist id="gmNames"></datalist>
   <div class="statline" id="gmStat"></div>
+</div>
+
+<div class="card" data-tab="apps" data-needs-login="gacha">
+  <h2>Play only and who may ask</h2>
+  <p class="mini"><b>Play only</b>: the win is counted and answered, but no machine turns. Name a game as
+    <code>game:quiz</code>, any other program by the name it sends as <code>app</code>, or <code>*</code> for everything.
+    One request can also say <code>play_only</code> for itself. <b>Programs</b>: a program written here can only ask for
+    the kinds you list and can be closed; a program nobody wrote down may ask for anything.</p>
+  <div class="wrapx"><table class="gt" id="poT"><thead><tr><th>Source</th><th>Play only</th><th></th></tr></thead><tbody></tbody></table></div>
+  <div class="row"><button onclick="poRow({})">+ Source</button></div>
+  <div class="wrapx"><table class="gt" id="srT"><thead><tr><th>Program</th><th>Kinds it may ask for (empty = any)</th><th>Open</th><th></th></tr></thead><tbody></tbody></table></div>
+  <div class="row"><button onclick="srRow({})">+ Program</button><button class="primary" onclick="poSave()">Save</button></div>
+  <div class="statline" id="poStat"></div>
 </div>
 
 <div class="card" data-tab="apps" data-needs-login="gacha">
@@ -372,9 +403,15 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
     this.$("lowN").value = this.S.low_stock || 0;
     const live = this.S.machines.filter(m => !m.live.error).length;
     this.stat.ready(live + " of " + this.S.machines.length + " machines answering", "GET /api/gacha");
-    this.gmDraw(); this.keysLoad();
+    this.gmDraw(); this.keysLoad(); this.poDraw(); this.bxDraw(); this.stockLoad();
     this.loadRules(); this.loadLog();
     return true;
+  }
+
+  modeCell(mode) {
+    const modes = this.S.modes && this.S.modes.length ? this.S.modes : ["normal"];
+    return '<td><select data-k="mode">' + modes.map(k => '<option' + (k === (mode || "normal") ? " selected" : "") + '>' +
+      this.esc(k) + '</option>').join("") + '</select></td>';
   }
 
   drawMachines() {
@@ -395,7 +432,7 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
       }
 
       let tr = '<tr data-i="' + i + '">' + this.cell(m.label, "label") + this.cell(m.module || m.id, "module") +
-        this.cell(m.item, "item") + this.cell(m.place, "place") + this.cell((m.near || []).join(" "), "near") +
+        this.cell(m.item, "item") + this.modeCell(m.mode) + this.cell(m.place, "place") + this.cell((m.near || []).join(" "), "near") +
         '<td>' + (L.error ? "-" : (L.stock < 0 ? "not counted" : L.stock)) + '</td><td>' + (L.given == null ? "-" : L.given) + '</td>' +
         '<td>' + statusHtml + '</td>' +
         '<td><div style="display:flex;gap:4px;flex-wrap:wrap">' +
@@ -414,7 +451,7 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
         '<button onclick="removeMachine(' + i + ')">remove</button></div></td></tr>';
 
       if (this.openTuning[i]) {
-        tr += '<tr style="background:#f8fafc"><td colspan="9" style="padding:12px 16px;border-bottom:2px solid #cbd5e1">' +
+        tr += '<tr style="background:#f8fafc"><td colspan="10" style="padding:12px 16px;border-bottom:2px solid #cbd5e1">' +
           '<div style="font-weight:600;margin-bottom:8px">&#9881;&#65039; Tuning for ' + this.esc(m.label || m.id) + '</div>' +
           '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;font-size:13px">' +
           '<div><label style="display:block;margin-bottom:2px"><b>Pockets per dispense (drop):</b></label>' +
@@ -518,6 +555,7 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
       const m = {id: old.id || board || ("machine" + Date.now() % 10000), module: board, label: g("label"),
                  item: g("item"), place: g("place"), near: g("near").split(/[\s,]+/).filter(Boolean)};
       if (old.dev) m.dev = old.dev;
+      if (g("mode") && g("mode") !== "normal") m.mode = g("mode");
       return m;
     });
   }
@@ -771,6 +809,7 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
       '<td><input data-k="item" value="' + this.esc(r.item) + '"></td>' +
       '<td><input data-k="machine" value="' + this.esc(r.machine) + '" placeholder="any"></td>' +
       '<td><input data-k="person" value="' + this.esc(r.person) + '" placeholder="the camera"></td>' +
+      '<td><input data-k="play_only" type="checkbox"' + (r.play_only ? " checked" : "") + ' title="count the win but give nothing real"></td>' +
       '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
   }
 
@@ -782,10 +821,95 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
   async gmSave() {
     const games = [...this.$("gmT").tBodies[0].rows].map(r => {
       const o = {};
-      r.querySelectorAll("[data-k]").forEach(i => { if (i.value.trim()) o[i.dataset.k] = i.value.trim(); });
+      r.querySelectorAll("[data-k]").forEach(i => {
+        if (i.type === "checkbox") { if (i.checked) o[i.dataset.k] = true; }
+        else if (i.value.trim()) o[i.dataset.k] = i.value.trim();
+      });
       return o;
     }).filter(o => o.item);
     this.say("gmStat", await Mice.Api.post("/api/gacha/config", {games}), "saved");
+    this.load();
+  }
+
+  // ---- stock both ways, random boxes, play only (gacha_stock.py) ----
+  async stockLoad() {
+    const a = await Mice.Api.get("/api/gacha/stock");
+    if (!a.ok) return;
+    this.$("stT").tBodies[0].innerHTML = (a.data.items || []).map(r => '<tr><td>' + this.esc(r.label) + ' <span class="tech mini">' +
+      this.esc(r.item) + '</span></td><td>' + (r.stock == null ? "not counted" : r.stock) + (r.available ? "" : ' <span class="mini danger">none</span>') +
+      '</td><td>' + Math.round((r.odds || 0) * 100) + '%</td><td>' + this.esc((r.machines || []).join(", ")) + '</td></tr>').join("")
+      || '<tr><td colspan="4" class="mini">no kinds yet</td></tr>';
+  }
+
+  bxRow(r) {
+    this.$("bxT").tBodies[0].insertAdjacentHTML("beforeend", '<tr><td><input data-k="item" list="bxKinds" value="' + this.esc(r.item) +
+      '"></td><td><input data-k="count" type="number" min="0" value="' + this.esc(r.count) +
+      '"></td><td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
+  }
+
+  bxDraw() {
+    const boxes = (this.S.machines || []).filter(m => m.mode === "random");
+    this.$("bxMachine").innerHTML = boxes.map(m => '<option value="' + this.esc(m.id) + '">' + this.esc(m.label || m.id) + '</option>').join("")
+      || '<option value="">no machine is in random mode yet</option>';
+    if (!document.getElementById("bxKinds")) document.body.insertAdjacentHTML("beforeend", '<datalist id="bxKinds"></datalist>');
+    document.getElementById("bxKinds").innerHTML = Object.keys(this.S.items || {}).map(k => '<option value="' + this.esc(k) + '">').join("");
+    const t = this.$("bxT").tBodies[0];
+    if (!t.rows.length) Object.entries((this.S.boxes || {})[this.$("bxMachine").value] || {}).forEach(([item, count]) => this.bxRow({item, count}));
+  }
+
+  bxItems() {
+    const out = {};
+    [...this.$("bxT").tBodies[0].rows].forEach(r => {
+      const k = r.querySelector('[data-k="item"]').value.trim();
+      if (k) out[k] = +r.querySelector('[data-k="count"]').value || 0;
+    });
+    return out;
+  }
+
+  async bxLoad(mode) {
+    this.say("bxStat", await Mice.Api.post("/api/gacha/load", {machine: this.$("bxMachine").value, items: this.bxItems(), mode}), "stock saved");
+    this.$("bxT").tBodies[0].innerHTML = "";
+    await this.load();
+  }
+
+  async bxPress() {
+    const a = await Mice.Api.post("/api/gacha/random", {machine: this.$("bxMachine").value, person: this.val("gPerson"), app: "hub page"}, {timeout: 20000});
+    this.$("bxStat").textContent = a.ok || (a.data && a.data.message) ? ((a.data && a.data.message) || "done") : (a.says || "it did not work");
+    this.$("bxT").tBodies[0].innerHTML = "";
+    setTimeout(() => this.load(), 1500);
+  }
+
+  poRow(r) {
+    this.$("poT").tBodies[0].insertAdjacentHTML("beforeend", '<tr><td><input data-k="src" value="' + this.esc(r.src) +
+      '" placeholder="game:quiz, an app name or *"></td><td><input data-k="on" type="checkbox"' + (r.on ? " checked" : "") +
+      '></td><td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
+  }
+
+  srRow(r) {
+    this.$("srT").tBodies[0].insertAdjacentHTML("beforeend", '<tr><td><input data-k="name" value="' + this.esc(r.name) +
+      '"></td><td><input data-k="items" value="' + this.esc((r.items || []).join(" ")) + '" placeholder="any kind"></td><td><input data-k="open" type="checkbox"' +
+      (r.open === false ? "" : " checked") + '></td><td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
+  }
+
+  poDraw() {
+    this.$("poT").tBodies[0].innerHTML = ""; this.$("srT").tBodies[0].innerHTML = "";
+    Object.entries(this.S.play_only || {}).forEach(([src, on]) => this.poRow({src, on}));
+    Object.entries(this.S.sources || {}).forEach(([name, v]) => this.srRow({name, items: v.items || [], open: v.enabled !== false}));
+  }
+
+  async poSave() {
+    const play_only = {}, sources = {};
+    [...this.$("poT").tBodies[0].rows].forEach(r => {
+      const k = r.querySelector('[data-k="src"]').value.trim();
+      if (k) play_only[k] = r.querySelector('[data-k="on"]').checked;
+    });
+    [...this.$("srT").tBodies[0].rows].forEach(r => {
+      const k = r.querySelector('[data-k="name"]').value.trim();
+      if (!k) return;
+      const items = r.querySelector('[data-k="items"]').value.split(/[\s,]+/).filter(Boolean);
+      sources[k] = Object.assign({enabled: r.querySelector('[data-k="open"]').checked}, items.length ? {items} : {});
+    });
+    this.say("poStat", await Mice.Api.post("/api/gacha/config", {play_only, sources}), "saved");
     this.load();
   }
 
@@ -926,6 +1050,13 @@ const hours = h => gachaApp.hours(h);
 const gmRow = r => gachaApp.gmRow(r);
 const gmDraw = () => gachaApp.gmDraw();
 const gmSave = () => gachaApp.gmSave();
+const stockLoad = () => gachaApp.stockLoad();
+const bxRow = r => gachaApp.bxRow(r);
+const bxLoad = m => gachaApp.bxLoad(m);
+const bxPress = () => gachaApp.bxPress();
+const poRow = r => gachaApp.poRow(r);
+const srRow = r => gachaApp.srRow(r);
+const poSave = () => gachaApp.poSave();
 const keysLoad = () => gachaApp.keysLoad();
 const keyMake = () => gachaApp.keyMake();
 const keyDrop = name => gachaApp.keyDrop(name);

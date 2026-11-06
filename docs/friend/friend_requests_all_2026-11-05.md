@@ -78,7 +78,7 @@ hub โชว์ปุ่ม admin ของแอพเฉพาะแอดม
 
 ### A5. Webhook (hub → แอพ)
 แอพส่ง URL มา เราตั้งใน `webhooks.<kind>` แล้ว `POST` JSON `{type, machine, item, person, app, seq, stock, result, reason, message, event, time}`
-`type` = `gacha.dispensed | gacha.jam | gacha.empty | gacha.out | gacha.low | gacha.refused`
+`type` = `gacha.dispensed | gacha.jam | gacha.empty | gacha.out | gacha.low | gacha.refused | gacha.stock` (`gacha.stock` = รายการของที่มีทั้งหมด ดู B1 ข้อ 7)
 ส่งพร้อม `Authorization: Bearer mice1...` (A4) ให้แอพเช็คว่ามาจาก hub จริง ตอบ 2xx ภายใน 5 วิ ไม่เช่นนั้นเราทิ้ง ไม่ retry รัว
 
 ### A6. ข้อตกลงที่ทุกแอพถือเหมือนกัน
@@ -100,9 +100,9 @@ hub โชว์ปุ่ม admin ของแอพเฉพาะแอดม
 |---|---|---|---|---|
 | 1 | **quiz ส่ง `result.total`** = คะแนนเต็มของรอบนั้น (จำนวนข้อ) ใน `alljao:win` | เพิ่ม/ลดจำนวนข้อได้โดยฝั่งเราไม่ต้องแก้ เกณฑ์ชนะตั้งเป็น "80%" ได้ (ตอนนี้ฝั่ง hub รองรับแล้ว ถ้าไม่ส่งจะตกไปใช้คะแนนดิบ) | ยังไม่ทำ: record quiz มีแค่ `score` ไม่มี `total` (`quiz-game.js:150`) | **P1** |
 | 2 | **วงล้อส่ง `result.noPrize: true`** ที่ช่อง "ลองใหม่"/ไม่ได้ของ | ตอนนี้เราเดาจากคำในรายการ `games_skip` (เปลี่ยนคำเมื่อไหร่ก็แจกของผิด) | ยังไม่ทำ: ไม่มี `noPrize` ในโค้ดเกม (`script.js:318`) | **P1** |
-| 3 | **ถามสต็อกจากตู้ได้ (สองทาง)**: เกมเรียก `GET /api/gacha/stock` (ร่างจาก thread "Make prize machine stock two-way and dynamic") ได้ `{item: จำนวนที่เหลือ}` แล้วเลิกสุ่มรางวัลที่หมด / หรือรับ webhook `gacha.low`, `gacha.out` (มีแล้ว) | Prize machine เป็นฝ่ายรู้ว่าของเหลือเท่าไหร่ เกมไม่ควรเดา; ตั้งสต็อกได้ที่หน้า Prize machines แล้วบอกฝั่งเกม | ส่วน A5; รายละเอียดรูปแบบจะยืนยันเมื่อ thread สต็อกเสร็จ | P2 |
+| 3 | **ถามสต็อกจากตู้ได้ (สองทาง)**: เกมเรียก `GET /api/gacha/stock` (ร่างจาก thread "Make prize machine stock two-way and dynamic") ได้ `{items:[{item,label,stock,odds,available}], play_only}` (ใส่ `?game=<ชื่อ>`) แล้วเลิกสุ่มรางวัลที่หมด ส่ง `item` กลับใน `POST /api/gacha/game` ได้; หรือรับ webhook `gacha.stock` (รายการเดียวกัน) / หรือรับ webhook `gacha.low`, `gacha.out` (มีแล้ว) | Prize machine เป็นฝ่ายรู้ว่าของเหลือเท่าไหร่ เกมไม่ควรเดา; ตั้งสต็อกได้ที่หน้า Prize machines แล้วบอกฝั่งเกม | ส่วน A5; รูปแบบยืนยันแล้ว ดู `docs/gacha/friend_requests.md` อัปเดต (2) | P2 |
 | 4 | **โหมด "เล่นอย่างเดียว"**: เกมทำงานได้โดยไม่แจกของจริง — เกมส่งผลตามปกติ (A2) hub ตอบ `{"ok":true,"play_only":true,"message":"..."}` ไม่สั่งตู้ | ใช้แอพเกมกับงานที่ไม่มีของแจก; แสดง `message` ได้เหมือนเดิม ไม่ต้องแยกเคสในเกม | เกมไม่ต้องแก้ ถ้าถือ A3 (`message` เสมอ) | P3 |
-| 5 | **ตู้สุ่ม (random box)**: เกมไม่ต้องรู้ชนิดของ ส่งแค่ผลชนะ hub สุ่มของจากตู้ที่ตั้งเป็นกล่องสุ่ม ตอบ `message` บอกว่าได้อะไร | ทำให้ของในตู้สุ่มทั้งหมด แต่มีจำนวนแต่ละอย่างบอกไว้ตอนใส่ของ | thread สต็อก (กำลังทำ) | P3 |
+| 5 | **ตู้สุ่ม (random box)**: เกมไม่ต้องรู้ชนิดของ ส่งแค่ผลชนะ hub สุ่มของจากตู้ที่ตั้งเป็นกล่องสุ่ม ตอบ `message` บอกว่าได้อะไร | ทำให้ของในตู้สุ่มทั้งหมด แต่มีจำนวนแต่ละอย่างบอกไว้ตอนใส่ของ | `docs/gacha/README.md` (ตู้สุ่ม: `POST /api/gacha/random`, คำตอบมี `drawn`) | P3 |
 | 6 | **เกมจับคู่ใส่ `playerName` ใน record** ที่ส่ง `AllJaoHub.win('memory', ...)` (ตอนนี้มี `id, completedAt, pairs, timeMs` ไม่มีชื่อ; เกมอื่น 3 เกมมีแล้ว) | นับสิทธิ์ต่อคนถูกคน (record ผลชนะทำแล้วใน `146fcbc`) | `matching-game.js:104` | P2 |
 | 7 | **admin ของเกม**: `admin/1234` เช็คในเบราว์เซอร์ ไม่ได้ป้องกันอะไรจริง → รับ admin flag จากหน้าที่ hub เสิร์ฟ หรือยอมรับว่าเกมไม่มี admin จริง | admin เป็นของ hub เจ้าเดียว | ยังไม่ทำ: ยังเป็น `admin`/`1234` ในเบราว์เซอร์ (`script.js:151`) | P2 |
 | 8 | **(ไม่ต้องทำก็ได้)** เรียก A2 ตรงๆ ด้วยกุญแจ ถ้าเปิดเกมบนเครื่องอื่นแล้วอยากให้ตู้ปล่อยของ | เล่นบนเครื่องอื่นได้ไม่ต้องผ่าน `/play/` | ส่วน A | P3 |
