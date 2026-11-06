@@ -162,6 +162,6 @@ Voice เป็นของเรา (ฟัง/คิด/พูด สลับ
 > สถานะ: ตรวจ git log และโค้ดเพื่อนแล้ว 2026-11-05 (อ่านอย่างเดียว) — repo Face_Regonize มีไฟล์ที่ยังไม่ commit บนเครื่องเพื่อน ไม่ได้นับ
 
 ## ที่มาของรายการ (เพื่อตรวจ)
-`docs/gacha/friend_requests.md` (2026-10-22 + อัปเดต 11-05), `docs/friend_requests_admin_2026-11-04.md` (PR #122), `docs/friend/face_regonize_perf_2026-11-05.md` (PR #125),
+`docs/gacha/friend_requests.md` (2026-10-22 + อัปเดต 11-05 และ (2) สต็อกสองทาง), `docs/friend_requests_admin_2026-11-04.md` (PR #122 ยังไม่ merge; เนื้อหาอยู่ใน A4 แล้ว), `docs/friend/face_regonize_perf_2026-11-05.md` (PR #125),
 `friend_api/ขอเพื่อนแก้_2026-10-19.md`, `friend_api/gacha_requests_2026-10-22.md`, `handoff/tasks/face-photobooth-pc.md`, `handoff/tasks/friend-face-server.md`
 เอกสารเดิมยังเก็บไว้เป็นหลักฐาน ฉบับนี้แทนที่ในการส่งให้เพื่อน
