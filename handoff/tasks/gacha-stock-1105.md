@@ -24,6 +24,12 @@ Baseline: b7801bd (PR #127 head)
 | qc/checks/check_gacha_stock.py (new) | hub-level, fake boards | done | passes | this checkpoint |
 | docs/gacha/*.md, docs/friend/friend_requests_all_2026-11-05.md, docs/systems* | friend asks, README, systems map | done | n/a | this checkpoint |
 
+## Done (QC verdict 2026-11-06, full run, PC, fakes only)
+- `run_qc.py --quiet` on 07aa634: 9454 passed, 1 failed, 997.8s => QC FAIL (not green).
+- Failing: check_faces_count (CRASH ConnectionAbortedError WinError 10053, parallel run). Alone: 16/16 pass, 2 of 2 re-runs.
+- Flaky, reported by QC: check_flat_view_drag (parallel fail, alone 8/8 pass).
+- No gacha check failed. Exe NOT rebuilt, systems map NOT rebuilt (run was not green). Not merged.
+
 ## Facts found
 - gacha.py dispense(): one place (after the for/else) calls settle_draw, so every path (route, game_win, give) settles a random box.
 - Random box counts live in .local/gacha/boxes.json (hub), the board only counts balls (GSTOCK sum).
