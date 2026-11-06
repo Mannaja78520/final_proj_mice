@@ -46,7 +46,7 @@ Baseline: 6d94a50
 ## Next
 1. A person listens to .local/voice_source/spark_test/ (spark_A/B/C_*.wav vs edge_*.wav): does it sound like the user? CER cannot say.
 2. Check the recording has only the user's voice (it is a talk with another person); speaker.py joins clips blind.
-3. Fix the broken Spark venv (torchaudio 2.11+cu128 vs torch 2.15 cpu in user site): the feeling server does not start today without a shim.
+3. DONE 2026-11-06 (user said go): installed torch 2.11.0+cu128 and torchvision 0.26.0+cu128 into .local/tts_spark/venv (matches its torchaudio 2.11.0+cu128); server.py now starts on cuda:0 (RTX 5070 Ti) with no shim. Old note: fix the broken Spark venv (torchaudio 2.11+cu128 vs torch 2.15 cpu in user site): the feeling server does not start today without a shim.
 4. To use: copy clips to <data>/voice_profiles/<character>/voice/, run speaker.py, set reference.enabled / events in a per-PC override.
 
 ## Blocked
