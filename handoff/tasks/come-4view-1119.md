@@ -5,7 +5,7 @@ Plan: A57-4, continues A57-2
 Baseline: d94db85
 
 ## Doing now
-Claim private .local/come_4view_1119 and results/come-four-view. Hypothesis: simultaneous side views resolve arm depth at known Come gesture events. First sync audio to original song and check coverage. Use one alignment pass per camera and then one bounded reference/robot candidate against the same times and rig; stop if sync or executable candidate fails its checks.
+One targeted revision: current R4 visibly lifts higher than four-view v1 at 110.70 and 111.00. Preserve R4 apex motion through that segment using a fixed 110.05–111.65 blend, with 110.55–111.13 on R4 source-clock command. Reuse v1 elsewhere. Repeat native replay/clearance under 60 s, assess actual wrist elevation and visual crossing, keep review only if still materially better on overall angular score.
 
 ## File status
 | File | Change | State | Verification | Commit |
@@ -13,7 +13,7 @@ Claim private .local/come_4view_1119 and results/come-four-view. Hypothesis: sim
 | handoff/tasks/come-4view-1119.md | Task and scope | active | baseline d94db85 | this checkpoint |
 
 ## Done
-Read prior task. Prior Come pilots are review-only, and original R4 is current.
+Audio fit seven windows; visual front/side residual 0.20s. V1 saved with measured 64.334 to 49.452deg on 100–116, checks native18 PASS, but overhead upper-arm/range visibly regressed. Original R4 remains current.
 
 ## Next
 Find which cameras overlap anchor 100–116 s and recover source gesture events.
