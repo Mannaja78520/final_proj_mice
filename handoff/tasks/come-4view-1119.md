@@ -5,7 +5,7 @@ Plan: A57-4, continues A57-2
 Baseline: d94db85
 
 ## Doing now
-One targeted revision: current R4 visibly lifts higher than four-view v1 at 110.70 and 111.00. Preserve R4 apex motion through that segment using a fixed 110.05–111.65 blend, with 110.55–111.13 on R4 source-clock command. Reuse v1 elsewhere. Repeat native replay/clearance under 60 s, assess actual wrist elevation and visual crossing, keep review only if still materially better on overall angular score.
+User clarified: remove only vertical jumps, keep waist and shoulder motion. Source contact sheet confirms jumps near 50.6 and 82.6 s. Prepare one R4 full-song edit changing arm keys only in the two local windows, aiming for synchronized raises and lowerings; recheck full native clock, commands, servo, and geometry. Keep the separate 96–118 s four-view excerpt for comparison. Its 4-camera mapping was corrected after verifying anatomical left/right; reject mirrored trials and waist/shoulder-locked scratch.
 
 ## File status
 | File | Change | State | Verification | Commit |
