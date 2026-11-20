@@ -51,6 +51,13 @@ def run(t):
     t.ok(h5.get("Cache-Control") == "no-store" and "ETag" not in h5,
          "live /api data is never cached", h5)
 
+    _c6, h6, _b6 = get(base, "/docs/shots/hub-tools-card.png")
+    t.ok(h6.get("Cache-Control") == "no-cache" and h6.get("ETag") and "Content-Encoding" not in h6,
+         "screenshots are revalidated (304), not re-sent, and not pointlessly gzipped", h6)
+    help_html = get(base, "/help")[2].decode("utf-8", "replace")
+    t.ok("<img " in help_html and "<img src=" not in help_html,
+         "Help pictures load lazily (only the ones scrolled to)", help_html.count("<img "))
+
     node = shutil.which("node")
     if not node:
         t.ok(True, "node not installed: wording table not run", "")
