@@ -26,6 +26,8 @@ import uuid
 from pathlib import Path
 from xml.sax.saxutils import escape
 
+import local_ai
+
 CODE = Path(__file__).resolve().parents[2]
 REGISTRY = CODE / "config" / "voice_providers.json"
 
@@ -249,6 +251,9 @@ def _auth(key):
 
 def openai_think(prov, key, job, system, history, max_tokens, timeout):
     base = prov["base"].rstrip("/")
+    up, why = local_ai.wake(prov)           # a local server starts when first needed
+    if not up:
+        return None, why
     model = job.get("model") or ""
     if not model:
         # Ollama: whichever model this PC already pulled, never a name typed here.
