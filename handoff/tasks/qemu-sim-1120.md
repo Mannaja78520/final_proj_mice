@@ -11,14 +11,15 @@ Boot the compiled firmware on Espressif's QEMU (ESP32) so commands, the
 FWBEGIN/FWDATA/FWEND update and NVS persistence run on real code, not fakes.
 
 ## Doing now
-Full QC, then PR.
+PR for check_qemu_bus (2-board RS485).
 
 ## Done
 - qc/lib/qemu_board.py (QemuBoard: boot, cmd, reboot), tools/qemu_esp32.py (install QEMU into .local/qemu).
 - qc/checks/check_qemu_firmware.py: nong + gacha firmware. Proven by sabotage (BusUpdate.cpp md5 guard off -> 6 fails).
 
 ## Next
-- Add lift/blank/dummy envs; RS485 two-board bus needs a QEMU UART-to-UART link (not built).
+- Lift and dummy firmware do NOT run in QEMU: lift stalls in RGB RMT init, dummy answers nothing after boot (ADC mux). Would need a sim build flag; not done.
+- Done 2026-11-20: qc/checks/check_qemu_bus.py (Rs485Bus joins UART2 of boards; -serial x3).
 - Windows: tools/qemu_esp32.py Windows asset name is a guess, untested.
 
 ## Blocked / needs hardware
@@ -39,3 +40,4 @@ WiFi, OTA over HTTP, servos, hall pulses, SD: QEMU has no radio/peripherals.
 | qc/data/qemu_* | new NVS seeds + sentinel | done | same | this checkpoint |
 | tools/qemu_esp32.py | new | done (installer download not re-run) | not run | this checkpoint |
 | docs/systems.json, docs/systems/qc.md, qc/README.md | register + docs | done | docs checks (2 fail on plain main too) | this checkpoint |
+| qc/checks/check_qemu_bus.py, qc/lib/qemu_board.py (bus) | new + extended | done | 12 ok; sabotage RS485Bus.cpp id filter -> fails | this checkpoint |

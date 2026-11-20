@@ -58,12 +58,20 @@ def flash_image(parts, nvs=NVS_IMAGE):
     return bytes(flash)
 
 
+def _free_port():
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
 class QemuBoard:
     """One emulated board. UART0 is a TCP socket, so cmd() is the same line
     protocol the hub speaks over USB."""
 
-    def __init__(self, env="mice_nong", boot_timeout=60, flash=None, nvs=NVS_IMAGE):
+    def __init__(self, env="mice_nong", boot_timeout=60, flash=None, nvs=NVS_IMAGE, bus=False):
         self.nvs = nvs
+        self.bus = bus                      # expose UART2 (RS485) as a TCP port: self.bus_port
+        self.bus_port = None
         self.env = env
         self.boot_timeout = boot_timeout
         self.log = ""                       # everything the board printed
@@ -91,15 +99,17 @@ class QemuBoard:
                 raise RuntimeError("no %s build (pio run -e %s)" % (self.env, self.env))
             self._flash = flash_image(parts, self.nvs)
         self.flash_path.write_bytes(self._flash)
-        with socket.socket() as s:                       # a free port
-            s.bind(("127.0.0.1", 0))
-            port = s.getsockname()[1]
+        port = _free_port()
+        uarts = ["-serial", "tcp:127.0.0.1:%d,server=on,wait=off" % port]
+        if self.bus:                                      # UART1 unused, UART2 = RS485 (Serial2)
+            self.bus_port = _free_port()
+            uarts += ["-serial", "null", "-serial", "tcp:127.0.0.1:%d,server=on,wait=off" % self.bus_port]
         # wdt_disable: without it the emulated bootloader trips the watchdog in a loop.
         self.proc = subprocess.Popen(
             [qemu, "-display", "none", "-monitor", "none", "-machine", "esp32",
              "-global", "driver=timer.esp32.timg,property=wdt_disable,value=true",
              "-drive", "file=%s,if=mtd,format=raw" % self.flash_path,
-             "-serial", "tcp:127.0.0.1:%d,server=on,wait=off" % port],
+             *uarts],
             stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         end = time.time() + 10
         while True:
@@ -154,6 +164,20 @@ class QemuBoard:
     def write(self, line):
         self.sock.sendall(line.encode() + b"\n")
 
+    def ask(self, line, prefix, timeout=10):
+        """For the RS485 master: send `#<id> CMD` and wait for the reply line that
+        starts with `prefix` (`@9 `). The master first prints `-> sent...`, the
+        module's answer arrives later. Returns the line, or "" on timeout."""
+        mark = len(self.log)
+        self.write(line)
+        end = time.time() + timeout
+        while time.time() < end:
+            self._pump()
+            for ln in self.log[mark:].split("\n")[:-1]:
+                if ln.strip().startswith(prefix):
+                    return ln.strip()
+        return ""
+
     def cmd(self, line, timeout=10):
         """Send one command line; return its reply line. Log lines start with
         '[' (`[boot] ...`, `[ 123][E]...`) and are skipped; the echo is too."""
@@ -168,3 +192,48 @@ class QemuBoard:
                 if s and not s.startswith("[") and s != line.strip():
                     return s
         return ""
+
+
+class Rs485Bus:
+    """A shared RS485 pair for several QemuBoards: whatever one board's UART2
+    sends is delivered to every OTHER board's UART2 (the real bus is one wire
+    pair, so a talker hears no echo here - the firmware ignores its own anyway)."""
+
+    def __init__(self, boards):
+        import threading
+        self.socks = [socket.create_connection(("127.0.0.1", b.bus_port), timeout=5) for b in boards]
+        self.frames = []                    # every chunk that crossed the bus: (sender index, bytes)
+        self._stop = False
+        self._threads = [threading.Thread(target=self._pipe, args=(i,), daemon=True)
+                         for i in range(len(self.socks))]
+        for th in self._threads:
+            th.start()
+
+    def _pipe(self, i):
+        s = self.socks[i]
+        s.settimeout(0.2)
+        while not self._stop:
+            try:
+                data = s.recv(4096)
+            except socket.timeout:
+                continue
+            except OSError:
+                return
+            if not data:
+                return
+            self.frames.append((i, data))
+            for j, o in enumerate(self.socks):
+                if j != i:
+                    try:
+                        o.sendall(data)
+                    except OSError:
+                        pass
+
+    def close(self):
+        self._stop = True
+        for s in self.socks:
+            s.close()
+
+    def text(self, since=0):
+        """Everything that crossed the bus from frame number `since` on."""
+        return b"".join(d for _, d in self.frames[since:]).decode("utf-8", "replace")
