@@ -53,7 +53,15 @@ window.addEventListener("load", async function(){
     if (!ok) return done(out.join(" "));
 
     var row = d.querySelector("#mods .mod, #usbmods .mod");
-    var list = row.parentNode;
+    // A PRIVATE COPY OF THE CONTAINER (same classes, no id: no CSS keys on the
+    // id). The page redraws #mods on its own sweep; when that landed between
+    // two of the steps below, replaceChild threw NotFoundError and the check
+    // failed at random on clean main (2026-11-20, 3 of 4 runs).
+    var shared = row.parentNode;
+    var list = shared.cloneNode(false);
+    list.removeAttribute("id");
+    shared.parentNode.insertBefore(list, shared);
+    shared.style.display = "none";
     var before = 0, after = 0;
     var listBefore = list.getBoundingClientRect().height;
 
