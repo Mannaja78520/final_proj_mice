@@ -203,7 +203,7 @@
      "depends": []},
 
     {"id": "build", "summary": "Web asset and Studio builds.",
-     "files": ["tools/build_web.py", "tools/client_matrix/run.js", "tools/client_matrix/profiles.json", "tools/build_studio.py", "tools/web_build.json",
+     "files": ["tools/build_web.py", "tools/web_compat.py", "tools/downlevel.js", "tools/package.json", "tools/package-lock.json", "tools/client_matrix/run.js", "tools/client_matrix/profiles.json", "tools/build_studio.py", "tools/web_build.json",
                "tools/inspect_bundle.py"],
      "depends": []},
 

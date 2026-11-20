@@ -7,6 +7,9 @@ import shutil
 import subprocess
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import web_compat
+
 
 def _read(path):
     return path.read_text(encoding='utf-8').replace('\r\n', '\n')
@@ -44,7 +47,7 @@ def _page(tree, spec):
     parts = page / 'parts'
     js = spec['js']
     html = _place(_read(page / 'index.template.html'), parts, spec['path'], js)
-    source = '\n'.join(_read(_inside(parts, name)).rstrip('\n') + '\n' for name in js)
+    source = web_compat.lower('\n'.join(_read(_inside(parts, name)).rstrip('\n') + '\n' for name in js))
     for tag, text, wrap in (
             ('<link rel="stylesheet" href="style.css">', _read(page / 'style.css').strip(),
              '<style>\n%s\n</style>'),
@@ -58,6 +61,7 @@ def _page(tree, spec):
 def build(tree):
     tree = Path(tree).resolve()
     manifest = json.loads(_read(tree / 'tools/web_build.json'))
+    target = manifest.get('oldest_browser', 'chrome70')
     outputs = {}
     scripts = []
     for spec in manifest['inline_apps']:
@@ -68,6 +72,8 @@ def build(tree):
             ('app.js', '<script src="app.js"></script>', '<script>\n%s\n</script>'),
         ):
             source = _read(app / filename).strip()
+            if filename.endswith('.js'):
+                source = web_compat.lower(source, target).strip()
             if template.count(tag) != 1:
                 raise ValueError(f'{app}/index.template.html: expected exactly one {tag}')
             template = template.replace(tag, replacement % source)
@@ -81,7 +87,7 @@ def build(tree):
     if len(parts) != len(set(parts)) or set(parts) != actual:
         raise ValueError('Studio part manifest mismatch; missing=' + str(sorted(set(parts) - actual))
                          + ', unlisted=' + str(sorted(actual - set(parts))))
-    source = '\n'.join(_read(_inside(app / 'app_parts', name)).rstrip() for name in parts) + '\n'
+    source = web_compat.lower('\n'.join(_read(_inside(app / 'app_parts', name)).rstrip() for name in parts) + '\n', target)
     outputs[app / 'app.js'] = source
     # Studio's page is cut the same way (A41-4): index.template.html is the
     # map, html_parts/ one area each; app.js and style.css stay files of

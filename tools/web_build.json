@@ -1,4 +1,5 @@
 {
+  "oldest_browser": "chrome70",
   "inline_apps": [
     "apps/camera",
     "apps/voice"
