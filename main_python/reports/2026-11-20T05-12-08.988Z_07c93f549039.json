@@ -1,0 +1,12 @@
+{
+  "id": "07c93f549039",
+  "time": "2026-11-20T05:12:08.988Z",
+  "text": "STUDIO FREEZE {\"gapMs\":1950,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":1,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":9,\"longTasks\":[{\"ms\":102,\"at\":426},{\"ms\":190,\"at\":528},{\"ms\":57,\"at\":1030},{\"ms\":178,\"at\":1106},{\"ms\":97,\"at\":1303},{\"ms\":62,\"at\":1422},{\"ms\":61,\"at\":1504},{\"ms\":143,\"at\":1586},{\"ms\":83,\"at\":1822},{\"ms\":56,\"at\":2122},{\"ms\":1906,\"at\":2204}],\"slowCalls\":[{\"u\":\"/api/list?kind=models\",\"ms\":234,\"at\":505},{\"u\":\"/api/ports\",\"ms\":214,\"at\":526},{\"u\":\"/api/list?kind=sequences\",\"ms\":235,\"at\":504},{\"u\":\"/api/ports\",\"ms\":214,\"at\":526},{\"u\":\"/api/whoami\",\"ms\":54,\"at\":736},{\"u\":\"/api/list?kind=models&deep=1\",\"ms\":31,\"at\":812},{\"u\":\"video_motion_policy.json\",\"ms\":26,\"at\":817},{\"u\":\"/api/login\",\"ms\":135,\"at\":729},{\"u\":\"/api/gestures\",\"ms\":17,\"at\":1013},{\"u\":\"/api/voice/config\",\"ms\":74,\"at\":1031},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=INFO\",\"ms\":457,\"at\":846},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=FILES%20%2Fmoves\",\"ms\":83,\"at\":1503},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=LIMIT%3F\",\"ms\":250,\"at\":1502},{\"u\":\"/api/gestures\",\"ms\":76,\"at\":1746},{\"u\":\"/api/gestures/fit\",\"ms\":68,\"at\":4091}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+  "text_en": "Sure! {\"label\": \"Point up high\", \"word\": \"ฟ้า\", \"keys\": [{\"R\": [0.2, 3, 0.4], \"palmR\": \"sideways\", \"t\": 99999, \"hold\": -5, \"x\": 1}]}"
+}
