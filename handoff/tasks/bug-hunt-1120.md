@@ -43,3 +43,9 @@ Nothing.
 ## More rows (CORS)
 | apps/faces/service.py | dropped Access-Control-Allow-Origin * on GETs (any website could read arrivals) | done | faces_loopback quick, sabotage caught | this checkpoint |
 | qc/checks/check_faces_loopback.py | asserts no CORS header | done | quick | this checkpoint |
+
+## Update 2026-11-20 (user: factory default is the main one; customer changes stay off the cloud)
+- Tracked main_python/faces_login.default.json (admin/admin123 = the friend app's own factory login, public). Untracked local faces_login.json overrides it (gitignored). faces_login.example.json removed.
+- apps/faces/service.py + apps/voice/service.py fall back to the default when no local file (not when MICE_FACES_LOGIN is set).
+- A pull only deletes the PC's local faces_login.json if it still equals the old tracked copy (git refuses otherwise), and then the default gives the same login.
+- check_faces_login_default: sabotage caught; faces_login, no_ignored_secrets, system_map, voice_identify, faces_poll pass (quick).
