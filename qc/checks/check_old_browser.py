@@ -24,10 +24,10 @@ AREA = "hub"
 TITLE = "served pages run on an old browser: no new syntax, features filled in, plain words if not"
 
 PAGES = ["main_python/web/hub.html", "main_python/web/help.html", "main_python/web/rgb.html",
-         "apps/voice/index.html", "apps/camera/index.html", "apps/faces/index.html",
+         "apps/voice/index.legacy.html", "apps/camera/index.html", "apps/faces/index.html",
          "apps/gacha/index.html", "apps/tv/index.html", "apps/all-jao/index.html",
          "apps/photobooth/index.html", "nong/main_python_set_nong/web/index.html"]
-SCRIPTS = ["nong/main_python_set_nong/web/app.js", "shared/web/mice.js", "shared/web/mice-ui.js",
+SCRIPTS = ["nong/main_python_set_nong/web/app.legacy.js", "shared/web/mice.js", "shared/web/mice-ui.js",
            "shared/web/cast.js", "shared/web/resources.js", "apps/gacha/motion.js",
            "apps/gacha/presets.js", "apps/all-jao/link.js"]
 
@@ -78,6 +78,21 @@ def run(t):
         bad = [i for i, s in enumerate(scripts_of(path)) if not web_compat.parses_for_old(s, node)]
         t.ok(not bad, "%s has no syntax Chrome 75 cannot parse" % rel, "script(s) %s" % bad)
     base, _main = F.start_hub()
+    import urllib.request
+
+    def fetch(path, ua):
+        req = urllib.request.Request(base + path, headers={"User-Agent": ua})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return r.read().decode("utf-8", "replace")
+    old_ua = "Mozilla/5.0 (Linux; Android 9) AppleWebKit/537.36 Chrome/75.0.3770.101 Safari/537.36"
+    new_ua = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36"
+    for path in ("/app.js", "/app/voice/"):
+        old, new = fetch(path, old_ua), fetch(path, new_ua)
+        body = lambda s: re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", s, re.S) or [s]
+        t.ok(all(web_compat.parses_for_old(x, node) for x in body(old)),
+             "%s: a Chrome 75 browser is sent a script it can parse" % path, len(old))
+        t.ok(not all(web_compat.parses_for_old(x, node) for x in body(new)),
+             "%s: a modern browser keeps the readable original" % path, len(new))
     out = subprocess.run([node, "-e", BROWSER, base], capture_output=True, text=True, timeout=90)
     if not out.stdout.strip():
         if "Cannot find module" in out.stderr:

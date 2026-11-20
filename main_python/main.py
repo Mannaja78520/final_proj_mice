@@ -1540,6 +1540,7 @@ hub_api_apps.bind(sys.modules[__name__])
 import hub_api_extensions  # noqa: E402
 hub_api_extensions.bind(sys.modules[__name__])
 import hub_compress  # noqa: E402
+import hub_legacy  # noqa: E402
 import hub_api_resources  # noqa: E402
 hub_api_resources.bind(sys.modules[__name__])
 import voice_helper  # noqa: E402
@@ -2095,6 +2096,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 return self.send_err("forbidden", 403)
             if not f.is_file():
                 return self.send_err("not found: " + path, 404)
+            f = hub_legacy.pick(f, self.headers.get("User-Agent"))
             return self.send_bytes(f.read_bytes(),
                                    MIME.get(f.suffix.lower(), "application/octet-stream"))
 
@@ -2234,6 +2236,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 return self.send_err("forbidden", 403)
         if not f.is_file():
             return self.send_err("not found: " + path, 404)
+        f = hub_legacy.pick(f, self.headers.get("User-Agent"))
         self.send_bytes(f.read_bytes(), MIME.get(f.suffix.lower(), "application/octet-stream"))
 
     # ------------------------------------------------------------ login

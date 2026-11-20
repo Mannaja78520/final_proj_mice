@@ -65,7 +65,7 @@ def run(t):
     js = (Path(F.CODE) / "shared/web/mice-ui.js").as_posix()
     prog = ("global.window={};global.document={readyState:'complete',addEventListener(){},"
             "querySelectorAll(){return[]},getElementById(){return null}};"
-            "global.localStorage={};global.location={href:'http://x/',hostname:'x'};"
+            "global.localStorage={};window.addEventListener=function(){};global.location={href:'http://x/',hostname:'x'};"
             "require(%r);const W=window.Mice.Words;"
             "const o=[W.plain('Failed to fetch').says,W.plain('x is undefined').says,"
             "W.plain('the arm is not powered').says,W.plain(new Error('timed out: /a')).says];"

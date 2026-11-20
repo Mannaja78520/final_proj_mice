@@ -47,7 +47,7 @@ def _page(tree, spec):
     parts = page / 'parts'
     js = spec['js']
     html = _place(_read(page / 'index.template.html'), parts, spec['path'], js)
-    source = web_compat.lower('\n'.join(_read(_inside(parts, name)).rstrip('\n') + '\n' for name in js))
+    source = '\n'.join(_read(_inside(parts, name)).rstrip('\n') + '\n' for name in js)
     for tag, text, wrap in (
             ('<link rel="stylesheet" href="style.css">', _read(page / 'style.css').strip(),
              '<style>\n%s\n</style>'),
@@ -72,14 +72,18 @@ def build(tree):
             ('app.js', '<script src="app.js"></script>', '<script>\n%s\n</script>'),
         ):
             source = _read(app / filename).strip()
-            if filename.endswith('.js'):
-                source = web_compat.lower(source, target).strip()
             if template.count(tag) != 1:
                 raise ValueError(f'{app}/index.template.html: expected exactly one {tag}')
             template = template.replace(tag, replacement % source)
             if filename.endswith('.js'):
                 scripts.append((str(app / filename), source))
         outputs[app / 'index.html'] = template
+        # The same page for old browsers (Chrome < 80, hub_legacy.py serves it
+        # to them): its script lowered. The modern file stays the one the
+        # checks and people read. Written only when lowering changed something.
+        old = web_compat.lower(source, target)
+        if old != source:
+            outputs[app / 'index.legacy.html'] = template.replace(source, old.strip())
     studio = manifest['studio']
     app = _inside(tree, studio['path'])
     parts = studio['parts']
@@ -87,8 +91,11 @@ def build(tree):
     if len(parts) != len(set(parts)) or set(parts) != actual:
         raise ValueError('Studio part manifest mismatch; missing=' + str(sorted(set(parts) - actual))
                          + ', unlisted=' + str(sorted(actual - set(parts))))
-    source = web_compat.lower('\n'.join(_read(_inside(app / 'app_parts', name)).rstrip() for name in parts) + '\n', target)
+    source = '\n'.join(_read(_inside(app / 'app_parts', name)).rstrip() for name in parts) + '\n'
     outputs[app / 'app.js'] = source
+    old = web_compat.lower(source, target)       # for Chrome < 80 (hub_legacy.py)
+    if old != source:
+        outputs[app / 'app.legacy.js'] = old
     # Studio's page is cut the same way (A41-4): index.template.html is the
     # map, html_parts/ one area each; app.js and style.css stay files of
     # their own, which save_patch.py snapshots and the hub serves.
