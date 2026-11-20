@@ -148,6 +148,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/checks/check_link_pick.py`
 - `qc/checks/check_link_states.py`
 - `qc/checks/check_livedoc.py`
+- `qc/checks/check_local_ai_on_demand.py`
 - `qc/checks/check_local_panel.py`
 - `qc/checks/check_local_program.py`
 - `qc/checks/check_logging.py`
