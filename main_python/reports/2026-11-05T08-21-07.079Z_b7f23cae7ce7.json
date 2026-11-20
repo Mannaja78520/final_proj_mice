@@ -1,0 +1,11 @@
+{
+  "id": "b7f23cae7ce7",
+  "time": "2026-11-05T08:21:07.079Z",
+  "text": "STUDIO FREEZE {\"gapMs\":2900,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":false,\"wifi\":false,\"keys\":1,\"gpu\":{\"geometries\":21,\"textures\":0,\"programs\":3},\"heapMB\":6,\"longTasks\":[{\"ms\":3018,\"at\":115583}],\"slowCalls\":[]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36"
+}

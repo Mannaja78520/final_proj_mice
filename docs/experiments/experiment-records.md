@@ -310,3 +310,71 @@ servo-model angles at 50 Hz. "board" = the chained board files played on BoardCl
 - The new files are bigger: largest 9.9 KB (fc000_00; was 8.1 KB). Old firmware hung on a 30 KB show and
   played 2 KB; 5-10 KB is untested on old firmware (the PASS firmware streams per step). README_TH.md
   in .local/robot_1030 still says 8 KB.
+
+## Ollama KV-cache quantization, typhoon25-4b (PC, 2026-11-05)
+Ollama 0.34.2, RTX 5070 Ti Laptop 12 GB, model typhoon25-4b Q4_K_M, temp 0, 2 runs per config (both gave identical VRAM and
+identical answers). Bench = 38 questions (th/en/zh/ja/ko/lo, num_ctx 2048); VRAM test = 8192 ctx (4098 prompt tokens).
+Raw: .local/kv_bench_2026-11-05/ (PC only). Backend log confirmed the KV type each time. TurboQuant itself is not in Ollama;
+q8_0/q4_0 KV with flash attention is the closest built-in.
+
+| cfg | KV in log | VRAM @2k (MB over idle) | VRAM @8k | 8k prefill s | tok/s | first token s | lang ok /38 | Thai ครับ | invented (Thai unknowns) |
+|---|---|---|---|---|---|---|---|---|---|
+| A flash0 f16 (old default) | 576 MiB | 3276 | 5574 | 4.53 / 4.56 | 68 / 63 | 0.052 / 0.054 | 37 / 37 | 15/15 | 0 |
+| B flash1 f16 | 576 MiB | 3188 | 5018 | 1.84 / 1.67 | 59 / 62 | 0.047 / 0.045 | 37 / 37 | 15/15 | 0 |
+| C flash1 q8_0 | 306 MiB | 2922 | 3942 | 1.69 / 1.87 | 64 / 63 | 0.047 / 0.049 | 37 / 37 | 15/15 | 0 |
+| D flash1 q4_0 | 162 MiB | 2778 | 3366 | 1.71 / 1.90 | 65 / 63 | 0.046 / 0.058 | 36 / 36 | 14/15 | 0 |
+
+- C equals A on the Thai score, ครับ and invented facts. 5 of 38 replies differ in wording (th10 still correct; ko01, ko04, lo01, lo03):
+  flash attention changes numerics slightly. Lao answers were not graded (Lao is weak in every model). Not byte-identical to A.
+- D REJECTED: 19/38 replies differ, th03 garbled, ko01 says right instead of left (wrong fact), ครับ 14/15.
+- Saving of C: ~350 MB at 2k ctx, ~1.6 GB at 8k ctx (5574 -> 3942); 8k prefill 2.5x faster. Robot normally uses ctx 2048, so the gain is modest there.
+- tok/s ~63 here vs 169 in an earlier run: same for all configs (comparison holds); cause not chased.
+- Decision: config/local_ai.json default = flash on + q8_0. Takes effect when Ollama is restarted with tools/ollama_serve.py.
+- Not applicable: Face_Regonize (ONNX CNNs, no KV cache; see docs/friend/face_regonize_perf_2026-11-05.md) and Whisper/TTS (their
+  decoder cache is small; faster-whisper/CT2 has no KV-quant option; not measured).
+
+## 2026-11-06 Spark-TTS with the user's recorded voice as reference (PC, CPU only)
+
+### Setup
+- Recording: `.local/voice_source/recording_20261105.m4a`, 962.8 s. `tools/voice_clips.py cut`: 88 clips, 946 s, 4.26-14.46 s, mono 24 kHz
+  (ffmpeg silencedetect -35 dB / 0.3 s; runs over 15 s split at the quietest 20 ms point).
+- Hearing: Thaweewat/whisper-th-medium-ct2, CPU int8, beam 1, 7-16 s per clip. No GPU path on this PC today:
+  torch is `2.15.0+cpu` (no `cublas64_12.dll`), so faster-whisper falls back to CPU by itself.
+- Filter (`config/voice_clips.json` keep): 36 of 88 kept. Reasons (a clip can have several): unsure words 37, uneven level 23,
+  looping text 6, no words 4, maybe no speech 4, too quiet 4. Level spread over all 88: p10 11.7, median 15.5, p90 20.0 dB.
+- The recording is a talk with at least one other person (question and answer turns in the text): speaker identity of each clip is NOT verified. 19 clips say ครับ, 3 say ค่ะ/คะ.
+- Spark server: `apps/voice/tts_spark/server.py --device cpu`, emotion neutral, temperature 0.3, gender male, speaker tokens from
+  `apps/voice/tts_spark/speaker.py` (clips joined with 0.3 s pause, 30 s at most). Edge baseline: th-TH-NiwatNeural.
+- Env fix needed to run it at all: the Spark venv's `torchaudio 2.11.0+cu128` cannot load its native lib against the user-site torch 2.15
+  (`OSError: Could not load this library ... libtorchaudio.pyd`), so the feeling server does NOT start on this PC as is. For this test a
+  `sitecustomize.py` (scratchpad, not in the repo) swallowed that OSError; MelSpectrogram is pure Python and worked. Not a fix for the helper.
+- Sentences (3): "สวัสดีครับ ยินดีต้อนรับสู่ตู้มหัศจรรย์ วันนี้ให้ผมช่วยอะไรดีครับ" / "ห้องน้ำอยู่ชั้นสองทางซ้ายมือ เดินตรงไปแล้วเลี้ยวซ้ายได้เลยครับ" / "ขอบคุณที่มาร่วมสนุกกับเรา แล้วพบกันใหม่นะครับ".
+- CER = character edit distance / reference length, spaces and punctuation ignored, heard by the same Thai whisper (`tools/voice_spark_test.py`).
+
+### Variants (budget 3)
+- A = clip_0059 (rank 1, 11.9 s). B = clip_0059 + clip_0082 (ranks 1-2, 24.7 s). C = clip_0046 + clip_0047 + clip_0087 (ranks 4, 5, 6; 27.1 s).
+
+### Raw numbers
+| voice | CER s1 | CER s2 | CER s3 | mean CER % | make s (s1/s2/s3) | audio s (s1/s2/s3) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Edge Niwat (this run) | 19.0 | 0.0 | 0.0 | 6.3 | 1.0 / 0.7 / 0.6 | 5.1 / 4.2 / 3.7 |
+| Spark ref A | 7.1 | 8.7 | 0.0 | 5.3 | 14.5 / 12.7 / 8.4 | 6.1 / 5.5 / 3.7 |
+| Spark ref B | 9.5 | 4.3 | 0.0 | 4.6 | 17.6 / 13.4 / 10.3 | 6.2 / 5.2 / 3.9 |
+| Spark ref C | 16.7 | 0.0 | 5.9 | 7.5 | 10.1 / 15.0 / 10.4 | 4.1 / 5.5 / 4.0 |
+
+- Noise floor: an earlier run of the same Edge files gave 11.9 / 0.0 / 0.0 (mean 4.0) for sentence 1, so whisper's hearing alone moves a 3-sentence mean by about 2 points.
+- Best gain over Edge: B, 6.3 - 4.6 = 1.7 points (A 1.0, C -1.2). Under the 2% stop rule and inside the noise: stopped, no further variants.
+- Speed: Spark on CPU 8-18 s for a 4-6 s line; Edge 0.6-1.0 s.
+- C's first line came out as "สวัสดีค่ะ" (whisper heard ค่ะ): the reference mix (one clip may be a different speaker or a woman) leaked into the sentence ending. Not verified by ear.
+- Not measured: whether it sounds like the user (CER only tests clarity). Needs a person's ear.
+
+### 2026-11-06 rerun on GPU (one round, same sentences and references)
+- Spark venv repaired first: torch 2.11.0+cu128 + torchvision 0.26.0+cu128 in `.local/tts_spark/venv`; server on cuda:0 (RTX 5070 Ti), `tools/voice_spark_test.py --device cuda`.
+| voice | CER s1 | CER s2 | CER s3 | mean CER % | make s (s1/s2/s3) | audio s (s1/s2/s3) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Edge Niwat | 11.9 | 0.0 | 0.0 | 4.0 | 0.8 / 0.6 / 0.8 | 5.1 / 4.2 / 3.7 |
+| Spark ref A | 16.7 | 8.7 | 0.0 | 8.5 | 7.5 / 4.1 / 2.6 | 6.6 / 5.6 / 3.8 |
+| Spark ref B | 16.7 | 15.2 | 5.9 | 12.6 | 4.2 / 3.4 / 2.7 | 5.5 / 4.7 / 3.9 |
+| Spark ref C | 16.7 | 8.7 | 0.0 | 8.5 | 3.7 / 3.4 / 2.7 | 4.9 / 4.9 / 3.7 |
+- Spark is sampled: the same references gave A 5.3 / B 4.6 / C 7.5 on CPU and 8.5 / 12.6 / 8.5 here, so run-to-run spread (about 8 points) is larger than any gap between references. No reference beats Edge in either run on both.
+- GPU speed: 2.6-7.5 s per line (first line includes warm-up) against 8-18 s on CPU; Edge 0.6-0.8 s.

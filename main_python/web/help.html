@@ -453,7 +453,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       </div>
       <div class="action-card" id="apps-this-pc">
         <div class="action-card-title"><span class="num">3</span> แอปในเครื่องนี้: เพิ่ม ถอด อัปเดต</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> แท็บ Tools &gt; <b>แอปในเครื่องนี้</b> กด <b>เลือกโฟลเดอร์…</b> (หรือพิมพ์โฟลเดอร์) แล้วกด <b>เพิ่มแอป</b> แอปที่ Hub เจอข้างโฟลเดอร์ของมันจะขึ้นใน <b>เจอในเครื่องนี้</b> พร้อมปุ่ม <b>เพิ่ม</b> ในรายการ <b>แอปทั้งหมด</b> มีปุ่ม <b>ถอด</b>, <b>ใส่กลับ</b> และ <b>อัปเดต</b> <span class="tech">โฟลเดอร์บอกว่าเป็นแอปอะไรด้วยไฟล์ <code>mice-app.json</code> ของแอปเอง หรือ <code>app.json</code> หรือแม่แบบของแอปเพื่อนใน <code>config/partners.json</code> (<code>detect</code>) รายการของเครื่องนี้เก็บใน <code>main_python/extensions.json</code> ไม่เข้า git; อัปเดตใช้คำสั่ง <code>update</code> ของแอป หรือ <code>git pull --ff-only</code>; รูปแบบไฟล์: docs/extensions.md</span></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> แท็บ Tools &gt; <b>แอปในเครื่องนี้</b> กด <b>เพิ่มแอป…</b> จะเปิดช่องให้เลือกโฟลเดอร์ (<b>เลือกโฟลเดอร์…</b> หรือพิมพ์เอง) แล้วกด <b>เพิ่มแอป</b> แอปที่ Hub เจอข้างโฟลเดอร์ของมันจะขึ้นใน <b>เจอในเครื่องนี้</b> พร้อมปุ่ม <b>เพิ่ม</b> (แอปที่อยู่ในรายการแล้วจะไม่ขึ้นซ้ำ) ในรายการแอปมีปุ่ม <b>ถอด</b> และ <b>ใส่กลับ</b> กด <b>เช็กอัปเดต</b> ครั้งเดียว แล้วแอปที่มีรุ่นใหม่จะขึ้นปุ่ม <b>อัปเดต</b> ส่วนแอปที่ไม่มีรุ่นใหม่จะบอกว่าเป็นรุ่นล่าสุดแล้ว <span class="tech">โฟลเดอร์บอกว่าเป็นแอปอะไรด้วยไฟล์ <code>mice-app.json</code> ของแอปเอง หรือ <code>app.json</code> หรือแม่แบบของแอปเพื่อนใน <code>config/partners.json</code> (<code>detect</code>) รายการของเครื่องนี้เก็บใน <code>main_python/extensions.json</code> ไม่เข้า git; อัปเดตใช้คำสั่ง <code>update</code> ของแอป หรือ <code>git pull --ff-only</code>; รูปแบบไฟล์: docs/extensions.md</span></div>
         <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
           แต่ละเครื่องมีแค่แอปที่ลงไว้ แอปที่ต้องใช้โปรแกรมของเพื่อน (Reconize, Photobooth, All-Jao) จะไม่ขึ้นในเครื่องที่ไม่มีโปรแกรมนั้น การถอดแค่ซ่อนแอปจากเครื่องนี้ ไม่ลบไฟล์ใด ๆ และถ้าย้ายหรือเปลี่ยนชื่อโฟลเดอร์ของ Hub แอปเพื่อนที่อยู่ข้าง ๆ ก็ยังหาเจอ
         </div>
@@ -1400,7 +1400,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <tr><td class="wrap2">แจกให้ผู้ร่วมงาน</td><td>Give a prize</td><td>เลือก Kind ผู้รับ และ Machine กด Can they have one? เพื่อตรวจสิทธิ์ หรือ Give เพื่อสั่งแจกจริง</td></tr>
       <tr><td class="wrap2">ดูว่าแจกให้ใครแล้ว</td><td>Prizes given</td><td>ดูประวัติการแจกและจำนวนที่แจกไป</td></tr>
       <tr><td class="wrap2">ใช้กติกาจากชีต</td><td>Google Sheet</td><td>วางลิงก์ชีตและทำตามวิธีตั้งค่าในแท็บนี้ หากต้องการเขียนกลับชีตต้องตั้งค่าส่วนการเขียนด้วย</td></tr>
-      <tr><td class="wrap2">ให้เกมหรือเสียงเรียกแจก</td><td>Games and Voice</td><td>กำหนดเกมหรือหัวข้อคำถามที่มีสิทธิ์ขอรางวัล</td></tr>
+      <tr><td class="wrap2">ให้เกมหรือเสียงเรียกแจก</td><td>Games and Voice</td><td>กำหนดเกมหรือหัวข้อคำถามที่มีสิทธิ์ขอรางวัล (ควิซตั้งคะแนนขั้นต่ำได้ที่ Score from)</td></tr>
       <tr><td class="wrap2">เชื่อมแอปอื่น</td><td>Other apps</td><td>กำหนดการเชื่อมต่อของแอปที่ขอแจกของ</td></tr>
       <tr><td class="wrap2">เปลี่ยนคำพูด</td><td>Words</td><td>แก้ข้อความที่ใช้ประกอบการแจกและแจ้งผล</td></tr>
     </tbody>
@@ -1414,6 +1414,19 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <li>กด <b>Can they have one?</b> เพื่อตรวจสิทธิ์ก่อน จากนั้นกด <b>Give</b> เมื่อต้องการแจกจริง</li>
     </ol>
     <p><b>Give one anyway (admin)</b> ข้ามข้อจำกัดสิทธิ์ของผู้รับและยังนับการแจก ใช้เมื่อตั้งใจให้เกินกติกา</p>
+  </div>
+  <div class="f" id="gacha-stock">
+    <h3>สต็อกสองทาง, เล่นอย่างเดียว และตู้สุ่ม</h3>
+    <p><b>สต็อกสองทาง</b> การ์ด <b>Stock and random boxes</b> (แท็บ Machines and kinds) แสดงของที่มีจริงในตู้แต่ละชนิดพร้อม <b>Odds</b>
+       เกมหรือโปรแกรมอื่นอ่านรายการนี้ได้ที่ <code>/api/gacha/stock</code> หรือรับแจ้งผ่าน webhook ชื่อ <b>stock</b> (ตั้งในการ์ด Tell other apps)
+       รางวัลในเกมจึงตามของจริง ของหมดก็หายจากรายการ เกมส่งผลกลับมาพร้อม <code>item</code> เพื่อบอกว่าได้ชนิดไหน</p>
+    <p><b>เล่นอย่างเดียว (Play only)</b> นับการชนะและตอบเหมือนเดิมแต่ไม่หมุนตู้จริง ตั้งต่อเกมในตาราง Games ช่อง <b>Play only</b>
+       หรือการ์ด <b>Play only and who may ask</b> (<code>game:quiz</code>, ชื่อโปรแกรม, หรือ <code>*</code> ทั้งหมด) คำขอเดียวส่ง <code>play_only</code> เองได้ด้วย</p>
+    <p><b>โปรแกรมอื่นที่ไม่ใช่เกม</b> ขอของผ่าน <code>/api/gacha/dispense</code> ด้วยชื่อ <code>app</code> ได้เลย
+       ถ้าอยากจำกัดว่าขอชนิดไหนได้หรือปิดไว้ ให้เขียนชื่อโปรแกรมในตาราง Programs</p>
+    <p><b>ตู้สุ่ม</b> ตั้ง <b>Mode</b> ของเครื่องเป็น <code>random</code> ใส่ของหลายชนิดปนกัน แล้วบอกจำนวนแต่ละชนิดตอนใส่ของ (<b>Put items in a random box</b>
+       &rarr; <b>Set what is in it now</b> หรือ <b>Add these</b>) กด <b>Press random</b> เครื่องหมุนหนึ่งครั้งและระบบสุ่มว่าได้ชนิดไหน
+       ยิ่งเหลือมากยิ่งมีโอกาสมาก จำนวนที่เหลือลดลงทีละหนึ่ง หมดแล้วกดไม่ได้</p>
   </div>
   <div class="f" id="gacha-mechanism">
     <h3>กลไกจริง: Hall 1 ตัว กับแม่เหล็ก 4 ตัว</h3>
@@ -1530,7 +1543,12 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
   <div class="f"><h3>A win gives a real prize<span class="tag t-new">new</span></h3>
     <p>Played inside the hub, a win in the wheel, claw, quiz or memory game can make a prize
        machine give a prize and tells the player where to collect it. Which result gives what is
-       set on <a href="#gacha">Prize machines</a> ▸ Games that give a prize.</p></div>
+       set on <a href="#gacha">Prize machines</a> ▸ Games that give a prize. For the quiz, fill <b>Score from</b>
+       to give a prize only from that score up (every finished quiz round counts as a win result; write a number or a percent such as 80%; the game says its top score, so more questions need no change;
+       a wheel slice that says &ldquo;try again&rdquo; never gives a prize).
+       The player's name typed in the wheel or claw game is used for the per-person limit.
+       The games now keep their data in their own small server (Node, started by the hub with the Open button);
+       play them from the hub so a win reaches the prize machines.</p></div>
   <p>ปุ่มเปิดเกมจะเปิดแท็บไว้ก่อนตรวจความพร้อม เพื่อไม่ให้เบราว์เซอร์บล็อกหลังรอเครือข่าย หากเปิดแท็บไม่ได้ ให้อนุญาตป๊อปอัปแล้วกดลองอีกครั้ง</p>
 </section>
 

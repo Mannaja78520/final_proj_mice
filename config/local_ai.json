@@ -1,0 +1,17 @@
+{
+  // HOW THE LOCAL OLLAMA IS STARTED (user 2026-11-05: apply KV-cache
+  // quantization to the local AI, if the answers do not get worse).
+  // Read by tools/ollama_serve.py. Ollama takes these as server settings
+  // (environment variables), not per-request options, so a restart applies them.
+  //
+  // kvCache   f16 (Ollama default) | q8_0 (about half the KV memory) | q4_0 (about a quarter)
+  //           Anything but f16 needs flashAttention = true (Ollama ignores it otherwise).
+  //           Ollama has no "TurboQuant"; this is its built-in KV quantization.
+  // Default q8_0 + flash (user 2026-11-05: only if quality does not drop). PC bench
+  // 2026-11-05 (docs/experiments/experiment-records.md): Thai score, ครับ 15/15 and
+  // invented facts equal to f16; q4_0 REJECTED (garbled Thai, one wrong fact).
+  "host": "127.0.0.1:11435",
+  "modelsDir": "D:\\local-ai\\ollama-models",
+  "kvCache": "q8_0",
+  "flashAttention": true
+}

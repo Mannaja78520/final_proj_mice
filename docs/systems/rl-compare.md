@@ -47,10 +47,11 @@ Separate experiment: RL imitation policy vs Studio's video planner on the cheer 
 
 - nothing
 
-## Checks that test it (3)
+## Checks that test it (4)
 
 - `check_motion_smooth`
+- `check_ollama_kv`
 - `check_rl_compare`
 - `check_robot_pose`
 
-Run them: `python qc/run_qc.py --no-build check_motion_smooth check_rl_compare check_robot_pose`
+Run them: `python qc/run_qc.py --no-build check_motion_smooth check_ollama_kv check_rl_compare check_robot_pose`

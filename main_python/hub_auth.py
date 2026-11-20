@@ -95,6 +95,8 @@ GATED = {
     "/api/gacha/dispense", "/api/gacha/can", "/api/gacha/event", "/api/gacha/machine",
     "/api/gacha/rules/pull", "/api/gacha/rules/push", "/api/gacha/log", "/api/gacha/stats",
     "/api/gacha/rules", "/api/gacha/game", "/api/gacha/keys",
+    # stock put in, and the random box (gacha_stock.py)
+    "/api/gacha/load", "/api/gacha/random",
     # The pasted Google Sheet (A47-15): reading it shows names, writing edits
     # the user's sheet, and the script text carries the hub's sheet secret.
     "/api/gacha/sheet", "/api/gacha/sheet/read", "/api/gacha/sheet/write",
@@ -214,7 +216,8 @@ NEVER_GATED = {"/api/play/stop", "/api/stopall", "/api/play/beat",
 # POST only, and main.Handler.from_program_here decides what counts: this PC,
 # JSON, and none of the headers every browser sends - so a web page open on
 # this PC is refused like any stranger, a DNS-rebinding one included.
-LOCAL_OK = {"/api/speak", "/api/gacha/dispense", "/api/gacha/can", "/api/gacha/game"}
+LOCAL_OK = {"/api/speak", "/api/gacha/dispense", "/api/gacha/can", "/api/gacha/game",
+            "/api/gacha/random"}
 
 
 def local_ok(path: str, method: str) -> bool:
@@ -224,7 +227,7 @@ def local_ok(path: str, method: str) -> bool:
 # Open to another PC or a form that holds an APP KEY made on the Prize machines
 # page (A47-7, header X-Mice-Key or ?key=): it can only ask for a prize, which
 # the per-person and per-event rules still limit; never force, never settings.
-KEY_OK = {"/api/gacha/dispense", "/api/gacha/can", "/api/gacha/game"}
+KEY_OK = {"/api/gacha/dispense", "/api/gacha/can", "/api/gacha/game", "/api/gacha/random"}
 
 
 def key_ok(path: str, method: str) -> bool:

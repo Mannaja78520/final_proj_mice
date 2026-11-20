@@ -1,0 +1,11 @@
+{
+  "id": "ca64396d7dbe",
+  "time": "2026-11-05T08:17:02.256Z",
+  "text": "STUDIO FREEZE {\"gapMs\":2717,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":false,\"wifi\":false,\"keys\":2,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":7,\"longTasks\":[],\"slowCalls\":[{\"u\":\"/api/list?kind=sequences\",\"ms\":820,\"at\":3035},{\"u\":\"/api/list?kind=projects\",\"ms\":826,\"at\":3030},{\"u\":\"/api/list?kind=models\",\"ms\":816,\"at\":3040},{\"u\":\"/api/list?kind=sequences\",\"ms\":818,\"at\":3038},{\"u\":\"/api/shows\",\"ms\":818,\"at\":3038}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36"
+}

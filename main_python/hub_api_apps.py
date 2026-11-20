@@ -172,37 +172,14 @@ class AppRoutes:
             refused = self.start_refused(method)
             if refused is not None:
                 return refused
-            try:
-                with urllib.request.urlopen("http://127.0.0.1:8080/", timeout=0.6) as r:
-                    if r.getcode() in (200, 301, 302, 304):
-                        return self.send_json({"ok": True, "already_running": True,
-                                               "message": "All-Jao Games server is already running"})
-            except Exception:
-                pass
-            py = sys.executable if not getattr(sys, "frozen", False) else (
-                shutil.which("python") or shutil.which("python3") or r"C:\Program Files\Python312\python.exe" or "python")
-            all_jao_dir = Path("E:/final_proj/mice/All-Jao-Games")
-            if not all_jao_dir.is_dir():
-                cand = (_hub.HERE.parent.parent / "All-Jao-Games").resolve()
-                if cand.is_dir():
-                    all_jao_dir = cand
-            if not all_jao_dir.is_dir():
-                self.drain()
-                return self.send_json({"ok": False, "error": "All-Jao Games is not installed on this PC.",
-                                       "detail": "folder %s not found" % all_jao_dir}, 404)
-            try:
-                flags = 0
-                if os.name == "nt":
-                    flags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
-                subprocess.Popen(
-                    [py, "-m", "http.server", "8080", "--directory", str(all_jao_dir)],
-                    cwd=str(all_jao_dir),
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    creationflags=flags)
-                return self.send_json({"ok": True, "message": "All-Jao Games server started on port 8080"})
-            except Exception as e:
-                return self.send_err("could not start games server: %s" % e, 500)
+            # The same starter as every partner: the command and the port come
+            # from config/partners.json (node server.cjs, 4173 since 2026-11-05).
+            # The game server inherits this hub's GACHA_WEBHOOK_TOKEN.
+            entry = (_hub.read_partners().get("partners") or {}).get("all-jao")
+            if not entry:
+                return self.send_err("config/partners.json has no all-jao entry", 404)
+            got = _hub.partner_launch.start("all-jao", entry)
+            return self.send_json(got, 200 if got.get("ok") else 404)
 
         if path in ("/api/reconize/start", "/api/partner/reconize/start"):
             refused = self.start_refused(method)

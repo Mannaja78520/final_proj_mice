@@ -8,7 +8,7 @@ what the real All-Jao games do (read from their code 2026-10-22):
   * writes a win record into its localStorage list (wheel/claw `logs`): ONE
     GDISPENSE for the new record; the record that was there before the page
     opened and a result no rule names turn nothing;
-  * fires the event asked of the friend (`alljao:win`, quiz score 5 by Kim):
+  * fires the event asked of the friend (`alljao:win` in the friend's real shape, 2026-11-05: quiz, playerName Kim, result.score 5):
     the prize goes to the person the game names;
   * changes a status text to the memory game's "won" words.
 
@@ -35,7 +35,7 @@ setTimeout(function () {
   localStorage.setItem("w", JSON.stringify({logs: [{id: "a1", label: "ตุ๊กตาหมี"}, {id: "old", label: "ตุ๊กตาหมี"}]}));
   localStorage.setItem("w", JSON.stringify({logs: [{id: "a2", label: "ลองใหม่"}, {id: "a1", label: "ตุ๊กตาหมี"},
                                                     {id: "old", label: "ตุ๊กตาหมี"}]}));
-  window.dispatchEvent(new CustomEvent("alljao:win", {detail: {game: "quiz", result: "5", player: "Kim", id: "q1"}}));
+  window.dispatchEvent(new CustomEvent("alljao:win", {detail: {game: "quiz", id: "q1", playerName: "Kim", result: {id: "q1", score: 5}}}));
   document.getElementById("status").textContent = "เก่งมาก! จับคู่ครบทุกคู่แล้ว";
   window.gameDone = true;
 }, 600);
@@ -55,7 +55,8 @@ def run(t):
             "inject": "/app/all-jao/link.js",
             "watch": [{"game": "wheel", "key": "w", "list": "logs", "id": "id", "result": "label"},
                       {"game": "memory", "text": "status", "match": "ครบทุกคู่", "result": "won"},
-                      {"event": "alljao:win", "result": "result", "person": "player", "id": "id"}]}}}),
+                      {"event": "alljao:win", "result": "result", "person": "playerName", "id": "id",
+                       "results": {"quiz": "result.score"}}]}}}),
         encoding="utf-8")
     (tmp / "gacha.json").write_text(json.dumps({
         "machines": [{"id": "g2", "dev": "usb:COM99:71", "label": "ตู้ข้างประตู", "item": "keychain"}],

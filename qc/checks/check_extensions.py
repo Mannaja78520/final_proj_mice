@@ -145,6 +145,29 @@ def run(t):
              "a friend's own mice-app.json overrides our template field by field",
              here["reconize"])
 
+        # ---- check: only a real newer version is called new (2026-11-05) -----
+        import subprocess as sp
+        up_src, up_clone = box / "up_src", box / "up_clone"
+        def git(cwd, *a):
+            sp.run(["git", "-c", "user.name=qc", "-c", "user.email=qc@x", *a], cwd=cwd,
+                   check=True, capture_output=True)
+        up_src.mkdir()
+        git(up_src, "init", "-q")
+        _write(up_src / "a.txt", "1")
+        git(up_src, "add", "."); git(up_src, "commit", "-qm", "one")
+        sp.run(["git", "clone", "-q", str(up_src), str(up_clone)], check=True, capture_output=True)
+        t.eq(E.check("x", {"folder": str(up_clone)}).get("state"), "current",
+             "a git folder with nothing new is up to date")
+        _write(up_src / "a.txt", "2")
+        git(up_src, "commit", "-qam", "two")
+        got = E.check("x", {"folder": str(up_clone)})
+        t.ok(got.get("state") == "new" and got.get("behind") == 1,
+             "a git folder behind its remote is marked as having an update", got)
+        E.add(str(theirs))                         # back on the list for this test
+        t.eq(E.check("lucky-draw").get("state"), "unknown",
+             "an app with only its own update command cannot be checked")
+        t.eq(E.check("gacha").get("state"), "none", "an app with no way to update is not marked")
+
         # ---- update ---------------------------------------------------------------
         E.add(str(theirs))
         up = E.update("lucky-draw")
