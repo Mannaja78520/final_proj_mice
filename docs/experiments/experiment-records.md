@@ -290,6 +290,29 @@ Notes
   14-15 chained files each, largest 8.1 KB (come_and_cheer). Studio 0 flags at 5 mm for every file set.
 - Sim only. Nothing run on the robot.
 
+## 2026-11-04 think-model bench (PC, voice "think" job, no robot)
+
+Setup: RTX 5070 Ti Laptop 12 GB (0 MiB used before each run, face app not running), Core Ultra 9 275HX, 31 GB RAM.
+Same system prompts as apps/voice/service.py, 4 FAQ items (llm/qa_data.json), greedy, budget th 96 / en 48 /
+ja,zh 64 / ko,lo 96, one wrong-language retry. 38 questions: th 15, en 5, zh 5, ja 5, ko 5, lo 3.
+Runner: Ollama 0.34.2 second instance 127.0.0.1:11435, models on D:\local-ai, num_ctx 2048. llama.cpp download
+was blocked (permissions), so the 30B MoE models were split by layers (num_gpu 14/48), not --n-cpu-moe.
+Raw rows + answers: .local/think_bench_2026-11-04/*.json (not in git), script bench.py, SUMMARY.md.
+
+| model | GPU layers | VRAM MB | median 1st token s | median tok/s | median answer s | lang ok 1st try | Thai ends ครับ | Thai grade /30 | other grade /46 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Qwen/Qwen2.5-0.5B-Instruct (transformers) | all | 1214 | 0.13 | 35 | 0.45 | 35/38 | 8/15 | 10 | - |
+| typhoon-ai/typhoon2.5-qwen3-4b-gguf q4_k_m | all | 3198 | 0.03 | 169 | 0.12 | 37/38 | 15/15 | 24 | 33 |
+| typhoon-ai/typhoon2.5-qwen3-30b-a3b-gguf q4_k_m | 14/48 | 5598 | 0.19 | 33 | 0.82 | 31/38 | 15/15 | 23 | 29 |
+| same, Ollama auto split (54% GPU) | auto | 10184 | 0.12 | 58 | 0.57 | 15/15 (th only) | 15/15 | - | - |
+| unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF Q4_K_M | 14/48 | 5598 | 0.20 | 32 | 0.80 | 32/38 | 15/15 | 26 | 33 |
+
+Notes
+- Grade = 2 right / 1 weak / 0 wrong or invented, on the answer the robot would speak (after retry). By hand, one grader.
+- Wrong-language answers of both 30B models are the Thai FAQ answer copied: qa_data.json has Thai answers only.
+- The retry sends no FAQ, and retries invented facts (wifi refused, opens 9:00, parking in basement).
+- All three new models invented a coffee shop for "แถวนี้มีร้านกาแฟไหม". Lao weak in all models.
+
 ### Re-run with the jerk-guarded smoother (main 5bc6d2e, PC, 2026-10-30 05:47-05:52 Bangkok)
 Same trained policies as the four-dance final (no retrain); rl_compare re-scored with
 jerkGuard + followDensePath, then to_sequence rebuilt the board files. jerk = RMS 3rd derivative of the

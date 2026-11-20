@@ -65,3 +65,17 @@ Studio 3D orbit-drag frame time (software GL, so pessimistic): PC 20 ms (50 fps)
 TV CPU 6x 46 ms (22 fps), CPU 10x 63 ms (16 fps). Decision: no Studio rewrite or split justified by these numbers;
 revisit only if the real Android-VM run (VirtualBox on the PC) is much worse.
 Flake fixed: check_no_shift raced the page's own list redraw (PR #140).
+
+## Android VM run + PC local merge 2026-11-21 (claude, on the PC)
+- tv-sim VM (VirtualBox 7.2.6, Android-x86 9.0-r2, Chrome 75, 2 CPU at 50%, 1536 MB, VBoxVGA, 1920x1080, files in E:\tv-sim).
+  After PR 146 all five pages start in Chrome 75 (/, /studio/, /app/voice/, /app/gacha/, /app/tv/); load event 0.2-3.8 s.
+  Studio 3D (software WebGL): idle 64 fps, while a 4-keyframe sequence plays 12.6-13.6 fps. No crash, no out-of-memory.
+  Home showed Promise.allSettled / replaceChildren TypeErrors only on the first load right after the hub started
+  (/api/version ERR_CONNECTION_REFUSED at that moment); later loads clean. Cause not found.
+- Local work merged: main = dc57628 (146 commits ahead of origin/main, not pushed to main). Backup E:\backup\mice_main_b65a0fa.bundle,
+  dirty files E:\backup\mice_dirty_2026-11-21.zip, merge worktree E:\work\mice_merge (branch pc-merge-1121), stash pre-merge-1121 kept.
+- Full QC on main: 9630 passed, 4 failed. check_rgb_pin x2 and check_local_ai_on_demand fail the same on clean origin/main (env / upstream).
+  "system map is sound" fails only in the main checkout because ignored local files (config/voice_profiles/) are listed by tools/systems.py;
+  it passes in a clean tree (merge worktree). pio run -e mice_nong -e mice_cam -e mice_lift -e mice_blank: all SUCCESS.
+- Privacy audit of the 146 commits: no keys/tokens/passwords, no audio/video/model files, no friend-repo code. Notes: author email in 142 commits,
+  local LAN IPs and C:/Users path in docs, 13.8 MB dist/MiceHub.exe in local-only commits 6f92c537 and 01a9befe (checked: no hub_auth/password strings).

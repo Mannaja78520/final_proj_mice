@@ -3453,7 +3453,17 @@ function safeMotionNote(text, warning = false) {
   if ($("tlStat")) $("tlStat").textContent = text;
   if (warning) notice(text);
 }
-function cancelSafeMotion(reason) {
+function cancelSafeMotion(reason, opts = {}) {
+  if (opts.previewOnly) {
+    safeMotionEpoch++;
+    playing = false;
+    entryHold = false;
+    seekToken++;
+    if (typeof sequenceAudio !== "undefined") sequenceAudio.pausePreview();
+    if ($("playBtn")) $("playBtn").textContent = "▶ Play";
+    keepAwake(false);
+    return Promise.resolve(false);
+  }
   const device = safeActiveDevice || (haveRobot() ? safeDevice() : null);
   liveAbort();
   if (reason !== "sequence takeover") {
@@ -3873,7 +3883,7 @@ function gotoXyz(arm) {
   $("tlStat").textContent = (arm === 0 ? "left" : "right") + ` wrist moved to (${Math.round(got.x)}, ${Math.round(got.y)}, ${Math.round(got.z)})` + (err > 10 ? ` — target is ${err} mm out of reach, this is the closest pose` : " ✓");
 }
 let liveTimer = 0, colTimer = 0;
-function poseChanged(throttled, liveMs) {
+function poseChanged(throttled, liveMs, opts = {}) {
   applyPose();
   renderSliders();
   const now = performance.now();
@@ -3883,7 +3893,7 @@ function poseChanged(throttled, liveMs) {
     renderXyz();
     renderHands();
   }
-  if ($("liveChk").checked) {
+  if ($("liveChk").checked && !opts.previewOnly) {
     if (liveMs > 0) liveSend("POSE " + pose.map(fmtA).join(" ") + " T " + Math.round(liveMs));
     else sendPoseLive();
   }
@@ -4846,6 +4856,11 @@ function keyIndexAtMs(ms) {
 }
 let seekToken = 0;
 function selectKey(i) {
+  if (typeof sequenceAudio !== "undefined" && sequenceAudio.preview) {
+    selKey = i;
+    sequenceAudio.rewind(keyStartMs(i));
+    return;
+  }
   const was = playing;
   let token = ++seekToken;
   if (was) {
@@ -5206,6 +5221,10 @@ function renderTimeBar() {
   }
 }
 function rewind() {
+  if (typeof sequenceAudio !== "undefined" && sequenceAudio.preview) {
+    sequenceAudio.rewind(0);
+    return;
+  }
   scrubTo(0);
   $("scrub").value = 0;
   _lastScrub = 0;
@@ -5222,7 +5241,8 @@ function keysSignature() {
 }
 function bumpKeys() {
   crashForced = false;
-  if (playing && safeTimelineCache) cancelSafeMotion("timeline edited");
+  if (typeof sequenceAudio !== "undefined") sequenceAudio.keysChanged(keys);
+  if (playing && safeTimelineCache) cancelSafeMotion("timeline edited", { previewOnly });
   _pkCache = null;
   saveDraft();
 }
@@ -5241,7 +5261,15 @@ function saveDraft() {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         at: Date.now(),
         name: $("projName") && $("projName").value || "",
-        keys
+        keys,
+        rig: RIG,
+        safeDps: SAFE_DPS,
+        musicDps: SEQ_MUSIC_DPS,
+        speedDps: speedDps(),
+        maxDps: maxDps(),
+        loop: $("loopChk").checked,
+        seqNext: $("seqNext").value,
+        sourceAudioAsset: typeof sequenceAudio !== "undefined" ? sequenceAudio.draftRef() : null
       }));
     } catch (e) {
     }
@@ -5265,14 +5293,34 @@ function offerDraft() {
     const yes = document.createElement("button");
     yes.textContent = "Restore it";
     yes.onclick = () => {
+      if (d.rig) {
+        try {
+          localStorage.setItem("nong_rig_prev", JSON.stringify(RIG));
+        } catch (e) {
+        }
+        RIG = mergeRig(d.rig);
+        saveRig();
+        renderRigUI();
+        buildRobot();
+      }
       keys = d.keys;
+      if (d.safeDps >= 5 && !boardSafeDpsMax) {
+        SAFE_DPS = Math.round(d.safeDps);
+        $("safeDpsInput").value = String(SAFE_DPS);
+      }
+      if (Number.isFinite(d.musicDps)) SEQ_MUSIC_DPS = d.musicDps;
+      if (d.speedDps) $("speedDps").value = d.speedDps;
+      if (d.maxDps) $("maxDps").value = d.maxDps;
+      if (d.loop != null) $("loopChk").checked = !!d.loop;
+      if (d.seqNext != null) $("seqNext").value = d.seqNext;
       if ((d.name || d.seq) && $("projName")) $("projName").value = d.name || d.seq;
       selKey = 0;
       if (keys.length) pose = [...keys[0].pose];
       bumpKeys();
-      poseChanged(false);
+      poseChanged(false, 0, { previewOnly: true });
       renderTimeline();
       renderSliders();
+      if (typeof sequenceAudio !== "undefined") sequenceAudio.restore(d.sourceAudioAsset).then(() => saveDraft());
       st.textContent = "Restored the unsaved timeline. Save it to keep it.";
     };
     const no = document.createElement("button");
@@ -5444,9 +5492,14 @@ function keepAwake(on) {
   }
 }
 async function togglePlay(opts = {}) {
+  if (typeof sequenceAudio !== "undefined" && sequenceAudio.pendingRef) {
+    sequenceAudio.readyForSave();
+    return;
+  }
+  if (!opts.sequenceAudio && typeof sequenceAudio !== "undefined" && sequenceAudio.asset && sequenceAudio.preview) return sequenceAudio.toggle();
   if (timelinePreparing) {
     timelinePreparing = false;
-    cancelSafeMotion("planning cancelled");
+    cancelSafeMotion("planning cancelled", { previewOnly: !!opts.previewOnly || previewOnly });
     return;
   }
   if (!playing) {
@@ -5636,6 +5689,10 @@ function segRemaining(ms) {
   return 0;
 }
 function scrubTo(v) {
+  if (typeof sequenceAudio !== "undefined" && sequenceAudio.preview) {
+    sequenceAudio.rewind(totalMs() * (+v / 1e3));
+    return;
+  }
   const was = playing;
   ++seekToken;
   const from = pose.slice();
@@ -7336,11 +7393,416 @@ async function refreshSeqs() {
     sel.appendChild(o);
   });
 }
-async function saveProject(opts) {
-  opts = opts || {};
-  const name = ($("projName").value || "project").trim();
-  const sig = workSig();
-  const project = {
+class StudioAudioDigest {
+  static portable(bytes) {
+    const primes = [];
+    for (let n = 2; primes.length < 64; n++) if (!primes.some((p) => p * p <= n && n % p === 0)) primes.push(n);
+    const fraction = (x) => Math.floor((x - Math.floor(x)) * 4294967296) >>> 0;
+    const state = primes.slice(0, 8).map((p) => fraction(Math.sqrt(p)));
+    const constants = primes.map((p) => fraction(Math.cbrt(p)));
+    const size = Math.ceil((bytes.length + 9) / 64) * 64, padded = new Uint8Array(size);
+    padded.set(bytes);
+    padded[bytes.length] = 128;
+    const view = new DataView(padded.buffer), bitLength = bytes.length * 8;
+    view.setUint32(size - 8, Math.floor(bitLength / 4294967296));
+    view.setUint32(size - 4, bitLength >>> 0);
+    const rotate = (x, n) => x >>> n | x << 32 - n, words = new Uint32Array(64);
+    for (let offset = 0; offset < size; offset += 64) {
+      for (let i = 0; i < 16; i++) words[i] = view.getUint32(offset + i * 4);
+      for (let i = 16; i < 64; i++) {
+        const a2 = words[i - 15], b2 = words[i - 2];
+        words[i] = words[i - 16] + (rotate(a2, 7) ^ rotate(a2, 18) ^ a2 >>> 3) + words[i - 7] + (rotate(b2, 17) ^ rotate(b2, 19) ^ b2 >>> 10) >>> 0;
+      }
+      let [a, b, c, d, e, f, g, h] = state;
+      for (let i = 0; i < 64; i++) {
+        const t1 = h + (rotate(e, 6) ^ rotate(e, 11) ^ rotate(e, 25)) + (e & f ^ ~e & g) + constants[i] + words[i] >>> 0;
+        const t2 = (rotate(a, 2) ^ rotate(a, 13) ^ rotate(a, 22)) + (a & b ^ a & c ^ b & c) >>> 0;
+        h = g;
+        g = f;
+        f = e;
+        e = d + t1 >>> 0;
+        d = c;
+        c = b;
+        b = a;
+        a = t1 + t2 >>> 0;
+      }
+      [a, b, c, d, e, f, g, h].forEach((x, i) => {
+        state[i] = state[i] + x >>> 0;
+      });
+    }
+    return state.map((x) => x.toString(16).padStart(8, "0")).join("");
+  }
+  static async sha256(bytes) {
+    if (window.crypto && crypto.subtle) return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (b) => b.toString(16).padStart(2, "0")).join("");
+    return this.portable(bytes);
+  }
+}
+class StudioSequenceAudio {
+  constructor() {
+    this.asset = null;
+    this.media = null;
+    this.preview = false;
+    this.tail = null;
+    this.loadSerial = 0;
+  }
+  signature() {
+    const a = this.asset || this.pendingRef;
+    return a ? [a.sha256, a.name, a.offsetMs || 0].join("|") : "";
+  }
+  serializable() {
+    if (!this.readyForSave()) throw new Error("เพลงที่กู้คืนยังไม่พร้อม เลือกไฟล์ .nong.json อีกครั้ง");
+    return this.asset ? { ...this.asset } : null;
+  }
+  readyForSave() {
+    if (!this.pendingRef) return true;
+    notice("เพลงที่กู้คืนยังไม่พร้อม รอให้โหลดเสร็จ หรือเปิดไฟล์ .nong.json อีกครั้ง");
+    return false;
+  }
+  draftRef() {
+    if (this.pendingRef) return { ...this.pendingRef };
+    if (!this.asset) return null;
+    const { dataUrl, ...ref } = this.asset;
+    return ref;
+  }
+  async cache(asset, readOnly = false) {
+    return new Promise((resolve) => {
+      if (!window.indexedDB) return resolve(null);
+      const req = indexedDB.open("nong_project_audio", 1);
+      req.onupgradeneeded = () => req.result.createObjectStore("tracks");
+      req.onerror = () => resolve(null);
+      req.onblocked = () => resolve(null);
+      req.onsuccess = () => {
+        const db = req.result, tx = db.transaction("tracks", readOnly ? "readonly" : "readwrite");
+        const op = readOnly ? tx.objectStore("tracks").get(asset.sha256) : tx.objectStore("tracks").put(asset, asset.sha256);
+        let value = null;
+        op.onsuccess = () => {
+          value = readOnly ? op.result : asset;
+        };
+        tx.oncomplete = () => {
+          db.close();
+          resolve(value);
+        };
+        tx.onerror = () => {
+          db.close();
+          resolve(null);
+        };
+        tx.onabort = () => {
+          db.close();
+          resolve(null);
+        };
+      };
+    });
+  }
+  async prepare(input) {
+    if (!input) return null;
+    let asset = { ...input };
+    if (!asset.dataUrl) {
+      const cached = await this.cache(asset, true);
+      asset = cached ? { ...cached, ...asset, dataUrl: cached.dataUrl } : null;
+    }
+    if (!asset || typeof asset.dataUrl !== "string" || !/^data:audio\/[a-z0-9.+-]+;base64,/i.test(asset.dataUrl))
+      throw new Error("ไฟล์นี้ไม่มีเพลงที่เปิดได้ เลือกไฟล์ท่าและเพลง .nong.json อีกครั้ง");
+    if (asset.dataUrl.length > 48 * 1024 * 1024) throw new Error("ไฟล์เพลงใหญ่เกิน 32 MB");
+    const raw = atob(asset.dataUrl.slice(asset.dataUrl.indexOf(",") + 1));
+    const bytes = Uint8Array.from(raw, (c) => c.charCodeAt(0));
+    if (!bytes.length || bytes.length > 32 * 1024 * 1024) throw new Error("ขนาดไฟล์เพลงไม่ถูกต้อง");
+    const hash = await StudioAudioDigest.sha256(bytes);
+    if (asset.sha256 && asset.sha256 !== hash) throw new Error("เพลงไม่ตรงกับไฟล์ที่บันทึกไว้");
+    const Context = window.AudioContext || window.webkitAudioContext;
+    if (!Context) throw new Error("เบราว์เซอร์นี้ยังอ่านเพลงไม่ได้ ลองเปิดด้วย Edge หรือ Chrome");
+    const decoder = new Context();
+    try {
+      const decoded = await decoder.decodeAudioData(bytes.buffer.slice(0));
+      if (!(decoded.duration > 0)) throw new Error("empty audio");
+    } catch (e) {
+      throw new Error("อ่านเพลงไม่ได้ ไฟล์อาจไม่สมบูรณ์");
+    } finally {
+      await decoder.close().catch(() => {
+      });
+    }
+    asset = {
+      ...asset,
+      name: String(asset.name || asset.file || "เพลง"),
+      sha256: hash,
+      offsetMs: Number.isFinite(asset.offsetMs) ? asset.offsetMs : 0
+    };
+    const media = new Audio(asset.dataUrl);
+    media.preload = "auto";
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        clean();
+        reject(new Error("โหลดเพลงนานเกินไป ลองเลือกไฟล์อีกครั้ง"));
+      }, 15e3);
+      const clean = () => {
+        clearTimeout(timer);
+        media.onloadedmetadata = media.onerror = null;
+      };
+      media.onloadedmetadata = () => {
+        clean();
+        resolve();
+      };
+      media.onerror = () => {
+        clean();
+        reject(new Error("เปิดเพลงไม่ได้"));
+      };
+      media.load();
+    });
+    if (!Number.isFinite(media.duration) || media.duration <= 0) throw new Error("ความยาวเพลงไม่ถูกต้อง");
+    await this.cache(asset);
+    return { asset, media };
+  }
+  commit(prepared, ownerKeys = keys) {
+    ++this.loadSerial;
+    this.pendingRef = null;
+    this.restoring = false;
+    this.pause();
+    if (this.media) {
+      this.media.onerror = null;
+      this.media.removeAttribute("src");
+      this.media.load();
+    }
+    this.asset = prepared ? prepared.asset : null;
+    this.media = prepared ? prepared.media : null;
+    this.ownerKeys = ownerKeys;
+    this.preview = !!prepared;
+    this.tail = null;
+    this.poseCache = null;
+    const bar = $("sequenceAudioBar");
+    if (bar) bar.hidden = !prepared;
+    if ($("sequenceAudioTitle")) $("sequenceAudioTitle").textContent = prepared ? "เพลง: " + this.asset.name : "";
+    if (this.media) this.media.onerror = () => {
+      this.pausePreview();
+      notice("เพลงหยุดเพราะอ่านไฟล์ไม่ได้ ท่ายังคงอยู่ เลือกเพลงใหม่แล้วลองอีกครั้ง");
+    };
+    this.status("พร้อมทดลองในหน้าจอ");
+  }
+  keysChanged(current) {
+    if (this.ownerKeys && this.ownerKeys !== current) {
+      ++projectLoadGeneration;
+      this.pausePreview();
+      this.commit(null, current);
+    }
+    this.ownerKeys = current;
+  }
+  restart() {
+    this.seek(0);
+    if (!this.head) this.media.play().catch(() => {
+      this.pausePreview();
+      this.status("กดทดลองพร้อมเพลงอีกครั้งเพื่ออนุญาตเสียง");
+    });
+  }
+  status(text) {
+    if ($("sequenceAudioStatus")) $("sequenceAudioStatus").textContent = text;
+  }
+  pause() {
+    if (this.media) this.media.pause();
+  }
+  pausePreview() {
+    this.pause();
+    if (this.preview) {
+      playing = false;
+      lastPlayMs = 0;
+      keepAwake(false);
+      if ($("playBtn")) $("playBtn").textContent = "▶ Play";
+    }
+    if ($("sequenceAudioPlay")) $("sequenceAudioPlay").textContent = "▶ ทดลองพร้อมเพลง";
+  }
+  seek(ms) {
+    if (!this.media) return;
+    const time = Math.max(0, (ms - (this.asset.offsetMs || 0)) / 1e3);
+    this.media.currentTime = Math.min(time, this.media.duration);
+    this.head = ms < (this.asset.offsetMs || 0) ? { at: performance.now(), ms } : null;
+    if (this.head) this.media.pause();
+    this.tail = time >= this.media.duration ? { at: performance.now(), ms } : null;
+  }
+  async toggle() {
+    if (!this.media) return;
+    this.preview = true;
+    if (playing) {
+      this.pausePreview();
+      return;
+    }
+    await togglePlay({ previewOnly: true, sequenceAudio: true });
+    if (!playing) return;
+    this.seek(playT);
+    try {
+      if (!this.head && playT < this.media.duration * 1e3 + (this.asset.offsetMs || 0)) await this.media.play();
+      if ($("sequenceAudioPlay")) $("sequenceAudioPlay").textContent = "❚❚ หยุดชั่วคราว";
+      this.status("เล่นเพลงและท่าในหน้าจอ");
+    } catch (e) {
+      this.lastPlayError = String(e.name || "") + ": " + e.message;
+      this.pausePreview();
+      this.status("กดทดลองพร้อมเพลงอีกครั้งเพื่ออนุญาตเสียง");
+    }
+  }
+  downloadSong() {
+    if (!this.asset) return;
+    const link = document.createElement("a");
+    link.href = this.asset.dataUrl;
+    link.download = this.asset.name;
+    link.click();
+  }
+  clock(ms) {
+    if (!this.preview || !this.media || !playing || !previewOnly || entryHold) return null;
+    if (this.head) {
+      const at = this.head.ms + performance.now() - this.head.at;
+      if (at < this.asset.offsetMs) return at;
+      this.head = null;
+      this.media.currentTime = 0;
+      this.media.play().catch(() => {
+        this.pausePreview();
+        this.status("กดทดลองพร้อมเพลงอีกครั้งเพื่ออนุญาตเสียง");
+      });
+      return this.asset.offsetMs;
+    }
+    if (this.media.ended || ms >= this.media.duration * 1e3 + (this.asset.offsetMs || 0)) {
+      if (!this.tail) this.tail = { at: performance.now(), ms: this.media.duration * 1e3 + (this.asset.offsetMs || 0) };
+      return this.tail.ms + performance.now() - this.tail.at;
+    }
+    if (this.media.paused || this.media.seeking || this.media.readyState < 2) return ms;
+    return Math.max(0, this.media.currentTime * 1e3 + (this.asset.offsetMs || 0));
+  }
+  visualPose(ms) {
+    if (!$("servoView") || !$("servoView").checked) return poseAt(ms);
+    const signature = keysSignature() + "|" + $("loopChk").checked + "|" + JSON.stringify(RIG);
+    if (!this.poseCache || this.poseCache.signature !== signature) {
+      const start = playKeys().length ? playKeys()[0].pose : poseAt(0);
+      this.poseCache = { signature, model: new ServoFollow(start), samples: [start.slice()] };
+    }
+    const cache = this.poseCache, index = Math.max(0, Math.floor(ms / 20));
+    while (cache.samples.length <= index) {
+      const at = cache.samples.length * 20;
+      cache.samples.push(cache.model.step(poseAt(at), 20).slice());
+    }
+    return cache.samples[index].slice();
+  }
+  rewind(ms = 0) {
+    this.pausePreview();
+    this.seek(ms);
+    playT = ms;
+    servoPlay = null;
+    pose = poseAt(playT).map((v, i) => clampJ(i, v));
+    applyPose();
+    renderSliders();
+    renderTimeline();
+    if ($("scrub")) $("scrub").value = totalMs() ? Math.round(ms / totalMs() * 1e3) : 0;
+  }
+  async restore(ref) {
+    if (!ref) {
+      this.commit(null);
+      return;
+    }
+    const serial = ++this.loadSerial;
+    this.pendingRef = { ...ref };
+    this.restoring = true;
+    this.preview = true;
+    try {
+      const prepared = await this.prepare(ref);
+      if (serial === this.loadSerial) this.commit(prepared);
+    } catch (e) {
+      if (serial === this.loadSerial) {
+        this.restoring = false;
+        this.pausePreview();
+        notice("ท่ากู้คืนแล้ว แต่เพลงยังไม่พร้อม เปิดไฟล์ .nong.json อีกครั้ง: " + e.message);
+      }
+    }
+  }
+}
+const sequenceAudio = new StudioSequenceAudio();
+window.StudioSequenceAudio = StudioSequenceAudio;
+class StudioProjectLibrary {
+  constructor() {
+    this.items = [];
+    this.serial = 0;
+  }
+  async open(selectedId = "") {
+    const dialog = $("projectLibrary");
+    if (!dialog.open) dialog.showModal();
+    const status = $("projectLibraryStatus");
+    status.textContent = "กำลังโหลดผลงานล่าสุด…";
+    try {
+      const response = await fetch("/app/latest-results/catalog.json", { cache: "no-store", signal: AbortSignal.timeout(1e4) });
+      if (!response.ok) throw new Error("ยังไม่พบรายการผลงานบน Hub เครื่องนี้");
+      const catalog = await response.json();
+      if (!Array.isArray(catalog.items)) throw new Error("รายการผลงานไม่สมบูรณ์");
+      this.items = catalog.items;
+      const list = $("projectLibraryList");
+      list.replaceChildren();
+      for (const item of this.items) {
+        if (!item || typeof item.id !== "string" || typeof item.title !== "string") continue;
+        const url = new URL(item.projectUrl, location.origin);
+        if (url.origin !== location.origin || !url.pathname.startsWith("/app/latest-results/bundles/")) continue;
+        const row = document.createElement("div");
+        row.className = "library-item";
+        const label = document.createElement("strong");
+        label.textContent = item.title;
+        const info = document.createElement("span");
+        info.className = "hint";
+        info.textContent = [item.version, item.status].filter(Boolean).join(" · ");
+        const button = document.createElement("button");
+        button.textContent = "เปิดพร้อมเพลง";
+        button.className = "primary";
+        button.onclick = () => this.load(item);
+        row.append(label, info, button);
+        list.append(row);
+        if (item.id === selectedId) {
+          row.classList.add("library-selected");
+          button.focus();
+        }
+      }
+      status.textContent = this.items.length ? "เลือกชุดงาน หรือเลือกไฟล์ .nong.json ที่ดาวน์โหลดไว้" : "ยังไม่มีชุดงาน เลือกไฟล์ที่บันทึกไว้ได้";
+    } catch (e) {
+      status.textContent = e.message + " — ยังนำเข้าไฟล์ท่าและเพลงที่ดาวน์โหลดไว้ได้";
+    }
+  }
+  async load(item) {
+    const generation = ++projectLoadGeneration;
+    const status = $("projectLibraryStatus");
+    status.textContent = "กำลังอ่านท่าและเพลงของ " + item.title + "…";
+    try {
+      const response = await fetch(item.projectUrl, { cache: "no-store", signal: AbortSignal.timeout(15e3) });
+      if (!response.ok) throw new Error("ไม่พบไฟล์ชุดงาน");
+      const project = await response.json();
+      if (generation !== projectLoadGeneration) return;
+      const opened = await applyProjectData(project, item.id + ".json", { generation, imported: true });
+      if (opened) {
+        $("projectLibrary").close();
+        showTab("sequence");
+      }
+    } catch (e) {
+      if (generation === projectLoadGeneration) status.textContent = e.message + " — งานเดิมยังอยู่";
+    }
+  }
+  async importFile(file) {
+    if (!file) return;
+    const generation = ++projectLoadGeneration;
+    try {
+      if (file.size > 48 * 1024 * 1024) throw new Error("ไฟล์ใหญ่เกิน 48 MB");
+      const project = JSON.parse(await file.text());
+      if (generation !== projectLoadGeneration) return;
+      const opened = await applyProjectData(project, file.name.replace(/\.nong\.json$/i, ".json"), { generation, imported: true });
+      if (opened) {
+        if ($("projectLibrary").open) $("projectLibrary").close();
+        showTab("sequence");
+      }
+    } catch (e) {
+      if (generation === projectLoadGeneration) notice("เปิดไฟล์ไม่ได้: " + e.message + " งานเดิมยังอยู่");
+    }
+  }
+  downloadProject() {
+    const blob = new Blob([JSON.stringify(projectSnapshot(), null, 1)], { type: "application/json" });
+    const url = URL.createObjectURL(blob), link = document.createElement("a");
+    link.href = url;
+    link.download = cleanName($("projName").value || "my_move") + ".nong.json";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1e3);
+  }
+}
+const projectLibrary = new StudioProjectLibrary();
+window.StudioProjectLibrary = StudioProjectLibrary;
+function projectSnapshot() {
+  return {
+    sourceAudioAsset: typeof sequenceAudio !== "undefined" ? sequenceAudio.serializable() : null,
     keys,
     speedDps: speedDps(),
     maxDps: maxDps(),
@@ -7363,6 +7825,13 @@ async function saveProject(opts) {
     // The video the moves were made from, and how (A44-8); null if none.
     video: vidSettings()
   };
+}
+async function saveProject(opts) {
+  if (typeof sequenceAudio !== "undefined" && !sequenceAudio.readyForSave()) return false;
+  opts = opts || {};
+  const name = ($("projName").value || "project").trim();
+  const sig = workSig();
+  const project = projectSnapshot();
   const a = await Mice.Api.post("/api/save", { name, project });
   if (!a.ok) {
     $("tlStat").textContent = a.status ? "could not save: " + a.says + ". Your work is still here." : "could not save — the hub is not answering. Your work is still here, and is kept in this browser.";
@@ -7375,23 +7844,55 @@ async function saveProject(opts) {
   refreshProjects();
   return true;
 }
+let projectLoadGeneration = 0;
 async function loadProject(file) {
   if (!file) return;
+  const generation = ++projectLoadGeneration;
+  const a = await Mice.Api.get("/api/load?name=" + encodeURIComponent(file));
+  if (generation !== projectLoadGeneration) return;
+  if (!a.ok) {
+    $("tlStat").textContent = "could not load " + file + " — " + a.says + ". Nothing on screen was changed.";
+    notice($("tlStat").textContent);
+    return;
+  }
+  try {
+    return await applyProjectData(a.data, file, { generation });
+  } catch (e) {
+    if (generation === projectLoadGeneration) notice("เปิดโปรเจกต์ไม่ได้: " + e.message + " งานเดิมยังอยู่");
+  }
+}
+async function applyProjectData(p, file, opts = {}) {
+  const generation = opts.generation == null ? ++projectLoadGeneration : opts.generation;
+  if (!p || !Array.isArray(p.keys) || p.keys.length && !p.keys.some((k) => k && Array.isArray(k.pose) && k.pose.some((v) => Number.isFinite(Number(v)))))
+    throw new Error("ไฟล์ไม่มีท่าที่อ่านได้");
+  for (const field of ["seqName", "seqNext", "robotIp"])
+    if (p[field] != null && typeof p[field] !== "string") throw new Error("ข้อมูล " + field + " ไม่ถูกต้อง");
+  if (p.addons != null && !Array.isArray(p.addons)) throw new Error("ข้อมูล addons ไม่ถูกต้อง");
+  for (const field of ["rig", "meshes", "video"])
+    if (p[field] != null && (typeof p[field] !== "object" || Array.isArray(p[field]))) throw new Error("ข้อมูล " + field + " ไม่ถูกต้อง");
+  for (const key of p.keys) for (const field of ["cues", "cuesAfter"])
+    if (key && key[field] != null && (!Array.isArray(key[field]) || key[field].some((v) => typeof v !== "string")))
+      throw new Error("ข้อมูลคำสั่งในคีย์ไม่ถูกต้อง");
+  const preparedAudio = typeof sequenceAudio !== "undefined" ? await sequenceAudio.prepare(p.sourceAudioAsset) : null;
+  await refreshModels();
+  if (generation !== projectLoadGeneration) return false;
+  if (typeof sequenceAudio !== "undefined" && sequenceAudio.pendingRef && preparedAudio && sequenceAudio.pendingRef.sha256 === preparedAudio.asset.sha256 && confirm("พบเพลงที่ตรงกับงานกู้คืน ใช้เพลงนี้กับท่าที่แก้ค้างไว้หรือไม่?\n\nOK — กู้เฉพาะเพลงและเก็บท่าปัจจุบันทั้งหมด\nCancel — เปิดโปรเจกต์ตามปกติ")) {
+    sequenceAudio.commit(preparedAudio, keys);
+    saveDraft();
+    notice("กู้เพลงกลับแล้ว ท่าที่แก้ค้างไว้ยังอยู่ กด Save เพื่อเก็บงาน");
+    return true;
+  }
+  if (timelinePreparing) throw new Error("กำลังตรวจเส้นทาง กดหยุดตรวจให้เสร็จก่อนเปิดโปรเจกต์ใหม่");
   if (!await askUnsaved("open " + file)) {
     if ($("projList")) $("projList").value = "";
-    return;
+    return false;
   }
-  const a = await Mice.Api.get("/api/load?name=" + encodeURIComponent(file));
-  if (!a.ok) {
-    const st = $("tlStat");
-    if (st) st.textContent = "could not load " + file + " — " + a.says + ". Nothing on screen was changed.";
-    return;
-  }
-  const p = a.data;
-  if (!Array.isArray(p.keys)) {
-    const st = $("tlStat");
-    if (st) st.textContent = file + " has no keyframes in it, so nothing was loaded.";
-    return;
+  if (generation !== projectLoadGeneration) return false;
+  if (playing && !previewOnly) throw new Error("หยุดการเล่นท่าปัจจุบันก่อนเปิดโปรเจกต์ใหม่");
+  if (playing) {
+    playing = false;
+    keepAwake(false);
+    $("playBtn").textContent = "▶ Play";
   }
   let takeRig = false;
   if (p.rig) {
@@ -7418,6 +7919,7 @@ async function loadProject(file) {
       hold: Number.isFinite(hold) ? Math.max(0, Math.round(hold)) : 0
     };
   });
+  if (typeof sequenceAudio !== "undefined") sequenceAudio.commit(preparedAudio, loaded);
   keys = loaded;
   bumpKeys();
   $("speedDps").value = p.speedDps || 120;
@@ -7445,24 +7947,30 @@ async function loadProject(file) {
   addons = p.addons || addons;
   saveMeshes();
   const openedSig = workSig();
-  await refreshModels();
+  if (generation !== projectLoadGeneration) return false;
   renderRigUI();
   buildRobot();
   selKey = 0;
   if (keys.length) {
     pose = [...keys[0].pose];
   }
-  poseChanged(false);
+  poseChanged(false, 0, { previewOnly: true });
   renderTimeline();
-  markSaved(openedSig, oldSeq === pname ? pname : "", 0);
+  if (opts.imported) {
+    markClean("", "");
+    loadedSkipped = 0;
+    saveDraft();
+  } else markSaved(openedSig, oldSeq === pname ? pname : "", 0);
   if (oldSeq && oldSeq !== pname)
     $("tlStat").textContent = "opened " + file + ". It used to save its moves as " + oldSeq + ".yaml; Save now writes " + pname + ".json and " + pname + ".yaml together.";
+  if (opts.imported) $("tlStat").textContent = "เปิดท่าและเพลงแล้ว — กด Save เพื่อเก็บเป็นงานของคุณ";
+  return true;
 }
 let savedSig = null;
 let savedName = "";
 let loadedSkipped = 0;
 function workSig() {
-  return keysSignature() + "|" + ($("loopChk") && $("loopChk").checked ? 1 : 0) + "|" + ($("seqNext") && $("seqNext").value || "").trim();
+  return keysSignature() + "|" + ($("loopChk") && $("loopChk").checked ? 1 : 0) + "|" + ($("seqNext") && $("seqNext").value || "").trim() + "|" + (typeof sequenceAudio !== "undefined" ? sequenceAudio.signature() : "");
 }
 function markClean(sig, name) {
   savedSig = sig;
@@ -7502,6 +8010,7 @@ function setWorkName(v) {
   if ($("projName")) $("projName").value = n;
 }
 async function saveAll() {
+  if (typeof sequenceAudio !== "undefined" && !sequenceAudio.readyForSave()) return false;
   const name = cleanName($("projName").value || "my_move");
   setWorkName(name);
   const sig = workSig();
@@ -12287,7 +12796,8 @@ function playTick() {
     lastPlayMs = now;
     return;
   }
-  const dt = Math.min(now - lastPlayMs, MAX_TICK_MS);
+  const audioMs = typeof sequenceAudio !== "undefined" ? sequenceAudio.clock(playT) : null;
+  const dt = audioMs == null ? Math.min(now - lastPlayMs, MAX_TICK_MS) : Math.max(0, audioMs - playT);
   lastPlayMs = now;
   if (dt <= 0) return;
   playT += dt;
@@ -12296,14 +12806,16 @@ function playTick() {
     if ($("loopChk").checked) {
       playT = 0;
       lastLiveSeg = -1;
+      if (typeof sequenceAudio !== "undefined" && sequenceAudio.preview && sequenceAudio.media) sequenceAudio.restart();
     } else {
       playT = total;
       playing = false;
       $("playBtn").textContent = "▶ Play";
+      if (typeof sequenceAudio !== "undefined") sequenceAudio.pausePreview();
       keepAwake(false);
     }
   }
-  pose = servoPlayPose(poseAt(playT), dt).map((v, i) => clampJ(i, v));
+  pose = (audioMs == null ? servoPlayPose(poseAt(playT), dt) : sequenceAudio.visualPose(playT)).map((v, i) => clampJ(i, v));
   if (_drawing) {
     applyPose();
     renderSliders();
@@ -12799,6 +13311,10 @@ function muDelete() {
     $("muUser").value = "";
     $("muPass").value = "";
   }
+}
+{
+  const libraryId = new URLSearchParams(location.search).get("library");
+  if (libraryId) projectLibrary.open(libraryId);
 }
 const PANEL_KEY = "nong_panels";
 const PANEL_DESK = "(min-width:861px)";

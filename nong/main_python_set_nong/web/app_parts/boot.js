@@ -335,3 +335,6 @@ function muDelete() {
     $("muPass").value = "";
   }
 }
+
+// Deep links open the library selection; draft recovery stays visible until the user chooses.
+{ const libraryId = new URLSearchParams(location.search).get("library"); if (libraryId) projectLibrary.open(libraryId); }
