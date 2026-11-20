@@ -29,6 +29,7 @@ works.** Every assertion in here is a bug that actually shipped once.
 | `firmware` | `check_firmware_build.py` | the real PlatformIO build compiles and still fits, plus native tests that RUN the gear/travel maths and move-time floor on the PC |
 | `firmware` | `check_qemu_firmware.py` | the REAL firmware boots on an emulated ESP32 (QEMU, `python tools/qemu_esp32.py install`): commands, FWBEGIN/FWDATA/FWEND refusals, reboot into the new app slot, NVS survives REBOOT. No WiFi/servos in QEMU. Skips with a note if QEMU or the build is missing |
 | `firmware` | `check_qemu_bus.py` | two REAL firmwares (nong master + gacha) on an emulated RS485 bus: `#id` commands and replies, unknown id ignored, a change seen on the other board, firmware update over the bus reboots the module into the new slot |
+| `firmware` | `check_qemu_peripherals.py` | on the `*_sim` firmware builds (src/sim redirects pin/ADC/PWM/encoder at link time): gacha hall pulse -> dispense done + stock + motor pins; lift limit switches, fault, HOME/UP end stops; dummy pot -> angle, DZERO; nong servo duty either side of 90 |
 | `registries` | `check_registries.py` | adding an app, servo, command or capability costs one file — it adds a throwaway app every run to prove it |
 | `transports` | `check_transports.py` | the same command, SD transfer and pin-config round trip on USB/UART, RS485, direct Web Serial and WiFi |
 | `persistence` | `check_persistence.py` | every save path returns exactly what went in; bad names refused |
