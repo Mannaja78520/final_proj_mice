@@ -1,6 +1,7 @@
 # Come and Cheer coordinated arm retraction
 Owner: codex:come-dual-arm-01a1f13c
 Updated: 2026-11-19T20:23:35.289267+07:00
+Branch: main
 Plan: A58-3
 Baseline: b5ddb24
 Last commit: this checkpoint

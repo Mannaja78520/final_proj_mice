@@ -1,6 +1,7 @@
 # Come and Cheer wrist timing revision
 Owner: codex:come-timing-01a1f13c
 Updated: 2026-11-19T19:10:43.509057+07:00
+Branch: main
 Plan: A57-7
 Baseline: 65f2b69
 Last commit: this checkpoint

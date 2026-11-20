@@ -1,6 +1,7 @@
 # Come and Cheer missed retraction improvement
 Owner: codex:come-pull-01a1f13c
 Updated: 2026-11-19T19:27:40.975917+07:00
+Branch: main
 Plan: A57-8
 Baseline: 32bcced
 Last commit: this checkpoint

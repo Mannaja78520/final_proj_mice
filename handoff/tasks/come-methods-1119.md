@@ -1,6 +1,7 @@
 # Come and Cheer full-song method comparison
 Owner: codex:come-methods-01a1f13c
 Updated: 2026-11-19T08:17:46.323825+07:00
+Branch: main
 Plan: A57-6
 Baseline: ce53a41
 Last commit: this checkpoint

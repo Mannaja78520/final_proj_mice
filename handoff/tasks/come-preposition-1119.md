@@ -1,6 +1,7 @@
 # Come and Cheer retraction pre-positioning
 Owner: codex:come-preposition-01a1f13c
 Updated: 2026-11-19T20:02:44.927562+07:00
+Branch: main
 Plan: A58-1
 Baseline: 58244ab
 Last commit: this checkpoint

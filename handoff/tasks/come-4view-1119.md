@@ -1,6 +1,7 @@
 # Come and Cheer four-view robot motion
 Owner: codex:come-4view-01a1f13c
 Updated: 2026-11-19T07:55:28.602758+07:00
+Branch: main
 Plan: A57-4, continues A57-2
 Baseline: d94db85
 Last commit: this checkpoint
