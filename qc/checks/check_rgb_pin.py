@@ -92,9 +92,11 @@ def run(t):
     # ---- the firmware and the page use it -------------------------------
     strip = (fw / "src/modules/lift/RgbStrip.cpp").read_text(encoding="utf-8",
                                                              errors="replace")
-    t.contains(strip, "rgbAddLeds(hw.pins.rgbData",
+    # RGB_ADD wraps rgbAddLeds so the QEMU sim build can stub it (2026-11-21).
+    t.contains(strip, "rgbAddLeds((pin)", "RGB_ADD still calls rgbAddLeds")
+    t.contains(strip, "RGB_ADD(hw.pins.rgbData",
                "the strip attaches to the pin the board was told to use")
-    t.contains(strip, "rgbAddLeds(RGB_PIN_DEFAULT",
+    t.contains(strip, "RGB_ADD(RGB_PIN_DEFAULT",
                "and falls back to the default rather than to nothing")
     cfg = (fw / "src/core/HwConfig.cpp").read_text(encoding="utf-8", errors="replace")
     t.contains(cfg, '{"rgb_data"', "rgb_data is a settable pin like the others")
