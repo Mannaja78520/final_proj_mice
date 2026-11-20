@@ -26,7 +26,13 @@ import uuid
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-import local_ai
+try:
+    import local_ai
+except ImportError:      # loaded by file path (a check, a tool): the folder is not on sys.path
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location("local_ai", str(Path(__file__).with_name("local_ai.py")))
+    local_ai = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(local_ai)
 
 CODE = Path(__file__).resolve().parents[2]
 REGISTRY = CODE / "config" / "voice_providers.json"
