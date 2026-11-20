@@ -19,6 +19,7 @@
   "allow_files": {
     "main_python/web/help.html": "its job IS the technical detail until A21-4 rewrites it",
     "nong/main_python_set_nong/web/app.js": "three console.warn NaN diagnostics aimed at devtools, not at the visitor",
+    "nong/main_python_set_nong/web/app.legacy.js": "the same script lowered for Chrome < 80 (tools/web_compat.py): the same three console.warn NaN diagnostics",
     "main_python/web_ox/help.html": "byte-copy of the incumbent help page (A23-1), which carries this exemption for the same reason; same text, same pass",
     "main_python/web_gemini/help.html": "byte-copy of the incumbent help page (A23-1), which carries this exemption for the same reason; same text, same pass"
   }

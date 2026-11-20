@@ -55,7 +55,7 @@ Face recognition app.
 
 - [app-gacha](app-gacha.md)
 
-## Checks that test it (15)
+## Checks that test it (16)
 
 - `check_face_photos`
 - `check_faces_app`
@@ -69,8 +69,9 @@ Face recognition app.
 - `check_faces_start`
 - `check_faces_ws`
 - `check_friend_api`
+- `check_old_browser`
 - `check_partner_version`
 - `check_pc_camera`
 - `check_voice_view`
 
-Run them: `python qc/run_qc.py --no-build check_face_photos check_faces_app check_faces_count check_faces_cursor check_faces_greet check_faces_login_default check_faces_loopback check_faces_presence check_faces_rules check_faces_start check_faces_ws check_friend_api check_partner_version check_pc_camera check_voice_view`
+Run them: `python qc/run_qc.py --no-build check_face_photos check_faces_app check_faces_count check_faces_cursor check_faces_greet check_faces_login_default check_faces_loopback check_faces_presence check_faces_rules check_faces_start check_faces_ws check_friend_api check_old_browser check_partner_version check_pc_camera check_voice_view`
