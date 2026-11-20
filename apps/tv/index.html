@@ -469,7 +469,7 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
     } catch (e) {
       this.activeDev = "";
       this.setMotionEnabled(false);
-      this.$("statBadge").textContent = e.message;
+      Mice.fail(this.$("statBadge"), "", e);
     } finally { this.pollBusy = false; }
   }
 

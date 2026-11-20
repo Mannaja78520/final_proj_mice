@@ -81,7 +81,7 @@ async function saveRobotSetting(def) {
     stat.textContent = def.label + " is " + v + (def.unit ? " " + def.unit : "")
       + " on the robot now, and it keeps it after a restart.";
   } catch (e) {
-    stat.textContent = def.label + " was not saved on the robot: " + (e.message || e);
+    stat.textContent = def.label + " was not saved on the robot: " + Mice.Words.plain(e).says;
     notice(stat.textContent);
   }
 }

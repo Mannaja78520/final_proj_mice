@@ -71,6 +71,55 @@
     }
   }
 
+  /* -------------------------------------------------------------- Words */
+  // What a page says when a call FAILS (user 2026-11-20: the people using this
+  // are business and art staff, not engineers). A catch used to print the
+  // browser's own text - "Failed to fetch", "Unexpected token < in JSON" -
+  // straight onto the screen, 40+ places. Now one table turns it into a
+  // sentence that says what to do; the raw text goes behind the technical
+  // switch. A new case is a new row here, no page changes.
+  const WORDS = [
+    [/abort|timed? ?out/i,                "took too long to answer - wait a moment and try again"],
+    [/failed to fetch|networkerror|load failed|network request|err_connection|refused/i,
+                                          "the hub did not answer - check it is still running and this device is on the same network"],
+    [/json|unexpected token|unexpected end|not valid/i,
+                                          "the hub sent something this page could not read - reload the page"],
+    [/401|log ?in|unauthori[sz]ed/i,      "this needs a login - log in at the top, then try again"],
+    [/403|forbidden|permission/i,         "this account is not allowed to do that"],
+  ];
+  const ENGINE = /undefined|\bnull\b|\bNaN\b|is not a function|is not defined|cannot read|cannot set|TypeError|ReferenceError|SyntaxError|exception|traceback/i;
+  const WORDS_DEFAULT = "something went wrong - try again, and tell the team if it keeps happening";
+  class Words {
+    // {says, tech} for anything a catch received: Error, string, Api answer.
+    static plain(e) {
+      const raw = e && e.says ? (e.tech || e.says)
+                : e && (e.message || e.error) ? String(e.message || e.error)
+                : String(e == null ? "" : e);
+      if (e && e.says) return {says: e.says, tech: e.tech || ""};
+      for (const [re, words] of WORDS) if (re.test(raw)) return {says: words, tech: raw};
+      // A reply the robot or hub wrote for a person ("the arm is not
+      // powered") is kept as it is; only the browser's own wording is not.
+      if (!ENGINE.test(raw) && /^[^{}<>]{4,160}$/.test(raw) && /\s/.test(raw)) return {says: raw, tech: ""};
+      return {says: WORDS_DEFAULT, tech: raw};
+    }
+    // "<what failed>: <what to do>", the raw text in a .tech span; returns the
+    // plain sentence (for a toast: a toast never shows the technical part).
+    static fail(el, doing, e) {
+      const w = Words.plain(e);
+      const says = (doing ? doing + ": " : "") + w.says;
+      if (el) {
+        el.textContent = says;
+        if (w.tech) {
+          const t = document.createElement("span");
+          t.className = "tech mini";
+          t.textContent = " (" + w.tech + ")";
+          el.appendChild(t);
+        }
+      }
+      return says;
+    }
+  }
+
   /* ------------------------------------------------------------- Status */
   // The five states every list and line has (loading, empty, error, stale,
   // ready), as the classes mice.css already styles. The technical detail is
@@ -329,7 +378,7 @@
     init() {}
   }
 
-  window.Mice = {Api, Status, TopBar, Partner, Tabs, App, here};
+  window.Mice = {Api, Words, fail: Words.fail, Status, TopBar, Partner, Tabs, App, here};
   if (window.miceTheme) window.Mice.theme = window.miceTheme;
   if (window.MiceThemeManager) window.Mice.ThemeManager = window.MiceThemeManager;
 

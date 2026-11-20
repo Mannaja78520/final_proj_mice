@@ -119,7 +119,7 @@ async function rigCadShare(cad) {
     if (!r.ok) throw new Error(r.error || "no answer");
     return true;
   } catch (e) {
-    rigCadLast += " Kept on this browser only: the hub did not take it (" + (e.message || e) + ").";
+    rigCadLast += " Kept on this browser only: the hub did not take it (" + Mice.Words.plain(e).says + ").";
     renderRigCadUI();
     return false;
   }

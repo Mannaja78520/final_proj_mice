@@ -1023,7 +1023,7 @@ async function hubPlay(fromMs) {
   } catch (e) {
     $("robotStat").textContent = "The hub could not start the show, so the robot "
       + "did not move. Check the hub is still running, then press Play again. "
-      + (e.message || e);
+      + Mice.Words.plain(e).says;
     notice($("robotStat").textContent);
     playing=false;$("playBtn").textContent="▶ Play";keepAwake(false);
     return false;
