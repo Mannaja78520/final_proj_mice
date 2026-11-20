@@ -26,6 +26,14 @@ import uuid
 from pathlib import Path
 from xml.sax.saxutils import escape
 
+try:
+    import local_ai
+except ImportError:      # loaded by file path (a check, a tool): the folder is not on sys.path
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location("local_ai", str(Path(__file__).with_name("local_ai.py")))
+    local_ai = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(local_ai)
+
 CODE = Path(__file__).resolve().parents[2]
 REGISTRY = CODE / "config" / "voice_providers.json"
 
@@ -249,6 +257,9 @@ def _auth(key):
 
 def openai_think(prov, key, job, system, history, max_tokens, timeout):
     base = prov["base"].rstrip("/")
+    up, why = local_ai.wake(prov)           # a local server starts when first needed
+    if not up:
+        return None, why
     model = job.get("model") or ""
     if not model:
         # Ollama: whichever model this PC already pulled, never a name typed here.
