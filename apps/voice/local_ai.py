@@ -23,6 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 COOLDOWN = 60
+SHORT = 0.3                                  # probe timeout when we only re-check
 _lock = threading.Lock()
 _failed_at = {}
 
@@ -46,13 +47,18 @@ def wake(prov):
     if not cfg:
         return True, ""
     url = cfg["ready"]
-    if is_up(url):
+    cooling = time.time() - _failed_at.get(url, 0) < COOLDOWN
+    # Windows does not refuse a closed local port at once: the probe waits out its
+    # whole timeout (measured 2026-11-21: 1.5 s for 127.0.0.1, 3.0 s for localhost).
+    # So while we are in the cooldown after a failed start, and for the re-check
+    # inside the lock, probe briefly: a server that is up answers in milliseconds.
+    if is_up(url, SHORT if cooling else 1.5):
         return True, ""
+    if cooling:
+        return False, "the local AI did not start a minute ago; press Load the AI to try again"
     with _lock:
-        if is_up(url):
+        if is_up(url, SHORT):
             return True, ""
-        if time.time() - _failed_at.get(url, 0) < COOLDOWN:
-            return False, "the local AI did not start a minute ago; press Load the AI to try again"
         cmd = [_python() if c == "{python}" else c for c in cfg["command"]]
         flags = 0
         if sys.platform == "win32":
