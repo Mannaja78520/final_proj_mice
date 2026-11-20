@@ -37,7 +37,7 @@ For this handoff file itself, Commit may be `this checkpoint`.>
 - <what it waits on: robot, user account, a person, a decision; or "nothing">
 
 ## Doing now
-Full QC, then PR. (2026-11-20, claude)
+Nothing: round 2 landed (PR #135-#140). Waiting only on the PC Android-VM session.
 
 ## Done
 - Mice.Words (shared/web/mice-ui.js): one table turns browser error text into plain sentences, raw text behind the technical switch; ~45 catch sites converted (Studio parts, Home parts, Voice, TV).
@@ -57,3 +57,11 @@ Throttled headless Chromium (CPU 4x, 5 Mbit, 40 ms), wire KB / load ms, before -
 Home 266->86 KB, 716->478 ms (warm 595->357); Studio 1447->430 KB, 2914->1415 ms (warm 2964->992);
 Gacha 140->46 KB; TV remote 94->33 KB; Help 1091->850 KB (images were the rest -> lazy + ETag now).
 Not a real Android TV: Studio's 3D scene still needs a real TV measurement.
+
+## Client simulation 2026-11-20 (tools/client_matrix, results in thread; rerun: node tools/client_matrix/run.js)
+154 cells (8 profiles x 3 networks x 7 pages; Chromium, Firefox, WebKit): no sideways overflow, no page errors except
+Studio without WebGL (fixed: PR #139, check_no_webgl). Slowest cell 3.3 s (3G, CPU 4x).
+Studio 3D orbit-drag frame time (software GL, so pessimistic): PC 20 ms (50 fps), old PC CPU 4x 24 ms (42 fps),
+TV CPU 6x 46 ms (22 fps), CPU 10x 63 ms (16 fps). Decision: no Studio rewrite or split justified by these numbers;
+revisit only if the real Android-VM run (VirtualBox on the PC) is much worse.
+Flake fixed: check_no_shift raced the page's own list redraw (PR #140).
