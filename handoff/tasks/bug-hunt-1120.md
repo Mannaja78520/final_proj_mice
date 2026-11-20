@@ -1,6 +1,13 @@
 # Bug hunt 2026-11-20 (claude, thread "Hunt and fix remaining project bugs")
 
-Owner: claude:t1hnh5   Updated: 2026-11-20
+Owner: claude:t1hnh5
+Updated: 2026-11-20
+Branch: claude/project-thread-t1hnh5
+Plan: none (bug hunt)
+Last commit: this checkpoint
+
+## Goal
+Find and fix remaining project bugs found by red-team review.
 
 ## Doing now
 Merging PR #122 content (untrack faces_login.json) + new guard check; then red-team pass on auth/safety.
@@ -24,3 +31,11 @@ Merging PR #122 content (untrack faces_login.json) + new guard check; then red-t
 | docs/friend_requests_admin_2026-11-04.md | added (from #122) | done | n/a | merge of #122 |
 | qc/checks/check_no_ignored_secrets.py | new guard | done | quick, sabotage proven | this checkpoint |
 | handoff/tasks/bug-hunt-1120.md | this file | done | n/a | this checkpoint |
+
+Baseline: 72d5eff (main)
+
+## Next
+Faces service CORS tighten; merge when QC green.
+
+## Blocked
+Nothing.
