@@ -53,6 +53,14 @@ same file. History is in `docs/BRIDGE.md` and the STATE block of
   path below changes, or a big feature lands (Built so far).
 - Plan rows still apply: `python tools/plan.py doing|done|note <id> ...`.
 
+## Shared memory + GPT overflow (user 2026-11-20, all AIs)
+
+- One memory for Claude, GPT, Gemini: `handoff/memory/` (`python tools/memory.py list`).
+  Write each durable fact yourself (`tools/memory.py add <slug> "<line>" <type> "<body>"`),
+  no secrets (public repo); `tools/memory.py stale` lists dead paths.
+- Stuck after 2 tries or long mechanical work: GPT Codex via the task file
+  (`gpt-overflow-rule`). Rule files change only when the user orders it (`rule-files-need-user-order`).
+
 ## Save tokens (user 2026-10-21)
 
 Every line printed stays in the context and is paid again on every later call.
@@ -82,9 +90,7 @@ Every line printed stays in the context and is paid again on every later call.
 
 ## Several agents in one tree at once (the PC)
 
-Claims, the shared mutex and "one QC driver at a time" are in
-`docs/COORDINATION.md`. `docs/BRIDGE.md` is the claim log (CLAIM / RELEASE),
-not the state: the state is your task file.
+Claims, mutex, one QC driver: `docs/COORDINATION.md`; `docs/BRIDGE.md` is the claim log, not the state.
 
 ## Where things are
 

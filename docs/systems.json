@@ -214,7 +214,7 @@
                "tools/reports.py", "tools/make_diary.py", "tools/systems.py",
                "CLAUDE.md", "AGENTS.md", "GEMINI.md", "README.md",
                "docs/systems.json", "config/layout.json", "tools/layout.py", "tools/tidy_pc.py", "docs/LAYOUT.md",
-               "tools/handoff.py", "HANDOFF.md", "handoff/"],
+               "tools/handoff.py", "tools/memory.py", "HANDOFF.md", "handoff/"],
      "depends": []},
 
     {"id": "bench", "summary": "Scripts for real boards on the bench.",

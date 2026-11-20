@@ -24,7 +24,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 
 - nothing
 
-## Checks that test it (185)
+## Checks that test it (186)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -102,6 +102,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_local_ai_on_demand`
 - `check_local_panel`
 - `check_login_anywhere`
+- `check_memory`
 - `check_modsite_answers`
 - `check_modsite_errors`
 - `check_modsite_glance`
