@@ -24,7 +24,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 
 - nothing
 
-## Checks that test it (179)
+## Checks that test it (186)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -62,6 +62,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_faces_cursor`
 - `check_faces_dedupe`
 - `check_faces_login`
+- `check_faces_login_default`
 - `check_faces_loopback`
 - `check_faces_poll`
 - `check_faces_ws`
@@ -75,6 +76,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_gacha`
 - `check_gacha_motion`
 - `check_gacha_sheet`
+- `check_gacha_stock`
 - `check_gate_order`
 - `check_gesture_make`
 - `check_gestures`
@@ -97,8 +99,10 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_link_pick`
 - `check_link_states`
 - `check_livedoc`
+- `check_local_ai_on_demand`
 - `check_local_panel`
 - `check_login_anywhere`
+- `check_memory`
 - `check_modsite_answers`
 - `check_modsite_errors`
 - `check_modsite_glance`
@@ -114,6 +118,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_neutral`
 - `check_no_console_window`
 - `check_no_data_loss`
+- `check_no_ignored_secrets`
 - `check_no_shift`
 - `check_no_undefined_names`
 - `check_nong_dupes`
@@ -139,6 +144,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_pinned_mods`
 - `check_pinout`
 - `check_plan_live`
+- `check_play_proxy`
 - `check_play_stop_order`
 - `check_post_keepalive`
 - `check_promote_pipeline`
@@ -146,6 +152,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_qc_probe_integrity`
 - `check_qc_quiet`
 - `check_qc_reports`
+- `check_qemu_peripherals`
 - `check_registries`
 - `check_relax`
 - `check_report_button`
@@ -206,4 +213,4 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_wifi_ssid`
 - `check_zero_lock`
 
-Run them: `python qc/run_qc.py --no-build check_accounts check_accounts_firmware check_adapter_fast_fail check_advanced check_app_lifecycle check_app_window check_bench_nongpins check_board_auth check_board_frame check_board_login_sync check_board_password check_boot_noise check_branch check_build_split check_bus_dongle check_bus_flash check_bus_group check_cam_controls check_camera check_cast_mix check_chatty_board check_code_patches check_crash_gate check_design_system check_designer_first check_dev_tools check_diagnostics check_discovery check_driver_waits check_face_photos check_faces_app check_faces_concurrency check_faces_count check_faces_cursor check_faces_dedupe check_faces_login check_faces_loopback check_faces_poll check_faces_ws check_firmware_build`
+Run them: `python qc/run_qc.py --no-build check_accounts check_accounts_firmware check_adapter_fast_fail check_advanced check_app_lifecycle check_app_window check_bench_nongpins check_board_auth check_board_frame check_board_login_sync check_board_password check_boot_noise check_branch check_build_split check_bus_dongle check_bus_flash check_bus_group check_cam_controls check_camera check_cast_mix check_chatty_board check_code_patches check_crash_gate check_design_system check_designer_first check_dev_tools check_diagnostics check_discovery check_driver_waits check_face_photos check_faces_app check_faces_concurrency check_faces_count check_faces_cursor check_faces_dedupe check_faces_login check_faces_login_default check_faces_loopback check_faces_poll check_faces_ws`

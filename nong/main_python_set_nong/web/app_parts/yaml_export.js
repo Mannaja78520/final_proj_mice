@@ -122,7 +122,7 @@ async function exportYaml(opts) {
     if (!opts.keepDraft) markSaved(sig, name, 0);
   } catch (e) {
     $("tlStat").textContent = "export failed — the hub is not answering, or "
-      + "refused the name. Nothing was written. " + (e.message || e);
+      + "refused the name. Nothing was written. " + Mice.Words.plain(e).says;
     notice($("tlStat").textContent);
   }
   await refreshSeqs();

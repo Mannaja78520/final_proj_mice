@@ -1,0 +1,6 @@
+key,type,encoding,value
+module,namespace,,
+wmode,data,string,off
+type,data,string,gacha
+id,data,u8,9
+name,data,string,QEMU-GACHA

@@ -14,7 +14,7 @@
       <span class="info-badge">Mini-Games</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/all-jao-games-box.png" alt="All-Jao Games Suite" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/all-jao-games-box.png" alt="All-Jao Games Suite" class="info-img">
       <div class="callout-pin" style="top: 50%; left: 15%;" title="1. 🕹️ Claw Machine (ตู้คีบ)">1</div>
       <div class="callout-pin" style="top: 50%; left: 38%;" title="2. 🃏 Matching Game (จับคู่การ์ด)">2</div>
       <div class="callout-pin" style="top: 50%; left: 62%;" title="3. ❓ Quiz Game (ตอบคำถามชิงรางวัล)">3</div>
@@ -45,6 +45,11 @@
   <div class="f"><h3>A win gives a real prize<span class="tag t-new">new</span></h3>
     <p>Played inside the hub, a win in the wheel, claw, quiz or memory game can make a prize
        machine give a prize and tells the player where to collect it. Which result gives what is
-       set on <a href="#gacha">Prize machines</a> ▸ Games that give a prize.</p></div>
+       set on <a href="#gacha">Prize machines</a> ▸ Games that give a prize. For the quiz, fill <b>Score from</b>
+       to give a prize only from that score up (every finished quiz round counts as a win result; write a number or a percent such as 80%; the game says its top score, so more questions need no change;
+       a wheel slice that says &ldquo;try again&rdquo; never gives a prize).
+       The player's name typed in the wheel or claw game is used for the per-person limit.
+       The games now keep their data in their own small server (Node, started by the hub with the Open button);
+       play them from the hub so a win reaches the prize machines.</p></div>
   <p>ปุ่มเปิดเกมจะเปิดแท็บไว้ก่อนตรวจความพร้อม เพื่อไม่ให้เบราว์เซอร์บล็อกหลังรอเครือข่าย หากเปิดแท็บไม่ได้ ให้อนุญาตป๊อปอัปแล้วกดลองอีกครั้ง</p>
 </section>

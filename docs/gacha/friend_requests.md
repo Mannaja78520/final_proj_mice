@@ -1,5 +1,8 @@
 # สิ่งที่อยากขอจากแอพของเพื่อน (ตู้กาชาปอง + Voice) — อัปเดต 2026-10-22
 
+> **ฉบับที่ส่งให้เพื่อนคือ `docs/friend/friend_requests_all_2026-11-05.md` ฉบับเดียว** (รวมทุกคำขอ ตัดที่ซ้ำ/เสร็จแล้ว + สรุปสั้นสำหรับแปะกลุ่ม) ไฟล์นี้เก็บไว้เป็นหลักฐาน/รายละเอียดเดิม ถ้าไม่ตรงกัน ยึดฉบับรวม
+
+
 ฝั่งเรา (Mice) ทำเสร็จแล้วและใช้ได้โดยไม่ต้องรอข้อไหนเลย (ทดสอบกับตู้จำลอง)
 ทุกข้อด้านล่างทำให้ลิงก์แน่นขึ้น ไม่มีข้อไหนบังคับ เรียงตามความสำคัญ
 อ่านจากโค้ดของเพื่อนแบบอ่านอย่างเดียว: All-Jao-Games (main) และ Face_Regonize e8d4a22
@@ -51,6 +54,50 @@ hub ของเราอยู่ที่ `http://<เครื่อง PC>:8
    ถ้ามี `person_id` คงที่ส่งมาด้วยทุกที่ จะดีกว่าชื่อ
 4. **(ไม่ด่วน) webhook ตอนจำคนได้** `POST <url ของเรา>` `{"name", "person_id", "node_id", "tags", "time"}`
    ตอนนี้เราถามซ้ำเป็นระยะแทน
+
+## อัปเดต 2026-11-05 — รับ G1-G6 แล้ว + สัญญา G4 (ร่างจากฝั่งเรา)
+
+ฝั่งเรารับ `alljao:win` รูปแบบใหม่ (`playerName`, `result.label` / `result.score`) แล้ว
+และส่ง `gacha.out` ไป `POST /api/gacha/webhook` พร้อม Bearer token (token อยู่ใน env
+`GACHA_WEBHOOK_TOKEN` หรือไฟล์ `.local/gacha/game_webhook_token.txt` ฝั่งเรา ไม่อยู่ใน git)
+ตั้งใน `config/gacha.json`: `"webhooks": {"out": [{"url": "http://<เครื่องเกม>:4173/api/gacha/webhook", "format": "alljao"}]}`
+
+**G4 สัญญา `POST /api/gacha/game` (ถ้าเพื่อนอยากให้เกมเรียก hub ตรง ไม่บังคับ)**
+- Request: `POST http://<hub>:8642/api/gacha/game` JSON
+  `{"game":"quiz","result":"8","person":"<playerName>","ref":"<detail.id>"}`
+- Auth: header `X-Mice-Key: <กุญแจที่สร้างในหน้า Prize machines ▸ Other PCs and forms>`
+  (เก็บเป็น env/ไฟล์ฝั่งเซิร์ฟเวอร์ของเกม ห้ามใส่ในหน้าเว็บหรือ git)
+- Idempotency: `ref` ซ้ำ (ต่อ game) = ตอบ `{"ok":true,"repeat":true}` ไม่แจกซ้ำ จึง retry ได้เมื่อ timeout
+  ใช้ `detail.id` เป็น `ref`
+- Response 200: `{"ok":true,"machine":"g2","message":"..."}` แจกแล้ว (แสดง `message` บอกที่รับ)
+  `{"ok":false,"reason":"no prize for this result"}` ไม่ถึงเกณฑ์ (ไม่ใช่ error)
+  409 `{"ok":false,"reason":"person limit reached"|"event closed"|"out of stock"|...,"message":"..."}`
+  401 key ผิด; ไม่ต้อง retry เมื่อ 4xx
+- เกณฑ์ชนะ (เช่น quiz คะแนนขั้นต่ำ) ตั้งฝั่ง hub ไม่ใช่ฝั่งเกม
+
+**ขอเพิ่มใน `alljao:win` (ไม่บังคับ แต่ทำให้ฝั่งเราไม่ต้องตั้งค่าเอง)**:
+- quiz: `result.total` = คะแนนเต็มของรอบนั้น (จำนวนข้อ) เพื่อให้เพิ่มข้อได้โดยฝั่งเราไม่ต้องแก้ เกณฑ์ตั้งเป็น "80%" ได้
+- วงล้อ: `result.noPrize: true` ที่ช่อง "ลองใหม่"/ไม่ได้ของ (ตอนนี้เราข้ามจากคำใน `games_skip`)
+
+**ที่ยังขอเพิ่ม (ไม่บังคับ)**: ใน `gacha.out` webhook ให้เกมรับ field เสริม `item` (ชนิดที่หมด) และ
+`machines` จะได้เลิกสุ่มรางวัลชนิดนั้นตรงตัว (ตอนนี้เรายิงเพิ่มให้ ถ้า server ปฏิเสธ field แปลกให้บอก);
+และให้มี `gacha.dispensed` ด้วย ถ้าอยากโชว์ตู้ที่ปล่อยของ
+
+## อัปเดต 2026-11-05 (2) — สต็อกสองทาง, เล่นอย่างเดียว, ตู้สุ่ม
+
+ฝั่ง hub ทำเสร็จแล้ว (ตั้งในหน้า Prize machines) ฝั่งเกมขอเพิ่มดังนี้ (ไม่บังคับ แต่ทำให้รางวัลในเกมตามของจริง):
+
+1. **อ่านสต็อกจาก hub**: `GET http://<hub>:8642/api/gacha/stock?game=<ชื่อเกม>` ตอบ
+   `{items: [{item, label, stock, odds, available, machines}], play_only}` — `stock` เป็น `null` = ตู้ไม่นับจำนวน,
+   `odds` = โอกาสของชนิดนั้นเทียบกับทั้งหมดที่ได้ตอนนี้, `available: false` = หมด ให้เอาออกจากวงล้อ/ตู้คีบ
+   อ่านตอนเปิดเกมและก่อนเริ่มแต่ละรอบ หรือรอรับ webhook `gacha.stock` (ข้อ 4)
+2. **ส่งชนิดที่ได้กลับมา**: `POST /api/gacha/game` เพิ่ม field `item` = ชื่อ `item` จากรายการในข้อ 1
+   (ถ้า hub ไม่รู้จักชนิดนั้น จะกลับไปใช้กติกาจาก `result` แบบเดิม) ส่ง `ref` เหมือนเดิม
+3. **โหมดเล่นอย่างเดียว**: ถ้า `play_only` ในคำตอบข้อ 1 เป็น `true` เกมเล่นตามปกติแต่อย่าสัญญาว่าจะได้ของจริง
+   `POST /api/gacha/game` ยังส่งได้ (hub นับและตอบ `play_only: true` ไม่หมุนตู้) หรือส่ง `"play_only": true` มาเองเป็นรายครั้ง
+4. **webhook `gacha.stock`** (ส่ง URL มาถ้าอยากรับ): `POST` `{type: "gacha.stock", stock: [...รูปเดียวกับข้อ 1], why}` ทุกครั้งที่ของเปลี่ยน
+   (แจกของ, ใส่ของ, สุ่มออก) ตัวหุ้ม `{event: "gacha.stock", id, stock}` + Bearer ใช้ได้ด้วย `format: "alljao"` เหมือน `gacha.out`
+5. ตู้สุ่ม: ผลที่เกมได้ไม่ต้องรู้ว่าตู้ไหนสุ่ม — เรียก `POST /api/gacha/random {machine}` ได้ถ้าอยากกดสุ่มเอง คำตอบมี `drawn` (ชนิดที่ได้)
 
 ## ฝั่งเราเตรียมไว้แล้ว (ไม่ต้องทำอะไร)
 

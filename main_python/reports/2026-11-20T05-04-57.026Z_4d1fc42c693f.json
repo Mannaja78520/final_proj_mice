@@ -1,0 +1,11 @@
+{
+  "id": "4d1fc42c693f",
+  "time": "2026-11-20T05:04:57.026Z",
+  "text": "STUDIO FREEZE {\"gapMs\":13116,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":false,\"wifi\":false,\"keys\":7,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":11,\"longTasks\":[{\"ms\":107,\"at\":401},{\"ms\":198,\"at\":509},{\"ms\":13073,\"at\":714}],\"slowCalls\":[{\"u\":\"/api/list?kind=projects\",\"ms\":13335,\"at\":484},{\"u\":\"/api/list?kind=sequences\",\"ms\":13335,\"at\":484},{\"u\":\"/api/list?kind=models\",\"ms\":13333,\"at\":485},{\"u\":\"/api/ports\",\"ms\":13312,\"at\":507},{\"u\":\"/api/shows\",\"ms\":13335,\"at\":485},{\"u\":\"/api/list?kind=sequences\",\"ms\":13335,\"at\":485},{\"u\":\"/api/ports\",\"ms\":13312,\"at\":507},{\"u\":\"/api/whoami\",\"ms\":13103,\"at\":718},{\"u\":\"/api/login\",\"ms\":13107,\"at\":714}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36"
+}

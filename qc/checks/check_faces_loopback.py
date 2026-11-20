@@ -89,6 +89,14 @@ def run(t):
             t.eq(health.get("partnerKnown"), True,
                  "while knowing which outside app it is for")
 
+        try:                                  # 2026-11-20: no site may read the door's arrivals
+            with urllib.request.urlopen(urllib.request.Request(
+                    base + "/state", headers={"Origin": "http://evil.example"}), timeout=2) as r:
+                cors = r.headers.get("Access-Control-Allow-Origin")
+        except Exception as e:                               # noqa: BLE001
+            cors = "error: %s" % e
+        t.ok(cors is None, "no website may read /state from this PC's browser (no CORS header)", cors)
+
         state, why = _get(base, "/state", tries=4)
         t.ok(state, "and answers /state", why)
         if state:

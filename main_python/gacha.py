@@ -34,6 +34,7 @@ import urllib.request
 from pathlib import Path
 
 import gacha_sheet as gs
+from gacha_stock import GachaStock, MODES, MESSAGES as STOCK_MESSAGES
 
 DEFAULT_CFG = {
     "machines": [],
@@ -51,8 +52,22 @@ DEFAULT_CFG = {
     "busy_wait_s": 8,
     "given_results": ["done", "timed"],
     "messages": {},
-    # games that give a prize (A47-6): [{game, result (pattern), item, person}]
+    # games that give a prize (A47-6): [{game, result (pattern), min, max (score range), item, person}]
     "games": [],
+    # A result containing one of these words never gives a prize, whatever the
+    # rules say (the wheel pays out every slice, "try again" too: found 2026-11-05).
+    "games_skip": ["ลองใหม่", "ไม่ได้รางวัล", "เสียใจ", "try again", "no prize", "better luck"],
+    # Highest score a game gives, used ONLY when the game does not say so itself
+    # (the win carries `total`, e.g. questions in the round): a rule's "min"
+    # above it could never win, so it is lowered to it. Quiz = 5 questions today
+    # (All-Jao-Games quiz-game.js:9); more questions only need the game to send total.
+    "game_score_max": {"quiz": 5},
+    # gacha_stock.py: play only {"game:quiz": true, "*": false} = the source gets
+    # no real prize (a request can also say play_only for one session);
+    # sources {name: {label, enabled, items}} = which programs may ask for what
+    # (a source nobody wrote down is allowed).
+    "play_only": {},
+    "sources": {},
 }
 
 # Every log row has these columns, in this order (one source for the CSV
@@ -72,6 +87,13 @@ def _int(v, default=0):
         return int(float(str(v).strip()))
     except (TypeError, ValueError):
         return default
+
+
+def _is_num(v):
+    try:
+        return v not in (None, "", True, False) and float(v) > 0
+    except (TypeError, ValueError):
+        return False
 
 
 def _yes(v):
@@ -130,7 +152,7 @@ def rules_to_csv(rules):
     return out
 
 
-class Gacha:
+class Gacha(GachaStock):
     def __init__(self, cfg_path, data_dir, send, find_dev, fetch=None, post=None,
                  clock=time.time, sleep=time.sleep):
         self.cfg_path = Path(cfg_path)
@@ -228,9 +250,9 @@ class Gacha:
         with urllib.request.urlopen(req, timeout=15) as r:
             return r.read().decode("utf-8-sig", errors="replace")
 
-    def _post(self, url, body):
+    def _post(self, url, body, headers=None):
         req = urllib.request.Request(url, data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
-                                     headers={"Content-Type": "application/json"})
+                                     headers=dict({"Content-Type": "application/json"}, **(headers or {})))
         with urllib.request.urlopen(req, timeout=10) as r:
             return r.status
 
@@ -319,24 +341,56 @@ class Gacha:
         """POST to every webhook registered for `kind` (config webhooks.<kind>),
         in the background: a slow app must not hold a prize up."""
         urls = self.cfg().get("webhooks", {}).get(kind) or []
-        if isinstance(urls, str):
+        if isinstance(urls, (str, dict)):
             urls = [urls]
-        body = dict(payload, type="gacha." + kind)
+        base = dict(payload, type="gacha." + kind)
 
         def go(u):
+            # An entry is an address, or {url, format: "alljao", token_file}: the
+            # friend's game takes {event, id} with "Authorization: Bearer <token>"
+            # (their handoff 2026-11-05). The token is read from the environment
+            # (GACHA_WEBHOOK_TOKEN) or <data>/<token_file>, never from this config:
+            # the repo is public.
+            e = u if isinstance(u, dict) else {"url": u}
+            url, body, hdr = str(e.get("url") or ""), base, None
+            if e.get("format") == "alljao":
+                body = {"event": base["type"], "id": "%s-%d-%s" % (kind, int(self.clock() * 1000),
+                                                                    secrets.token_hex(4))}
+                for k in ("item", "machines", "machine", "stock", "why"):
+                    if k in payload:
+                        body[k] = payload[k]
+                tok = self.webhook_token(e)
+                if not tok:
+                    res = {"url": url, "kind": kind, "ok": False,
+                           "error": "no webhook token (set GACHA_WEBHOOK_TOKEN or the token file)"}
+                    return self._hook_done(kind, url, res)
+                hdr = {"Authorization": "Bearer " + tok}
             try:
-                st = self.post(u, body)
-                res = {"url": u, "kind": kind, "ok": True, "status": st}
-            except Exception as e:                               # noqa: BLE001
-                res = {"url": u, "kind": kind, "ok": False, "error": str(e)}
-            self.hook_log.append(dict(res, time=self.clock()))
-            del self.hook_log[:-50]
-            self.log_event({"kind": "webhook", "reason": kind,
-                            "result": "ok" if res["ok"] else "failed",
-                            "message": res.get("error") or u})
+                st = self.post(url, body, hdr) if hdr else self.post(url, body)
+                res = {"url": url, "kind": kind, "ok": True, "status": st}
+            except Exception as ex:                              # noqa: BLE001
+                res = {"url": url, "kind": kind, "ok": False, "error": str(ex)}
+            self._hook_done(kind, url, res)
         for u in urls:
             threading.Thread(target=go, args=(u,), daemon=True).start()
         return len(urls)
+
+    def _hook_done(self, kind, url, res):
+        self.hook_log.append(dict(res, time=self.clock()))
+        del self.hook_log[:-50]
+        self.log_event({"kind": "webhook", "reason": kind,
+                        "result": "ok" if res["ok"] else "failed",
+                        "message": res.get("error") or url})
+
+    def webhook_token(self, entry):
+        tok = os.environ.get("GACHA_WEBHOOK_TOKEN", "").strip()
+        if tok:
+            return tok
+        name = Path(str(entry.get("token_file") or "game_webhook_token.txt")).name
+        try:
+            return (self.data / name).read_text(encoding="utf-8").strip()
+        except OSError:
+            return ""
 
     # ---- machines -----------------------------------------------------------------
     def machine(self, mid):
@@ -552,6 +606,7 @@ class Gacha:
                 if why == "out everywhere":
                     self.hook("out", {"item": item, "machines": [t["machine"] for t in tried]})
                 return dict(detail, ok=False, reason=why, tried=tried, message=row["message"])
+        self.settle_draw(out, person, app, by)         # a random box says which item it was
         if wait:
             out["result"] = self.wait_done(m, seq)
         else:
@@ -583,6 +638,7 @@ class Gacha:
         return st
 
     def _after(self, m, item, stock, row):
+        self.push_stock("dispense")                          # webhooks.stock, if any
         low = _int(self.cfg().get("low_stock"), 0)
         if stock == 0:
             self.hook("empty", {"machine": m["id"], "label": self.label(m), "item": item})
@@ -667,12 +723,50 @@ class Gacha:
         return per
 
     # ---- games that give a prize (A47-6) -------------------------------------
-    def game_item(self, game, result):
+    @staticmethod
+    def _bound(v, top):
+        """A rule's min/max: a number, or "80%" of the top score (False = cannot tell)."""
+        if isinstance(v, str) and v.strip().endswith("%"):
+            if top is None:
+                return False
+            try:
+                return float(v.strip()[:-1]) / 100.0 * float(top)
+            except ValueError:
+                return False
+        return v
+
+    @staticmethod
+    def _score_fits(rule, result, top=None):
+        """Rule "min"/"max" is a score range (quiz: the friend's game ends every
+        round with a score, 2026-11-05, so the hub decides what is a win). A
+        result that is not a number fails a rule that has a range."""
+        lo, hi = rule.get("min"), rule.get("max")
+        if lo in (None, "") and hi in (None, ""):
+            return True
+        try:
+            n = float(str(result).strip())
+            lo, hi = Gacha._bound(lo, top), Gacha._bound(hi, top)
+            if lo is False or hi is False:
+                return False                     # a percent with no top score known
+            if top is not None and lo not in (None, ""):
+                lo = min(float(lo), float(top))
+            return (lo in (None, "") or n >= float(lo)) and (hi in (None, "") or n <= float(hi))
+        except ValueError:
+            return False
+
+    def game_item(self, game, result, total=None):
         """(rule) the first "games" rule whose game and result pattern fit, or None."""
-        for r in self.cfg().get("games") or []:
+        cfg = self.cfg()
+        text = str(result or "").lower()
+        if any(str(w).lower() in text for w in cfg.get("games_skip") or [] if str(w).strip()):
+            return None
+        top = total if _is_num(total) else (cfg.get("game_score_max") or {}).get(str(game or "").lower())
+        for r in cfg.get("games") or []:
             if not isinstance(r, dict) or not r.get("item"):
                 continue
             if r.get("game") and not _same(r["game"], game):
+                continue
+            if not self._score_fits(r, result, top):
                 continue
             pat = str(r.get("result") or "")
             try:
@@ -683,14 +777,14 @@ class Gacha:
             return r
         return None
 
-    def game_win(self, game, result, person="", ref="", by="game"):
+    def game_win(self, game, result, person="", ref="", by="game", total=None):
         """A game says someone won: give what the rules name, once per `ref`."""
         game = str(game or "").strip()
         key = game + ":" + str(ref) if ref else ""
         with self.lock:
             if key and key in self.wins_seen:
                 return {"ok": True, "repeat": True, "message": ""}
-            rule = self.game_item(game, result)
+            rule = self.game_item(game, result, total)
             if not rule:
                 self.log_event({"kind": "game", "app": "game:" + game, "person": person,
                                 "reason": "no prize for this result", "result": str(result)})
@@ -754,3 +848,4 @@ DEFAULT_MESSAGES = {
     "refused_busy": "ตู้กำลังปล่อยของอยู่ รอสักครู่แล้วลองใหม่นะ",
     "refused_no_item": "ไม่ได้บอกว่าจะให้ของอะไร",
 }
+DEFAULT_MESSAGES.update({k: v for k, v in STOCK_MESSAGES.items() if k not in DEFAULT_MESSAGES})

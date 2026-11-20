@@ -248,7 +248,7 @@ async function shipRigDefault() {
       $("limStat").textContent = "could not save: " + (r.error || "unknown");
       notice($("limStat").textContent);
     }
-  } catch (e) { $("limStat").textContent = "could not save: " + (e.message || e); notice($("limStat").textContent); }
+  } catch (e) { notice(Mice.fail($("limStat"), "could not save", e)); }
 }
 function loadRigDefault() {
   try {
@@ -325,7 +325,7 @@ function importSettingsFile(input) {
   const rd = new FileReader();
   rd.onload = () => {
     try { applySettings(JSON.parse(rd.result), f.name); }
-    catch (e) { setSettingsStat("could not import: " + (e.message || e)); }
+    catch (e) { setSettingsStat("could not import: " + Mice.Words.plain(e).says); }
     input.value = "";                 // so the same file can be picked again
   };
   rd.readAsText(f);
@@ -343,7 +343,7 @@ async function shareSettings() {
     setSettingsStat(r.ok
       ? "shared from this PC ✓ — on the other PC open Studio, press Find PCs, and Get"
       : "could not share: " + (r.error || "unknown"));
-  } catch (e) { setSettingsStat("could not share: " + (e.message || e)); }
+  } catch (e) { setSettingsStat("could not share: " + Mice.Words.plain(e).says); }
 }
 
 async function findHubs() {
@@ -371,7 +371,7 @@ async function findHubs() {
         + "open Studio and press Share.");
   } catch (e) {
     sel.innerHTML = "<option value=''>search failed</option>";
-    setSettingsStat("could not search: " + (e.message || e));
+    setSettingsStat("could not search: " + Mice.Words.plain(e).says);
   }
 }
 
@@ -383,7 +383,7 @@ async function getSettingsFrom() {
       .then(r => r.json());
     if (b.error) { setSettingsStat("could not get it: " + b.error); return; }
     applySettings(b, host);
-  } catch (e) { setSettingsStat("could not get it: " + (e.message || e)); }
+  } catch (e) { setSettingsStat("could not get it: " + Mice.Words.plain(e).says); }
 }
 function jdir(i) { return BASE_DIR[i] * (RIG.invert[i] ? -1 : 1); }
 

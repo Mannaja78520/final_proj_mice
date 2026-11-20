@@ -19,7 +19,7 @@ async function stopEverything(){
   }catch(e){
     // A stop that failed must SHOUT. Silence here reads as "it worked".
     said.className = 'banner err';
-    said.textContent = 'The stop did not reach the hub (' + (e.message||e) +
+    said.textContent = 'The stop did not reach the hub (' + Mice.Words.plain(e).says +
                        '). Use the power switch.';
     said.hidden = false;
   }finally{
@@ -77,7 +77,7 @@ async function submitReport(){
     var said = document.getElementById('stopSaid');
     if(said){
       said.className = 'banner err';
-      said.textContent = 'Report failed (' + (e.message||e) + '). Try again or copy the text and email it.';
+      said.textContent = 'Report failed (' + Mice.Words.plain(e).says + '). Try again or copy the text and email it.';
       said.hidden = false;
     }
   }

@@ -53,6 +53,14 @@ same file. History is in `docs/BRIDGE.md` and the STATE block of
   path below changes, or a big feature lands (Built so far).
 - Plan rows still apply: `python tools/plan.py doing|done|note <id> ...`.
 
+## Shared memory + GPT overflow (user 2026-11-20, all AIs)
+
+- One memory for Claude, GPT, Gemini: `handoff/memory/` (`python tools/memory.py list`).
+  Write each durable fact yourself (`tools/memory.py add <slug> "<line>" <type> "<body>"`),
+  no secrets (public repo); `tools/memory.py stale` lists dead paths.
+- Stuck after 2 tries or long mechanical work: GPT Codex via the task file
+  (`gpt-overflow-rule`). Rule files change only when the user orders it (`rule-files-need-user-order`).
+
 ## Save tokens (user 2026-10-21)
 
 Every line printed stays in the context and is paid again on every later call.
@@ -63,6 +71,16 @@ Every line printed stays in the context and is paid again on every later call.
 - Reading: never whole big or generated files (docs/BRIDGE.md, docs/PLAN.html,
   app.js, reports/*.json, logs). grep/rg, then a line range; `head`/`tail`.
   Status: `python tools/handoff.py list`, `python tools/plan.py show`.
+- Talk (user 2026-11-05, Claude + GPT + Gemini): heartbeat = one short line
+  pointing to the status/task file, no history repeat. Write the user's newest
+  order (stop, "take what we have") into the status file at once.
+- Read pointers/summaries first, open only the needed class/method, reuse
+  modules and earlier results.
+- Experiments: numeric budget + stop rule before starting (default max 3
+  rounds, stop if gain < 2%).
+- No polling: run blocking, or run in background with
+  `python qc/run_qc.py --quiet --done-file qc/done.json ...` (writes
+  {"code","when"}) and wait once. If you must check: every 5-10 min, tail only.
 - Size: this file and each task file stay under 150 lines
   (check_handoff_first holds it). BRIDGE over ~400 lines: move old entries to
   docs/bridge_archive/.
@@ -72,9 +90,7 @@ Every line printed stays in the context and is paid again on every later call.
 
 ## Several agents in one tree at once (the PC)
 
-Claims, the shared mutex and "one QC driver at a time" are in
-`docs/COORDINATION.md`. `docs/BRIDGE.md` is the claim log (CLAIM / RELEASE),
-not the state: the state is your task file.
+Claims, mutex, one QC driver: `docs/COORDINATION.md`; `docs/BRIDGE.md` is the claim log, not the state.
 
 ## Where things are
 

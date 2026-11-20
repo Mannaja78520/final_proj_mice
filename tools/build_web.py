@@ -7,6 +7,9 @@ import shutil
 import subprocess
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import web_compat
+
 
 def _read(path):
     return path.read_text(encoding='utf-8').replace('\r\n', '\n')
@@ -58,6 +61,7 @@ def _page(tree, spec):
 def build(tree):
     tree = Path(tree).resolve()
     manifest = json.loads(_read(tree / 'tools/web_build.json'))
+    target = manifest.get('oldest_browser', 'chrome70')
     outputs = {}
     scripts = []
     for spec in manifest['inline_apps']:
@@ -74,6 +78,12 @@ def build(tree):
             if filename.endswith('.js'):
                 scripts.append((str(app / filename), source))
         outputs[app / 'index.html'] = template
+        # The same page for old browsers (Chrome < 80, hub_legacy.py serves it
+        # to them): its script lowered. The modern file stays the one the
+        # checks and people read. Written only when lowering changed something.
+        old = web_compat.lower(source, target)
+        if old != source:
+            outputs[app / 'index.legacy.html'] = template.replace(source, old.strip())
     studio = manifest['studio']
     app = _inside(tree, studio['path'])
     parts = studio['parts']
@@ -83,6 +93,9 @@ def build(tree):
                          + ', unlisted=' + str(sorted(actual - set(parts))))
     source = '\n'.join(_read(_inside(app / 'app_parts', name)).rstrip() for name in parts) + '\n'
     outputs[app / 'app.js'] = source
+    old = web_compat.lower(source, target)       # for Chrome < 80 (hub_legacy.py)
+    if old != source:
+        outputs[app / 'app.legacy.js'] = old
     # Studio's page is cut the same way (A41-4): index.template.html is the
     # map, html_parts/ one area each; app.js and style.css stay files of
     # their own, which save_patch.py snapshots and the hub serves.

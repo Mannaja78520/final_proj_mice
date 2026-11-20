@@ -1,0 +1,11 @@
+{
+  "id": "4faab2947167",
+  "time": "2026-11-20T12:17:50.049Z",
+  "text": "STUDIO FREEZE {\"gapMs\":1533,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":2,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":14,\"longTasks\":[{\"ms\":103,\"at\":5682},{\"ms\":156,\"at\":5786},{\"ms\":268,\"at\":5948},{\"ms\":133,\"at\":6217},{\"ms\":133,\"at\":6411},{\"ms\":208,\"at\":6575},{\"ms\":170,\"at\":6783},{\"ms\":368,\"at\":6985},{\"ms\":69,\"at\":7357},{\"ms\":53,\"at\":7427},{\"ms\":1349,\"at\":7584},{\"ms\":210,\"at\":8934}],\"slowCalls\":[{\"u\":\"/api/play/stop\",\"ms\":55,\"at\":7427},{\"u\":\"/api/dev/cmd?dev=usb%3ACOM99&c=STOP\",\"ms\":25,\"at\":7482},{\"u\":\"/rig_default.js\",\"ms\":39,\"at\":7544},{\"u\":\"/api/play/stop\",\"ms\":38,\"at\":7545},{\"u\":\"/api/dev/cmd?dev=usb%3ACOM99&c=STOP\",\"ms\":1561,\"at\":7583},{\"u\":\"/api/rigcad\",\"ms\":980,\"at\":8164},{\"u\":\"/api/rigcad\",\"ms\":942,\"at\":8202},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res8%3D%7B%22look%22%3A%22rig%22%2C%2\",\"ms\":941,\"at\":8203},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res6%3D%7B%22btn%22%3Atrue%2C%22label\",\"ms\":437,\"at\":8708},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res9%3D%7B%22dots%22%3A%5B1%2C1%5D%2C\",\"ms\":437,\"at\":8708},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res7%3D%7B%22btn%22%3Atrue%2C%22label\",\"ms\":437,\"at\":8709},{\"u\":\"/api/list?kind=models&deep=1\",\"ms\":216,\"at\":8930},{\"u\":\"/api/list?kind=models&deep=1\",\"ms\":278,\"at\":8931},{\"u\":\"/models/qc_bot6/urdf/qc_bot6.urdf\",\"ms\":275,\"at\":8933},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res11%3D%7B%22cadY%22%3A-270%2C%22bas\",\"ms\":278,\"at\":8931}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36"
+}

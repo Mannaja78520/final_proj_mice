@@ -1,0 +1,6 @@
+{
+  "name": "mice-tools",
+  "private": true,
+  "description": "Build-time only (never shipped): esbuild lowers new JavaScript syntax for old TV browsers; acorn checks the result.",
+  "devDependencies": {"esbuild": "0.25.0", "acorn": "8.14.0"}
+}

@@ -22,7 +22,7 @@ async function loadShared(force){
     // "could not look" is a different fact from "found nothing", and saying
     // the second when the first is true is the page lying.
     box.innerHTML = 'Could not check for other PCs — this hub did not answer. '
-      + '<span style="color:var(--mut)">'+esc(String(e.message||e))+'</span> '
+      + '<span style="color:var(--mut)">'+esc(Mice.Words.plain(e).says)+'</span> '
       + '<button onclick="loadShared(true)">Try again</button>';
     return;
   }
@@ -139,13 +139,13 @@ async function scanUsb(){
           .then(r=>renderUsbResult(slot,(r&&r.usb&&r.usb[0])||
                  {port:p.port,error:'no answer from that port'}))
           .catch(e=>{slot.innerHTML='<div class="mini">'+esc(p.port)+
-            ' — could not check this cable. '+esc(String(e.message||e))+'</div>';}));
+            ' — could not check this cable. '+esc(Mice.Words.plain(e).says)+'</div>';}));
       }
     });
     await Promise.all(jobs);
   }catch(e){
     el.innerHTML='<span class="mini">Could not check the USB cables. Is the hub '
-      +'still running? <span style="color:var(--mut)">'+esc(String(e.message||e))
+      +'still running? <span style="color:var(--mut)">'+esc(Mice.Words.plain(e).says)
       +'</span></span> <button onclick="scanUsb()">Try again</button>';
   }
   usbBusy=false;

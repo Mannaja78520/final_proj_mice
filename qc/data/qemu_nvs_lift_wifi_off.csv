@@ -1,0 +1,6 @@
+key,type,encoding,value
+module,namespace,,
+wmode,data,string,off
+type,data,string,lift
+id,data,u8,5
+name,data,string,QEMU-LIFT

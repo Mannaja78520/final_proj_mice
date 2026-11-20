@@ -371,7 +371,7 @@ async function robotCmd(c) {
     $("robotStat").textContent = "> " + c.slice(0, 60) + "  →  " + t.slice(0, 120);
     return t;
   } catch (e) {
-    $("robotStat").textContent = "" + (e.message || e);
+    Mice.fail($("robotStat"), "", e);
     return "";
   }
 }
@@ -430,7 +430,7 @@ async function saveSafetySpeed() {
       `${SAFE_DPS} °/s. Restart the board, then reconnect Studio to confirm.` +
       (boardSafePeer ? ` Set linked board #${boardSafePeer} to the same limit.` : "");
   } catch (e) {
-    stat.textContent = "Safety speed not saved: " + (e.message || e);
+    Mice.fail(stat, "Safety speed not saved", e);
     notice(stat.textContent);
   }
 }
@@ -552,7 +552,7 @@ async function connectLink() {
     $("safeSpeedStat").textContent = "Disconnected. Reconnect to read the active safety limit.";
     notice($("safeSpeedStat").textContent);
     $("robotStat").textContent = "Could not reach the robot. Check it is powered "
-      + "and on the same network or cable, then try again. " + (e.message || e);
+      + "and on the same network or cable, then try again. " + Mice.Words.plain(e).says;
     notice($("robotStat").textContent);
   }
 }
@@ -659,7 +659,7 @@ function livePump() {
           work.resolve(true);
         } catch (e) {
           work.resolve(false);liveAbort();
-          $("robotStat").textContent = "" + (e.message || e);
+          Mice.fail($("robotStat"), "", e);
         }
       }
     } finally { liveBusy = false; }
@@ -835,7 +835,7 @@ async function refreshSd() {
       + "network, or it has no card fitted. ";
     const why = document.createElement("span");
     why.className = "hint";                 // the raw reason, demoted
-    why.textContent = e.message || String(e);
+    why.textContent = Mice.Words.plain(e).says;
     const again = document.createElement("button");
     again.textContent = "Try again";
     again.onclick = () => refreshSd();
@@ -852,7 +852,7 @@ async function uploadYaml() {
     $("sdStat").textContent =
       `saved ${name}.yaml on the robot — press its ▶ Run button here, or pick it on the robot's own page`;
     refreshSd();
-  } catch (e) { $("sdStat").textContent = "upload failed: " + (e.message || e); notice($("sdStat").textContent); }
+  } catch (e) { notice(Mice.fail($("sdStat"), "upload failed", e)); }
 }
 // Stop any sequence the MODULE is playing on its own.
 //
@@ -926,7 +926,7 @@ async function handOffToRobot() {
       + "it keeps going with this page closed. Press Stop to end it.";
   } catch (e) {
     handedOff = false;                       // it did not take: keep previewing
-    safeMotionNote('Could not hand over: '+e.message,true);
+    safeMotionNote('Could not hand over: '+Mice.Words.plain(e).says,true);
   } finally {entryHold=false;}
 }
 
@@ -967,7 +967,7 @@ function setKeepRun(on) {
 async function keepLastRun(yaml, file) {
   if (!keepRunOn() || file === LAST_RUN_FILE) return "";
   try { await sdUpload(LAST_RUN_FILE, yaml); return ""; }
-  catch (e) { return "the copy as " + LAST_RUN_FILE + " was not kept: " + (e.message || e); }
+  catch (e) { return "the copy as " + LAST_RUN_FILE + " was not kept: " + Mice.Words.plain(e).says; }
 }
 
 // Send the sequence, THEN play it. This used to send only `MOVE <name>.yaml`,
@@ -993,7 +993,7 @@ async function robotRun() {
   } catch (e) {
     cancelSafeMotion('sequence start failed');
     if (st) st.textContent = "could not start the sequence — "
-      + (e && e.message ? e.message : e);
+      + Mice.Words.plain(e).says;
     return;
   }
   if(!started) {if(st)st.textContent='Start cancelled; check the current settings and try again.';return;}
@@ -1097,7 +1097,7 @@ async function monitorTick() {
       (m.moving ? ` | moving (${m.move_left || 0} ms left)` : " | idle") +
       (m.attached === false ? " | relaxed" : "");
   } catch (e) {
-    $("robotStat").textContent = "monitor: no reply (" + (e.message || e) + ")";
+    $("robotStat").textContent = "monitor: no reply (" + Mice.Words.plain(e).says + ")";
     notice($("robotStat").textContent);
   } finally {
     monBusy = false;

@@ -125,3 +125,7 @@ qc/_urdf_real.json
 
 # Private selected deliveries, including source songs and embedded Studio bundles
 /results/
+qc/done.json
+
+# tools/ build helpers
+tools/node_modules/

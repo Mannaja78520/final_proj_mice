@@ -121,6 +121,7 @@ import extensions                                          # noqa: E402
 import hub_auth                                            # noqa: E402
 import hub_pair                                            # noqa: E402
 import partner_launch                                      # noqa: E402
+import play_proxy                                          # noqa: E402
 import partner_version                                     # noqa: E402
 import route_latency                                       # noqa: E402
 import shows as shows_mod                                  # noqa: E402
@@ -275,6 +276,7 @@ def _partner_templates():
 
 # This PC's apps (A51-2): which are installed here and where. Written at
 # runtime beside hub_auth.json, like it never promoted and never in git.
+PLAY_GAMES = play_proxy.Games(lambda: _partner_templates())
 EXT = extensions.Extensions(
     os.environ.get("MICE_EXTENSIONS") or (HERE / "extensions.json"), DATA,
     partners=lambda: _partner_templates(),
@@ -1537,6 +1539,8 @@ import hub_api_apps  # noqa: E402
 hub_api_apps.bind(sys.modules[__name__])
 import hub_api_extensions  # noqa: E402
 hub_api_extensions.bind(sys.modules[__name__])
+import hub_compress  # noqa: E402
+import hub_legacy  # noqa: E402
 import hub_api_resources  # noqa: E402
 hub_api_resources.bind(sys.modules[__name__])
 import voice_helper  # noqa: E402
@@ -1600,12 +1604,39 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         # parsed as the NEXT request's first line (400 on the call after it).
         if self.command == "POST":
             self.drain()
+        # Smaller and "unchanged" answers (hub_compress.py): a TV browser
+        # should not re-download a 650 KB script it already has.
+        sq = hub_compress.SQUEEZER
+        cache, tag = "no-store", None
+        if (self.command == "GET" and code == 200 and sq.is_static(ctype)
+                and not any(k.lower() == "cache-control" and v != "no-store"
+                            for k, v in headers)):
+            cache, tag = "no-cache", '"' + sq.digest(data) + '"'
+            if self.headers.get("If-None-Match") == tag:
+                self.send_response(304)
+                self.send_header("ETag", tag)
+                self.send_header("Cache-Control", cache)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+        packed = False
+        if (self.command != "HEAD" and sq.can_squeeze(ctype, len(data))
+                and sq.wants_gzip(self.headers.get("Accept-Encoding"))):
+            data = sq.squeeze(data, tag.strip('"') if tag else sq.digest(data))
+            packed = True
         self.send_response(code)
         for k, v in headers:
-            self.send_header(k, v)
+            if k.lower() != "cache-control":
+                self.send_header(k, v)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", cache)
+        if tag:
+            self.send_header("ETag", tag)
+        if sq.can_squeeze(ctype, 1 << 20):
+            self.send_header("Vary", "Accept-Encoding")
+        if packed:
+            self.send_header("Content-Encoding", "gzip")
         self.end_headers()
         self.wfile.write(data)
 
@@ -1775,6 +1806,13 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         self._body_read = False   # else the last request's read skips this one's drain
         try:
             self.route("POST")
+        except Exception as e:  # noqa: BLE001
+            self.send_err(e, 500)
+
+    def do_PUT(self):             # only a proxied friend's game saves with PUT
+        self._body_read = False
+        try:
+            self.route("PUT")
         except Exception as e:  # noqa: BLE001
             self.send_err(e, 500)
 
@@ -1999,6 +2037,14 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         q = urllib.parse.parse_qs(url.query)
         path = url.path
 
+        # A friend's game behind its own server (play_proxy.py): before the hub's
+        # own routes, so its /api/state/* is not taken for one of ours.
+        hit = play_proxy.target(PLAY_GAMES.of(), path)
+        if hit:
+            return play_proxy.forward(self, hit[0], hit[1], hit[2], url.query, method)
+        if method == "PUT":
+            return self.send_err("not found", 404)
+
         if path.startswith("/api/"):
             # LOGIN FIRST, for anything that changes something. Reading stays
             # open: the module list, the status endpoints and the pages
@@ -2050,6 +2096,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 return self.send_err("forbidden", 403)
             if not f.is_file():
                 return self.send_err("not found: " + path, 404)
+            f = hub_legacy.pick(f, self.headers.get("User-Agent"))
             return self.send_bytes(f.read_bytes(),
                                    MIME.get(f.suffix.lower(), "application/octet-stream"))
 
@@ -2090,8 +2137,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
             source = (SHARED_WEB / path[1:]).read_bytes()
             if path == "/mice.js":
                 source = hub_api_resources.browser_bootstrap() + source
-            return self.send_bytes(source, "text/javascript; charset=utf-8",
-                                   headers=[("Cache-Control", "no-store")])
+            return self.send_bytes(source, "text/javascript; charset=utf-8")
 
         if path == "/mice.css":
             # One design system for every surface. This route must stay ABOVE
@@ -2190,6 +2236,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 return self.send_err("forbidden", 403)
         if not f.is_file():
             return self.send_err("not found: " + path, 404)
+        f = hub_legacy.pick(f, self.headers.get("User-Agent"))
         self.send_bytes(f.read_bytes(), MIME.get(f.suffix.lower(), "application/octet-stream"))
 
     # ------------------------------------------------------------ login
@@ -2244,14 +2291,8 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         if not f.is_file():
             return self.send_err("not found: " + path, 404)
         data = f.read_bytes()
-        if f.suffix.lower() in (".html", ".htm") and play.get("inject"):
-            cfg = json.dumps({"partner": pid, "watch": play.get("watch") or []},
-                             ensure_ascii=False).replace("</", "<\\/")
-            tag = ('<script>window.MICE_PLAY=%s;</script><script src="%s"></script>'
-                   % (cfg, html.escape(str(play["inject"]), quote=True))).encode("utf-8")
-            low = data.lower()
-            at = low.rfind(b"</body>")
-            data = data[:at] + tag + data[at:] if at >= 0 else data + tag
+        if f.suffix.lower() in (".html", ".htm"):
+            data = play_proxy.inject(data, pid, play)
         return self.send_bytes(data, MIME.get(f.suffix.lower())
                                or mimetypes.guess_type(f.name)[0] or "application/octet-stream")
 

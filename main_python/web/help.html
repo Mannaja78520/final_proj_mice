@@ -324,6 +324,11 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        to Home; <b>Show technical details</b> is always last and brings back addresses, ports
        and error codes on every page at once. In between: the page's name, a line saying
        what it is doing, and its own buttons.</p>
+    <p><b>When something fails, the page says what to do</b> - for example "the hub did not
+       answer - check it is still running and this device is on the same network" - not the
+       browser's own text. The original message is still there under <b>Show technical
+       details</b> for whoever helps you. Pages also load smaller (compressed) and are not
+       downloaded again when nothing changed, which helps on a TV.</p>
     <p><b>Home</b> has one row of tabs: Home, Tools, Modules, Firmware, Network, Settings
        and Complaints. <b>STOP</b>, <b>Report</b>, <b>Shortcuts</b> and <b>Help</b> sit in
        the head, so they are there on every tab. The tools and the module list work with
@@ -396,7 +401,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Home &amp; Modules</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/hub-module-card.png" alt="Hub Module Card" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/hub-module-card.png" alt="Hub Module Card" class="info-img">
       <div class="callout-pin" style="top: 25%; left: 30%;" title="1. โหมด USB Shared vs Exclusive">1</div>
       <div class="callout-pin" style="top: 55%; left: 30%;" title="2. รายการการ์ดโมดูลที่ค้นพบ">2</div>
       <div class="callout-pin" style="top: 80%; left: 75%;" title="3. ปุ่มเปิดบอร์ด Open Module">3</div>
@@ -434,7 +439,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Tools</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/hub-tools-card.png" alt="Hub Tools Card" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/hub-tools-card.png" alt="Hub Tools Card" class="info-img">
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
@@ -468,7 +473,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Firmware</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/hub-firmware-card.png" alt="Hub Firmware Flashing Card" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/hub-firmware-card.png" alt="Hub Firmware Flashing Card" class="info-img">
       <div class="callout-pin" style="top: 30%; left: 30%;" title="1. เลือกไฟล์เฟิร์มแวร์ .bin">1</div>
       <div class="callout-pin" style="top: 55%; left: 30%;" title="2. เลือกพอร์ต COM หรือ RS485 Bus ID">2</div>
       <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่ม Flash พร้อมแถบความคืบหน้า">3</div>
@@ -498,7 +503,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Network</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/hub-network-card.png" alt="Hub Network Card" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/hub-network-card.png" alt="Hub Network Card" class="info-img">
       <div class="callout-pin" style="top: 30%; left: 30%;" title="1. ตั้งชื่อและรหัสผ่าน WiFi บอร์ด">1</div>
       <div class="callout-pin" style="top: 65%; left: 30%;" title="2. รหัสจับคู่ Peer Pairing Code">2</div>
     </div>
@@ -527,7 +532,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Settings</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/hub-settings-card.png" alt="Hub Settings Card" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/hub-settings-card.png" alt="Hub Settings Card" class="info-img">
       <div class="callout-pin" style="top: 30%; left: 30%;" title="1. เลือกธีมสี Dark / Midnight / Light">1</div>
       <div class="callout-pin" style="top: 60%; left: 30%;" title="2. ปุ่มคัดลอกบันทึก Diagnostics Bundle">2</div>
     </div>
@@ -666,6 +671,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 <p>กด <b>ทดลองพร้อมเพลง</b> เพื่อดูท่าในหน้าจอพร้อมเพลงเดิม หยุด กลับต้น หรือเลื่อนแถบเวลาได้ เพลงเป็นนาฬิกาของพรีวิว จึงไม่วิ่งแยกจากท่าเมื่อแท็บช้า หากเพลงจบก่อนท่า ช่วงที่เหลือเงียบ และการวนซ้ำเริ่มเพลงใหม่เมื่อท่าจบ การเปิดชุดงานหรือใช้พรีวิวนี้ไม่ส่งคำสั่งไปหุ่นจริง ปุ่ม Run on robot เป็นขั้นตอนแยก</p>
 <p><b>Save</b> เก็บเพลงไว้ในโปรเจกต์ด้วย เปิดใหม่ยังมีเพลงเดิม หรือกด <b>ดาวน์โหลดท่า+เพลง</b> เพื่อย้ายไฟล์เดียวไปเครื่องอื่น เพลงของ draft เก็บแยกในเบราว์เซอร์ หากพื้นที่ถูกปิดหรือเคลียร์แล้ว อาจต้องเลือกไฟล์เดิมอีกครั้งโดยท่าที่กู้คืนยังอยู่ สำหรับหุ่นจริง ให้ใช้ไฟล์ YAML และ MP3 ชื่อเดียวกับคำสั่ง play: บน SD ตามวิธีอัปโหลดเดิม ระบบไม่อัปโหลดหรือสั่งเล่นหุ่นให้อัตโนมัติ</p>
 
+<p><b>เครื่องที่วาด 3D ไม่ได้ (ทีวี/คอมเก่า/เบราว์เซอร์ที่ปิดการ์ดจอ):</b> Studio ยังเปิดและใช้ได้ สไลเดอร์ ไทม์ไลน์ และการเล่นบนหุ่นทำงานตามปกติ ส่วนภาพหุ่น 3D จะแสดงข้อความบอกว่าเครื่องนี้วาดไม่ได้ ถ้าต้องการเห็นหุ่นให้เปิดด้วยเบราว์เซอร์ใหม่หรือคอมเครื่องอื่น</p>
 <p><b>แยกชุดเต้นอัตโนมัติ:</b> ค่าเริ่มต้น Automatic ตรวจคนหลายคนและการเปลี่ยนมุมกล้องในคลิปใหม่เอง เมื่อใช้ Automatic หรือ Group dance ระบบเปรียบเทียบการเคลื่อนไหวตลอดคลิปใหม่ทุกครั้ง ไม่กำหนดตำแหน่งชาย/หญิงไว้ล่วงหน้า คนที่แขนเหมือนกันแต่บิดเอวหรือเอียงไหล่ต่างกันอาจอยู่คนละชุดท่า เลือก Dance routine เพื่อดูแต่ละชุด หรือ Save separate routines เพื่อบันทึกชุดที่มีหลักฐานแตกต่างต่อเนื่องและมีภาพเชื่อถือได้ผ่านสัดส่วนภาพที่กำหนดในค่าตั้งต้นเป็นโครงการแยก ส่วน Fragment คือช่วงที่ยังยืนยันว่าเป็นชุดท่าใหม่ไม่ได้ เก็บไว้ดูและบันทึกทีละชุดได้ ไม่ถือว่าเป็นชุดเต้นใหม่ทุกครั้งที่กล้องตัด หากมุมใหม่จับคู่ชุดเดิมไม่ได้ชัดเจน ระบบใช้ข้อมูลภาพของผู้เต้นร่วมกับการจับคู่ทุกกลุ่มพร้อมกัน และทำเครื่องหมาย check cut เมื่อการจับคู่ยังคลุมเครือ การจับคู่มุมใหม่ที่ยังคลุมเครือจะคงท่า ไม่เปลี่ยนเป็นเชื่อถือได้เพียงเพราะรอครบเวลา หากหลายคนที่เห็นในภาพนั้นทำท่าเดียวกันจริงจึงใช้ท่าร่วมที่ยืนยันได้ รายงาน % reliable คือสัดส่วนภาพที่ใช้ได้ ไม่ใช่การรับรองว่าเป็นบุคคลเดิมแน่นอน ผู้ใช้เลือกคนเองได้เป็นทางเลือก</p>
 <p><b>ภาพตัดที่จับคู่คนเดิมไม่ได้:</b> ระบบแยกเป็น Scene segment อัตโนมัติ เลือกผู้เต้นหลักที่เห็นต่อเนื่องในชุดท่านั้น ไม่สลับตามค่าความมั่นใจทุกภาพ ช่วงวิดีโอและเวลาท่าของแต่ละส่วนเริ่มตรงกัน เมื่อแก้ช่วงวิดีโอจะยกเลิกการอ่านเดิมและให้วิเคราะห์ช่วงใหม่ โดยไม่เติมการยืนนิ่งยาวก่อนช่วงที่มองเห็น Make and save จะบันทึกชุดหรือช่วงที่ผ่านเกณฑ์แยกกัน ไม่สร้างโชว์ที่เดาว่าคนละท่าเป็นคนเดียวกัน การจับคู่ข้ามกล้องที่คลุมเครือยังไม่ใช่การรับรองเพศหรือบุคคลเดิม</p>
 <p><b>เต้นต่อเนื่อง:</b> ค่าเริ่มต้นรักษารูปท่าและเพิ่มเวลาตามขีดจำกัดหุ่น หากต้องการจังหวะเพลงเดิมให้เลือก Stay with the music ซึ่งอาจลดระยะเคลื่อนไหว  ระบบกรองการสั่นตามเวลา ลดการกลับทิศสั้นและการเปลี่ยนมุมข้อต่อฉับพลัน เมื่อคนหยุดนิ่งหลังเปลี่ยนท่า หุ่นยังเคลื่อนให้ถึงท่าที่รับไว้ก่อนค้าง ไม่หยุดกลางทางจากตัวกรอง ยังคงท่าเปิดและช่วงยืนนิ่ง ไม่ดึงท่าจากอนาคตมาเติมภาพที่มองไม่เห็น หลังกรองจะตรวจการชนและเวลาใหม่และแสดงจำนวนการกลับทิศก่อน/หลัง ภาพต้นฉบับและรายงานความคลาดยังใช้ตรวจว่าการกรองกินรายละเอียดท่าเกินไปหรือไม่ ริกและขอบเขตมอเตอร์อาจทำให้บางท่ายังต่างจากคน</p>
@@ -692,7 +698,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Overview</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/studio-current.png" alt="Nong Studio Current Real UI" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-current.png" alt="Nong Studio Current Real UI" class="info-img">
       <div class="callout-pin" style="top: 45%; left: 30%;" title="1. พื้นที่ 3D Model Viewport">1</div>
       <div class="callout-pin" style="top: 45%; left: 78%;" title="2. แผงควบคุมสไลเดอร์ 10 ข้อต่อ">2</div>
       <div class="callout-pin" style="top: 90%; left: 50%;" title="3. แถบไทม์ไลน์และเครื่องเล่นท่าทาง">3</div>
@@ -706,7 +712,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Joint Controls</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/studio-sliders.png" alt="Joint Sliders Panel" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-sliders.png" alt="Joint Sliders Panel" class="info-img">
       <div class="callout-pin" style="top: 25%; left: 25%;" title="1. ข้อต่อแขนซ้าย L_SH / L_EL">1</div>
       <div class="callout-pin" style="top: 55%; left: 25%;" title="2. ข้อต่อแขนขวา R_SH / R_EL">2</div>
       <div class="callout-pin" style="top: 80%; left: 25%;" title="3. เอวและยักไหล่ WAIST / SHRUG">3</div>
@@ -756,7 +762,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Timeline</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/studio-timeline-bar.png" alt="Timeline Controls" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-timeline-bar.png" alt="Timeline Controls" class="info-img">
       <div class="callout-pin" style="top: 50%; left: 8%;" title="1. ปุ่ม Play / Run on robot">1</div>
       <div class="callout-pin" style="top: 50%; left: 25%;" title="2. ปุ่ม + Add keyframe">2</div>
       <div class="callout-pin" style="top: 50%; left: 60%;" title="3. แถบเลื่อนเวลา Scrub Bar">3</div>
@@ -801,7 +807,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">3D &amp; IK</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/studio-3d-model.png" alt="3D Model Canvas" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-3d-model.png" alt="3D Model Canvas" class="info-img">
       <div class="callout-pin" style="top: 35%; left: 35%;" title="1. วงแหวนควบคุมแกนเซอร์โว">1</div>
       <div class="callout-pin" style="top: 60%; left: 30%;" title="2. จุดจับลากแขน IK (Wrist &amp; Elbow)">2</div>
       <div class="callout-pin" style="top: 15%; left: 50%;" title="3. ปุ่มมุมมองระนาบ Orthographic">3</div>
@@ -843,7 +849,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <p class="mini">การ์ดไหนอยากเปิดค้างไว้ กด <b>⧉</b> ที่หัวการ์ด มันจะลอยออกมาเป็นหน้าต่างของตัวเอง ลากหัวการ์ดไปวางตรงไหนก็ได้
       ลากมุมขวาล่างเพื่อปรับขนาด และยังเห็นอยู่ทุก tab. กด <b>⇲</b> เพื่อเก็บกลับเข้าที่. เบราว์เซอร์จำตำแหน่งไว้ให้ (บนมือถือไม่มีปุ่มนี้).</p>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/studio-tuning-card.png" alt="Tuning &amp; Calibration Card" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-tuning-card.png" alt="Tuning &amp; Calibration Card" class="info-img">
       <div class="callout-pin" style="top: 30%; left: 30%;" title="1. ปุ่ม Nudge ชดเชย ±0.5 องศา">1</div>
       <div class="callout-pin" style="top: 55%; left: 30%;" title="2. กำหนดช่วงลิมิต Min / Max">2</div>
       <div class="callout-pin" style="top: 75%; left: 30%;" title="3. อัตราทดเฟืองและ Shrug Curve">3</div>
@@ -880,7 +886,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Sequences</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/studio-sequence-card.png" alt="Sequence Manager Card" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-sequence-card.png" alt="Sequence Manager Card" class="info-img">
       <div class="callout-pin" style="top: 20%; left: 40%;" title="1. กล่องเลือกไฟล์ YAML">1</div>
       <div class="callout-pin" style="top: 45%; left: 40%;" title="2. ตัวคูณความเร็วประจำไฟล์">2</div>
       <div class="callout-pin" style="top: 70%; left: 40%;" title="3. ช่อง Chain ต่อไฟล์ถัดไป">3</div>
@@ -938,7 +944,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Shows &amp; Music</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/studio-shows-card.png" alt="Shows &amp; Music Card" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-shows-card.png" alt="Shows &amp; Music Card" class="info-img">
       <div class="callout-pin" style="top: 25%; left: 40%;" title="1. เลือกไฟล์เพลง MP3 จากการ์ด SD">1</div>
       <div class="callout-pin" style="top: 50%; left: 40%;" title="2. กำหนดจุดหยุดพัก Pause">2</div>
       <div class="callout-pin" style="top: 75%; left: 40%;" title="3. ปุ่ม Save to robot สำหรับรันเดี่ยว">3</div>
@@ -1020,6 +1026,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 
 <!-- ===================== TV REMOTE ===================== -->
 <section id="tv">
+<p><b>ทีวี/เบราว์เซอร์รุ่นเก่า:</b> หน้า Home, Studio, Voice และหน้าอื่นถูกสร้างให้รันบน Chrome/Android WebView รุ่นเก่าได้ (ประมาณ Chrome 75 ขึ้นไป) ฮับส่งสคริปต์รุ่นเก่า (แปลงไว้แล้วตอน build) ให้เบราว์เซอร์ที่เก่ากว่า Chrome 80 เอง ฝั่งทีวีไม่ต้องทำงานเพิ่ม ฟีเจอร์ที่เบราว์เซอร์เก่าไม่มีจะถูกเติมให้เอง ถ้ายังเปิดไม่ขึ้นจะมีแถบสีแดงบอกเป็นภาษาธรรมดาว่าเบราว์เซอร์เก่าเกินไป ให้อัปเดต Chrome หรือ Android System WebView หรือเปิดบนคอมพิวเตอร์หรือมือถือรุ่นใหม่กว่า ถ้าหน้า 3D ไม่ทำงานบนเครื่องที่การ์ดจอไม่รองรับ Studio ยังใช้สไลเดอร์และไทม์ไลน์ได้</p>
   <div class="shead">
     <span class="where tech">code/apps/tv · served at /tv, /monitor, and /app/tv/</span>
     <h2>📺 TV Remote &amp; Monitor — หน้าจอควบคุมสำหรับ Smart TV และมือถือ</h2>
@@ -1035,7 +1042,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Remote Buttons</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/tv-controls-box.png" alt="TV Controls Box" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/tv-controls-box.png" alt="TV Controls Box" class="info-img">
       <div class="callout-pin" style="top: 30%; left: 50%;" title="1. ปุ่ม Restart selected / Stop / Home">1</div>
       <div class="callout-pin" style="top: 55%; left: 50%;" title="2. รายการเลือก Sequence">2</div>
       <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่มสั่งพูดด่วน Quick Speech">3</div>
@@ -1067,7 +1074,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Joint Gauges</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/tv-gauges-box.png" alt="TV Gauges Box" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/tv-gauges-box.png" alt="TV Gauges Box" class="info-img">
       <div class="callout-pin" style="top: 50%; left: 25%;" title="1. เกจวัดระดับองศาแขนซ้าย">1</div>
       <div class="callout-pin" style="top: 50%; left: 75%;" title="2. เกจวัดระดับองศาแขนขวาและเอว">2</div>
     </div>
@@ -1128,7 +1135,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Live Stream</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/camera-preview-box.png" alt="Camera Live Stream Box" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/camera-preview-box.png" alt="Camera Live Stream Box" class="info-img">
       <div class="callout-pin" style="top: 40%; left: 50%;" title="1. กล่องแสดงภาพสด">1</div>
       <div class="callout-pin" style="top: 85%; left: 50%;" title="2. สถานะการเชื่อมต่อ WiFi">2</div>
     </div>
@@ -1157,7 +1164,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Sensor Tuning</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/camera-tuning-box.png" alt="Camera Tuning Box" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/camera-tuning-box.png" alt="Camera Tuning Box" class="info-img">
       <div class="callout-pin" style="top: 30%; left: 40%;" title="1. สไลเดอร์ Brightness / Contrast">1</div>
       <div class="callout-pin" style="top: 60%; left: 40%;" title="2. สวิตช์ Auto vs Manual Exposure">2</div>
       <div class="callout-pin" style="top: 85%; left: 40%;" title="3. สมดุลสีขาว White Balance">3</div>
@@ -1207,7 +1214,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Chat &amp; STT</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/voice-chat-box.png" alt="Voice Chat Box" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/voice-chat-box.png" alt="Voice Chat Box" class="info-img">
       <div class="callout-pin" style="top: 45%; left: 35%;" title="1. ช่องพิมพ์คำถาม">1</div>
       <div class="callout-pin" style="top: 45%; left: 65%;" title="2. ปุ่ม Press to talk (ไมค์ STT)">2</div>
       <div class="callout-pin" style="top: 45%; left: 88%;" title="3. ปุ่มส่งถาม Ask">3</div>
@@ -1237,7 +1244,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Speakers &amp; Manners</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/voice-settings-card.png" alt="Voice Settings Card" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/voice-settings-card.png" alt="Voice Settings Card" class="info-img">
       <div class="callout-pin" style="top: 35%; left: 30%;" title="1. เลือกปลายทางลำโพง">1</div>
       <div class="callout-pin" style="top: 35%; left: 70%;" title="2. สไตล์และบุคลิกเสียง">2</div>
       <div class="callout-pin" style="top: 75%; left: 50%;" title="3. ระบบ Fast-Race 650ms">3</div>
@@ -1325,6 +1332,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
   </div>
 
   <p>หาก Load the AI, Unload the AI หรือการอ่านสถานะล้มเหลว ปุ่มจะกลับมากดเพื่อลองใหม่ พร้อมข้อความข้อผิดพลาด การโหลดโมเดลจริงอาจใช้เวลาตามเครื่อง</p>
+  <p><b>AI บนเครื่อง (Ollama) เปิดเองเมื่อใช้งาน:</b> ไม่ต้องสตาร์ทเองหลังเปิดคอม และไม่ตั้งให้เปิดตอนล็อกอิน การกดปุ่ม Load the AI หรือถามคำถามครั้งแรกจะสั่งเปิดแบบซ่อนหน้าต่างให้เอง แล้วรอจนพร้อม (ปกติไม่เกินประมาณ 40 วินาที) ถ้าเปิดไม่ขึ้นจะบอกเหตุผลเป็นข้อความธรรมดาและไม่ลองซ้ำเป็นเวลา 1 นาที ให้กด Load the AI ใหม่</p>
 </section>
 
 <section id="faces">
@@ -1409,7 +1417,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <tr><td class="wrap2">แจกให้ผู้ร่วมงาน</td><td>Give a prize</td><td>เลือก Kind ผู้รับ และ Machine กด Can they have one? เพื่อตรวจสิทธิ์ หรือ Give เพื่อสั่งแจกจริง</td></tr>
       <tr><td class="wrap2">ดูว่าแจกให้ใครแล้ว</td><td>Prizes given</td><td>ดูประวัติการแจกและจำนวนที่แจกไป</td></tr>
       <tr><td class="wrap2">ใช้กติกาจากชีต</td><td>Google Sheet</td><td>วางลิงก์ชีตและทำตามวิธีตั้งค่าในแท็บนี้ หากต้องการเขียนกลับชีตต้องตั้งค่าส่วนการเขียนด้วย</td></tr>
-      <tr><td class="wrap2">ให้เกมหรือเสียงเรียกแจก</td><td>Games and Voice</td><td>กำหนดเกมหรือหัวข้อคำถามที่มีสิทธิ์ขอรางวัล</td></tr>
+      <tr><td class="wrap2">ให้เกมหรือเสียงเรียกแจก</td><td>Games and Voice</td><td>กำหนดเกมหรือหัวข้อคำถามที่มีสิทธิ์ขอรางวัล (ควิซตั้งคะแนนขั้นต่ำได้ที่ Score from)</td></tr>
       <tr><td class="wrap2">เชื่อมแอปอื่น</td><td>Other apps</td><td>กำหนดการเชื่อมต่อของแอปที่ขอแจกของ</td></tr>
       <tr><td class="wrap2">เปลี่ยนคำพูด</td><td>Words</td><td>แก้ข้อความที่ใช้ประกอบการแจกและแจ้งผล</td></tr>
     </tbody>
@@ -1423,6 +1431,19 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <li>กด <b>Can they have one?</b> เพื่อตรวจสิทธิ์ก่อน จากนั้นกด <b>Give</b> เมื่อต้องการแจกจริง</li>
     </ol>
     <p><b>Give one anyway (admin)</b> ข้ามข้อจำกัดสิทธิ์ของผู้รับและยังนับการแจก ใช้เมื่อตั้งใจให้เกินกติกา</p>
+  </div>
+  <div class="f" id="gacha-stock">
+    <h3>สต็อกสองทาง, เล่นอย่างเดียว และตู้สุ่ม</h3>
+    <p><b>สต็อกสองทาง</b> การ์ด <b>Stock and random boxes</b> (แท็บ Machines and kinds) แสดงของที่มีจริงในตู้แต่ละชนิดพร้อม <b>Odds</b>
+       เกมหรือโปรแกรมอื่นอ่านรายการนี้ได้ที่ <code>/api/gacha/stock</code> หรือรับแจ้งผ่าน webhook ชื่อ <b>stock</b> (ตั้งในการ์ด Tell other apps)
+       รางวัลในเกมจึงตามของจริง ของหมดก็หายจากรายการ เกมส่งผลกลับมาพร้อม <code>item</code> เพื่อบอกว่าได้ชนิดไหน</p>
+    <p><b>เล่นอย่างเดียว (Play only)</b> นับการชนะและตอบเหมือนเดิมแต่ไม่หมุนตู้จริง ตั้งต่อเกมในตาราง Games ช่อง <b>Play only</b>
+       หรือการ์ด <b>Play only and who may ask</b> (<code>game:quiz</code>, ชื่อโปรแกรม, หรือ <code>*</code> ทั้งหมด) คำขอเดียวส่ง <code>play_only</code> เองได้ด้วย</p>
+    <p><b>โปรแกรมอื่นที่ไม่ใช่เกม</b> ขอของผ่าน <code>/api/gacha/dispense</code> ด้วยชื่อ <code>app</code> ได้เลย
+       ถ้าอยากจำกัดว่าขอชนิดไหนได้หรือปิดไว้ ให้เขียนชื่อโปรแกรมในตาราง Programs</p>
+    <p><b>ตู้สุ่ม</b> ตั้ง <b>Mode</b> ของเครื่องเป็น <code>random</code> ใส่ของหลายชนิดปนกัน แล้วบอกจำนวนแต่ละชนิดตอนใส่ของ (<b>Put items in a random box</b>
+       &rarr; <b>Set what is in it now</b> หรือ <b>Add these</b>) กด <b>Press random</b> เครื่องหมุนหนึ่งครั้งและระบบสุ่มว่าได้ชนิดไหน
+       ยิ่งเหลือมากยิ่งมีโอกาสมาก จำนวนที่เหลือลดลงทีละหนึ่ง หมดแล้วกดไม่ได้</p>
   </div>
   <div class="f" id="gacha-mechanism">
     <h3>กลไกจริง: Hall 1 ตัว กับแม่เหล็ก 4 ตัว</h3>
@@ -1508,7 +1529,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Mini-Games</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/all-jao-games-box.png" alt="All-Jao Games Suite" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/all-jao-games-box.png" alt="All-Jao Games Suite" class="info-img">
       <div class="callout-pin" style="top: 50%; left: 15%;" title="1. 🕹️ Claw Machine (ตู้คีบ)">1</div>
       <div class="callout-pin" style="top: 50%; left: 38%;" title="2. 🃏 Matching Game (จับคู่การ์ด)">2</div>
       <div class="callout-pin" style="top: 50%; left: 62%;" title="3. ❓ Quiz Game (ตอบคำถามชิงรางวัล)">3</div>
@@ -1539,7 +1560,12 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
   <div class="f"><h3>A win gives a real prize<span class="tag t-new">new</span></h3>
     <p>Played inside the hub, a win in the wheel, claw, quiz or memory game can make a prize
        machine give a prize and tells the player where to collect it. Which result gives what is
-       set on <a href="#gacha">Prize machines</a> ▸ Games that give a prize.</p></div>
+       set on <a href="#gacha">Prize machines</a> ▸ Games that give a prize. For the quiz, fill <b>Score from</b>
+       to give a prize only from that score up (every finished quiz round counts as a win result; write a number or a percent such as 80%; the game says its top score, so more questions need no change;
+       a wheel slice that says &ldquo;try again&rdquo; never gives a prize).
+       The player's name typed in the wheel or claw game is used for the per-person limit.
+       The games now keep their data in their own small server (Node, started by the hub with the Open button);
+       play them from the hub so a win reaches the prize machines.</p></div>
   <p>ปุ่มเปิดเกมจะเปิดแท็บไว้ก่อนตรวจความพร้อม เพื่อไม่ให้เบราว์เซอร์บล็อกหลังรอเครือข่าย หากเปิดแท็บไม่ได้ ให้อนุญาตป๊อปอัปแล้วกดลองอีกครั้ง</p>
 </section>
 
@@ -1629,7 +1655,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <span class="info-badge">Infographic</span>
     </div>
     <div class="info-visual-wrapper" style="padding: 10px; background: var(--card); text-align: center;">
-      <img src="/pinout.svg" alt="ESP32 WROOM Pinout Reference" style="max-height: 280px; width: auto; margin: 0 auto; display: block;">
+      <img loading="lazy" decoding="async" src="/pinout.svg" alt="ESP32 WROOM Pinout Reference" style="max-height: 280px; width: auto; margin: 0 auto; display: block;">
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
