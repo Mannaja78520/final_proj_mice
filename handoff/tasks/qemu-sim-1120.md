@@ -11,14 +11,15 @@ Boot the compiled firmware on Espressif's QEMU (ESP32) so commands, the
 FWBEGIN/FWDATA/FWEND update and NVS persistence run on real code, not fakes.
 
 ## Doing now
-PR for check_qemu_bus (2-board RS485).
+PR for check_qemu_peripherals + firmware/src/sim.
 
 ## Done
 - qc/lib/qemu_board.py (QemuBoard: boot, cmd, reboot), tools/qemu_esp32.py (install QEMU into .local/qemu).
 - qc/checks/check_qemu_firmware.py: nong + gacha firmware. Proven by sabotage (BusUpdate.cpp md5 guard off -> 6 fails).
 
 ## Next
-- Lift and dummy firmware do NOT run in QEMU: lift stalls in RGB RMT init, dummy answers nothing after boot (ADC mux). Would need a sim build flag; not done.
+- Done: `*_sim` envs (firmware/platformio.ini, firmware/src/sim/MiceSim.*): link-time wraps of digitalRead/analogRead/ledcWrite/analogWrite/pcnt_get_counter_value; `~PIN ~ADC ~ENC ~PWM? ~PINS? ~RGB?` over USB. Lift RGB stubbed with #ifdef MICE_SIM in RgbStrip.cpp.
+- Still no QEMU path: WiFi radio (PHY crash), OTA over HTTP, SD card (SPI mode), I2S audio, real servo timing.
 - Done 2026-11-20: qc/checks/check_qemu_bus.py (Rs485Bus joins UART2 of boards; -serial x3).
 - Windows: tools/qemu_esp32.py Windows asset name is a guess, untested.
 
@@ -41,3 +42,5 @@ WiFi, OTA over HTTP, servos, hall pulses, SD: QEMU has no radio/peripherals.
 | tools/qemu_esp32.py | new | done (installer download not re-run) | not run | this checkpoint |
 | docs/systems.json, docs/systems/qc.md, qc/README.md | register + docs | done | docs checks (2 fail on plain main too) | this checkpoint |
 | qc/checks/check_qemu_bus.py, qc/lib/qemu_board.py (bus) | new + extended | done | 12 ok; sabotage RS485Bus.cpp id filter -> fails | this checkpoint |
+| firmware/src/sim/*, firmware/platformio.ini, main.cpp, RgbStrip.cpp | sim hooks, `*_sim` envs | done | check_qemu_peripherals 24 ok; sabotage hall polarity + lift limit -> 7 fail; release nong size unchanged 1627205 B | this checkpoint |
+| qc/checks/check_qemu_peripherals.py, qc/data/qemu_nvs_{lift,dummy}* | new | done | same | this checkpoint |

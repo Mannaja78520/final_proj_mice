@@ -10,6 +10,7 @@
 //   config/       pin map + defaults
 #include <Arduino.h>
 #include <config.h>
+#include "sim/MiceSim.h"
 
 #include "core/Identity.h"
 #include "core/Log.h"
@@ -156,6 +157,14 @@ void loop() {
     if (c == '\n') {
       serialBuf.trim();
       if (serialBuf.length()) {
+#ifdef MICE_SIM
+        String simReply;
+        if (micesim::handle(serialBuf, simReply)) {   // QEMU test hooks (src/sim)
+          emitLine(simReply);
+          serialBuf = "";
+          continue;
+        }
+#endif
         emitLine(serialBuf[0] == '#' ? rs485.bridge(serialBuf, &router)
                                      : router.handle(serialBuf));
       }

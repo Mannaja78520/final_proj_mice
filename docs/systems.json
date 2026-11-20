@@ -159,7 +159,7 @@
      "depends": ["shared-web"]},
 
     {"id": "fw-core", "summary": "Firmware shared by every board: identity, commands, RS485, WiFi/web portal, SD, OTA, PERF?.",
-     "files": ["firmware/src/core/", "firmware/src/main.cpp", "firmware/src/modules/Module.h",
+     "files": ["firmware/src/core/", "firmware/src/sim/", "firmware/src/main.cpp", "firmware/src/modules/Module.h",
                "firmware/src/modules/ModuleFactory.*", "firmware/include/", "firmware/platformio.ini",
                "firmware/COMMANDS.md", "firmware/README.md", "firmware/CLAUDE.md",
                "firmware/save_fw_patch.py", "firmware/test/", "firmware/tools/"],
