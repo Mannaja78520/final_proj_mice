@@ -147,7 +147,7 @@ async function uploadMusicFile(k, f, pick) {
     if (pick) pick(name, "", renamed); else setKeyCue(k, "play", name);
     musicNote = name + " is on the robot's card — press ▶ to hear it" + renamed;
   } catch (e) {
-    musicNote = "the track did not reach the robot: " + (e.message || e);
+    musicNote = "the track did not reach the robot: " + Mice.Words.plain(e).says;
     if (pick) pick("", musicNote);
   }
   renderTimeline();
@@ -275,7 +275,7 @@ function musicRow(k, i) {
     try {
       if (v !== "") await rawCmd("VOL " + v);
       musicNote = await rawCmd("PLAY " + cur);
-    } catch (e) { musicNote = "the robot did not take it: " + (e.message || e); }
+    } catch (e) { musicNote = "the robot did not take it: " + Mice.Words.plain(e).says; }
     renderTimeline();
   };
   const stop = document.createElement("button");
@@ -283,7 +283,7 @@ function musicRow(k, i) {
   stop.disabled = !robotLinked();
   stop.title = "stop the sound";
   stop.onclick = async () => {
-    try { musicNote = await rawCmd("PLAY STOP"); } catch (e) { musicNote = String(e.message || e); }
+    try { musicNote = await rawCmd("PLAY STOP"); } catch (e) { musicNote = Mice.Words.plain(e).says; }
     renderTimeline();
   };
   const add = document.createElement("button");
@@ -417,7 +417,7 @@ async function editSdSeq(fname) {
   try {
     const text = await sdDownload(fname);
     loadParsedSeq(parseSeqYaml(text), "robot SD " + fname);
-  } catch (e) { $("tlStat").textContent = "cannot read " + fname + ": " + (e.message || e); notice($("tlStat").textContent); }
+  } catch (e) { $("tlStat").textContent = "cannot read " + fname + ": " + Mice.Words.plain(e).says; notice($("tlStat").textContent); }
 }
 // Play a SAVED sequence without first loading it for editing: the same
 // loader Edit uses, then the same Play button — so it plays exactly like an
@@ -428,7 +428,7 @@ async function playSavedSeq(sourceLabel, getText) {
   let text;
   try { text = await getText(); }
   catch (e) {
-    stat.textContent = "cannot read " + sourceLabel + ": " + (e.message || e);
+    stat.textContent = "cannot read " + sourceLabel + ": " + Mice.Words.plain(e).says;
     notice(stat.textContent);
     return;
   }
@@ -476,7 +476,7 @@ async function putLocalSeqOnRobot() {
       + "from the robot's list here or on its own page.";
     refreshSd();
   } catch (e) {
-    $("tlStat").textContent = f + " was not saved on the robot: " + (e.message || e);
+    $("tlStat").textContent = f + " was not saved on the robot: " + Mice.Words.plain(e).says;
     notice($("tlStat").textContent);
   }
 }
@@ -493,7 +493,7 @@ async function deleteLocalSeq() {
     await refreshSeqs();
     seqsChanged();
   } catch (e) {
-    $("tlStat").textContent = "could not delete " + f + ": " + (e.message || e);
+    $("tlStat").textContent = "could not delete " + f + ": " + Mice.Words.plain(e).says;
     notice($("tlStat").textContent);
   }
 }

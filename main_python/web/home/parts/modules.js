@@ -65,7 +65,7 @@ async function scan(force){
     el.replaceChildren();
     if((window.MODS || []).length) repaintMods();
     const warning = '<div class="banner err" role="alert">Could not reach the hub just now — '+
-      esc(String(e && e.message || e))+
+      esc(Mice.Words.plain(e).says)+
       ' <button onclick="scan(true)">Try again</button></div>' +
       ((window.MODS || []).length ? '<div class="stale">showing what was found '+agoText(modsAt)+
         ' — these may no longer be there</div>' : '');

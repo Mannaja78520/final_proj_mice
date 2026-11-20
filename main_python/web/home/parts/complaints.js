@@ -42,7 +42,7 @@ async function loadComplaints(){
       el.appendChild(row);
     });
   }catch(e){
-    el.textContent = 'Failed to load: ' + (e && e.message || e);
+    el.textContent = 'Failed to load: ' + Mice.Words.plain(e).says;
   }
 }
 

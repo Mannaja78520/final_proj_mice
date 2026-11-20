@@ -110,7 +110,7 @@ async function dummyConnect() {
     const n = v.filter(x => x !== null).length;
     $("dummyStat").textContent = "dummy answers ✓ — " + n + " of " + NJ + " joints have a pot";
   } catch (e) {
-    $("dummyStat").textContent = "no answer from the dummy: " + (e.message || e);
+    Mice.fail($("dummyStat"), "no answer from the dummy", e);
     notice($("dummyStat").textContent);
   }
 }
@@ -214,7 +214,7 @@ async function dummyFollowTick() {
       : (mode === "robot" ? "robot + Studio follow" : "Studio follows") + " the dummy"
         + (dummyRec ? " (recording)" : "");
   } catch (e) {
-    $("dummyStat").textContent = "dummy: no answer (" + (e.message || e) + ") — still trying";
+    $("dummyStat").textContent = "dummy: no answer (" + Mice.Words.plain(e).says + ") — still trying";
   }
   if (dummyFollowOn) setTimeout(dummyFollowTick, 80);
 }
@@ -222,12 +222,12 @@ async function dummyFollowTick() {
 // ---- the dummy and the sequence -------------------------------------------
 async function dummyToNewKey() {
   try { dummyApply(await dummyRead()); addKey(); $("dummyStat").textContent = "dummy pose saved as move " + selKey; }
-  catch (e) { $("dummyStat").textContent = "" + (e.message || e); }
+  catch (e) { Mice.fail($("dummyStat"), "", e); }
 }
 async function dummyToSelectedKey() {
   if (!keys[selKey]) { $("dummyStat").textContent = "select a move in the timeline first"; return; }
   try { dummyApply(await dummyRead()); updateKey(); $("dummyStat").textContent = "move " + selKey + " now holds the dummy pose"; }
-  catch (e) { $("dummyStat").textContent = "" + (e.message || e); }
+  catch (e) { Mice.fail($("dummyStat"), "", e); }
 }
 // Send the REAL robot to the selected move, at that move's own speed.
 function robotToSelectedKey() {

@@ -136,7 +136,7 @@ async function talkFit() {
     talkRender();
     return true;
   } catch (e) {
-    talkSay("The gestures could not be fitted: " + (e.message || e));
+    talkSay("The gestures could not be fitted: " + Mice.Words.plain(e).says);
     return false;
   } finally {
     pose = saved; applyPose();
@@ -217,7 +217,7 @@ async function talkSave(change) {
     TALK.lib = j.lib; TALK.revision = j.gestureRevision || TALK.revision;
     talkRender();
     talkCheckFit();
-  } catch (e) { talkSay("Not saved: " + (e.message || e)); notice($("talkStat").textContent); }
+  } catch (e) { talkSay("Not saved: " + Mice.Words.plain(e).says); notice($("talkStat").textContent); }
 }
 function talkSaveSwitch() { talkSave({ on: $("talkOn").checked }); }
 // The events are the Voice page's scenarios: one switch each.

@@ -320,7 +320,7 @@ async function showOnTimeline(quiet, onlyIfSafe) {
       "from here would save the whole show as one file.";
     return true;
   } catch (e) {
-    $("showStat").textContent = "could not draw the show: " + (e.message || e);
+    Mice.fail($("showStat"), "could not draw the show", e);
     notice($("showStat").textContent);
     return false;
   }
@@ -338,7 +338,7 @@ async function saveShow() {
     const j = await showPost("/api/show/save", { show: s });
     $("showStat").textContent = (j.replaced ? "saved over " : "saved ") + s.name + ".";
     refreshShows();
-  } catch (e) { $("showStat").textContent = "not saved: " + (e.message || e); notice($("showStat").textContent); }
+  } catch (e) { notice(Mice.fail($("showStat"), "not saved", e)); }
 }
 async function deleteShow() {
   const n = $("showList").value || readShowForm().name;
@@ -348,7 +348,7 @@ async function deleteShow() {
     await showPost("/api/show/delete", { name: n });
     newShow(); refreshShows();
     $("showStat").textContent = n + " deleted (kept in shows/.deleted).";
-  } catch (e) { $("showStat").textContent = "not deleted: " + (e.message || e); notice($("showStat").textContent); }
+  } catch (e) { notice(Mice.fail($("showStat"), "not deleted", e)); }
 }
 async function playShow() {
   const s = readShowForm();
@@ -363,7 +363,7 @@ async function playShow() {
     try {
       const j = await showPost("/api/show/yaml", { show: s, limits: showLimits() });
       kept = await keepLastRun(j.yaml, j.file);
-    } catch (e) { kept = "the copy as " + LAST_RUN_FILE + " was not kept: " + (e.message || e); }
+    } catch (e) { kept = "the copy as " + LAST_RUN_FILE + " was not kept: " + Mice.Words.plain(e).says; }
   }
   try {
     await showPost("/api/show/play", { dev, show: s, limits: showLimits() });
@@ -372,7 +372,7 @@ async function playShow() {
       (kept ? " Note: " + kept : keepRunOn() && haveRobot()
         ? " A copy is on the robot as " + LAST_RUN_FILE + ", to play from its own page." : "");
     if (kept) notice(kept);
-  } catch (e) { $("showStat").textContent = "did not start: " + (e.message || e); notice($("showStat").textContent); }
+  } catch (e) { notice(Mice.fail($("showStat"), "did not start", e)); }
 }
 // The show ONTO the robot's card (user 2026-10-12: *in shows is there upload to
 // the robot? now only run and save to the PC*). The hub writes the file from the
@@ -389,7 +389,7 @@ async function sendShowToRobot() {
     $("showStat").textContent = j.file + " is saved on the robot. The robot can play it " +
       "by itself now: pick it in the robot's list (Sequence tab, or the robot's own page).";
     refreshSd();
-  } catch (e) { $("showStat").textContent = "not sent: " + (e.message || e); notice($("showStat").textContent); }
+  } catch (e) { notice(Mice.fail($("showStat"), "not sent", e)); }
 }
 async function stopShow() {
   try { await fetch("/api/play/stop", { method: "POST" }); $("showStat").textContent = "stopped."; }

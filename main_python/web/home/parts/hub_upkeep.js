@@ -25,7 +25,7 @@ async function checkUpdate(){
   say.textContent = 'asking GitHub…';
   let s;
   try{ s = await fetch('/api/selfupdate').then(r => r.json()); }
-  catch(e){ say.textContent = '⚠ ' + (e && e.message || e); return; }
+  catch(e){ say.textContent = '⚠ ' + Mice.Words.plain(e).says; return; }
   if (!s.can){
     // No internet is the ordinary case at a venue, so this is a plain
     // sentence rather than an error.
@@ -45,7 +45,7 @@ async function checkUpdate(){
     say.textContent = 'downloading…';
     let r;
     try{ r = await fetch('/api/selfupdate', {method: 'POST'}).then(x => x.json()); }
-    catch(e){ say.textContent = '⚠ ' + (e && e.message || e); return; }
+    catch(e){ say.textContent = '⚠ ' + Mice.Words.plain(e).says; return; }
     say.textContent = (r.ok ? '✓ ' : '⚠ ') + (r.message || '');
   };
   say.appendChild(line);
@@ -83,7 +83,7 @@ async function copyDiag(){
   try{
     text = await fetch('/api/diag').then(r => r.text());
   }catch(e){
-    say.textContent = '⚠ could not reach the hub: ' + (e && e.message || e);
+    say.textContent = '⚠ could not reach the hub: ' + Mice.Words.plain(e).says;
     return;
   }
   showDiag(text);
