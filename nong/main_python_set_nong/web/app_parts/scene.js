@@ -1,7 +1,21 @@
 // --- scene ---
 const viewport = $("viewport");
 const displayPolicy = window.MiceResources;
-const renderer = new THREE.WebGLRenderer({ antialias: displayPolicy ? displayPolicy.display().antialias : true });
+// No WebGL (an old TV or PC browser, a blocked GPU): without a renderer the
+// whole page stopped at start (2026-11-20, Firefox without WebGL: blank view,
+// no sliders, "checking..." forever). Now a stand-in takes the renderer's
+// place, says so in the view, and everything else keeps working.
+function makeRenderer() {
+  try { return new THREE.WebGLRenderer({ antialias: displayPolicy ? displayPolicy.display().antialias : true }); }
+  catch (e) {
+    const note = document.createElement("div");
+    note.className = "no3d";
+    note.style.cssText = "padding:24px;text-align:center;color:var(--mut,#667);font-size:15px;line-height:1.5";
+    note.textContent = "This device cannot draw the 3D robot. The sliders, the timeline and playing on the robot still work. For the 3D view, open Studio in a newer browser or on a newer computer.";
+    return { noWebGL: true, domElement: note, info: {}, setPixelRatio() {}, setSize() {}, render() {} };
+  }
+}
+const renderer = makeRenderer();
 if (displayPolicy) displayPolicy.applyRenderer(renderer, window.devicePixelRatio);
 else renderer.setPixelRatio(window.devicePixelRatio);
 window.addEventListener('mice-resource-change', function () {
