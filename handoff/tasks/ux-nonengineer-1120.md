@@ -51,3 +51,9 @@ Full QC, then PR. (2026-11-20, claude)
 
 ## File status
 Baseline: 72d5eff. All rows: uncommitted, quick QC pass for check_page_squeeze/designer_first/build_web/systems; full QC running.
+
+## Update 2026-11-20 (PR #135 merged; follow-up branch claude/project-thread-9mxwqn-2)
+Throttled headless Chromium (CPU 4x, 5 Mbit, 40 ms), wire KB / load ms, before -> after:
+Home 266->86 KB, 716->478 ms (warm 595->357); Studio 1447->430 KB, 2914->1415 ms (warm 2964->992);
+Gacha 140->46 KB; TV remote 94->33 KB; Help 1091->850 KB (images were the rest -> lazy + ETag now).
+Not a real Android TV: Studio's 3D scene still needs a real TV measurement.

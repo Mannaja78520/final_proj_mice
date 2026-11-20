@@ -21,8 +21,9 @@ from collections import OrderedDict
 
 # Text a browser reads. Images and STL are already dense or not text.
 SQUEEZE = ("text/", "application/json", "application/javascript", "image/svg+xml")
-# What may be kept and re-validated; everything else is live data.
-STATIC = ("text/html", "text/css", "text/javascript")
+# What may be kept and re-validated (pages, scripts, styles, pictures: Help
+# is 780 KB of screenshots); everything else is live data.
+STATIC = ("text/html", "text/css", "text/javascript", "image/png", "image/jpeg", "image/gif")
 MIN_BYTES = 1024
 KEEP = 24            # squeezed copies kept; ~50 pages and scripts exist
 
