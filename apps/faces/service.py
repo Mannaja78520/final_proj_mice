@@ -65,6 +65,10 @@ LOOPBACK = ("127.0.0.1", "localhost", "::1")
 # This sits beside hub_auth.json instead: out of the served tree, out of
 # promotion (promote.py SKIP_FILES) and out of the exe.
 LOGIN_FILE = "main_python/faces_login.json"
+# The app's FACTORY login, tracked on purpose (it is their public default, not a
+# secret). A customer who changes it writes LOGIN_FILE, which is git-ignored and
+# wins; so a changed password never goes to the cloud and a fresh clone works.
+LOGIN_DEFAULT = "main_python/faces_login.default.json"
 
 # Which milestones fired today (A6-2). Written by the watcher alone, beside
 # the login and for the same reason: out of the served tree and out of git.
@@ -195,6 +199,8 @@ class State:
         # MICE_HUB_AUTH does for the hub password: QC must never read, write
         # or overwrite the real credentials on somebody's machine.
         path = Path(os.environ.get("MICE_FACES_LOGIN") or (CODE / LOGIN_FILE))
+        if not os.environ.get("MICE_FACES_LOGIN") and not path.is_file():
+            path = CODE / LOGIN_DEFAULT                  # no local change: factory login
         if not path.is_file():
             return None, (
                 "no login yet: write %s as "
@@ -905,7 +911,8 @@ class Handler(BaseHTTPRequestHandler):
         raw = json.dumps(body).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        # No Access-Control-Allow-Origin (2026-11-20): "*" let ANY website open in
+        # this PC's browser read who is at the door. Pages here use /api/faces via the hub.
         self.send_header("Content-Length", str(len(raw)))
         self.end_headers()
         self.wfile.write(raw)
