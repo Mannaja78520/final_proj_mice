@@ -18,6 +18,7 @@ you touched (full log in qc/last_run.log), full QC once before merge; grep or
 tail big files (BRIDGE, PLAN.html, app.js, reports/), never read them whole.
 Token rules (all AIs, same text): HANDOFF.md section "Save tokens" (short heartbeat, no polling,
 experiment budget + stop rule, --done-file).
+Shared memory (all AIs, user 2026-11-20): `python tools/memory.py list`; add durable facts with `tools/memory.py add`. Hard or stuck work goes to GPT Codex (`handoff/memory/gpt-overflow-rule.md`).
 
 ## Find the subsystem first (A26-76, user 2026-09-21)
 
