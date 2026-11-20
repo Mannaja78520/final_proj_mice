@@ -39,3 +39,7 @@ Faces service CORS tighten; merge when QC green.
 
 ## Blocked
 Nothing.
+
+## More rows (CORS)
+| apps/faces/service.py | dropped Access-Control-Allow-Origin * on GETs (any website could read arrivals) | done | faces_loopback quick, sabotage caught | this checkpoint |
+| qc/checks/check_faces_loopback.py | asserts no CORS header | done | quick | this checkpoint |

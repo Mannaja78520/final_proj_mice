@@ -905,7 +905,8 @@ class Handler(BaseHTTPRequestHandler):
         raw = json.dumps(body).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        # No Access-Control-Allow-Origin (2026-11-20): "*" let ANY website open in
+        # this PC's browser read who is at the door. Pages here use /api/faces via the hub.
         self.send_header("Content-Length", str(len(raw)))
         self.end_headers()
         self.wfile.write(raw)
