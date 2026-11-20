@@ -144,7 +144,7 @@ function vidPlayBoth() {
     if (mapped.rate < 0.0625) { vidCheckedPlayback.start(v, mapped.ms); return; }
     v.playbackRate = Math.min(4, mapped.rate);
   }
-  v.play().catch(e => vidSay("The video would not play: " + (e.message || e), true));
+  v.play().catch(e => vidSay("The video would not play: " + Mice.Words.plain(e).says, true));
 }
 // Every frame while the page is open: the robot takes the made moves' pose at
 // the video's moment and the skeleton its frame, whether the video plays or

@@ -516,7 +516,7 @@ async function shipRigDefault() {
       $("limStat").textContent = "could not save: " + (r.error || "unknown");
       notice($("limStat").textContent);
     }
-  } catch (e) { $("limStat").textContent = "could not save: " + (e.message || e); notice($("limStat").textContent); }
+  } catch (e) { notice(Mice.fail($("limStat"), "could not save", e)); }
 }
 function loadRigDefault() {
   try {
@@ -593,7 +593,7 @@ function importSettingsFile(input) {
   const rd = new FileReader();
   rd.onload = () => {
     try { applySettings(JSON.parse(rd.result), f.name); }
-    catch (e) { setSettingsStat("could not import: " + (e.message || e)); }
+    catch (e) { setSettingsStat("could not import: " + Mice.Words.plain(e).says); }
     input.value = "";                 // so the same file can be picked again
   };
   rd.readAsText(f);
@@ -611,7 +611,7 @@ async function shareSettings() {
     setSettingsStat(r.ok
       ? "shared from this PC ✓ — on the other PC open Studio, press Find PCs, and Get"
       : "could not share: " + (r.error || "unknown"));
-  } catch (e) { setSettingsStat("could not share: " + (e.message || e)); }
+  } catch (e) { setSettingsStat("could not share: " + Mice.Words.plain(e).says); }
 }
 
 async function findHubs() {
@@ -639,7 +639,7 @@ async function findHubs() {
         + "open Studio and press Share.");
   } catch (e) {
     sel.innerHTML = "<option value=''>search failed</option>";
-    setSettingsStat("could not search: " + (e.message || e));
+    setSettingsStat("could not search: " + Mice.Words.plain(e).says);
   }
 }
 
@@ -651,7 +651,7 @@ async function getSettingsFrom() {
       .then(r => r.json());
     if (b.error) { setSettingsStat("could not get it: " + b.error); return; }
     applySettings(b, host);
-  } catch (e) { setSettingsStat("could not get it: " + (e.message || e)); }
+  } catch (e) { setSettingsStat("could not get it: " + Mice.Words.plain(e).says); }
 }
 function jdir(i) { return BASE_DIR[i] * (RIG.invert[i] ? -1 : 1); }
 
@@ -730,7 +730,21 @@ let boardSafeIdentity = ""; // never save a persistent setting to a different bo
 // --- scene ---
 const viewport = $("viewport");
 const displayPolicy = window.MiceResources;
-const renderer = new THREE.WebGLRenderer({ antialias: displayPolicy ? displayPolicy.display().antialias : true });
+// No WebGL (an old TV or PC browser, a blocked GPU): without a renderer the
+// whole page stopped at start (2026-11-20, Firefox without WebGL: blank view,
+// no sliders, "checking..." forever). Now a stand-in takes the renderer's
+// place, says so in the view, and everything else keeps working.
+function makeRenderer() {
+  try { return new THREE.WebGLRenderer({ antialias: displayPolicy ? displayPolicy.display().antialias : true }); }
+  catch (e) {
+    const note = document.createElement("div");
+    note.className = "no3d";
+    note.style.cssText = "padding:24px;text-align:center;color:var(--mut,#667);font-size:15px;line-height:1.5";
+    note.textContent = "This device cannot draw the 3D robot. The sliders, the timeline and playing on the robot still work. For the 3D view, open Studio in a newer browser or on a newer computer.";
+    return { noWebGL: true, domElement: note, info: {}, setPixelRatio() {}, setSize() {}, render() {} };
+  }
+}
+const renderer = makeRenderer();
 if (displayPolicy) displayPolicy.applyRenderer(renderer, window.devicePixelRatio);
 else renderer.setPixelRatio(window.devicePixelRatio);
 window.addEventListener('mice-resource-change', function () {
@@ -2452,7 +2466,7 @@ async function rigCadShare(cad) {
     if (!r.ok) throw new Error(r.error || "no answer");
     return true;
   } catch (e) {
-    rigCadLast += " Kept on this browser only: the hub did not take it (" + (e.message || e) + ").";
+    rigCadLast += " Kept on this browser only: the hub did not take it (" + Mice.Words.plain(e).says + ").";
     renderRigCadUI();
     return false;
   }
@@ -3646,7 +3660,7 @@ async function checkedPose(goal,ms,epoch,goalRevision,target) {
     catch (e) {
       liveAbort();
       try { await safeDeviceCmd(device,"STOP"); } catch (_) {}
-      safeMotionNote("Movement stopped: " + e.message,true);
+      safeMotionNote("Movement stopped: " + Mice.Words.plain(e).says,true);
       return false;
     }
   });
@@ -3975,7 +3989,7 @@ async function homeFromPose() { // robot home: saved here AND on the robot
         + "Press Home to move there.";
   } catch (e) {
     $("robotStat").textContent = "home saved here, but it did not reach the robot: "
-      + (e.message || e);
+      + Mice.Words.plain(e).says;
   }
 }
 // The Pose tab's two mirror buttons. mirrorLR is kept as the name the page has
@@ -5894,7 +5908,7 @@ async function hubPlay(fromMs) {
   } catch (e) {
     $("robotStat").textContent = "The hub could not start the show, so the robot "
       + "did not move. Check the hub is still running, then press Play again. "
-      + (e.message || e);
+      + Mice.Words.plain(e).says;
     notice($("robotStat").textContent);
     playing=false;$("playBtn").textContent="▶ Play";keepAwake(false);
     return false;
@@ -6105,7 +6119,7 @@ async function exportYaml(opts) {
     if (!opts.keepDraft) markSaved(sig, name, 0);
   } catch (e) {
     $("tlStat").textContent = "export failed — the hub is not answering, or "
-      + "refused the name. Nothing was written. " + (e.message || e);
+      + "refused the name. Nothing was written. " + Mice.Words.plain(e).says;
     notice($("tlStat").textContent);
   }
   await refreshSeqs();
@@ -6612,7 +6626,7 @@ async function sendOffset(i, deg) {
       : JOINT_LABELS[i] + " is now corrected by " + clamped + "°";
   } catch (e) {
     if (st) st.textContent = "saved here, but it did not reach the robot: "
-      + (e.message || e);
+      + Mice.Words.plain(e).says;
   }
 }
 
@@ -6632,7 +6646,7 @@ async function pullOffsets() {
     renderOffsets();
     if (st) st.textContent = "read the offsets the robot is using ✓";
   } catch (e) {
-    if (st) st.textContent = "read failed: " + (e.message || e);
+    if (st) Mice.fail(st, "read failed", e);
     notice($("trimStat").textContent);
   }
 }
@@ -6650,7 +6664,7 @@ async function clearOffsets() {
     await rawCmd("OFFSET ALL 0");
     if (st) st.textContent = "every joint's offset cleared, here and on the robot ✓";
   } catch (e) {
-    if (st) st.textContent = "cleared here, but the robot was not told: " + (e.message || e);
+    if (st) Mice.fail(st, "cleared here, but the robot was not told", e);
   }
 }
 function resetRig() {
@@ -6751,7 +6765,7 @@ async function pushLimits() {
       `start angle, offset)` +
       (useBatch ? "" : " — this board is older than JCFG, so each setting went separately") +
       (have ? "" : " — could not read the robot first, so everything was sent") + " ✓";
-  } catch (e) { $("limStat").textContent = "send failed: " + (e.message || e); notice($("limStat").textContent); }
+  } catch (e) { notice(Mice.fail($("limStat"), "send failed", e)); }
 }
 // read the module's current limits + gear back into the rig
 async function pullLimits() {
@@ -6781,7 +6795,7 @@ async function pullLimits() {
     saveRig(); renderRigUI(); buildRobot(); renderSliders();
     $("limStat").textContent =
       "read limits, gear, start angles and offsets from the robot ✓";
-  } catch (e) { $("limStat").textContent = "read failed: " + (e.message || e); notice($("limStat").textContent); }
+  } catch (e) { notice(Mice.fail($("limStat"), "read failed", e)); }
 }
 // --- edit existing sequences ---
 // Parse a /moves YAML (the format this editor exports and the firmware plays)
@@ -7108,7 +7122,7 @@ async function showOnTimeline(quiet, onlyIfSafe) {
       "from here would save the whole show as one file.";
     return true;
   } catch (e) {
-    $("showStat").textContent = "could not draw the show: " + (e.message || e);
+    Mice.fail($("showStat"), "could not draw the show", e);
     notice($("showStat").textContent);
     return false;
   }
@@ -7126,7 +7140,7 @@ async function saveShow() {
     const j = await showPost("/api/show/save", { show: s });
     $("showStat").textContent = (j.replaced ? "saved over " : "saved ") + s.name + ".";
     refreshShows();
-  } catch (e) { $("showStat").textContent = "not saved: " + (e.message || e); notice($("showStat").textContent); }
+  } catch (e) { notice(Mice.fail($("showStat"), "not saved", e)); }
 }
 async function deleteShow() {
   const n = $("showList").value || readShowForm().name;
@@ -7136,7 +7150,7 @@ async function deleteShow() {
     await showPost("/api/show/delete", { name: n });
     newShow(); refreshShows();
     $("showStat").textContent = n + " deleted (kept in shows/.deleted).";
-  } catch (e) { $("showStat").textContent = "not deleted: " + (e.message || e); notice($("showStat").textContent); }
+  } catch (e) { notice(Mice.fail($("showStat"), "not deleted", e)); }
 }
 async function playShow() {
   const s = readShowForm();
@@ -7151,7 +7165,7 @@ async function playShow() {
     try {
       const j = await showPost("/api/show/yaml", { show: s, limits: showLimits() });
       kept = await keepLastRun(j.yaml, j.file);
-    } catch (e) { kept = "the copy as " + LAST_RUN_FILE + " was not kept: " + (e.message || e); }
+    } catch (e) { kept = "the copy as " + LAST_RUN_FILE + " was not kept: " + Mice.Words.plain(e).says; }
   }
   try {
     await showPost("/api/show/play", { dev, show: s, limits: showLimits() });
@@ -7160,7 +7174,7 @@ async function playShow() {
       (kept ? " Note: " + kept : keepRunOn() && haveRobot()
         ? " A copy is on the robot as " + LAST_RUN_FILE + ", to play from its own page." : "");
     if (kept) notice(kept);
-  } catch (e) { $("showStat").textContent = "did not start: " + (e.message || e); notice($("showStat").textContent); }
+  } catch (e) { notice(Mice.fail($("showStat"), "did not start", e)); }
 }
 // The show ONTO the robot's card (user 2026-10-12: *in shows is there upload to
 // the robot? now only run and save to the PC*). The hub writes the file from the
@@ -7177,7 +7191,7 @@ async function sendShowToRobot() {
     $("showStat").textContent = j.file + " is saved on the robot. The robot can play it " +
       "by itself now: pick it in the robot's list (Sequence tab, or the robot's own page).";
     refreshSd();
-  } catch (e) { $("showStat").textContent = "not sent: " + (e.message || e); notice($("showStat").textContent); }
+  } catch (e) { notice(Mice.fail($("showStat"), "not sent", e)); }
 }
 async function stopShow() {
   try { await fetch("/api/play/stop", { method: "POST" }); $("showStat").textContent = "stopped."; }
@@ -7332,7 +7346,7 @@ async function uploadMusicFile(k, f, pick) {
     if (pick) pick(name, "", renamed); else setKeyCue(k, "play", name);
     musicNote = name + " is on the robot's card — press ▶ to hear it" + renamed;
   } catch (e) {
-    musicNote = "the track did not reach the robot: " + (e.message || e);
+    musicNote = "the track did not reach the robot: " + Mice.Words.plain(e).says;
     if (pick) pick("", musicNote);
   }
   renderTimeline();
@@ -7460,7 +7474,7 @@ function musicRow(k, i) {
     try {
       if (v !== "") await rawCmd("VOL " + v);
       musicNote = await rawCmd("PLAY " + cur);
-    } catch (e) { musicNote = "the robot did not take it: " + (e.message || e); }
+    } catch (e) { musicNote = "the robot did not take it: " + Mice.Words.plain(e).says; }
     renderTimeline();
   };
   const stop = document.createElement("button");
@@ -7468,7 +7482,7 @@ function musicRow(k, i) {
   stop.disabled = !robotLinked();
   stop.title = "stop the sound";
   stop.onclick = async () => {
-    try { musicNote = await rawCmd("PLAY STOP"); } catch (e) { musicNote = String(e.message || e); }
+    try { musicNote = await rawCmd("PLAY STOP"); } catch (e) { musicNote = Mice.Words.plain(e).says; }
     renderTimeline();
   };
   const add = document.createElement("button");
@@ -7602,7 +7616,7 @@ async function editSdSeq(fname) {
   try {
     const text = await sdDownload(fname);
     loadParsedSeq(parseSeqYaml(text), "robot SD " + fname);
-  } catch (e) { $("tlStat").textContent = "cannot read " + fname + ": " + (e.message || e); notice($("tlStat").textContent); }
+  } catch (e) { $("tlStat").textContent = "cannot read " + fname + ": " + Mice.Words.plain(e).says; notice($("tlStat").textContent); }
 }
 // Play a SAVED sequence without first loading it for editing: the same
 // loader Edit uses, then the same Play button — so it plays exactly like an
@@ -7613,7 +7627,7 @@ async function playSavedSeq(sourceLabel, getText) {
   let text;
   try { text = await getText(); }
   catch (e) {
-    stat.textContent = "cannot read " + sourceLabel + ": " + (e.message || e);
+    stat.textContent = "cannot read " + sourceLabel + ": " + Mice.Words.plain(e).says;
     notice(stat.textContent);
     return;
   }
@@ -7661,7 +7675,7 @@ async function putLocalSeqOnRobot() {
       + "from the robot's list here or on its own page.";
     refreshSd();
   } catch (e) {
-    $("tlStat").textContent = f + " was not saved on the robot: " + (e.message || e);
+    $("tlStat").textContent = f + " was not saved on the robot: " + Mice.Words.plain(e).says;
     notice($("tlStat").textContent);
   }
 }
@@ -7678,7 +7692,7 @@ async function deleteLocalSeq() {
     await refreshSeqs();
     seqsChanged();
   } catch (e) {
-    $("tlStat").textContent = "could not delete " + f + ": " + (e.message || e);
+    $("tlStat").textContent = "could not delete " + f + ": " + Mice.Words.plain(e).says;
     notice($("tlStat").textContent);
   }
 }
@@ -8471,7 +8485,7 @@ async function importUrdf() {
       `${parsed.joints.length} joints. ${matched} matched to a body part by ` +
       "name — check them below, then press Use this URDF.";
   } catch (e) {
-    $("urdfStat").textContent = "could not read it: " + (e.message || e);
+    Mice.fail($("urdfStat"), "could not read it", e);
     notice($("urdfStat").textContent);
   }
 }
@@ -8938,7 +8952,7 @@ async function robotCmd(c) {
     $("robotStat").textContent = "> " + c.slice(0, 60) + "  →  " + t.slice(0, 120);
     return t;
   } catch (e) {
-    $("robotStat").textContent = "" + (e.message || e);
+    Mice.fail($("robotStat"), "", e);
     return "";
   }
 }
@@ -8997,7 +9011,7 @@ async function saveSafetySpeed() {
       `${SAFE_DPS} °/s. Restart the board, then reconnect Studio to confirm.` +
       (boardSafePeer ? ` Set linked board #${boardSafePeer} to the same limit.` : "");
   } catch (e) {
-    stat.textContent = "Safety speed not saved: " + (e.message || e);
+    Mice.fail(stat, "Safety speed not saved", e);
     notice(stat.textContent);
   }
 }
@@ -9119,7 +9133,7 @@ async function connectLink() {
     $("safeSpeedStat").textContent = "Disconnected. Reconnect to read the active safety limit.";
     notice($("safeSpeedStat").textContent);
     $("robotStat").textContent = "Could not reach the robot. Check it is powered "
-      + "and on the same network or cable, then try again. " + (e.message || e);
+      + "and on the same network or cable, then try again. " + Mice.Words.plain(e).says;
     notice($("robotStat").textContent);
   }
 }
@@ -9226,7 +9240,7 @@ function livePump() {
           work.resolve(true);
         } catch (e) {
           work.resolve(false);liveAbort();
-          $("robotStat").textContent = "" + (e.message || e);
+          Mice.fail($("robotStat"), "", e);
         }
       }
     } finally { liveBusy = false; }
@@ -9402,7 +9416,7 @@ async function refreshSd() {
       + "network, or it has no card fitted. ";
     const why = document.createElement("span");
     why.className = "hint";                 // the raw reason, demoted
-    why.textContent = e.message || String(e);
+    why.textContent = Mice.Words.plain(e).says;
     const again = document.createElement("button");
     again.textContent = "Try again";
     again.onclick = () => refreshSd();
@@ -9419,7 +9433,7 @@ async function uploadYaml() {
     $("sdStat").textContent =
       `saved ${name}.yaml on the robot — press its ▶ Run button here, or pick it on the robot's own page`;
     refreshSd();
-  } catch (e) { $("sdStat").textContent = "upload failed: " + (e.message || e); notice($("sdStat").textContent); }
+  } catch (e) { notice(Mice.fail($("sdStat"), "upload failed", e)); }
 }
 // Stop any sequence the MODULE is playing on its own.
 //
@@ -9493,7 +9507,7 @@ async function handOffToRobot() {
       + "it keeps going with this page closed. Press Stop to end it.";
   } catch (e) {
     handedOff = false;                       // it did not take: keep previewing
-    safeMotionNote('Could not hand over: '+e.message,true);
+    safeMotionNote('Could not hand over: '+Mice.Words.plain(e).says,true);
   } finally {entryHold=false;}
 }
 
@@ -9534,7 +9548,7 @@ function setKeepRun(on) {
 async function keepLastRun(yaml, file) {
   if (!keepRunOn() || file === LAST_RUN_FILE) return "";
   try { await sdUpload(LAST_RUN_FILE, yaml); return ""; }
-  catch (e) { return "the copy as " + LAST_RUN_FILE + " was not kept: " + (e.message || e); }
+  catch (e) { return "the copy as " + LAST_RUN_FILE + " was not kept: " + Mice.Words.plain(e).says; }
 }
 
 // Send the sequence, THEN play it. This used to send only `MOVE <name>.yaml`,
@@ -9560,7 +9574,7 @@ async function robotRun() {
   } catch (e) {
     cancelSafeMotion('sequence start failed');
     if (st) st.textContent = "could not start the sequence — "
-      + (e && e.message ? e.message : e);
+      + Mice.Words.plain(e).says;
     return;
   }
   if(!started) {if(st)st.textContent='Start cancelled; check the current settings and try again.';return;}
@@ -9664,7 +9678,7 @@ async function monitorTick() {
       (m.moving ? ` | moving (${m.move_left || 0} ms left)` : " | idle") +
       (m.attached === false ? " | relaxed" : "");
   } catch (e) {
-    $("robotStat").textContent = "monitor: no reply (" + (e.message || e) + ")";
+    $("robotStat").textContent = "monitor: no reply (" + Mice.Words.plain(e).says + ")";
     notice($("robotStat").textContent);
   } finally {
     monBusy = false;
@@ -9753,7 +9767,7 @@ async function saveRobotSetting(def) {
     stat.textContent = def.label + " is " + v + (def.unit ? " " + def.unit : "")
       + " on the robot now, and it keeps it after a restart.";
   } catch (e) {
-    stat.textContent = def.label + " was not saved on the robot: " + (e.message || e);
+    stat.textContent = def.label + " was not saved on the robot: " + Mice.Words.plain(e).says;
     notice(stat.textContent);
   }
 }
@@ -11461,7 +11475,7 @@ function vidPlayBoth() {
     if (mapped.rate < 0.0625) { vidCheckedPlayback.start(v, mapped.ms); return; }
     v.playbackRate = Math.min(4, mapped.rate);
   }
-  v.play().catch(e => vidSay("The video would not play: " + (e.message || e), true));
+  v.play().catch(e => vidSay("The video would not play: " + Mice.Words.plain(e).says, true));
 }
 // Every frame while the page is open: the robot takes the made moves' pose at
 // the video's moment and the skeleton its frame, whether the video plays or
@@ -11712,7 +11726,7 @@ async function dummyConnect() {
     const n = v.filter(x => x !== null).length;
     $("dummyStat").textContent = "dummy answers ✓ — " + n + " of " + NJ + " joints have a pot";
   } catch (e) {
-    $("dummyStat").textContent = "no answer from the dummy: " + (e.message || e);
+    Mice.fail($("dummyStat"), "no answer from the dummy", e);
     notice($("dummyStat").textContent);
   }
 }
@@ -11816,7 +11830,7 @@ async function dummyFollowTick() {
       : (mode === "robot" ? "robot + Studio follow" : "Studio follows") + " the dummy"
         + (dummyRec ? " (recording)" : "");
   } catch (e) {
-    $("dummyStat").textContent = "dummy: no answer (" + (e.message || e) + ") — still trying";
+    $("dummyStat").textContent = "dummy: no answer (" + Mice.Words.plain(e).says + ") — still trying";
   }
   if (dummyFollowOn) setTimeout(dummyFollowTick, 80);
 }
@@ -11824,12 +11838,12 @@ async function dummyFollowTick() {
 // ---- the dummy and the sequence -------------------------------------------
 async function dummyToNewKey() {
   try { dummyApply(await dummyRead()); addKey(); $("dummyStat").textContent = "dummy pose saved as move " + selKey; }
-  catch (e) { $("dummyStat").textContent = "" + (e.message || e); }
+  catch (e) { Mice.fail($("dummyStat"), "", e); }
 }
 async function dummyToSelectedKey() {
   if (!keys[selKey]) { $("dummyStat").textContent = "select a move in the timeline first"; return; }
   try { dummyApply(await dummyRead()); updateKey(); $("dummyStat").textContent = "move " + selKey + " now holds the dummy pose"; }
-  catch (e) { $("dummyStat").textContent = "" + (e.message || e); }
+  catch (e) { Mice.fail($("dummyStat"), "", e); }
 }
 // Send the REAL robot to the selected move, at that move's own speed.
 function robotToSelectedKey() {
@@ -12161,7 +12175,7 @@ async function talkFit() {
     talkRender();
     return true;
   } catch (e) {
-    talkSay("The gestures could not be fitted: " + (e.message || e));
+    talkSay("The gestures could not be fitted: " + Mice.Words.plain(e).says);
     return false;
   } finally {
     pose = saved; applyPose();
@@ -12242,7 +12256,7 @@ async function talkSave(change) {
     TALK.lib = j.lib; TALK.revision = j.gestureRevision || TALK.revision;
     talkRender();
     talkCheckFit();
-  } catch (e) { talkSay("Not saved: " + (e.message || e)); notice($("talkStat").textContent); }
+  } catch (e) { talkSay("Not saved: " + Mice.Words.plain(e).says); notice($("talkStat").textContent); }
 }
 function talkSaveSwitch() { talkSave({ on: $("talkOn").checked }); }
 // The events are the Voice page's scenarios: one switch each.

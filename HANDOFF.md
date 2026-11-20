@@ -56,10 +56,10 @@ same file. History is in `docs/BRIDGE.md` and the STATE block of
 ## Shared memory + GPT overflow (user 2026-11-20, all AIs)
 
 - One memory for Claude, GPT, Gemini: `handoff/memory/` (`python tools/memory.py list`).
-  Write each durable fact yourself when you learn it (preference, decision, trap):
-  `python tools/memory.py add <slug> "<line>" <type> "<body>"`. No secrets (public repo).
-- Stuck after 2 tries, or long mechanical work: hand it to GPT Codex through the
-  task file, see `handoff/memory/gpt-overflow-rule.md`.
+  Write each durable fact yourself (`tools/memory.py add <slug> "<line>" <type> "<body>"`),
+  no secrets (public repo); `tools/memory.py stale` lists dead paths.
+- Stuck after 2 tries or long mechanical work: GPT Codex via the task file
+  (`gpt-overflow-rule`). Rule files change only when the user orders it (`rule-files-need-user-order`).
 
 ## Save tokens (user 2026-10-21)
 

@@ -150,7 +150,7 @@ async function importUrdf() {
       `${parsed.joints.length} joints. ${matched} matched to a body part by ` +
       "name — check them below, then press Use this URDF.";
   } catch (e) {
-    $("urdfStat").textContent = "could not read it: " + (e.message || e);
+    Mice.fail($("urdfStat"), "could not read it", e);
     notice($("urdfStat").textContent);
   }
 }

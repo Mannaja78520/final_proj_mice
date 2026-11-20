@@ -18,6 +18,49 @@
  * has no room - mice_nong is near its OTA slot). How to build a page with
  * these: docs/web_style.md. Plain script, no build step, no framework.
  */
+/* An old browser (2026-11-20, an Android TV with Chrome 75 in a VM: Studio and
+ * Home did not start at all). Two things, both small and both here because
+ * every hub page loads this file first:
+ *   1. the few newer browser features the pages use, filled in when missing
+ *      (the newer SYNTAX is lowered at build time: tools/downlevel.js);
+ *   2. if a page still cannot start, one plain sentence instead of a blank
+ *      screen. */
+(function () {
+  var E = window.Element && Element.prototype;
+  if (E && !E.replaceChildren) E.replaceChildren = function () {
+    while (this.firstChild) this.removeChild(this.firstChild);
+    this.append.apply(this, arguments);
+  };
+  function def(obj, name, fn) {
+    if (obj && !obj[name]) Object.defineProperty(obj, name, {value: fn, writable: true, configurable: true});
+  }
+  function at(i) { i = Math.trunc(i) || 0; if (i < 0) i += this.length; return this[i]; }
+  def(Array.prototype, "at", at);
+  def(String.prototype, "at", at);
+  def(String.prototype, "replaceAll", function (a, b) {
+    return typeof a === "string" ? this.split(a).join(b) : this.replace(a, b);
+  });
+  if (!Promise.allSettled) Promise.allSettled = function (list) {
+    return Promise.all(Array.from(list, function (p) {
+      return Promise.resolve(p).then(function (value) { return {status: "fulfilled", value: value}; },
+                                     function (reason) { return {status: "rejected", reason: reason}; });
+    }));
+  };
+  if (window.AbortSignal && !AbortSignal.timeout) AbortSignal.timeout = function (ms) {
+    var c = new AbortController(); setTimeout(function () { c.abort(); }, ms); return c.signal;
+  };
+  window.addEventListener("error", function (e) {
+    if (!/SyntaxError|Unexpected token|Unexpected identifier/i.test(String(e.message || ""))) return;
+    if (document.getElementById("miceOldBrowser") || !document.body) return;
+    var b = document.createElement("div");
+    b.id = "miceOldBrowser";
+    b.setAttribute("role", "alert");
+    b.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99999;padding:16px 20px;background:#b3261e;color:#fff;font:18px/1.4 sans-serif";
+    b.textContent = "This browser is too old to show this page. Update Chrome (or Android System WebView), or open the hub on a computer or a newer phone.";
+    document.body.appendChild(b);
+  });
+})();
+
 (function () {
   "use strict";
 
@@ -68,6 +111,55 @@
     static get(path, opts) { return Api.call(path, opts); }
     static post(path, body, opts) {
       return Api.call(path, Object.assign({method: "POST", body: body}, opts));
+    }
+  }
+
+  /* -------------------------------------------------------------- Words */
+  // What a page says when a call FAILS (user 2026-11-20: the people using this
+  // are business and art staff, not engineers). A catch used to print the
+  // browser's own text - "Failed to fetch", "Unexpected token < in JSON" -
+  // straight onto the screen, 40+ places. Now one table turns it into a
+  // sentence that says what to do; the raw text goes behind the technical
+  // switch. A new case is a new row here, no page changes.
+  const WORDS = [
+    [/abort|timed? ?out/i,                "took too long to answer - wait a moment and try again"],
+    [/failed to fetch|networkerror|load failed|network request|err_connection|refused/i,
+                                          "the hub did not answer - check it is still running and this device is on the same network"],
+    [/json|unexpected token|unexpected end|not valid/i,
+                                          "the hub sent something this page could not read - reload the page"],
+    [/401|log ?in|unauthori[sz]ed/i,      "this needs a login - log in at the top, then try again"],
+    [/403|forbidden|permission/i,         "this account is not allowed to do that"],
+  ];
+  const ENGINE = /undefined|\bnull\b|\bNaN\b|is not a function|is not defined|cannot read|cannot set|TypeError|ReferenceError|SyntaxError|exception|traceback/i;
+  const WORDS_DEFAULT = "something went wrong - try again, and tell the team if it keeps happening";
+  class Words {
+    // {says, tech} for anything a catch received: Error, string, Api answer.
+    static plain(e) {
+      const raw = e && e.says ? (e.tech || e.says)
+                : e && (e.message || e.error) ? String(e.message || e.error)
+                : String(e == null ? "" : e);
+      if (e && e.says) return {says: e.says, tech: e.tech || ""};
+      for (const [re, words] of WORDS) if (re.test(raw)) return {says: words, tech: raw};
+      // A reply the robot or hub wrote for a person ("the arm is not
+      // powered") is kept as it is; only the browser's own wording is not.
+      if (!ENGINE.test(raw) && /^[^{}<>]{4,160}$/.test(raw) && /\s/.test(raw)) return {says: raw, tech: ""};
+      return {says: WORDS_DEFAULT, tech: raw};
+    }
+    // "<what failed>: <what to do>", the raw text in a .tech span; returns the
+    // plain sentence (for a toast: a toast never shows the technical part).
+    static fail(el, doing, e) {
+      const w = Words.plain(e);
+      const says = (doing ? doing + ": " : "") + w.says;
+      if (el) {
+        el.textContent = says;
+        if (w.tech) {
+          const t = document.createElement("span");
+          t.className = "tech mini";
+          t.textContent = " (" + w.tech + ")";
+          el.appendChild(t);
+        }
+      }
+      return says;
     }
   }
 
@@ -329,7 +421,7 @@
     init() {}
   }
 
-  window.Mice = {Api, Status, TopBar, Partner, Tabs, App, here};
+  window.Mice = {Api, Words, fail: Words.fail, Status, TopBar, Partner, Tabs, App, here};
   if (window.miceTheme) window.Mice.theme = window.miceTheme;
   if (window.MiceThemeManager) window.Mice.ThemeManager = window.MiceThemeManager;
 

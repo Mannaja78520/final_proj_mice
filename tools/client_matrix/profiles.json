@@ -1,0 +1,27 @@
+{
+  "_why": "One row per kind of client. cpu = Chromium CPU slowdown factor (a low-end Android TV SoC is roughly 4-6x slower than this server). Add a device: add a row.",
+  "profiles": [
+    {"name": "Android TV 1080p (low-end)", "viewport": {"width": 1920, "height": 1080}, "cpu": 6, "nets": ["wifi-slow"]},
+    {"name": "Android phone low-end (Galaxy S9+)", "device": "Galaxy S9+", "cpu": 4},
+    {"name": "Android tablet (Galaxy Tab S4)", "device": "Galaxy Tab S4 landscape", "cpu": 3},
+    {"name": "iPhone SE (WebKit)", "device": "iPhone SE", "engine": "webkit"},
+    {"name": "iPhone SE (Chromium size)", "device": "iPhone SE", "cpu": 3},
+    {"name": "Old office PC 1366x768", "viewport": {"width": 1366, "height": 768}, "cpu": 4},
+    {"name": "Firefox desktop", "viewport": {"width": 1366, "height": 768}, "engine": "firefox"},
+    {"name": "Modern PC 1920x1080", "viewport": {"width": 1920, "height": 1080}, "cpu": 1}
+  ],
+  "networks": [
+    {"name": "lan", "latency": 2, "down": 100000, "up": 50000},
+    {"name": "wifi-slow", "latency": 80, "down": 3000, "up": 1000},
+    {"name": "3g", "latency": 300, "down": 1600, "up": 750}
+  ],
+  "pages": [
+    {"path": "/", "settle": 1500},
+    {"path": "/studio/", "settle": 2500, "fps": true},
+    {"path": "/app/tv/"},
+    {"path": "/app/gacha/"},
+    {"path": "/app/faces/"},
+    {"path": "/app/voice/"},
+    {"path": "/help"}
+  ]
+}

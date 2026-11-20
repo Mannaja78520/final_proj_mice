@@ -1,17 +1,27 @@
 #include "modules/lift/RgbStrip.h"
 #include "core/HwConfig.h"
 #include "modules/lift/RgbPins.h"   // generated: one case per allowed pin
+#include "sim/MiceSim.h"
+
+// QEMU has no RMT: FastLED.show() would never return. The sim build only counts it.
+#ifdef MICE_SIM
+#define RGB_SHOW() micesim::rgbShown()
+#define RGB_ADD(pin) true
+#else
+#define RGB_SHOW() FastLED.show()
+#define RGB_ADD(pin) rgbAddLeds((pin), leds_, RGB_MAX_LEDS)
+#endif
 
 void RgbStrip::begin(uint16_t count) {
     setCount(count);
     // The wired pin, chosen on the board's own page like every other. A pin
     // this build was not given falls back to the default rather than leaving
     // the strip attached to nothing at all.
-    if (!rgbAddLeds(hw.pins.rgbData, leds_, RGB_MAX_LEDS))
-        rgbAddLeds(RGB_PIN_DEFAULT, leds_, RGB_MAX_LEDS);
+    if (!RGB_ADD(hw.pins.rgbData))
+        RGB_ADD(RGB_PIN_DEFAULT);
     FastLED.setBrightness(bright_);
     fill_solid(leds_, RGB_MAX_LEDS, CRGB::Black);
-    FastLED.show();
+    RGB_SHOW();
 }
 
 void RgbStrip::setCount(uint16_t c) {
@@ -64,5 +74,5 @@ void RgbStrip::render() {
     }
     // keep unused tail of the compile-time buffer dark
     if (count_ < RGB_MAX_LEDS) fill_solid(leds_ + count_, RGB_MAX_LEDS - count_, CRGB::Black);
-    FastLED.show();
+    RGB_SHOW();
 }

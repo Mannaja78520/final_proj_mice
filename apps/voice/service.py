@@ -2872,8 +2872,10 @@ class Brain:
         lets it point at a throwaway login, exactly as MICE_PARTNERS points at
         a fake face app.
         """
-        return Path(os.environ.get("MICE_FACES_LOGIN")
-                    or (CODE / "main_python" / "faces_login.json"))
+        if os.environ.get("MICE_FACES_LOGIN"):
+            return Path(os.environ["MICE_FACES_LOGIN"])
+        mine = CODE / "main_python" / "faces_login.json"      # this PC's changed login wins
+        return mine if mine.is_file() else CODE / "main_python" / "faces_login.default.json"
 
     def _reconize_login(self, timeout=3.0):
         """A Reconize token, cached for half an hour. '' when it cannot log in."""

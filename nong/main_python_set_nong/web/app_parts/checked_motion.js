@@ -139,7 +139,7 @@ async function checkedPose(goal,ms,epoch,goalRevision,target) {
     catch (e) {
       liveAbort();
       try { await safeDeviceCmd(device,"STOP"); } catch (_) {}
-      safeMotionNote("Movement stopped: " + e.message,true);
+      safeMotionNote("Movement stopped: " + Mice.Words.plain(e).says,true);
       return false;
     }
   });

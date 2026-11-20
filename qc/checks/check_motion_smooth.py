@@ -300,7 +300,8 @@ DRIVER = """
 function report(s){ qcMark("MS~" + s); }
 window.addEventListener("load", function(){ qcWaitFor(function(){
     return typeof MotionSmooth === "function" && typeof motionSmooth === "object" && SMOOTH && SMOOTH.on
-           && typeof buildYaml === "function" && typeof VideoMotionSmoother === "function";
+           && typeof buildYaml === "function" && typeof VideoMotionSmoother === "function"
+           && typeof VIDEO_FOLLOW === "object" && VIDEO_FOLLOW;   // its settings load by fetch: 2026-11-20 the driver raced it
   }, 20000).then(function(ready){
   if (!ready) { report("ERR-the-app-never-finished-loading"); report("done"); return; }
   try{

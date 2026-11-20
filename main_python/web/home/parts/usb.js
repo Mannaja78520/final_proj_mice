@@ -40,7 +40,7 @@ function renderUsbResult(slot,u){
           renderUsbResult(slot,got);
         }catch(e){
           renderUsbResult(slot,{port:u.port,
-            error:'could not ask the hub ('+(e.message||e)+')'});
+            error:'could not ask the hub ('+Mice.Words.plain(e).says+')'});
         }
       };
       head.appendChild(b);

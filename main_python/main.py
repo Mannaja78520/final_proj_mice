@@ -1539,6 +1539,8 @@ import hub_api_apps  # noqa: E402
 hub_api_apps.bind(sys.modules[__name__])
 import hub_api_extensions  # noqa: E402
 hub_api_extensions.bind(sys.modules[__name__])
+import hub_compress  # noqa: E402
+import hub_legacy  # noqa: E402
 import hub_api_resources  # noqa: E402
 hub_api_resources.bind(sys.modules[__name__])
 import voice_helper  # noqa: E402
@@ -1602,12 +1604,39 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         # parsed as the NEXT request's first line (400 on the call after it).
         if self.command == "POST":
             self.drain()
+        # Smaller and "unchanged" answers (hub_compress.py): a TV browser
+        # should not re-download a 650 KB script it already has.
+        sq = hub_compress.SQUEEZER
+        cache, tag = "no-store", None
+        if (self.command == "GET" and code == 200 and sq.is_static(ctype)
+                and not any(k.lower() == "cache-control" and v != "no-store"
+                            for k, v in headers)):
+            cache, tag = "no-cache", '"' + sq.digest(data) + '"'
+            if self.headers.get("If-None-Match") == tag:
+                self.send_response(304)
+                self.send_header("ETag", tag)
+                self.send_header("Cache-Control", cache)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+        packed = False
+        if (self.command != "HEAD" and sq.can_squeeze(ctype, len(data))
+                and sq.wants_gzip(self.headers.get("Accept-Encoding"))):
+            data = sq.squeeze(data, tag.strip('"') if tag else sq.digest(data))
+            packed = True
         self.send_response(code)
         for k, v in headers:
-            self.send_header(k, v)
+            if k.lower() != "cache-control":
+                self.send_header(k, v)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", cache)
+        if tag:
+            self.send_header("ETag", tag)
+        if sq.can_squeeze(ctype, 1 << 20):
+            self.send_header("Vary", "Accept-Encoding")
+        if packed:
+            self.send_header("Content-Encoding", "gzip")
         self.end_headers()
         self.wfile.write(data)
 
@@ -2067,6 +2096,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 return self.send_err("forbidden", 403)
             if not f.is_file():
                 return self.send_err("not found: " + path, 404)
+            f = hub_legacy.pick(f, self.headers.get("User-Agent"))
             return self.send_bytes(f.read_bytes(),
                                    MIME.get(f.suffix.lower(), "application/octet-stream"))
 
@@ -2107,8 +2137,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
             source = (SHARED_WEB / path[1:]).read_bytes()
             if path == "/mice.js":
                 source = hub_api_resources.browser_bootstrap() + source
-            return self.send_bytes(source, "text/javascript; charset=utf-8",
-                                   headers=[("Cache-Control", "no-store")])
+            return self.send_bytes(source, "text/javascript; charset=utf-8")
 
         if path == "/mice.css":
             # One design system for every surface. This route must stay ABOVE
@@ -2207,6 +2236,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 return self.send_err("forbidden", 403)
         if not f.is_file():
             return self.send_err("not found: " + path, 404)
+        f = hub_legacy.pick(f, self.headers.get("User-Agent"))
         self.send_bytes(f.read_bytes(), MIME.get(f.suffix.lower(), "application/octet-stream"))
 
     # ------------------------------------------------------------ login

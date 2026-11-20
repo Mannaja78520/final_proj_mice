@@ -300,7 +300,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
     } catch (e) {
       if (box) box.hidden = false;
       if (vid) vid.hidden = true;              // an empty frame reads as "broken"
-      this.sayCam("the camera could not be shown: " + (e.message || e));
+      this.sayCam("the camera could not be shown: " + Mice.Words.plain(e).says);
     }
   }
 
@@ -455,7 +455,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
       const r = await this.lookOnce();
       if (r.ok && r.person) this.say("Hello " + r.person);
     } catch (e) {
-      this.sayCam(e.message || String(e));
+      this.sayCam(Mice.Words.plain(e).says);
     }
   }
 
@@ -490,7 +490,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
       const r = await this.lookOnce();
       if (r.ok && r.person) this.say("Hello " + r.person);
     } catch (e) {
-      if (line) line.textContent = "the camera could not be used: " + (e.message || e);
+      if (line) Mice.fail(line, "the camera could not be used", e);
     } finally {
       if (!this.autoFaceOn() && !this.viewOn()) this.closeCam();
       if (btn) btn.disabled = false;
@@ -518,7 +518,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
       await this.openCam();
     } catch (e) {
       const line = this.$("camSay");
-      if (line) line.textContent = "the camera could not be used: " + (e.message || e);
+      if (line) Mice.fail(line, "the camera could not be used", e);
       this.$("autoFace").checked = false;
       return;
     }
@@ -589,7 +589,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
       this.pollFace();
     } catch (e) {
       if (tab && !tab.closed) tab.close();
-      this.say("Could not open face recognition: " + (e.message || e));
+      this.say("Could not open face recognition: " + Mice.Words.plain(e).says);
     } finally {
       if (btn) btn.disabled = false;
     }

@@ -180,7 +180,7 @@ async function homeFromPose() { // robot home: saved here AND on the robot
         + "Press Home to move there.";
   } catch (e) {
     $("robotStat").textContent = "home saved here, but it did not reach the robot: "
-      + (e.message || e);
+      + Mice.Words.plain(e).says;
   }
 }
 // The Pose tab's two mirror buttons. mirrorLR is kept as the name the page has

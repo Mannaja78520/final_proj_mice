@@ -497,7 +497,7 @@ async function sendOffset(i, deg) {
       : JOINT_LABELS[i] + " is now corrected by " + clamped + "°";
   } catch (e) {
     if (st) st.textContent = "saved here, but it did not reach the robot: "
-      + (e.message || e);
+      + Mice.Words.plain(e).says;
   }
 }
 
@@ -517,7 +517,7 @@ async function pullOffsets() {
     renderOffsets();
     if (st) st.textContent = "read the offsets the robot is using ✓";
   } catch (e) {
-    if (st) st.textContent = "read failed: " + (e.message || e);
+    if (st) Mice.fail(st, "read failed", e);
     notice($("trimStat").textContent);
   }
 }
@@ -535,7 +535,7 @@ async function clearOffsets() {
     await rawCmd("OFFSET ALL 0");
     if (st) st.textContent = "every joint's offset cleared, here and on the robot ✓";
   } catch (e) {
-    if (st) st.textContent = "cleared here, but the robot was not told: " + (e.message || e);
+    if (st) Mice.fail(st, "cleared here, but the robot was not told", e);
   }
 }
 function resetRig() {
@@ -636,7 +636,7 @@ async function pushLimits() {
       `start angle, offset)` +
       (useBatch ? "" : " — this board is older than JCFG, so each setting went separately") +
       (have ? "" : " — could not read the robot first, so everything was sent") + " ✓";
-  } catch (e) { $("limStat").textContent = "send failed: " + (e.message || e); notice($("limStat").textContent); }
+  } catch (e) { notice(Mice.fail($("limStat"), "send failed", e)); }
 }
 // read the module's current limits + gear back into the rig
 async function pullLimits() {
@@ -666,5 +666,5 @@ async function pullLimits() {
     saveRig(); renderRigUI(); buildRobot(); renderSliders();
     $("limStat").textContent =
       "read limits, gear, start angles and offsets from the robot ✓";
-  } catch (e) { $("limStat").textContent = "read failed: " + (e.message || e); notice($("limStat").textContent); }
+  } catch (e) { notice(Mice.fail($("limStat"), "read failed", e)); }
 }

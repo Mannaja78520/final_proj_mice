@@ -978,7 +978,7 @@ async function stopEverything(){
   }catch(e){
     // A stop that failed must SHOUT. Silence here reads as "it worked".
     said.className = 'banner err';
-    said.textContent = 'The stop did not reach the hub (' + (e.message||e) +
+    said.textContent = 'The stop did not reach the hub (' + Mice.Words.plain(e).says +
                        '). Use the power switch.';
     said.hidden = false;
   }finally{
@@ -1036,7 +1036,7 @@ async function submitReport(){
     var said = document.getElementById('stopSaid');
     if(said){
       said.className = 'banner err';
-      said.textContent = 'Report failed (' + (e.message||e) + '). Try again or copy the text and email it.';
+      said.textContent = 'Report failed (' + Mice.Words.plain(e).says + '). Try again or copy the text and email it.';
       said.hidden = false;
     }
   }
@@ -1086,7 +1086,7 @@ async function loadComplaints(){
       el.appendChild(row);
     });
   }catch(e){
-    el.textContent = 'Failed to load: ' + (e && e.message || e);
+    el.textContent = 'Failed to load: ' + Mice.Words.plain(e).says;
   }
 }
 
@@ -1803,7 +1803,7 @@ async function scan(force){
     el.replaceChildren();
     if((window.MODS || []).length) repaintMods();
     const warning = '<div class="banner err" role="alert">Could not reach the hub just now — '+
-      esc(String(e && e.message || e))+
+      esc(Mice.Words.plain(e).says)+
       ' <button onclick="scan(true)">Try again</button></div>' +
       ((window.MODS || []).length ? '<div class="stale">showing what was found '+agoText(modsAt)+
         ' — these may no longer be there</div>' : '');
@@ -2156,7 +2156,7 @@ function renderUsbResult(slot,u){
           renderUsbResult(slot,got);
         }catch(e){
           renderUsbResult(slot,{port:u.port,
-            error:'could not ask the hub ('+(e.message||e)+')'});
+            error:'could not ask the hub ('+Mice.Words.plain(e).says+')'});
         }
       };
       head.appendChild(b);
@@ -2273,7 +2273,7 @@ async function loadShared(force){
     // "could not look" is a different fact from "found nothing", and saying
     // the second when the first is true is the page lying.
     box.innerHTML = 'Could not check for other PCs — this hub did not answer. '
-      + '<span style="color:var(--mut)">'+esc(String(e.message||e))+'</span> '
+      + '<span style="color:var(--mut)">'+esc(Mice.Words.plain(e).says)+'</span> '
       + '<button onclick="loadShared(true)">Try again</button>';
     return;
   }
@@ -2390,13 +2390,13 @@ async function scanUsb(){
           .then(r=>renderUsbResult(slot,(r&&r.usb&&r.usb[0])||
                  {port:p.port,error:'no answer from that port'}))
           .catch(e=>{slot.innerHTML='<div class="mini">'+esc(p.port)+
-            ' — could not check this cable. '+esc(String(e.message||e))+'</div>';}));
+            ' — could not check this cable. '+esc(Mice.Words.plain(e).says)+'</div>';}));
       }
     });
     await Promise.all(jobs);
   }catch(e){
     el.innerHTML='<span class="mini">Could not check the USB cables. Is the hub '
-      +'still running? <span style="color:var(--mut)">'+esc(String(e.message||e))
+      +'still running? <span style="color:var(--mut)">'+esc(Mice.Words.plain(e).says)
       +'</span></span> <button onclick="scanUsb()">Try again</button>';
   }
   usbBusy=false;
@@ -2771,7 +2771,7 @@ async function checkUpdate(){
   say.textContent = 'asking GitHub…';
   let s;
   try{ s = await fetch('/api/selfupdate').then(r => r.json()); }
-  catch(e){ say.textContent = '⚠ ' + (e && e.message || e); return; }
+  catch(e){ say.textContent = '⚠ ' + Mice.Words.plain(e).says; return; }
   if (!s.can){
     // No internet is the ordinary case at a venue, so this is a plain
     // sentence rather than an error.
@@ -2791,7 +2791,7 @@ async function checkUpdate(){
     say.textContent = 'downloading…';
     let r;
     try{ r = await fetch('/api/selfupdate', {method: 'POST'}).then(x => x.json()); }
-    catch(e){ say.textContent = '⚠ ' + (e && e.message || e); return; }
+    catch(e){ say.textContent = '⚠ ' + Mice.Words.plain(e).says; return; }
     say.textContent = (r.ok ? '✓ ' : '⚠ ') + (r.message || '');
   };
   say.appendChild(line);
@@ -2829,7 +2829,7 @@ async function copyDiag(){
   try{
     text = await fetch('/api/diag').then(r => r.text());
   }catch(e){
-    say.textContent = '⚠ could not reach the hub: ' + (e && e.message || e);
+    say.textContent = '⚠ could not reach the hub: ' + Mice.Words.plain(e).says;
     return;
   }
   showDiag(text);

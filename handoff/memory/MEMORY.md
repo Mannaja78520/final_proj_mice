@@ -11,6 +11,7 @@ Read this index, open only the files that match your task. Add a fact with
 
 - [gpt-overflow-rule](gpt-overflow-rule.md): When Claude hands hard, stuck or overflow work to GPT Codex
 - [public-repo-rules](public-repo-rules.md): The repo is public: what must never be committed
+- [rule-files-need-user-order](rule-files-need-user-order.md): AI edits rule files only when the user orders it
 - [token-saving-rules](token-saving-rules.md): Token and usage rules that apply to Claude, GPT and Gemini alike
 
 ## project

@@ -46,3 +46,12 @@ def run(t):
         t.ok(any("leak.md" in p for p in M.problems()), "an e-mail address is refused", "personal data would reach the public repo")
         M.cmd_add("leak", "bad", "user", "x" * 5000)
         t.ok(any("bytes" in p for p in M.problems()), "an oversized fact is refused", "recall would truncate it")
+
+    # stale: a path that does not exist is reported, one that does is not.
+    with tempfile.TemporaryDirectory() as tmp:
+        M.MEM = Path(tmp)
+        M.INDEX = Path(tmp) / "MEMORY.md"
+        M.cmd_add("paths", "d", "project", "see `HANDOFF.md` and `no/such/file.py`")
+        gone = M.stale()
+        t.ok(len(gone) == 1 and "no/such/file.py" in gone[0], "stale names only the missing path",
+             "; ".join(gone))

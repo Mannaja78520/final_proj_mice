@@ -4,6 +4,7 @@
     python tools/memory.py add <slug> "<one line>" <type> "<body>"   write or replace one fact
     python tools/memory.py index                      rebuild MEMORY.md from the files
     python tools/memory.py check                      validate (QC runs this)
+    python tools/memory.py stale                      paths a memory names that no longer exist
 
 WHY (user 2026-11-20): each AI had its own memory (Claude's lives in the cloud,
 GPT and Gemini had none), so a fact told to one was lost to the others. The
@@ -90,6 +91,22 @@ def problems():
     return out
 
 
+PATHISH = re.compile(r"`((?:[\w.-]+/)*[\w.-]+(?:\.[a-z]{1,5}|/))`")
+
+
+def stale():
+    """Repo paths named in backticks that are gone: the memory is probably out of date.
+    Report only (user 2026-11-20: a person or the AI decides what to prune)."""
+    out = []
+    for p in files():
+        for ref in sorted(set(PATHISH.findall(p.read_text(encoding="utf-8")))):
+            if "*" in ref or ref.startswith(("python", "http")):
+                continue
+            if not (ROOT / ref).exists():
+                out.append("%s names %s, which does not exist" % (p.name, ref))
+    return out
+
+
 def main(argv):
     if argv[:1] == ["list"]:
         print(INDEX.read_text(encoding="utf-8") if INDEX.is_file() else "no memory yet")
@@ -101,6 +118,10 @@ def main(argv):
         bad = problems()
         print("\n".join(bad) or "memory ok")
         sys.exit(1 if bad else 0)
+    elif argv[:1] == ["stale"]:
+        gone = stale()
+        print("\n".join(gone) or "no stale paths")
+        sys.exit(1 if gone else 0)
     else:
         sys.exit(__doc__.split("\n\n", 2)[1])
 
