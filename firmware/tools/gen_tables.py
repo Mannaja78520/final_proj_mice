@@ -917,6 +917,46 @@ CAM_PIN_ORDER = ("pwdn", "reset", "xclk", "siod", "sioc",
                  "vsync", "href", "pclk")
 
 
+# What each chip family cannot give a camera. A pin map that breaks one of these
+# is a typo or a board for the other chip, and on the real board it would drive
+# the flash or PSRAM lines. Data, so the next chip is one more entry here.
+#   max      highest GPIO the chip has
+#   reserved GPIOs that are flash/PSRAM/USB and must never be a camera pin
+#   input    GPIOs that cannot be outputs (a camera needs outputs for
+#            pwdn/reset/xclk/siod/sioc)
+CAM_CHIP_RULES = {
+    "esp32": {"max": 39, "reserved": set(range(6, 12)), "input": {34, 35, 36, 39}},
+    # S3: 26-32 flash/PSRAM, 33-37 octal PSRAM, 19-20 USB, 22-25 do not exist (GPIO 21 is fine)
+    "esp32s3": {"max": 48, "reserved": {19, 20} | set(range(22, 38)), "input": set()},
+}
+CAM_OUTPUT_PINS = ("pwdn", "reset", "xclk", "siod", "sioc")
+
+
+def cam_check_pins(key, chip, pins, extra):
+    """Refuse a camera pin map that cannot work on its chip."""
+    rules = CAM_CHIP_RULES[chip]
+    used = {}
+    allp = dict(pins)
+    for k in ("flash", "led"):
+        allp[k] = int(extra.get(k, -1))
+    for name, v in allp.items():
+        if v < 0:
+            continue
+        if v > rules["max"]:
+            raise SystemExit("camera board %r: %s is GPIO %d, but a %s has "
+                             "none above %d" % (key, name, v, chip, rules["max"]))
+        if v in rules["reserved"]:
+            raise SystemExit("camera board %r: %s is GPIO %d, a flash/PSRAM/USB "
+                             "line on a %s" % (key, name, v, chip))
+        if name in CAM_OUTPUT_PINS and v in rules["input"]:
+            raise SystemExit("camera board %r: %s is GPIO %d, which is "
+                             "input-only on a %s" % (key, name, v, chip))
+        if v in used and name not in ("flash", "led"):
+            raise SystemExit("camera board %r: GPIO %d is used for both %s and "
+                             "%s" % (key, v, used[v], name))
+        used.setdefault(v, name)
+
+
 def gen_cam_boards(out, types):
     """config/cam_boards.json -> modules/cam/CamBoards.h
 
@@ -952,6 +992,11 @@ def gen_cam_boards(out, types):
         # data line. -1 means this board has none, and the firmware then drives
         # nothing rather than guessing.
         ex = b.get("extra") or {}
+        chip = b.get("chip", "esp32")
+        if chip not in CAM_CHIP_RULES:
+            raise SystemExit("camera board %r: chip %r is not one of %s"
+                             % (key, chip, ", ".join(sorted(CAM_CHIP_RULES))))
+        cam_check_pins(key, chip, pins, ex)
         nums = ", ".join("%3d" % pins[k] for k in CAM_PIN_ORDER)
         # An S3 pin map tried on a classic chip (or the reverse) would configure
         # GPIOs that are flash or PSRAM lines on the other chip, so each chip

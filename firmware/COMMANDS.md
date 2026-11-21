@@ -198,6 +198,10 @@ Frame format (ASCII lines ending with `\n`):
                        bus behind 12 (broadcasts never cross a bridge on their own). A board with a
                        second link ends its `CHIPS` reply with ` G`.
 
+Over WiFi, a `#...` line sent to `GET /api/cmd?c=` answers "-> sent"; the reply is read from
+`GET /api/busreplies?after=N` (lines `"<seq> @<addr> <reply>"`, last 8 kept, same login rule as a read
+command). The hub does this for `wifi:<ip>:>12>7` (commands only, not files/status).
+
 Past ~12 boards a plain `#* PING` is unreliable (about ten boards share each
 10 ms slot and destroy each other's replies); the hub then asks range by range.
 Boards on older firmware ignore `CHIPS` and `#~`, and answer a ranged PING like a
@@ -883,6 +887,8 @@ Hardware pins page does not offer them.
 | `SNAP <file>` | `OK saved /photos/front.jpg` | save it to the SD card (`/photos`, `.jpg` added if missing) |
 | `CAM` | `CAM size=svga quality=12 flash=off vflip=0 hmirror=0 psram=1 shots=3` | what the sensor is set to |
 | `CAM SIZE <name>` | `OK size=vga` | `qqvga qvga vga svga xga sxga uxga` — above SVGA needs PSRAM |
+| `CAM BOARD` | `CAM BOARD auto running=ai-thinker known=ai-thinker,esp-eye,...` | which camera board is chosen, which one is running, and the boards this build knows (an S3 build lists only S3 boards) |
+| `CAM BOARD <name>\|AUTO` | `OK camera board esp-eye - takes effect after a reboot (REBOOT)` | pick the board by hand; it is tried FIRST at boot, and if it does not answer the others are still tried. Kept in NVS |
 | `CAM QUALITY <10-63>` | `OK quality=12` | 10 is the best picture, 63 the smallest file |
 | `CAM FLASH ON\|OFF` | `OK flash=on` | the white flood LED (GPIO 4, shared with the SD card's data line) |
 | `CAM LIST` | `CAM CONTROLS 24` then one line each: `brightness=0 range -2..2 def=0` | every setting the sensor has, with its value, range and default |

@@ -66,7 +66,7 @@ def run(t):
 
     # The flag has to be the RIGHT one, and only on Windows: CREATE_NO_WINDOW
     # does not exist on Linux, where reading it would crash the hub at import.
-    for name in ("main_python/main.py", "apps/voice/service.py"):
+    for name in ("main_python/main.py", "apps/voice/speaker.py"):   # NO_WINDOW lives in speaker.py since the Brain split
         src = (F.CODE / name).read_text(encoding="utf-8", errors="replace")
         t.ok('getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0' in src,
              "%s asks for CREATE_NO_WINDOW, and only on Windows" % name,

@@ -5,6 +5,8 @@
 #include <esp_camera.h>
 #include <Wire.h>   // SCCB is I2C: the probe reads the sensor id directly
 #include <SD.h>
+#include <Preferences.h>
+#include "modules/cam/CamPick.h"
 
 // Sizes a person would ask for, smallest first. Anything above SVGA needs
 // PSRAM; begin() lowers the starting size when there is none rather than
@@ -192,6 +194,27 @@ void CamModule::adoptLeds(const String& name) {
     }
 }
 
+// One board's pins into the driver config, then init. Split out so the chosen
+// board and the search loop share the one place the pin order is written.
+esp_err_t CamModule::initBoard(camera_config_t& c, const CamPins& m) {
+    c.pin_pwdn = m.pwdn;   c.pin_reset = m.reset;
+    c.pin_xclk = m.xclk;
+    c.pin_sccb_sda = m.siod; c.pin_sccb_scl = m.sioc;
+    c.pin_d7 = m.y9; c.pin_d6 = m.y8; c.pin_d5 = m.y7; c.pin_d4 = m.y6;
+    c.pin_d3 = m.y5; c.pin_d2 = m.y4; c.pin_d1 = m.y3; c.pin_d0 = m.y2;
+    c.pin_vsync = m.vsync; c.pin_href = m.href; c.pin_pclk = m.pclk;
+    return esp_camera_init(&c);
+}
+
+// The board a person chose with CAM BOARD, "" for auto. NVS namespace "cam".
+String CamModule::wantedBoard() {
+    Preferences p;
+    if (!p.begin("cam", true)) return "";
+    String v = p.getString("board", "");
+    p.end();
+    return v;
+}
+
 void CamModule::begin() {
     // The flood LED is set up AFTER the board is known (see below): driving a
     // compiled-in GPIO 4 on a board that has no flood LED means driving one of
@@ -247,11 +270,39 @@ void CamModule::begin() {
     // On an S3 the compiled-in pins are the AI-Thinker's, and several of those
     // (26-32) are the S3's flash and PSRAM lines: never drive them. The S3
     // starts straight at its own rows in the table.
+    //
+    // A board NAMED by a person (CAM BOARD <name>, kept in NVS) goes before
+    // all of that: they may know which of two look-alike maps they hold.
+    const camera_config_t base = c;
     esp_err_t err = ESP_FAIL;
+    int order[CAM_BOARD_COUNT];
+    String want = wantedBoard();
+    const char* names[CAM_BOARD_COUNT];
+    for (int b = 0; b < CAM_BOARD_COUNT; b++) names[b] = CAM_BOARDS[b].name;
+    int wantIdx = camFindBoard(names, CAM_BOARD_COUNT, want.c_str());
+    camTryOrder(CAM_BOARD_COUNT, wantIdx, order);
+    if (wantIdx >= 0) {
+        err = initBoard(c, CAM_BOARDS[wantIdx]);
+        if (err == ESP_OK) {
+            board_ = CAM_BOARDS[wantIdx].name;
+            adoptLeds(board_);
+            LOGF(cam, "board %s, as chosen with CAM BOARD", board_.c_str());
+        } else {
+            LOGF(cam, "the chosen board %s did not answer - trying the others",
+                 want.c_str());
+            esp_camera_deinit();
+            c = base;
+        }
+    } else if (want.length()) {
+        LOGF(cam, "CAM BOARD %s is not a board this build knows - auto", want.c_str());
+    }
 #if !CONFIG_IDF_TARGET_ESP32S3
-    err = esp_camera_init(&c);
+    if (err != ESP_OK) err = esp_camera_init(&c);
+    bool compiledIn = (err == ESP_OK) && board_.length() == 0;
+#else
+    bool compiledIn = false;
 #endif
-    if (err == ESP_OK) {
+    if (compiledIn) {
         // IT STILL HAS TO SAY WHICH BOARD. The compiled-in pins are a board -
         // they are one of the rows in the table - and leaving board_ empty
         // because the first attempt happened to work meant the commonest board
@@ -271,16 +322,11 @@ void CamModule::begin() {
         adoptLeds(board_);
         LOGF(cam, "camera started on the compiled-in pins (%s)", board_.c_str());
     }
-    for (int b = 0; err != ESP_OK && b < CAM_BOARD_COUNT; b++) {
-        const CamPins& m = CAM_BOARDS[b];
+    for (int k = 0; err != ESP_OK && k < CAM_BOARD_COUNT; k++) {
+        const CamPins& m = CAM_BOARDS[order[k]];
+        if (order[k] == wantIdx) continue;   // already tried first
         esp_camera_deinit();
-        c.pin_pwdn = m.pwdn;   c.pin_reset = m.reset;
-        c.pin_xclk = m.xclk;
-        c.pin_sccb_sda = m.siod; c.pin_sccb_scl = m.sioc;
-        c.pin_d7 = m.y9; c.pin_d6 = m.y8; c.pin_d5 = m.y7; c.pin_d4 = m.y6;
-        c.pin_d3 = m.y5; c.pin_d2 = m.y4; c.pin_d1 = m.y3; c.pin_d0 = m.y2;
-        c.pin_vsync = m.vsync; c.pin_href = m.href; c.pin_pclk = m.pclk;
-        err = esp_camera_init(&c);
+        err = initBoard(c, m);
         if (err == ESP_OK) {
             board_ = m.name;
             adoptLeds(board_);
@@ -565,7 +611,36 @@ bool CamModule::handleCommand(String* argv, int argc, String& reply) {
             reply = "OK " + String(c->name) + "=" + String(v);
             return true;
         }
-        reply = "ERR CAM [SIZE <name>|QUALITY <10-63>|FLASH ON|OFF|VFLIP 0|1"
+        if (argc >= 2) {
+            String sub = argv[1]; sub.toUpperCase();
+            if (sub == "BOARD") {
+                if (argc == 2) {
+                    String w = wantedBoard();
+                    reply = "CAM BOARD " + String(w.length() ? w : "auto") +
+                            " running=" + board_ + " known=";
+                    for (int b = 0; b < CAM_BOARD_COUNT; b++)
+                        reply += String(b ? "," : "") + CAM_BOARDS[b].name;
+                    return true;
+                }
+                String v = argv[2];
+                v.toLowerCase();
+                const char* names[CAM_BOARD_COUNT];
+                for (int b = 0; b < CAM_BOARD_COUNT; b++) names[b] = CAM_BOARDS[b].name;
+                bool autoPick = (v == "auto");
+                if (!autoPick && camFindBoard(names, CAM_BOARD_COUNT, v.c_str()) < 0) {
+                    reply = "ERR no board called " + v + " in this build - CAM BOARD lists them";
+                    return true;
+                }
+                Preferences p;
+                if (!p.begin("cam", false)) { reply = "ERR cannot save"; return true; }
+                if (autoPick) p.remove("board"); else p.putString("board", v);
+                p.end();
+                reply = "OK camera board " + String(autoPick ? "auto" : v) +
+                        " - takes effect after a reboot (REBOOT)";
+                return true;
+            }
+        }
+        reply = "ERR CAM [SIZE <name>|BOARD [<name>|AUTO]|QUALITY <10-63>|FLASH ON|OFF|VFLIP 0|1"
                 "|HMIRROR 0|1|LIST|SET <name> <value>|AUTO]";
         return true;
     }

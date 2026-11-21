@@ -42,3 +42,7 @@ docs/architecture/scorecard-2026-11-21.md, docs/experiments/experiment-records.m
 ## Update 2026-11-21 (branch claude/brain-split-translate, off #150)
 - Moved Translator (translate, translate_text, translate_all) to apps/voice/translator.py and detect_lang/scripts_in to apps/voice/langs.py; Brain(FaceLink, Translator). service.py 3913 -> 3200 lines. Voice/resource/systems QC 1251 pass (cloud, fakes). check_resource_policy now parses translator.py too.
 - PC latency run requested via Remote Control (numbers pending).
+
+## Update 2026-11-21 (branch claude/brain-split-speaker)
+- Brain now Brain(FaceLink, Translator, Listener, Speaker). Speaker (voices, cache, manner, Edge/Windows engines, scenarios) in apps/voice/speaker.py; speaker uses self._m().CODE / .subprocess = the Brain's own module globals, so checks that swap mod.CODE keep working. service.py 3913 -> ~2000 lines.
+- Next: FAQ/answer prompt (_think_prompt, generate, faq_*) out of Brain; main.py (3050 lines).

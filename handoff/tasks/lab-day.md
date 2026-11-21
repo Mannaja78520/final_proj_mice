@@ -82,6 +82,11 @@ nothing - waiting for the lab.
 - [ ] A13-4: second PC on the same WiFi.
 - [ ] A9-2 / A9-3 (optional): TV legibility at 3 m, keyboard / remote only.
 
+### 4b. Camera boards (cam support thread 2026-11-21, nothing below was tried on a board)
+- [ ] Flash `mice_cam` on any AI-Thinker/ESP-EYE/M5Stack/WROVER/T-Journal board: `CAM` shows the right `board=`; `CAM BOARD <name>` then REBOOT picks it; `CAM BOARD AUTO` clears it.
+- [ ] Flash `mice_cam_s3` on each S3 camera board owned (S3-EYE/Freenove, XIAO S3 Sense, FireBeetle S3, S3-CAM): picture arrives, `board=` right, PSRAM report (`psram=`), web page loads under load (the classic PSRAM+AsyncTCP crash may or may not exist on S3).
+- [ ] OV3660 / OV5640 sensors: start size, no corrupted lines.
+
 ### 5. A person at the PC (person-tests.md, voice-human-tone.md)
 - [ ] Real microphone: 3 Thai lines, what it heard, time to sound; room echo with the robot speaker.
 - [ ] Camera-to-name time with an enrolled person (A45-12).
