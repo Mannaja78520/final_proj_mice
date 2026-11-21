@@ -224,6 +224,28 @@ void test_census_slots_never_overlap(void) {
     TEST_ASSERT_TRUE(busslot::censusDelayMs(255) + frame < 1700);   // hub listens >= 1.6 s, then until quiet
 }
 
+// Relay host choice by the router's channel (WifiLink.h hostState/mayJoinRule):
+// a hotspot on the router's channel is online, one on channel 1 is not, and
+// channel 1 with no better information falls back to the old name rule.
+void test_online_host_follows_router_channel(void) {
+    TEST_ASSERT_EQUAL_INT(wifilink::HOST_YES, wifilink::hostState(6, 6));
+    TEST_ASSERT_EQUAL_INT(wifilink::HOST_NO, wifilink::hostState(1, 6));
+    TEST_ASSERT_EQUAL_INT(wifilink::HOST_NO, wifilink::hostState(11, 6));
+    TEST_ASSERT_EQUAL_INT(wifilink::HOST_YES, wifilink::hostState(11, 0));   // router unseen: not channel 1
+    TEST_ASSERT_EQUAL_INT(wifilink::HOST_AMBIGUOUS, wifilink::hostState(1, 0));
+    TEST_ASSERT_EQUAL_INT(wifilink::HOST_AMBIGUOUS, wifilink::hostState(1, 1));
+}
+void test_online_rule_ignores_name_order_and_old_rule_keeps_it(void) {
+    // a far board "m09" may lean on the online "m01" (sorts BEFORE it): refused by the old rule
+    TEST_ASSERT_FALSE(wifilink::mayJoinRule(true, "m09", "m01", 6, 6));
+    TEST_ASSERT_TRUE(wifilink::mayJoinRule(false, "m09", "m01", 6, 6));
+    // an offline hotspot (channel 1) is never joined, however its name sorts
+    TEST_ASSERT_FALSE(wifilink::mayJoinRule(false, "m01", "m09", 1, 6));
+    // ambiguous: the old name rule still decides
+    TEST_ASSERT_FALSE(wifilink::mayJoinRule(false, "m09", "m01", 1, 1));
+    TEST_ASSERT_TRUE(wifilink::mayJoinRule(false, "m01", "m09", 1, 1));
+}
+
 // "MSI 3058" is one network name, not an ssid and a password.
 void test_quoted_ssid_keeps_its_spaces(void) {
     std::string ssid, pass;
@@ -615,6 +637,8 @@ int main(int, char **) {
     RUN_TEST(test_ease_is_smooth_and_bounded);
     RUN_TEST(test_pass_curve_matches_studio);
     RUN_TEST(test_pass_needs_its_start_speed_and_limits);
+    RUN_TEST(test_online_host_follows_router_channel);
+    RUN_TEST(test_online_rule_ignores_name_order_and_old_rule_keeps_it);
     RUN_TEST(test_census_slots_never_overlap);
     RUN_TEST(test_wifi_list_walks_saved_networks_in_order);
     RUN_TEST(test_wifi_list_skips_empty_slots);

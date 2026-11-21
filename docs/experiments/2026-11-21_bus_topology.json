@@ -1,0 +1,23 @@
+{
+ "three_levels": {
+  "boards": 741,
+  "buses": 3,
+  "scan_virtual_s": 23.4,
+  "clock_bus_B_s": 0.0,
+  "clock_bus_C_s": 0.0,
+  "collisions": [
+   0,
+   0,
+   0
+  ]
+ },
+ "reply_delay_by_depth": {
+  "depth0_board_on_A_ms": 0,
+  "depth1_via_1_bridge_ms": 4.0,
+  "depth2_via_2_bridges_ms": 8.0
+ },
+ "ring": {
+  "boards": 40,
+  "extra_routes": 20
+ }
+}
