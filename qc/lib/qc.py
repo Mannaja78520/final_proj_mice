@@ -226,9 +226,9 @@ def start_hub(fake=True):
     # A hub in QC never starts a real voice helper (A55-1): a check that points
     # the helper at a dead port expects "not running", not a model loading.
     os.environ["MICE_VOICE_AUTOSTART"] = "0"
-    # QC pages read English: the checks look for English words on screen. The
+    # QC pages are shown exactly as written ("off"): the checks look for the page's own words. The
     # Thai default (mice-lang.js) has its own check, check_language.
-    os.environ["MICE_LANG"] = "en"
+    os.environ["MICE_LANG"] = "off"
     if fake:
         sys.path.insert(0, str(QC / "lib"))
         import fake_serial

@@ -36,10 +36,15 @@ def run(t):
     t.ok("?." not in js and "??" not in js, "the switch is Chrome 75 safe")
     import os
     got = json.loads(F.get(base + "/lang/index.json")[1]).get("default")
-    t.ok(got == "en", "QC pages default to English (MICE_LANG=en)", str(got))
+    t.ok(got == "off", "QC pages are left as written (MICE_LANG=off)", str(got))
     os.environ["MICE_LANG"] = "th"
     try:
         got = json.loads(F.get(base + "/lang/index.json")[1]).get("default")
     finally:
-        os.environ["MICE_LANG"] = "en"
+        os.environ["MICE_LANG"] = "off"
     t.ok(got == "th", "a hub with no setting offers Thai first", str(got))
+    # English turns the page's own Thai back into English (lang/en.json)
+    en = json.loads(F.get(base + "/lang/en.json")[1])
+    t.ok(sum(1 for k in en["strings"] if any("฀" <= c <= "๿" for c in k)) > 40,
+         "English has entries for the Thai text the pages carry")
+    t.ok(codes.count("en") == 1, "English is listed once", str(codes))
