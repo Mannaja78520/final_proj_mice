@@ -15,6 +15,8 @@ class Identity;
 //   #3 GOTO 2        -> @3 OK goto 2
 //   #3 SET NAME LiftA
 //   #* RGB 255 0 0     (broadcast: executed by everyone, nobody replies)
+//   #* PING <lo> <hi>  (ranged discovery for big buses, see BusAddr.h)
+//   #~<chip> SET ID 9  (address by chip; ids may collide, chips never do)
 //   #* PING            (broadcast discovery: each module replies @<id> PONG,
 //                       staggered into 24 slots of 10 ms to avoid collisions)
 //
@@ -60,6 +62,7 @@ private:
     volatile bool sending_ = false;   // a line was taken off the queue and is going out
 
     void handleLine(String line);
+    void queueReply(const String& line, uint32_t delayMs);  // answer after a slot
     void sendNow(const String& line);   // the wire itself; blocks until sent
     static void txTask(void* self);
 };

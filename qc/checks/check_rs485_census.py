@@ -90,13 +90,15 @@ def run(t):
          "5 s still hides the boards with the highest ids")
 
     bus = (F.FIRMWARE / "src" / "core" / "RS485Bus.cpp").read_text(encoding="utf-8")
-    j = bus.find("pendingAt_[slot] =")     # queued since A22-1 batch 4
-    line = bus[j:j + 120]
-    t.contains(line, "%",
+    # Since 2026-11-21 the slot count and gap are named constants (BusAddr.h)
+    # shared by plain and ranged PING; the delay is still slot x gap, id % slots.
+    addr = (F.FIRMWARE / "src" / "core" / "BusAddr.h").read_text(encoding="utf-8")
+    t.contains(bus, "id_->id() % BusAddr::SLOTS",
                "and a board's own delay is bounded, not proportional to its id")
-    m2 = re.search(r"%\s*(\d+)\)\s*\*\s*(\d+)", line)
-    if t.ok(m2, "the stagger is a slot times a gap", line.strip()):
-        slots, gap = int(m2.group(1)), int(m2.group(2))
+    ms, mg = re.search(r"SLOTS = (\d+)", addr), re.search(r"SLOT_MS = (\d+)", addr)
+    if t.ok(ms and mg, "the stagger is a slot times a gap",
+            "BusAddr::SLOTS x BusAddr::SLOT_MS"):
+        slots, gap = int(ms.group(1)), int(mg.group(1))
         worst = slots * gap
         t.ok(worst <= 300,
              "so every board has answered within %d ms" % worst,

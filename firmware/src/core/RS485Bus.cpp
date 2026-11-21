@@ -2,6 +2,7 @@
 #include "core/Log.h"
 #include "core/CommandRouter.h"
 #include "core/Identity.h"
+#include "core/BusAddr.h"
 #include "core/HwConfig.h"
 #include <config.h>
 #include <driver/uart.h>
@@ -104,8 +105,36 @@ void RS485Bus::handleLine(String line) {
     payload.trim();
     if (!payload.length()) return;
 
+    // By chip: "#~A0B1C2D3E4F5 SET ID 12". The id is a byte someone sets and two
+    // boards can share one; the chip cannot be changed and is never shared. It is
+    // how the hub tells apart (and re-addresses) boards whose ids collide. The
+    // reply names the chip so it cannot be mistaken for the other board.
+    if (addr.startsWith("~")) {
+        if (!BusAddr::chipIs(addr.c_str() + 1, Identity::chip().c_str())) return;
+        send("@~" + Identity::chip() + " " + router_->handle(payload));
+        return;
+    }
+
     bool broadcast = (addr == "*" || addr == "0");
     if (!broadcast && addr.toInt() != id_->id()) return; // not for us
+
+    // Scale-out discovery (BusAddr.h): only boards in the range answer, each in
+    // the slot its own id picks, so 247 boards stop talking over each other.
+    // Old boards never reach here for these lines' range: they answer a plain
+    // PING and the hub copes (see bus_ids.py).
+    if (broadcast && (payload.startsWith("CHIPS ") || payload.startsWith("chips "))) {
+        int lo, hi; long salt = 0;
+        if (!BusAddr::parseRange(payload.c_str() + 6, lo, hi, &salt)) return;
+        String chip = Identity::chip();
+        int slot = BusAddr::chipsSlot(id_->id(), lo, hi, chip.c_str(), (uint32_t)salt);
+        if (slot < 0) return;
+        queueReply("@" + String(id_->id()) + " CHIP " + chip, (uint32_t)slot * BusAddr::SLOT_MS);
+        return;
+    }
+    int pingLo = 1, pingHi = 247;
+    bool ranged = broadcast && (payload.startsWith("PING ") || payload.startsWith("ping ")) &&
+                  BusAddr::parseRange(payload.c_str() + 5, pingLo, pingHi);
+    if (ranged && BusAddr::pingSlot(id_->id(), pingLo, pingHi) < 0) return;
 
     String reply = router_->handle(payload);
 
@@ -125,23 +154,29 @@ void RS485Bus::handleLine(String line) {
         //
         // Now the delay is bounded: 24 slots of 10 ms, so every board has
         // answered within 240 ms whatever its id. Two boards can share a slot
-        // (ids 24 apart); that is what the addressed follow-up is for, and a
-        // collision that loses one answer is recoverable where a five second
-        // wait is simply never made.
-        // Queue it: first free slot. Full queue? Give up the place of the entry
-        // scheduled LAST (it has waited least and nothing is about to fire);
-        // signed delta, so a millis() rollover cannot flip the comparison.
-        uint8_t slot = PENDING_N;
-        for (uint8_t i = 0; i < PENDING_N; i++)
-            if (!pending_[i].length()) { slot = i; break; }
-        if (slot == PENDING_N) {
-            slot = 0;
-            for (uint8_t i = 1; i < PENDING_N; i++)
-                if ((int32_t)(pendingAt_[i] - pendingAt_[slot]) > 0) slot = i;
-        }
-        pending_[slot] = "@" + String(id_->id()) + " " + reply;
-        pendingAt_[slot] = millis() + (uint32_t)(id_->id() % 24) * 10;
+        // (ids 24 apart); on a small bus the addressed follow-up covers that.
+        // On a big one it cannot (247 boards = ~10 per slot), which is what the
+        // ranged PING above is for: a range of 24 ids has no shared slot.
+        int slot = ranged ? BusAddr::pingSlot(id_->id(), pingLo, pingHi)
+                          : id_->id() % BusAddr::SLOTS;
+        queueReply("@" + String(id_->id()) + " " + reply, (uint32_t)slot * BusAddr::SLOT_MS);
     }
+}
+
+// Queue it: first free slot. Full queue? Give up the place of the entry
+// scheduled LAST (it has waited least and nothing is about to fire);
+// signed delta, so a millis() rollover cannot flip the comparison.
+void RS485Bus::queueReply(const String& line, uint32_t delayMs) {
+    uint8_t slot = PENDING_N;
+    for (uint8_t i = 0; i < PENDING_N; i++)
+        if (!pending_[i].length()) { slot = i; break; }
+    if (slot == PENDING_N) {
+        slot = 0;
+        for (uint8_t i = 1; i < PENDING_N; i++)
+            if ((int32_t)(pendingAt_[i] - pendingAt_[slot]) > 0) slot = i;
+    }
+    pending_[slot] = line;
+    pendingAt_[slot] = millis() + delayMs;
 }
 
 // The ONLY place anything is written to Serial2. That matters: the line and its
@@ -211,7 +246,18 @@ String RS485Bus::bridge(const String& raw, CommandRouter* router) {
     if (!payload.length()) return "ERR empty command";
 
     bool broadcast = (addr == "*" || addr == "0");
-    if (!broadcast && addr.toInt() == id_->id()) {
+    if (addr.startsWith("~") && BusAddr::chipIs(addr.c_str() + 1, Identity::chip().c_str()))
+        return "@~" + Identity::chip() + " " + router->handle(payload);   // our own chip
+    if (broadcast && (payload.startsWith("CHIPS ") || payload.startsWith("chips "))) {
+        // The module the PC is plugged into is on the bus too: report it here,
+        // the rest answer from the wire (their own slots).
+        send(line);
+        int lo, hi;
+        if (!BusAddr::parseRange(payload.c_str() + 6, lo, hi) || id_->id() < lo || id_->id() > hi)
+            return "-> sent";
+        return "@" + String(id_->id()) + " CHIP " + Identity::chip();
+    }
+    if (!broadcast && addr.toInt() == id_->id() && !addr.startsWith("~")) {
         // addressed to the module the PC is plugged into: answer directly
         return "@" + String(id_->id()) + " " + router->handle(payload);
     }

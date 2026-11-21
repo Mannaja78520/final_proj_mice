@@ -1,0 +1,39 @@
+{
+ "old_plain_ping_found": {
+  "8": 8,
+  "24": 24,
+  "64": 0,
+  "128": 0,
+  "247": 0
+ },
+ "ranged_census": {
+  "found": 247,
+  "collisions": 0,
+  "virtual_s": 4.29
+ },
+ "dups_30": {
+  "duplicate_ids": 3,
+  "moved": 3,
+  "virtual_s": 277.8
+ },
+ "dups_100": {
+  "duplicate_ids": 17,
+  "moved": 18,
+  "virtual_s": 336.2
+ },
+ "dups_247": {
+  "duplicate_ids": 60,
+  "moved": 89,
+  "virtual_s": 405.9
+ },
+ "four_buses": {
+  "found": 988,
+  "distinct_chips": 988,
+  "virtual_s_each": [
+   4.3,
+   4.3,
+   4.3,
+   4.3
+  ]
+ }
+}

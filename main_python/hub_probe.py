@@ -9,6 +9,7 @@ import re
 import sys
 import threading
 import time
+import bus_ids
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutTimeout
 
 from hub_usb import (_drain_to_line_boundary, _flash_ports, _usb_get, _usb_ident,
@@ -226,6 +227,24 @@ def probe_usb_port(port, full=False):
                         except ValueError:
                             pass
                         break
+            # Past six boards nobody asked INFO, so those boards have no chip and
+            # the hub would name them by id - and ids repeat across buses and
+            # clash inside one. CHIPS gets every chip in one pass per range
+            # (BusAddr.h). A bus of old firmware just answers nothing here and
+            # keeps the old behaviour. Two chips on one id = a duplicate, kept
+            # visible on the entry instead of silently merged.
+            if len(seen) > 6:
+                def _xchg(line, seconds):
+                    _drain_to_line_boundary(ser)
+                    ser.write((line + "\n").encode())
+                    return _read_lines(ser, seconds + 1.0, quiet=0.3, at_least=seconds)
+                got = bus_ids.BusIds(_xchg, salts=(1,)).chips()
+                for ident, chips in got.items():
+                    if ident in seen and not seen[ident].get("chip"):
+                        if len(chips) == 1:
+                            seen[ident]["chip"] = next(iter(chips))
+                        else:
+                            seen[ident]["dupChips"] = sorted(chips)
             # A board on its OWN cable answers the broadcast too, so "no
             # direct answer, one board in the census" is ambiguous: it is
             # either an RS485 adapter with one module behind it, or a board
