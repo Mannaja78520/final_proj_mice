@@ -194,9 +194,9 @@ def run(t):
     # ...and it really TRIES them. Naming the table is not the same as looping
     # over it: the first version of this assertion passed against a loop that
     # had been disabled.
-    loop = src[src.find("esp_camera_init(&c);"):]
+    loop = src[src.find("if (err != ESP_OK) err = esp_camera_init(&c);"):]
     loop = loop[:loop.find("if (err != ESP_OK) {")]
-    t.contains(loop, "b < CAM_BOARD_COUNT",
+    t.contains(loop, "k < CAM_BOARD_COUNT",
                "and it tries every pin layout it knows until one answers")
     t.contains(loop, "esp_camera_deinit",
                "letting the driver go between attempts, or the next one fails "
@@ -215,8 +215,8 @@ def run(t):
     # board - it succeeds and the loop never runs. board_ then kept its default
     # and the hub showed the pin diagram marked as a GUESS, about the one board
     # the firmware is certain of.
-    first = src[src.find("err = esp_camera_init(&c);"):]
-    first = first[:first.find("for (int b = 0; err != ESP_OK")]
+    first = src[src.find("if (compiledIn) {"):]
+    first = first[:first.find("for (int k = 0; err != ESP_OK")]
     t.contains(first, "board_ = m.name",
                "a board found on the compiled-in pins is still named")
     t.contains(first, "CAM_XCLK_PIN",
@@ -228,7 +228,7 @@ def run(t):
     # which stayed true when the compiled-in path stopped calling it.
     t.contains(first, "adoptLeds(board_)",
                "the compiled-in path takes that board's LED pins")
-    loop_ok = src[src.find("for (int b = 0; err != ESP_OK"):]
+    loop_ok = src[src.find("for (int k = 0; err != ESP_OK"):]
     loop_ok = loop_ok[:loop_ok.find("if (err != ESP_OK) {")]
     t.contains(loop_ok, "adoptLeds(board_)",
                "and so does a board found by trying the table")
@@ -255,7 +255,7 @@ def run(t):
          "wiring to disagree, and the diagram is what someone wires to")
     # ...but NOT as the init size: the frame buffer is allocated for that, and
     # SVGA in internal RAM fails outright with `camera init failed 0x105`.
-    init = src[src.find("camera_config_t c = {}"):src.find("esp_camera_init")]
+    init = src[src.find("camera_config_t c = {}"):src.find("esp_camera_init", src.find("camera_config_t c = {}"))]
     t.contains(init, "psram ? FRAMESIZE_SVGA : FRAMESIZE_QVGA",
                "the INIT size still fits a board with no PSRAM")
 

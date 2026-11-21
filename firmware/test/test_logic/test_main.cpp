@@ -16,6 +16,7 @@
 #include "core/BusSlot.h"
 #include "core/Log.h"
 #include "core/Id3.h"
+#include "modules/cam/CamPick.h"
 #include <algorithm>
 #include <cstdarg>
 #include <cstring>
@@ -564,8 +565,42 @@ void test_not_a_tag_skips_nothing() {
     TEST_ASSERT_EQUAL_UINT32(0, id3::tagBytes(v5));           // unknown version
 }
 
+// ------------------------------------------------------- camera board choice
+static const char* const CAM_NAMES[] = {"ai-thinker", "esp-eye", "m5stack", "wrover-kit"};
+
+void test_cam_auto_keeps_table_order(void) {
+    int o[4];
+    TEST_ASSERT_EQUAL_INT(4, camTryOrder(4, -1, o));
+    for (int i = 0; i < 4; i++) TEST_ASSERT_EQUAL_INT(i, o[i]);
+}
+
+void test_cam_chosen_board_goes_first_and_is_not_repeated(void) {
+    int o[4];
+    TEST_ASSERT_EQUAL_INT(4, camTryOrder(4, 2, o));
+    int want[4] = {2, 0, 1, 3};
+    for (int i = 0; i < 4; i++) TEST_ASSERT_EQUAL_INT(want[i], o[i]);
+}
+
+void test_cam_pick_out_of_range_is_auto(void) {
+    int o[4];
+    camTryOrder(4, 9, o);
+    TEST_ASSERT_EQUAL_INT(0, o[0]);
+    TEST_ASSERT_EQUAL_INT(3, o[3]);
+}
+
+void test_cam_find_board_by_name(void) {
+    TEST_ASSERT_EQUAL_INT(1, camFindBoard(CAM_NAMES, 4, "ESP-EYE"));
+    TEST_ASSERT_EQUAL_INT(-1, camFindBoard(CAM_NAMES, 4, "nope"));
+    TEST_ASSERT_EQUAL_INT(-1, camFindBoard(CAM_NAMES, 4, ""));
+    TEST_ASSERT_EQUAL_INT(-1, camFindBoard(CAM_NAMES, 4, nullptr));
+}
+
 int main(int, char **) {
     UNITY_BEGIN();
+    RUN_TEST(test_cam_auto_keeps_table_order);
+    RUN_TEST(test_cam_chosen_board_goes_first_and_is_not_repeated);
+    RUN_TEST(test_cam_pick_out_of_range_is_auto);
+    RUN_TEST(test_cam_find_board_by_name);
     RUN_TEST(test_home_is_mid_travel_on_any_servo);
     RUN_TEST(test_shoulder_14_19_uses_the_whole_band);
     RUN_TEST(test_same_gear_on_270_falls_short);

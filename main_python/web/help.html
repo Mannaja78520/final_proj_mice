@@ -1187,6 +1187,18 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     </div>
   </div>
 
+  <h3>Which camera board is this?</h3>
+  <p>The module works out its own camera board at power-on: it tries each known
+     wiring until the sensor answers, so a clone nobody can name usually just
+     works. Classic ESP32-CAM boards (AI-Thinker, ESP-EYE, M5Stack, TTGO
+     T-Journal, WROVER) and ESP32-S3 boards (Freenove / ESP32-S3-EYE, XIAO S3
+     Sense, FireBeetle S3, S3-CAM) are covered, with the OV2640, OV3660 and
+     OV5640 sensors. An S3 board needs the S3 firmware build; the classic and S3
+     builds only try boards of their own chip. If you know the board, choose it by
+     hand with <code>CAM BOARD &lt;name&gt;</code> (or <code>CAM BOARD AUTO</code>) and
+     restart the module. Pin maps for the S3, WROVER and T-Journal boards are
+     from the makers' tables and have not been tried on real boards yet.</p>
+
   <h3>Several people can watch at once</h3>
   <p>The board itself can only be read by one thing at a time, and that is the
      hardware rather than a limit anybody chose: it has a single frame buffer,

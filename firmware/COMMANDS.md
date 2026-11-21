@@ -868,6 +868,8 @@ Hardware pins page does not offer them.
 | `SNAP <file>` | `OK saved /photos/front.jpg` | save it to the SD card (`/photos`, `.jpg` added if missing) |
 | `CAM` | `CAM size=svga quality=12 flash=off vflip=0 hmirror=0 psram=1 shots=3` | what the sensor is set to |
 | `CAM SIZE <name>` | `OK size=vga` | `qqvga qvga vga svga xga sxga uxga` — above SVGA needs PSRAM |
+| `CAM BOARD` | `CAM BOARD auto running=ai-thinker known=ai-thinker,esp-eye,...` | which camera board is chosen, which one is running, and the boards this build knows (an S3 build lists only S3 boards) |
+| `CAM BOARD <name>\|AUTO` | `OK camera board esp-eye - takes effect after a reboot (REBOOT)` | pick the board by hand; it is tried FIRST at boot, and if it does not answer the others are still tried. Kept in NVS |
 | `CAM QUALITY <10-63>` | `OK quality=12` | 10 is the best picture, 63 the smallest file |
 | `CAM FLASH ON\|OFF` | `OK flash=on` | the white flood LED (GPIO 4, shared with the SD card's data line) |
 | `CAM LIST` | `CAM CONTROLS 24` then one line each: `brightness=0 range -2..2 def=0` | every setting the sensor has, with its value, range and default |
