@@ -420,3 +420,7 @@ q8_0/q4_0 KV with flash attention is the closest built-in.
 - Reading: the only slow part is the first model load (about 45 s). Warm answers are under 0.2 s, so streaming LLM->TTS would save at most about 0.15 s: NOT worth building (under the 2% / no-gain stop rule). The speech part (TTS 0.6-7.5 s, STT not measured) is where time goes.
 - Change made from this: `local_ai.warm()` loads the model when the voice helper starts (if Ollama is already up) and on the Load-the-AI button; keepAlive 1h keeps it loaded. Effect of the warm-up itself not yet re-measured on the PC.
 - Not measured: STT on a 3 s clip; TTS Edge vs Spark in this run.
+
+### 2026-11-21 Edge TTS silent on the PC
+- edge-tts 7.3.1 (newest), network to speech.platform.bing.com:443 ok. th-TH-PremwadeeNeural: NoAudioReceived (with and without rate/pitch, 3 runs). th-TH-NiwatNeural same text: 19008 bytes in 0.89 s. CLI with Niwat: 11232 bytes. Cause: the service returned nothing for Premwadee at that moment (temporary or not: not tested).
+- Fix: `tts.fallbackVoices` in config/voice.json + retry in `_edge_speak` (QC voice_edge_fallback). Niwat is a male voice: the robot may say ค่ะ in it; set the fallback list to taste.
