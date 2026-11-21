@@ -218,7 +218,10 @@ async function pollWatcher() {
   const a = await Mice.Api.get("/api/faces/state");
   if (a.ok) {
     const state = a.data;
-    el.textContent = state.watching ? "Yes - the rig sees who arrives." : "Not yet - the rig is not seeing anybody arrive.";
+    const dropped = state.live === false;       // the face app's feed broke; the helper retries by itself
+    el.textContent = state.watching ? "Yes - the rig sees who arrives."
+      : dropped ? "The face app stopped sending - reconnecting by itself. Check that Reconize is still open."
+      : "Not yet - the rig is not seeing anybody arrive.";
     el.className = state.watching ? "statline ok" : "statline warn";
     document.getElementById("wStartRow").hidden = true;
 

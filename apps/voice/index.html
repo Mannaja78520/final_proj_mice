@@ -1143,6 +1143,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
 
   async talk(){
   if(this.rec && this.rec.state==="recording") return this.rec.stop();
+  this.$("wait").textContent = "opening the microphone…";   // the press is acknowledged at once, even if the browser asks first
   try {
     const s = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
@@ -1171,7 +1172,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
     this.rec.start();
     this.$("talk").textContent = "■ Stop recording";
     this.$("wait").textContent = "listening…";
-  } catch(e) { this.$("wait").textContent = "No microphone."; }
+  } catch(e) { this.$("wait").textContent = "The microphone is not available. Allow it in the browser, or type the question instead."; }
 }
 
 // ---- Conversation mode (A26-11) ----------------------------------------
@@ -1576,7 +1577,14 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
     const url = URL.createObjectURL(await r.blob());
     const player = new Audio(url);
     player.onplaying = () => this.spoke(text, player.duration);   // A46-1: gestures start now
-    player.onended = () => { URL.revokeObjectURL(url); this.$("wait").textContent = ""; this.$("speakingNow").hidden = true; };
+    player.onended = () => { this.$("wait").textContent = ""; this.$("speakingNow").hidden = true; };
+    // Revoked by listeners, not by onended: the blocked-sound path below
+    // replaces onended, and a failed play() never ends - each of those kept
+    // the whole answer's audio in memory for the life of the tab (found
+    // 2026-11-21, leak hunt).
+    const freeUrl = () => URL.revokeObjectURL(url);
+    player.addEventListener("ended", freeUrl);
+    player.addEventListener("error", freeUrl);
     try {
       await player.play();
     } catch(e) {

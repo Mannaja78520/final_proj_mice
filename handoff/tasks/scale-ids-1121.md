@@ -37,7 +37,7 @@ Simulated numbers in docs/architecture/scaling-ids.md. Quick QC: only environmen
 ## Next
 1. Lab: compile `pio run -e mice_nong -e mice_cam -e mice_lift -e mice_blank`, QEMU check_qemu_bus.
 2. Hardware owner for a gateway's second UART (calls setDownstream / onDownstreamLine).
-3. Hub: wire Topology paths into usb_cmd routes and show duplicate ids / the tree in the Modules page (then help page parity).
+3. DONE in this branch: Modules tab card "Board numbers" (hub_busmap.py, web/home/parts/busmap.*, help transports.html, check_busmap_screen). STILL TODO: send commands to a board by its path (usb_cmd route `usb:COM:>12>7`), and rebuild MiceHub.exe on the PC.
 4. Measure real relay-hop delay (sim assumes 4 ms), MAX485 32-node limit, WiFi join storm.
 
 ## Blocked

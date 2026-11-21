@@ -443,7 +443,7 @@ class Speech:
         dev = module_dev(job["module"]) if job["module"] else ""
         if not dev:
             return "no robot called %r answered just now" % job["module"]
-        f = _hub.SEQUENCES / _hub.safe_name(job["move"])
+        f = _hub.SEQUENCES / _hub.pc_name(job["move"])
         if not f.is_file():
             return "there is no saved move called %r" % job["move"]
         try:

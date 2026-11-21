@@ -44,6 +44,14 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
     var g1 = renderer.info.memory.geometries;
     var p1 = renderer.info.programs ? renderer.info.programs.length : -1;
 
+    // selecting joints shows ring gizmos: each click builds new torus geometry
+    for (var k = 0; k < 3; k++){ showGizmo(0); showGizmo(1); }   // settle
+    renderer.render(scene, camera);
+    var r0 = renderer.info.memory.geometries;
+    for (var k2 = 0; k2 < 25; k2++){ showGizmo(0); showGizmo(1); }
+    showGizmo(-1);
+    renderer.render(scene, camera);
+    out.push("ringleak=" + (renderer.info.memory.geometries - r0));
     out.push("g0=" + g0);
     out.push("g1=" + g1);
     out.push("gleak=" + (g1 - g0));
@@ -83,6 +91,11 @@ def run(t):
     t.ok(gleak <= 0,
          "25 rebuilds leak no geometry (delta %d)" % gleak,
          "each rebuild keeps its buffers on the graphics card")
+
+    # found 2026-11-21: clearGizmo() removed the rings but never disposed them
+    rl = int(got.get("ringleak", "999"))
+    t.ok(rl <= 0, "50 joint selections leak no ring geometry (delta %d)" % rl,
+         "every click on a joint kept its torus buffers on the graphics card")
 
     pleak = int(got.get("pleak", "999"))
     t.ok(pleak <= 2,

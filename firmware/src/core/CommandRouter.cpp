@@ -3,6 +3,7 @@
 #include "core/CommandHelp.h"
 #include "core/ConfigStore.h"
 #include "core/Identity.h"
+#include "core/MeshLink.h"
 #include "core/SDStore.h"
 #include "core/SequencePlayer.h"
 #include "core/Util.h"
@@ -237,6 +238,14 @@ String CommandRouter::handleLocked(const String& line) {
         return WebPortal::instance()->reach(argv[1], Util::joinFrom(argv, argc, 2));
     }
 
+    // MESH — router-less multi-hop over ESP-NOW (MeshLink.h). `MESH` = status,
+    // `MESH <id|*> <command>` = run a command on another board through the mesh.
+    if (cmd == "MESH") {
+        if (argc == 1) return MeshLink::status();
+        if (argc < 3) return "ERR usage: MESH <id|*> <command>";
+        return MeshLink::command(argv[1], Util::joinFrom(argv, argc, 2));
+    }
+
     if (cmd == "INFO") {
         JsonDocument doc;
         buildStatus(doc);
@@ -268,6 +277,14 @@ String CommandRouter::handleLocked(const String& line) {
         }
         // SET WIFI2 / SET WIFI3 "ssid" [pass] — backup networks, tried in order
         // after the main one fails to join (WifiList.h). Empty = forget it.
+        // SET MESH ON|OFF — router-less mesh over ESP-NOW (off by default; MeshLink.h)
+        if (what == "MESH") {
+            String m = argv[2];
+            m.toLowerCase();
+            if (m != "on" && m != "off") return "ERR usage: SET MESH ON|OFF";
+            id_->setMeshMode(m);
+            return "OK mesh=" + m + (m == "on" ? " (needs a group; starts within a few seconds)" : "");
+        }
         // SET RELAY ONLINE|NAME — which hotspot a far module may join (WifiLink.h)
         if (what == "RELAY") {
             String r = argv[2];

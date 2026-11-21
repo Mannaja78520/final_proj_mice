@@ -56,3 +56,12 @@ def run(t):
     m = re.search(r'"ready": "http://127.0.0.1:11435/api/tags", "waitSeconds": (\d+)', prov)
     t.ok(bool(m) and int(m.group(1)) <= 20, "a question waits at most 20 s for Ollama before the backup answers",
          m.group(0) if m else "not found (was 40 s: the first visitor heard nothing for 45 s)")
+
+    # /api/ports under 200 pages (3.5 s p95 2026-11-21): enumerate the OS list once per 2 s
+    probe = (F.CODE / "main_python/hub_probe.py").read_text(encoding="utf-8", errors="replace")
+    mainsrc = (F.CODE / "main_python/main.py").read_text(encoding="utf-8", errors="replace")
+    t.ok("ports = serial_ports_cached()" in mainsrc and "def serial_ports_cached" in probe,
+         "/api/ports shares one port listing for 2 s", "")
+    # and a bus of 30 boards: every board is asked for INFO within a time budget, not only the first six
+    t.ok("[:6]" not in probe and "INFO_BUDGET_S" in probe and "for mid in sorted(seen):" in probe,
+         "a bus of 30 boards: INFO is asked in id order within a time budget, not for the first 6 only", "")

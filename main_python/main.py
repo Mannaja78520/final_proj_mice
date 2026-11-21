@@ -382,6 +382,20 @@ UPLOAD_EXT = (".stl", ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".urdf")
 SAFE_NAME = re.compile(r"^[A-Za-z0-9._ -]{1,80}$")
 
 
+# Names of files that stay on THIS PC (saved projects, sequences, shows): any
+# language, Thai included (user 2026-11-21). safe_name above stays ASCII-only
+# for everything a board's SD card or command line receives. Still no / \\ : or
+# control characters, so a name can never climb out of its folder.
+PC_NAME = re.compile(r"^[\w\u0e00-\u0e7f. -]{1,80}$")
+
+
+def pc_name(name: str) -> str:
+    name = name.strip()
+    if not PC_NAME.match(name) or name.startswith(".") or ".." in name:
+        raise ValueError(f"bad name: {name!r}")
+    return name
+
+
 def safe_name(name: str) -> str:
     name = name.strip()
     if not SAFE_NAME.match(name) or name.startswith("."):
@@ -727,7 +741,7 @@ def scan_modules(force=False):
 
 # Listing ports and asking each which module it is: hub_probe.py (A26-93).
 from hub_probe import (  # noqa: E402
-    serial_ports, _read_lines, _wifi_of, probe_usb_port, _usbscan_lock,
+    serial_ports, serial_ports_cached, _read_lines, _wifi_of, probe_usb_port, _usbscan_lock,
     _usbscan_cache, probe_usb_one, probe_usb_all)
 
 
@@ -745,6 +759,7 @@ from hub_usb import (  # noqa: E402
 #   wifi:<ip>              module on the network
 #   usb:<port>             module on a cable
 #   usb:<port>:<busid>     module on the RS485 bus behind that cable
+#   usb:<port>:>12>7       board 7 behind bridge board 12 (a path, BusPath.h)
 #   usb:<port>@<peer>      module behind that one's OWN HOTSPOT   <-- see below
 #   wifi:<ip>@<peer>       ...same, reached over the network
 #
@@ -798,7 +813,12 @@ def parse_dev(dev):
         return ("wifi", dev[5:], 0, peer)
     if dev.startswith("usb:"):
         rest = dev[4:].split(":")
-        return ("usb", rest[0], int(rest[1]) if len(rest) > 1 and rest[1] else 0, peer)
+        # A bus id is a number (a board on the cable's bus) or, behind a bridge
+        # board, a path like ">12>7" (BusPath.h): kept as text for usb_cmd.
+        bus = 0
+        if len(rest) > 1 and rest[1]:
+            bus = rest[1] if rest[1].startswith(">") else int(rest[1])
+        return ("usb", rest[0], bus, peer)
     raise ValueError("bad dev (use wifi:<ip> or usb:<port>[:<id>], optionally @<peer>)")
 
 
@@ -1567,6 +1587,8 @@ import hub_api_support  # noqa: E402
 hub_api_support.bind(sys.modules[__name__])
 import hub_api_flash  # noqa: E402
 hub_api_flash.bind(sys.modules[__name__])
+import hub_busmap  # noqa: E402
+hub_busmap.bind(sys.modules[__name__])
 import hub_api_play  # noqa: E402
 hub_api_play.bind(sys.modules[__name__])
 import hub_api_studio  # noqa: E402
@@ -1581,7 +1603,7 @@ hub_api_gacha.bind(sys.modules[__name__])
 
 # ---------------------------------------------------------------- handler
 class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
-              hub_api_extensions.ExtensionRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, BaseHTTPRequestHandler):
+              hub_api_extensions.ExtensionRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_busmap.BusMapRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, BaseHTTPRequestHandler):
     # HTTP/1.1, so a browser can KEEP ITS CONNECTION.
     #
     # BaseHTTPRequestHandler defaults to HTTP/1.0, which means every response
@@ -1671,6 +1693,8 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         if isinstance(e, ValueError) and text.startswith("bad name"):
             return self.send_err("That name cannot be used - use letters, "
                                  "numbers, spaces or - _ and keep it short.", 400)
+        if isinstance(e, ValueError) and text.startswith("that is too big"):
+            return self.send_err(text, 413)
         if isinstance(e, KeyError):
             return self.send_err("A field is missing: %s" % text.strip("'\""), 400)
         if isinstance(e, (json.JSONDecodeError, UnicodeDecodeError)) or (
@@ -1769,6 +1793,11 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         the venue WiFi — so the route that expects a big body names how big.
         """
         n = max(0, int(self.headers.get("Content-Length") or 0))
+        # Routes anyone on the WiFi may call with no login (hub_auth.NEVER_GATED)
+        # get a ceiling of their own, else one visitor could fill this PC's disk
+        # (60 MB went in unchallenged, 2026-11-21 sweep).
+        if not limit and self.path.split("?")[0] in hub_auth.NEVER_GATED:
+            limit = 100 * 1048576
         if limit and n > limit:
             self._body_read = True
             self.close_connection = True   # unread bytes must not become the next request
@@ -2160,6 +2189,28 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 source = hub_api_resources.browser_bootstrap() + source
             return self.send_bytes(source, "text/javascript; charset=utf-8")
 
+        if path.startswith("/lang/") and path.endswith(".json"):
+            # Languages (shared/web/mice-lang.js): one file per language in
+            # shared/web/lang/. index.json lists the folder, so a new language
+            # is a new file and nothing here changes.
+            folder = SHARED_WEB / "lang"
+            name = path[len("/lang/"):-len(".json")]
+            if name == "index":
+                langs = []
+                for f in sorted(folder.glob("*.json")):
+                    try:
+                        langs.append({"code": f.stem, "name": json.loads(
+                            f.read_text(encoding="utf-8")).get("name", f.stem)})
+                    except (OSError, ValueError):
+                        continue
+                # The page's language until someone picks one: this PC's own choice
+                # (env MICE_LANG, QC sets "en" so its English text matches stay put).
+                return self.send_json({"default": os.environ.get("MICE_LANG", "th"),
+                                       "languages": [{"code": "en", "name": "English"}] + langs})
+            if re.fullmatch(r"[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})?", name) and (folder / (name + ".json")).is_file():
+                return self.send_bytes((folder / (name + ".json")).read_bytes(),
+                                       "application/json; charset=utf-8")
+            return self.send_err("no such language", 404)
         if path == "/favicon.ico":
             # Every browser asks for it by itself; without an answer each first
             # load of a page logged a red 404 (found 2026-11-21, newcomer sweep).
@@ -2547,7 +2598,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
             # "inuse" = the hub is already talking on that cable for another
             # page; that is fine (the hub shares it), it is shown so the UI
             # can say so. "who" names the module when it is already known.
-            ports = serial_ports()
+            ports = serial_ports_cached()
             for p in ports:
                 p["inuse"] = usb_in_use(p["port"])
                 known = (_usb_ident.get(p["port"]) or {}).get("module")
@@ -2683,6 +2734,9 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         r = self.api_flash(method, path, q)   # hub_api_flash.py
         if r is not hub_api_flash.NOT_MINE:
             return r
+        r = self.api_busmap(method, path, q)  # hub_busmap.py
+        if r is not hub_busmap.NOT_MINE:
+            return r
 
         # ---- the way a phone gets here ----
         # Printed addresses do not survive a venue: someone reads 192.168.137.1
@@ -2770,7 +2824,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
 
         if path == "/api/export" and method == "POST":
             data = json.loads(self.body().decode())
-            name = safe_name(data["name"])
+            name = pc_name(data["name"])
             if not name.endswith(".yaml"):
                 name += ".yaml"
             existed = (SEQUENCES / name).exists()
@@ -2802,7 +2856,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         if path == "/api/robot/upload" and method == "POST":
             data = json.loads(self.body().decode())
             ip = data["ip"]
-            name = safe_name(data["name"])
+            name = pc_name(data["name"])
             payload = data["yaml"].encode()
             boundary = "----micehub%d" % int(time.time())
             body = (
