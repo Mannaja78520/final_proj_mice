@@ -14,6 +14,7 @@
 #include "core/WifiLink.h"
 #include "core/WifiList.h"
 #include "core/BusSlot.h"
+#include "core/MeshLogic.h"
 #include "core/Log.h"
 #include "core/Id3.h"
 #include <algorithm>
@@ -221,6 +222,117 @@ void test_census_slots_never_overlap(void) {
     for (uint32_t id = 1; id < 255; id++)
         TEST_ASSERT_TRUE(busslot::censusDelayMs(id) + frame <= busslot::censusDelayMs(id + 1));
     TEST_ASSERT_TRUE(busslot::censusDelayMs(255) + frame < 1700);   // hub listens >= 1.6 s, then until quiet
+}
+
+// Relay host choice by the router's channel (WifiLink.h hostState/mayJoinRule):
+// a hotspot on the router's channel is online, one on channel 1 is not, and
+// channel 1 with no better information falls back to the old name rule.
+void test_online_host_follows_router_channel(void) {
+    TEST_ASSERT_EQUAL_INT(wifilink::HOST_YES, wifilink::hostState(6, 6));
+    TEST_ASSERT_EQUAL_INT(wifilink::HOST_NO, wifilink::hostState(1, 6));
+    TEST_ASSERT_EQUAL_INT(wifilink::HOST_NO, wifilink::hostState(11, 6));
+    TEST_ASSERT_EQUAL_INT(wifilink::HOST_YES, wifilink::hostState(11, 0));   // router unseen: not channel 1
+    TEST_ASSERT_EQUAL_INT(wifilink::HOST_AMBIGUOUS, wifilink::hostState(1, 0));
+    TEST_ASSERT_EQUAL_INT(wifilink::HOST_AMBIGUOUS, wifilink::hostState(1, 1));
+}
+void test_online_rule_ignores_name_order_and_old_rule_keeps_it(void) {
+    // a far board "m09" may lean on the online "m01" (sorts BEFORE it): refused by the old rule
+    TEST_ASSERT_FALSE(wifilink::mayJoinRule(true, "m09", "m01", 6, 6));
+    TEST_ASSERT_TRUE(wifilink::mayJoinRule(false, "m09", "m01", 6, 6));
+    // an offline hotspot (channel 1) is never joined, however its name sorts
+    TEST_ASSERT_FALSE(wifilink::mayJoinRule(false, "m01", "m09", 1, 6));
+    // ambiguous: the old name rule still decides
+    TEST_ASSERT_FALSE(wifilink::mayJoinRule(false, "m09", "m01", 1, 1));
+    TEST_ASSERT_TRUE(wifilink::mayJoinRule(false, "m01", "m09", 1, 1));
+}
+
+
+// ---- mesh forwarding (MeshLogic.h): no router, boards repeat each other's frames ----
+static void mesh_tag(const uint8_t* key, size_t kl, const uint8_t* d, size_t n, uint8_t out[8]) {
+    uint64_t h = 1469598103934665603ULL;           // stand-in keyed hash (firmware uses HMAC-SHA256)
+    for (size_t i = 0; i < kl; i++) { h ^= key[i]; h *= 1099511628211ULL; }
+    for (size_t i = 0; i < n; i++) { h ^= d[i]; h *= 1099511628211ULL; }
+    for (int i = 0; i < 8; i++) out[i] = (uint8_t)(h >> (8 * i));
+}
+static uint32_t mesh_seed = 12345;
+static uint32_t mesh_rng() { mesh_seed = mesh_seed * 1664525u + 1013904223u; return mesh_seed >> 8; }
+static const uint8_t MESH_KEY[] = {'g', 'r', 'o', 'u', 'p'};
+static mesh::MeshNode mesh_node(uint8_t id, const uint8_t* key = MESH_KEY, size_t kl = 5, uint8_t ttl = 6) {
+    mesh::Config c; c.id = id; c.ttl = ttl; c.key = key; c.keyLen = kl; c.tag = mesh_tag; c.rng = mesh_rng;
+    return mesh::MeshNode(c);
+}
+// deliver every due frame of `from` to the nodes in `to`, for `ms` milliseconds
+static void mesh_run(mesh::MeshNode** nodes, int n, const bool link[4][4], uint32_t ms) {
+    for (uint32_t t = 0; t < ms; t++)
+        for (int i = 0; i < n; i++) {
+            uint8_t buf[mesh::MAX_FRAME];
+            size_t k = nodes[i]->poll(t, buf, sizeof buf);
+            if (k) for (int j = 0; j < n; j++) if (j != i && link[i][j]) nodes[j]->rx(buf, k, t);
+        }
+}
+void test_mesh_reaches_a_board_two_hops_away_and_the_reply_comes_back(void) {
+    mesh::MeshNode a = mesh_node(1), b = mesh_node(2), c = mesh_node(3);
+    mesh::MeshNode* nodes[3] = {&a, &b, &c};
+    bool link[4][4] = {{0, 1, 0}, {1, 0, 1}, {0, 1, 0}};      // a-b, b-c: a cannot hear c
+    TEST_ASSERT_TRUE(a.send(3, mesh::TYPE_CMD, "PING", 4, 0));
+    mesh_run(nodes, 3, link, 300);
+    mesh::Delivery d;
+    TEST_ASSERT_TRUE(c.nextDelivery(d));
+    TEST_ASSERT_EQUAL_STRING("PING", d.payload);
+    TEST_ASSERT_EQUAL_INT(1, d.src);
+    TEST_ASSERT_EQUAL_INT(2, d.hops);                          // a -> b -> c
+    TEST_ASSERT_FALSE(b.nextDelivery(d));                      // b only repeated it
+    TEST_ASSERT_TRUE(c.send(1, mesh::TYPE_REPLY, "PONG", 4, 300));
+    mesh_run(nodes, 3, link, 700);                             // (the helper clock restarts at 0)
+    TEST_ASSERT_TRUE(a.nextDelivery(d));
+    TEST_ASSERT_EQUAL_STRING("PONG", d.payload);
+    TEST_ASSERT_EQUAL_INT(mesh::TYPE_REPLY, d.type);
+}
+void test_mesh_refuses_forged_and_foreign_frames(void) {
+    static const uint8_t OTHER[] = {'e', 'v', 'i', 'l'};
+    mesh::MeshNode a = mesh_node(1), b = mesh_node(2), evil = mesh_node(9, OTHER, 4);
+    uint8_t buf[mesh::MAX_FRAME];
+    evil.send(2, mesh::TYPE_CMD, "MOVE", 4, 0);
+    size_t k = evil.poll(100, buf, sizeof buf);
+    TEST_ASSERT_TRUE(k > 0);
+    TEST_ASSERT_EQUAL_INT(mesh::RX_BAD, b.rx(buf, k, 100));    // other group's key
+    a.send(2, mesh::TYPE_CMD, "PING", 4, 0);
+    k = a.poll(100, buf, sizeof buf);
+    buf[mesh::HEADER] ^= 1;                                    // one payload bit flipped in the air
+    TEST_ASSERT_EQUAL_INT(mesh::RX_BAD, b.rx(buf, k, 100));
+    buf[mesh::HEADER] ^= 1;
+    TEST_ASSERT_EQUAL_INT(mesh::RX_DELIVERED, b.rx(buf, k, 100));
+}
+void test_mesh_drops_a_replayed_old_frame_even_after_the_ring_forgot_it(void) {
+    mesh::MeshNode a = mesh_node(1), b = mesh_node(2);
+    uint8_t first[mesh::MAX_FRAME], buf[mesh::MAX_FRAME];
+    a.send(2, mesh::TYPE_CMD, "PING", 4, 0);
+    size_t k0 = a.poll(100, first, sizeof first);
+    TEST_ASSERT_EQUAL_INT(mesh::RX_DELIVERED, b.rx(first, k0, 100));
+    for (int i = 0; i < 100; i++) {                 // 100 newer frames push it out of the 64-entry ring
+        a.send(2, mesh::TYPE_CMD, "PING", 4, 200 + i);
+        size_t k = a.poll(300 + i, buf, sizeof buf);
+        b.rx(buf, k, 300 + i);
+    }
+    TEST_ASSERT_EQUAL_INT(mesh::RX_DROPPED_OLD, b.rx(first, k0, 900));   // the capture is refused
+}
+void test_mesh_drops_repeats_and_respects_ttl_and_suppression(void) {
+    mesh::MeshNode a = mesh_node(1), b = mesh_node(2, MESH_KEY, 5, 6);
+    uint8_t buf[mesh::MAX_FRAME];
+    a.send(7, mesh::TYPE_CMD, "X", 1, 0);
+    size_t k = a.poll(100, buf, sizeof buf);
+    TEST_ASSERT_EQUAL_INT(mesh::RX_FORWARDING, b.rx(buf, k, 100));
+    TEST_ASSERT_EQUAL_INT(mesh::RX_DROPPED_DUP, b.rx(buf, k, 101));   // the same frame again
+    TEST_ASSERT_EQUAL_INT(mesh::RX_DROPPED_DUP, b.rx(buf, k, 102));   // and again
+    TEST_ASSERT_EQUAL_INT(mesh::RX_DROPPED_DUP, b.rx(buf, k, 103));   // 3 other boards repeated it
+    uint8_t out[mesh::MAX_FRAME];
+    TEST_ASSERT_EQUAL_INT(0, (int)b.poll(1000, out, sizeof out));      // so b stays quiet
+    // ttl 1 is delivered but never repeated
+    mesh::MeshNode c = mesh_node(1, MESH_KEY, 5, 1), d = mesh_node(2);
+    c.send(7, mesh::TYPE_CMD, "Y", 1, 0);
+    k = c.poll(100, buf, sizeof buf);
+    TEST_ASSERT_EQUAL_INT(mesh::RX_DONE, d.rx(buf, k, 100));
+    TEST_ASSERT_EQUAL_INT(0, (int)d.poll(1000, out, sizeof out));
 }
 
 // "MSI 3058" is one network name, not an ssid and a password.
@@ -580,6 +692,12 @@ int main(int, char **) {
     RUN_TEST(test_ease_is_smooth_and_bounded);
     RUN_TEST(test_pass_curve_matches_studio);
     RUN_TEST(test_pass_needs_its_start_speed_and_limits);
+    RUN_TEST(test_online_host_follows_router_channel);
+    RUN_TEST(test_online_rule_ignores_name_order_and_old_rule_keeps_it);
+    RUN_TEST(test_mesh_reaches_a_board_two_hops_away_and_the_reply_comes_back);
+    RUN_TEST(test_mesh_refuses_forged_and_foreign_frames);
+    RUN_TEST(test_mesh_drops_a_replayed_old_frame_even_after_the_ring_forgot_it);
+    RUN_TEST(test_mesh_drops_repeats_and_respects_ttl_and_suppression);
     RUN_TEST(test_census_slots_never_overlap);
     RUN_TEST(test_wifi_list_walks_saved_networks_in_order);
     RUN_TEST(test_wifi_list_skips_empty_slots);

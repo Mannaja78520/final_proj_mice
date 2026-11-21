@@ -13,3 +13,28 @@ Goal: the hub's admin login is the front door; each app also accepts a hub-issue
 
 Our side (no wait): partners.json login kinds jwt (done) + bearer; per-app secrets in a git-ignored local file;
 hub shows an app's admin button only to hub admins.
+
+## Newcomer test, 2026-11-21 (read-only; we edited nothing of theirs)
+
+Someone who knows nothing about the project opened each friend app. For the friend, most important first:
+
+**Face_Regonize (5173)**
+1. Phone (390 px) is broken: the sidebar stays ~255 px wide, so content gets ~135 px and the People table is cut off on every page after login. Collapse the sidebar under ~768 px.
+2. Unknown URL (`/nonexistent`) shows an empty page - add a "page not found" screen with a way back.
+3. The whole UI is English (only people's names are Thai). Staff are Thai: Thai labels, or a language switch.
+4. Login page shows "Demo login: admin / admin123" to everyone; "Local Video Experiment (Admin experiment)" sits in the normal menu.
+5. Chrome 75 (Android TV): `?.`, `??`, `replaceAll` are everywhere (CameraNode 24, Recognition 14) and Vite has no `build.target`, so the bundle needs Chrome 87+. Set `build.target: 'chrome70'` (or use @vitejs/plugin-legacy) if the TV must open it.
+
+**All-Jao-Games (4173)**
+1. The server is not running after a PC start; the hub starts it from /app/all-jao/ (we have not re-tested that auto-start).
+2. Admin lists 4 games (incl. quiz "รู้ใจแค่ไหน") but the player page offers only 3.
+3. Username placeholder reads "xxxxxxx"; the tagline mixes English and Thai; one 404 in the console on first load; README points to `D:\All Jao Games\data`.
+4. Chrome 75: one spot, `motion.js:78` `tab?.closest(...)`.
+
+**Photobooth (5191)**
+1. A fresh start shows "Kiosk not paired" (401 on /api/booth/frames) on Admin and Booth until `run-dummy.ps1 -PairOnly` is run. A first-time user is stuck; the page should say how to pair, or pair itself on localhost.
+2. No Thai text at all, and the first page shows technical words ("API 1 - dummy - database 0012_policy_per_event - code 64724759c918").
+3. `/nope` shows the home page instead of 404; port 8113 `/` answers "not found".
+4. Chrome 75: same `?.` / `??` / `replaceAll` problem as Face_Regonize.
+
+Not tested (needs a person or hardware): playing a game to the end and the prize, phone over the LAN, photo capture and QR.

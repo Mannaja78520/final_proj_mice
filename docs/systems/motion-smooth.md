@@ -24,7 +24,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 
 - nothing
 
-## Checks that test it (187)
+## Checks that test it (189)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -182,6 +182,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_studio_notice`
 - `check_studio_resume`
 - `check_tabs`
+- `check_thai_names`
 - `check_time_bar`
 - `check_translate`
 - `check_ui_states`
@@ -197,6 +198,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_voice_answers`
 - `check_voice_bench`
 - `check_voice_conversation`
+- `check_voice_edge_fallback`
 - `check_voice_fast`
 - `check_voice_guard`
 - `check_voice_helper`

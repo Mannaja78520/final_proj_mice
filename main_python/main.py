@@ -382,6 +382,20 @@ UPLOAD_EXT = (".stl", ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".urdf")
 SAFE_NAME = re.compile(r"^[A-Za-z0-9._ -]{1,80}$")
 
 
+# Names of files that stay on THIS PC (saved projects, sequences, shows): any
+# language, Thai included (user 2026-11-21). safe_name above stays ASCII-only
+# for everything a board's SD card or command line receives. Still no / \\ : or
+# control characters, so a name can never climb out of its folder.
+PC_NAME = re.compile(r"^[\w\u0e00-\u0e7f. -]{1,80}$")
+
+
+def pc_name(name: str) -> str:
+    name = name.strip()
+    if not PC_NAME.match(name) or name.startswith(".") or ".." in name:
+        raise ValueError(f"bad name: {name!r}")
+    return name
+
+
 def safe_name(name: str) -> str:
     name = name.strip()
     if not SAFE_NAME.match(name) or name.startswith("."):
@@ -1661,6 +1675,29 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         self.drain()          # never reject a POST without reading its body
         self.send_json({"ok": False, "error": str(msg)}, code=code)
 
+    # Data a person (or a script) can send wrong: not JSON, not UTF-8, JSON that
+    # is not an object. These are the SENDER's mistake, so 400 with plain words,
+    # never the Python message ("'NoneType' object has no attribute 'get'") and
+    # never a 500 (found by the 2026-11-21 odd-input sweep, 90 such answers).
+    _BAD_DATA = ("object has no attribute 'get'", "is not subscriptable",
+                 "indices must be integers", "object is not iterable")
+
+    def send_bad_request_or_500(self, e):
+        text = str(e)
+        if isinstance(e, ValueError) and text.startswith("bad name"):
+            return self.send_err("That name cannot be used - use letters, "
+                                 "numbers, spaces or - _ and keep it short.", 400)
+        if isinstance(e, ValueError) and text.startswith("that is too big"):
+            return self.send_err(text, 413)
+        if isinstance(e, KeyError):
+            return self.send_err("A field is missing: %s" % text.strip("'\""), 400)
+        if isinstance(e, (json.JSONDecodeError, UnicodeDecodeError)) or (
+                isinstance(e, (AttributeError, TypeError, KeyError))
+                and any(k in text for k in self._BAD_DATA)):
+            return self.send_err("That data was not understood - it has to be "
+                                 "a JSON object with the fields the page sends.", 400)
+        self.send_err(e, 500)
+
     def voice_proxy(self, method, path, q):
         """Hand /api/voice/* to the helper and its answer back, unchanged.
 
@@ -1750,6 +1787,11 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         the venue WiFi — so the route that expects a big body names how big.
         """
         n = max(0, int(self.headers.get("Content-Length") or 0))
+        # Routes anyone on the WiFi may call with no login (hub_auth.NEVER_GATED)
+        # get a ceiling of their own, else one visitor could fill this PC's disk
+        # (60 MB went in unchallenged, 2026-11-21 sweep).
+        if not limit and self.path.split("?")[0] in hub_auth.NEVER_GATED:
+            limit = 100 * 1048576
         if limit and n > limit:
             self._body_read = True
             self.close_connection = True   # unread bytes must not become the next request
@@ -1802,21 +1844,21 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         try:
             self.route("GET")
         except Exception as e:  # noqa: BLE001
-            self.send_err(e, 500)
+            self.send_bad_request_or_500(e)
 
     def do_POST(self):
         self._body_read = False   # else the last request's read skips this one's drain
         try:
             self.route("POST")
         except Exception as e:  # noqa: BLE001
-            self.send_err(e, 500)
+            self.send_bad_request_or_500(e)
 
     def do_PUT(self):             # only a proxied friend's game saves with PUT
         self._body_read = False
         try:
             self.route("PUT")
         except Exception as e:  # noqa: BLE001
-            self.send_err(e, 500)
+            self.send_bad_request_or_500(e)
 
     def dev_route(self, method: str, what: str, q):
         """One call to a module, whichever way it is reached.
@@ -2141,6 +2183,35 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 source = hub_api_resources.browser_bootstrap() + source
             return self.send_bytes(source, "text/javascript; charset=utf-8")
 
+        if path.startswith("/lang/") and path.endswith(".json"):
+            # Languages (shared/web/mice-lang.js): one file per language in
+            # shared/web/lang/. index.json lists the folder, so a new language
+            # is a new file and nothing here changes.
+            folder = SHARED_WEB / "lang"
+            name = path[len("/lang/"):-len(".json")]
+            if name == "index":
+                langs = []
+                for f in sorted(folder.glob("*.json")):
+                    try:
+                        langs.append({"code": f.stem, "name": json.loads(
+                            f.read_text(encoding="utf-8")).get("name", f.stem)})
+                    except (OSError, ValueError):
+                        continue
+                # The page's language until someone picks one: this PC's own choice
+                # (env MICE_LANG, QC sets "en" so its English text matches stay put).
+                return self.send_json({"default": os.environ.get("MICE_LANG", "th"),
+                                       "languages": [{"code": "en", "name": "English"}] + langs})
+            if re.fullmatch(r"[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})?", name) and (folder / (name + ".json")).is_file():
+                return self.send_bytes((folder / (name + ".json")).read_bytes(),
+                                       "application/json; charset=utf-8")
+            return self.send_err("no such language", 404)
+        if path == "/favicon.ico":
+            # Every browser asks for it by itself; without an answer each first
+            # load of a page logged a red 404 (found 2026-11-21, newcomer sweep).
+            icon = Path(__file__).with_name("nong.ico")
+            if icon.is_file():
+                return self.send_bytes(icon.read_bytes(), "image/x-icon")
+            return self.send_bytes(b"", "image/x-icon", code=204)
         if path == "/mice.css":
             # One design system for every surface. This route must stay ABOVE
             # the studio fallback below, which would otherwise look for the
@@ -2747,7 +2818,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
 
         if path == "/api/export" and method == "POST":
             data = json.loads(self.body().decode())
-            name = safe_name(data["name"])
+            name = pc_name(data["name"])
             if not name.endswith(".yaml"):
                 name += ".yaml"
             existed = (SEQUENCES / name).exists()
@@ -2779,7 +2850,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         if path == "/api/robot/upload" and method == "POST":
             data = json.loads(self.body().decode())
             ip = data["ip"]
-            name = safe_name(data["name"])
+            name = pc_name(data["name"])
             payload = data["yaml"].encode()
             boundary = "----micehub%d" % int(time.time())
             body = (
