@@ -30,6 +30,6 @@ def run(t):
     t.ok('"mesh"' in ident and '"off"' in ident, "mesh mode is stored and defaults to off", "")
     t.ok('what == "MESH"' in cmd and "ERR" in cmd, "SET MESH ON|OFF exists", "")
     t.ok("hmac" in link.lower() or "mbedtls_md_hmac" in link, "frames are signed with the group key", "")
-    t.ok("RX_DROPPED_OLD" in logic and "seqStart" in link and "test_mesh_drops_a_replayed_old_frame" in tests,
+    t.ok("return RX_DROPPED_OLD;" in logic and "seqStart" in link and "test_mesh_drops_a_replayed_old_frame" in tests,
          "an old captured frame is refused; seq rises on every boot (kept in flash)", "")
     t.ok("mesh::MeshNode" in tests, "native tests drive the real MeshNode", "")
