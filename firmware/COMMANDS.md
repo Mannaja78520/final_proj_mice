@@ -357,6 +357,9 @@ interchangeably.
 | `WIFI ON\|OFF\|AP` | `OK wifi on — applied now, no reboot` | same as `SET WIFI ON\|OFF\|AP`; **takes effect immediately** |
 | `WIFI CLEAR` | `OK forgot the stored network, now using "manny" from the firmware` | forget credentials set on this board and fall back to the one compiled into `config/conf_network.h`. The way back after pointing a module at a bench hotspot |
 | `WIFI RETRY` | `OK retrying "manny" now` | try the stored network again without waiting for the 60 s clock |
+| `MESH` | `MESH mode=off up=0 ...` | status of the router-less ESP-NOW mesh (off by default) |
+| `MESH <id\|*> <command>` | the other board's reply, `@<id> ...` | run a command on another board through the mesh; resent up to 3 times, reply cut at 200 characters |
+| `SET MESH ON\|OFF` | `OK` | turn the mesh on or off (stored, default off) |
 | `WIFI SCAN` | `OK 4 network(s): "manny"(-48dBm) ...` | which 2.4GHz networks this board can actually see. Asynchronous — ask again a moment later for the result |
 | `CFG <key> <value>` | `OK ... (reboot to apply)` | keys: `encoder leds speed speed_mms stages stage_mm mm_per_rev counts_per_rev max_rpm counts_per_stage volume speed_dps max_dps safe_dps music_dps link` — works without SD card, overrides module.yaml |
 | `CFG CLEAR [key]` | `OK cleared ...` | remove one / all stored settings |
