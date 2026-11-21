@@ -1,0 +1,12 @@
+{
+  "id": "3303bb557df6",
+  "time": "2026-11-21T16:02:43.447Z",
+  "text": "STUDIO FREEZE {\"gapMs\":2017,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":1,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":7,\"longTasks\":[{\"ms\":112,\"at\":749},{\"ms\":283,\"at\":861},{\"ms\":72,\"at\":1158},{\"ms\":227,\"at\":1640},{\"ms\":116,\"at\":1882},{\"ms\":125,\"at\":2131},{\"ms\":53,\"at\":2274},{\"ms\":55,\"at\":2360},{\"ms\":1947,\"at\":2662},{\"ms\":75,\"at\":4609}],\"slowCalls\":[{\"u\":\"/api/list?kind=models\",\"ms\":323,\"at\":835},{\"u\":\"/api/ports\",\"ms\":301,\"at\":857},{\"u\":\"/api/list?kind=sequences\",\"ms\":324,\"at\":834},{\"u\":\"/api/ports\",\"ms\":300,\"at\":858},{\"u\":\"/api/whoami\",\"ms\":49,\"at\":1244},{\"u\":\"/api/list?kind=models&deep=1\",\"ms\":37,\"at\":1290},{\"u\":\"video_motion_policy.json\",\"ms\":39,\"at\":1289},{\"u\":\"/api/login\",\"ms\":176,\"at\":1153},{\"u\":\"/api/gestures\",\"ms\":6,\"at\":1537},{\"u\":\"/api/voice/config\",\"ms\":74,\"at\":1566},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=INFO\",\"ms\":535,\"at\":1346},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=LIMIT%3F\",\"ms\":55,\"at\":2076},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=FILES%20%2Fmoves\",\"ms\":54,\"at\":2077},{\"u\":\"/api/gestures\",\"ms\":163,\"at\":2110},{\"u\":\"/api/gestures/fit\",\"ms\":99,\"at\":4603}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+  "text_en": "Sure! {\"label\": \"Point up high\", \"word\": \"ฟ้า\", \"keys\": [{\"R\": [0.2, 3, 0.4], \"palmR\": \"sideways\", \"t\": 99999, \"hold\": -5, \"x\": 1}]}"
+}

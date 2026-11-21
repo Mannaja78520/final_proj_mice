@@ -55,12 +55,23 @@
     },
     "ttgo-journal": {
       "label": "TTGO T-Journal",
-      "note": "reset wired, power-down not",
+      "chip": "esp32",
+      "note": "power-down on GPIO 0. Data lines corrected 2026-11-21: GPIO 36 was listed twice (check_cam_boards_data now refuses that)",
       "extra": {"flash": -1, "led": -1},
       "pins": {"pwdn": 0, "reset": 15, "xclk": 27, "siod": 25, "sioc": 23,
-               "y9": 36, "y8": 36, "y7": 19, "y6": 18,
-               "y5": 5, "y4": 4, "y3": 34, "y2": 35,
+               "y9": 19, "y8": 36, "y7": 18, "y6": 39,
+               "y5": 5, "y4": 34, "y3": 35, "y2": 17,
                "vsync": 22, "href": 26, "pclk": 21}
+    },
+    "wrover-kit": {
+      "label": "ESP-WROVER-KIT / Freenove WROVER",
+      "note": "no power-down or reset, XCLK on GPIO 21. Pins from the vendor table, not bench tested",
+      "chip": "esp32",
+      "extra": {"flash": -1, "led": -1},
+      "pins": {"pwdn": -1, "reset": -1, "xclk": 21, "siod": 26, "sioc": 27,
+               "y9": 35, "y8": 34, "y7": 39, "y6": 36,
+               "y5": 19, "y4": 18, "y3": 5, "y2": 4,
+               "vsync": 25, "href": 23, "pclk": 22}
     },
     "esp32s3-eye": {
       "label": "ESP32-S3 camera (Freenove / ESP32-S3-EYE / generic S3-CAM)",
@@ -91,6 +102,16 @@
                "y9": 48, "y8": 46, "y7": 8, "y6": 7,
                "y5": 4, "y4": 41, "y3": 40, "y2": 39,
                "vsync": 6, "href": 42, "pclk": 5}
+    },
+    "esp32s3-cam-lcd": {
+      "label": "ESP32-S3-CAM N16R8 kits / ESP32-S3-Korvo-2",
+      "note": "S3 board with the LCD header, XCLK on 40. Pins from the vendor table, not bench tested",
+      "chip": "esp32s3",
+      "extra": {"flash": -1, "led": -1},
+      "pins": {"pwdn": -1, "reset": -1, "xclk": 40, "siod": 17, "sioc": 18,
+               "y9": 39, "y8": 41, "y7": 42, "y6": 12,
+               "y5": 3, "y4": 14, "y3": 47, "y2": 13,
+               "vsync": 21, "href": 38, "pclk": 11}
     }
   }
 }

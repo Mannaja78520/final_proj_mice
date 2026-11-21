@@ -148,7 +148,7 @@
 
     // ---------------- cam ----------------
     { "name": "SNAP",    "scope": "cam",  "args": "[<file>]",                           "help": "take a picture; with a name it is saved to /photos on the card" },
-    { "name": "CAM",     "scope": "cam",  "args": "[SIZE <name>|QUALITY <10-63>|FLASH ON|OFF|VFLIP 0|1|HMIRROR 0|1]", "query": false, "help": "what the sensor is set to, and change it" },
+    { "name": "CAM",     "scope": "cam",  "args": "[SIZE <name>|QUALITY <10-63>|FLASH ON|OFF|BOARD [<name>|AUTO]|VFLIP 0|1|HMIRROR 0|1]", "query": false, "help": "what the sensor is set to, and change it" },
 
     // ---------------- dummy (hand-posed nong, pots instead of servos) ----------------
     { "name": "POSE?",   "scope": "dummy", "args": "",                  "query": true,  "help": "the 10 joint angles the dummy is posed in; '-' = no pot on that joint" },
