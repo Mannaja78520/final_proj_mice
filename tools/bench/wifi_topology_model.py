@@ -118,6 +118,44 @@ def run(lib, name, router, pos, rounds=30, noise=3.0, rule="name", seed=1):
             "flips_per_board_per_round": round(flips / len(pos) / rounds, 3), "noise_db": noise}
 
 
+def run_no_router(lib, n, cap, area=20.0, seed=7, rounds=20, noise=3.0):
+    """Boards of ONE company, no router anywhere: do they find each other by themselves?
+
+    Every hotspot is on channel 1 (nobody is online), so the online rule cannot tell hosts apart and the
+    name rule decides (WifiLink.h mayJoinRule -> mayJoin): a board only joins a hotspot whose name sorts
+    after its own, so the highest name is the root. `cap` is the hotspot's client limit (ESP32 softAP
+    default 4, hardware maximum 10). A board that already hosts clients never moves (firmware rule);
+    a full hotspot refuses. Boards start in random order, one decision each per round.
+    """
+    rng = random.Random(seed)
+    pos = [(rng.uniform(0, area), rng.uniform(0, area)) for _ in range(n)]
+    names = ["m%03d" % i for i in range(n)]
+    host = [None] * n
+    for _ in range(rounds):
+        order = list(range(n))
+        rng.shuffle(order)
+        for i in order:
+            if host[i] is not None or any(h == i for h in host):
+                continue                           # leaning already, or others lean on it
+            best, bj = 0, None
+            for j in range(n):
+                if j == i or host[j] is not None or sum(h == j for h in host) >= cap:
+                    continue
+                if not lib.mayrule(0, names[i].encode(), names[j].encode(), 1, 0):
+                    continue
+                r = rssi(pos[i], pos[j], rng, noise)
+                if r and (not best or r > best):
+                    best, bj = r, j
+            if bj is not None:
+                host[i] = bj
+    roots = [j for j in range(n) if host[j] is None and any(h == j for h in host)]
+    alone = [j for j in range(n) if host[j] is None and not any(h == j for h in host)]
+    in_cluster = sum(h is not None for h in host) + len(roots)
+    biggest = max([1 + sum(h == j for h in host) for j in roots] or [1])
+    return {"boards": n, "hotspot_client_limit": cap, "clusters": len(roots), "boards_in_a_cluster": in_cluster,
+            "boards_alone": len(alone), "largest_cluster": biggest, "max_hops": 1 if roots else 0}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out")
@@ -133,6 +171,9 @@ def main():
             pts = [(rng.uniform(5, side), rng.uniform(-side / 2, side / 2)) for _ in range(n)]
             rows.append(run(lib, "%d boards random in %dx%d m" % (n, side, side), r, pts, rule=rule))
         rows.append(run(lib, "robot 60 m out, only 2 boards between", r, [(20, 0), (40, 0), (60, 0)], rule=rule))
+    for cap in (4, 8):
+        for n in (2, 5, 10, 30, 100, 255):
+            rows.append(dict(run_no_router(lib, n, cap), scenario="no router, one company"))
     for x in rows:
         print(x)
     if a.out:
