@@ -382,6 +382,20 @@ UPLOAD_EXT = (".stl", ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".urdf")
 SAFE_NAME = re.compile(r"^[A-Za-z0-9._ -]{1,80}$")
 
 
+# Names of files that stay on THIS PC (saved projects, sequences, shows): any
+# language, Thai included (user 2026-11-21). safe_name above stays ASCII-only
+# for everything a board's SD card or command line receives. Still no / \\ : or
+# control characters, so a name can never climb out of its folder.
+PC_NAME = re.compile(r"^[\w\u0e00-\u0e7f. -]{1,80}$")
+
+
+def pc_name(name: str) -> str:
+    name = name.strip()
+    if not PC_NAME.match(name) or name.startswith(".") or ".." in name:
+        raise ValueError(f"bad name: {name!r}")
+    return name
+
+
 def safe_name(name: str) -> str:
     name = name.strip()
     if not SAFE_NAME.match(name) or name.startswith("."):
@@ -2160,6 +2174,25 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 source = hub_api_resources.browser_bootstrap() + source
             return self.send_bytes(source, "text/javascript; charset=utf-8")
 
+        if path.startswith("/lang/") and path.endswith(".json"):
+            # Languages (shared/web/mice-lang.js): one file per language in
+            # shared/web/lang/. index.json lists the folder, so a new language
+            # is a new file and nothing here changes.
+            folder = SHARED_WEB / "lang"
+            name = path[len("/lang/"):-len(".json")]
+            if name == "index":
+                langs = []
+                for f in sorted(folder.glob("*.json")):
+                    try:
+                        langs.append({"code": f.stem, "name": json.loads(
+                            f.read_text(encoding="utf-8")).get("name", f.stem)})
+                    except (OSError, ValueError):
+                        continue
+                return self.send_json({"languages": [{"code": "en", "name": "English"}] + langs})
+            if re.fullmatch(r"[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})?", name) and (folder / (name + ".json")).is_file():
+                return self.send_bytes((folder / (name + ".json")).read_bytes(),
+                                       "application/json; charset=utf-8")
+            return self.send_err("no such language", 404)
         if path == "/favicon.ico":
             # Every browser asks for it by itself; without an answer each first
             # load of a page logged a red 404 (found 2026-11-21, newcomer sweep).
@@ -2770,7 +2803,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
 
         if path == "/api/export" and method == "POST":
             data = json.loads(self.body().decode())
-            name = safe_name(data["name"])
+            name = pc_name(data["name"])
             if not name.endswith(".yaml"):
                 name += ".yaml"
             existed = (SEQUENCES / name).exists()
@@ -2802,7 +2835,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         if path == "/api/robot/upload" and method == "POST":
             data = json.loads(self.body().decode())
             ip = data["ip"]
-            name = safe_name(data["name"])
+            name = pc_name(data["name"])
             payload = data["yaml"].encode()
             boundary = "----micehub%d" % int(time.time())
             body = (
