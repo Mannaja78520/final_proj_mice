@@ -23,10 +23,11 @@
 // of 64) is dropped. A frame for this board is delivered and, unless it was
 // addressed to everyone, not repeated.
 //
-// NOT covered, said plainly: a captured frame can be replayed by someone with a
-// radio until it leaves the 64-entry ring (the seq starts from a random boot
-// value, so a rebooted board is not confused with its old self). The group key is
-// what keeps strangers out; there is no clock to expire frames with.
+// REPLAY: each board remembers the newest seq heard per sender and drops a frame
+// more than 8 behind it. The sender's seq rises on every boot (Config.seqStart,
+// kept in flash), so a rebooted board is never mistaken for an old capture.
+// Said plainly: a board that has just rebooted has no memory, so one captured frame
+// can still be replayed to it once; there is no clock to expire frames with.
 #include <stdint.h>
 #include <string.h>
 
@@ -39,7 +40,7 @@ const size_t HEADER = 11, TAG = 8, MAX_PAYLOAD = 200, MAX_FRAME = HEADER + MAX_P
 // keyed tag: out[0..7]. Firmware: HMAC-SHA256 (mbedtls). Tests: a stand-in.
 typedef void (*TagFn)(const uint8_t* key, size_t klen, const uint8_t* data, size_t n, uint8_t out[8]);
 
-enum RxResult { RX_DELIVERED, RX_FORWARDING, RX_DROPPED_DUP, RX_BAD, RX_OWN, RX_DONE };
+enum RxResult { RX_DELIVERED, RX_FORWARDING, RX_DROPPED_DUP, RX_DROPPED_OLD, RX_BAD, RX_OWN, RX_DONE };
 
 struct Delivery {
     uint8_t type, src, hops, len;
@@ -55,11 +56,12 @@ struct Config {
     size_t keyLen = 0;
     TagFn tag = nullptr;
     uint32_t (*rng)() = nullptr;
+    uint32_t seqStart = 0;         // first sequence number; must rise on every boot (kept in flash) or replays of old frames get through
 };
 
 class MeshNode {
 public:
-    explicit MeshNode(const Config& c) : c_(c) { seq_ = (c.rng ? (c.rng() & 0xFFFF) : 1) << 16; }
+    explicit MeshNode(const Config& c) : c_(c) { seq_ = c.seqStart ? c.seqStart : (c.rng ? (c.rng() & 0xFFFF) : 1) << 16; }
 
     // Queue a frame this board originates. Sent by poll() within a few ms.
     bool send(uint8_t dst, uint8_t type, const char* payload, size_t len, uint32_t now) {
@@ -93,6 +95,10 @@ public:
                 if (p.active && !p.own && p.src == src && p.seq == seq) p.dups++;
             return RX_DROPPED_DUP;
         }
+        // Replay guard: per source, a frame far behind the newest one heard is an old capture.
+        // A window of OLD_WINDOW allows normal out-of-order arrival over different paths.
+        if (hwSet_[src] && (int32_t)(seq - hw_[src]) <= -(int32_t)OLD_WINDOW) return RX_DROPPED_OLD;
+        if (!hwSet_[src] || (int32_t)(seq - hw_[src]) > 0) { hw_[src] = seq; hwSet_[src] = true; }
         remember(src, seq);
         bool forMe = dst == c_.id || dst == 0;
         RxResult r = RX_DONE;
@@ -144,6 +150,9 @@ private:
     struct Pending { uint8_t bytes[MAX_FRAME]; size_t len = 0; uint32_t dueAt = 0; uint8_t dups = 0, src = 0;
                      uint32_t seq = 0; bool active = false, own = false; };
     static const int PEND = 8, RING = 64, DQ = 4;
+    static const uint32_t OLD_WINDOW = 8;
+    uint32_t hw_[256] = {0};
+    bool hwSet_[256] = {false};
     Config c_;
     Pending pend_[PEND];
     uint32_t seq_ = 0;
