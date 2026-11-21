@@ -14,17 +14,44 @@
  "dups_30": {
   "duplicate_ids": 3,
   "moved": 3,
-  "virtual_s": 277.8
+  "virtual_s": 39.0
  },
  "dups_100": {
   "duplicate_ids": 17,
   "moved": 18,
-  "virtual_s": 336.2
+  "virtual_s": 87.4
  },
  "dups_247": {
   "duplicate_ids": 60,
   "moved": 89,
-  "virtual_s": 405.9
+  "virtual_s": 240.2
+ },
+ "mass_poweron": {
+  "8": {
+   "seconds": 11.2,
+   "all_unique": true
+  },
+  "24": {
+   "seconds": 40.7,
+   "all_unique": true
+  },
+  "64": {
+   "seconds": 42.9,
+   "all_unique": true
+  },
+  "128": {
+   "seconds": 94.7,
+   "all_unique": true
+  },
+  "247": {
+   "seconds": 140.7,
+   "all_unique": true
+  }
+ },
+ "command_latency_ms": {
+  "addressed_reply_airtime": 2.6,
+  "worst_wait_behind_scan_range_s": 0.39,
+  "scan_duty_at_one_per_minute_pct": 7.2
  },
  "four_buses": {
   "found": 988,

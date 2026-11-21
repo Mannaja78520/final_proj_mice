@@ -185,8 +185,18 @@ Frame format (ASCII lines ending with `\n`):
 #<id> <command>        request to module <id>        e.g.  #3 GOTO 2
 @<id> <reply>          reply from module <id>        e.g.  @3 OK goto 2
 #* <command>           broadcast: everyone executes, nobody replies
-#* PING                discovery: every module replies, staggered by id*20ms
+#* PING                discovery: every module replies, staggered by id % 24 x 10 ms
+#* PING <lo> <hi>       ranged discovery: only ids lo..hi reply, slot (id-lo) % 24
+#* CHIPS <lo> <hi> <salt>   ranged: "@<id> CHIP <chip>" - the permanent chip of every
+                       board in the range; boards that share an id answer in two lanes
+#~<chip> <command>     request to the ONE board with that chip (ids may collide, chips
+                       never do)  e.g.  #~A0B1C2D3E4F5 SET ID 12 ; reply "@~<chip> <reply>"
 ```
+
+Past ~12 boards a plain `#* PING` is unreliable (about ten boards share each
+10 ms slot and destroy each other's replies); the hub then asks range by range.
+Boards on older firmware ignore `CHIPS` and `#~`, and answer a ranged PING like a
+plain one. See `docs/architecture/scaling-ids.md`.
 
 Examples:
 

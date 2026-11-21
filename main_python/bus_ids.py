@@ -25,7 +25,7 @@ _CHIP = re.compile(r"^@(\d+)\s+CHIP\s+([0-9A-Fa-f]{12})$")
 
 
 class BusIds:
-    def __init__(self, exchange, salts=(1, 2, 3, 4, 5, 6, 7, 8)):
+    def __init__(self, exchange, salts=tuple(range(1, 17))):
         self.exchange = exchange
         self.salts = salts
         self.garbled = 0     # lines heard that were neither PONG nor CHIP
@@ -59,7 +59,7 @@ class BusIds:
                 break
         return found
 
-    def chips(self, lo=1, hi=MAX_ID):
+    def chips(self, lo=1, hi=MAX_ID, only=None):
         """{id: {chip, ...}}: every chip heard per id, over several salts.
 
         Two boards on one id answer in the same slot of different lanes only
@@ -67,16 +67,28 @@ class BusIds:
         to show. A range that came back garbled is simply asked again.
         """
         out = {}
+        self.unclean = []        # ranges that never came back without wreckage
         for a, b in self.ranges(lo, hi):
+            if only is not None and not any(a <= i <= b for i in only):
+                continue          # nobody lives here: skip its ~0.6 s
             for salt in self.salts:
-                lines = self.exchange("#* CHIPS %d %d %d" % (a, b, salt),
-                                      SLOTS * LANES * SLOT_S + 0.15)
-                for ln in lines:
+                bad = 0
+                for ln in self.exchange("#* CHIPS %d %d %d" % (a, b, salt),
+                                        SLOTS * LANES * SLOT_S + 0.15):
                     m = _CHIP.match(ln)
                     if m:
                         out.setdefault(int(m.group(1)), set()).add(m.group(2).upper())
                     else:
-                        self.garbled += 1
+                        bad += 1
+                self.garbled += bad
+                # A pass with no wreckage is complete: every board in the range
+                # was heard alone, duplicates included (they sit in different
+                # lanes). Only a garbled pass needs another salt. That is what
+                # keeps a clean 247-board bus at one pass per range (~7 s).
+                if not bad:
+                    break
+            else:
+                self.unclean.append((a, b))
         return out
 
     def duplicates(self, lo=1, hi=MAX_ID):
@@ -91,11 +103,12 @@ class BusIds:
         reported, never assumed.
         """
         moved, failed = {}, []
-        for _round in range(4):     # three boards on one id may hide one another
+        for _round in range(12):    # three boards on one id may hide one another
             seen = self.chips(lo, hi)
             dup = sorted(i for i, c in seen.items() if len(c) > 1)
-            if not dup:
+            if not dup and not self.unclean:
                 break
+            # an unclean range hides boards: ask it again next round
             used = set(seen)
             for ident in dup:
                 for chip in sorted(seen[ident])[1:]:
