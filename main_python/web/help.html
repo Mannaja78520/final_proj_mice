@@ -2555,6 +2555,15 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <tr><td>USB</td><td class="wrap2">The board on the cable</td><td class="wrap2">115200 baud. No network needed. Shared by the hub, so several pages can use one cable.</td></tr>
     <tr><td>RS485</td><td class="wrap2">Every module on the bus</td><td class="wrap2">Framed <code>#id …</code> / <code>@id …</code>. Works through a dongle or through another module's USB port.</td></tr>
   </tbody></table></div>
+  <div class="f"><h3>Board numbers — find and fix two boards sharing one<span class="tag t-new">new</span></h3>
+    <p>On the hub's <b>Modules</b> tab, the <b>Board numbers</b> card checks one cable. Pick the cable and press
+       <b>Check numbers</b>. It lists any boards that share a number on that cable and, when some boards are plugged
+       into other boards, who is plugged into whom. Checking changes nothing. If boards share a number, press
+       <b>Give them new numbers…</b> and confirm: each board but one gets a free number, and the hub checks again.
+       Changing numbers needs the same sign-in as flashing. Turn on <b>Show technical details</b> to see each
+       board's permanent chip and its path (for example <code>&gt;100&gt;200&gt;7</code>).</p>
+    <p>A cable holds up to 247 boards. For more, use more cables, or plug boards that have a second link into the
+       bus (up to 3 in a row). The same board seen on USB, RS485 and WiFi is still one row on the Modules tab.</p></div>
 </section>
 
 <!-- ===================== COMMANDS ===================== -->

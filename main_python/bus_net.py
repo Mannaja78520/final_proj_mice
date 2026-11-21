@@ -65,6 +65,7 @@ class Topology:
         self.refused = []       # paths not descended into (too deep)
         self.buses = 0
         self.duplicate_ids = {}  # bus path -> {id: chips}
+        self.links = {}          # bus path -> the link that talks to that bus (for repairs)
 
     def discover(self):
         self._scan("", self.root, 0)
@@ -74,6 +75,7 @@ class Topology:
 
     def _scan(self, path, exchange, depth):
         self.buses += 1
+        self.links[path or "root"] = exchange
         ids = bus_ids.BusIds(exchange, salts=tuple(range(1, 13)))
         found = ids.chips()
         dup = {i: sorted(c) for i, c in found.items() if len(c) > 1}
