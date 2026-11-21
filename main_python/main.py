@@ -727,7 +727,7 @@ def scan_modules(force=False):
 
 # Listing ports and asking each which module it is: hub_probe.py (A26-93).
 from hub_probe import (  # noqa: E402
-    serial_ports, _read_lines, _wifi_of, probe_usb_port, _usbscan_lock,
+    serial_ports, serial_ports_cached, _read_lines, _wifi_of, probe_usb_port, _usbscan_lock,
     _usbscan_cache, probe_usb_one, probe_usb_all)
 
 
@@ -2519,7 +2519,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
             # "inuse" = the hub is already talking on that cable for another
             # page; that is fine (the hub shares it), it is shown so the UI
             # can say so. "who" names the module when it is already known.
-            ports = serial_ports()
+            ports = serial_ports_cached()
             for p in ports:
                 p["inuse"] = usb_in_use(p["port"])
                 known = (_usb_ident.get(p["port"]) or {}).get("module")

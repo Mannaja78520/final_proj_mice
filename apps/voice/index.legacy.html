@@ -1134,6 +1134,7 @@ const _VoiceApp = class _VoiceApp extends (typeof Mice !== "undefined" && Mice.A
   }
   async talk() {
     if (this.rec && this.rec.state === "recording") return this.rec.stop();
+    this.$("wait").textContent = "opening the microphone…";
     try {
       const s = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
@@ -1164,7 +1165,7 @@ const _VoiceApp = class _VoiceApp extends (typeof Mice !== "undefined" && Mice.A
       this.$("talk").textContent = "■ Stop recording";
       this.$("wait").textContent = "listening…";
     } catch (e) {
-      this.$("wait").textContent = "No microphone.";
+      this.$("wait").textContent = "The microphone is not available. Allow it in the browser, or type the question instead.";
     }
   }
   // ---- Conversation mode (A26-11) ----------------------------------------
