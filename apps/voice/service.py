@@ -1498,7 +1498,7 @@ class Brain(FaceLink, Translator, Listener):
                 if not entry[1]:
                     self._tts_keys.pop(str(path), None)
 
-    def _edge_speak(self, voice, text, rate, pitch):
+    def _edge_speak(self, voice, text, rate, pitch, _tried=()):
         """Microsoft's natural voice, IN this process.
 
         It used to start `python -m edge_tts` for every new line: a second
@@ -1568,7 +1568,21 @@ class Brain(FaceLink, Translator, Listener):
                         task.cancel()
                 await asyncio.gather(*tasks, return_exceptions=True)
 
-        return asyncio.run(race())
+        got, why = asyncio.run(race())
+        if got or "NoAudioReceived" not in (why or ""):
+            return got, why
+        # The service answers nothing for one voice while others work (PC,
+        # 2026-11-21: th-TH-PremwadeeNeural failed, th-TH-NiwatNeural did with
+        # the same text and edge-tts 7.3.1). A line in another voice of the same
+        # language beats silence; the list is data (config/voice.json tts.fallbackVoices).
+        tried = tuple(_tried) + (voice,)
+        alts = (self.cfg.get("tts") or {}).get("fallbackVoices") or {}
+        for alt in alts.get(voice.split("-")[0], ()):
+            if alt not in tried:
+                got2, why2 = self._edge_speak(alt, text, rate, pitch, tried)
+                if got2:
+                    return got2, None
+        return got, why
 
     def _windows_speak(self, text, lang, voice):
         """The PC's own voice through tts.ps1: no internet, but flat."""

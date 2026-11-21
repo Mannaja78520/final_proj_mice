@@ -421,6 +421,9 @@ q8_0/q4_0 KV with flash attention is the closest built-in.
 - Change made from this: `local_ai.warm()` loads the model when the voice helper starts (if Ollama is already up) and on the Load-the-AI button; keepAlive 1h keeps it loaded. Effect of the warm-up itself not yet re-measured on the PC.
 - Not measured: STT on a 3 s clip; TTS Edge vs Spark in this run.
 
+### 2026-11-21 Edge TTS silent on the PC
+- edge-tts 7.3.1 (newest), network to speech.platform.bing.com:443 ok. th-TH-PremwadeeNeural: NoAudioReceived (with and without rate/pitch, 3 runs). th-TH-NiwatNeural same text: 19008 bytes in 0.89 s. CLI with Niwat: 11232 bytes. Cause: the service returned nothing for Premwadee at that moment (temporary or not: not tested).
+- Fix: `tts.fallbackVoices` in config/voice.json + retry in `_edge_speak` (QC voice_edge_fallback). Niwat is a male voice: the robot may say ค่ะ in it; set the fallback list to taste.
 ### 2026-11-21 PC re-measure after warm-up (main 0dd9955, same PC)
 - `local_ai.warm()` after unloading the model (keep_alive 0): 3.04 s (returned loaded). One Thai chat right after: 0.184 s. Earlier cold first call: about 45 s. CAUTION: this load was with a hot file-system cache, so 3 s is a re-load; the 45 s run was a true first load from disk. Both are real; the warm-up moves either off the visitor's first question.
 - `ai_latency.py --rounds 1` right after warm: Thai first word 0.025 s, whole 0.173 s, 155 tok/s; English 0.038 / 0.124 s.
