@@ -1,0 +1,11 @@
+{
+  "id": "4b6da3f8eb46",
+  "time": "2026-11-21T16:02:45.395Z",
+  "text": "STUDIO FREEZE {\"gapMs\":2883,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":1,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":13,\"longTasks\":[{\"ms\":57,\"at\":2452},{\"ms\":97,\"at\":2614},{\"ms\":72,\"at\":2803},{\"ms\":69,\"at\":3022},{\"ms\":116,\"at\":3110},{\"ms\":55,\"at\":3268},{\"ms\":757,\"at\":3363},{\"ms\":81,\"at\":4121},{\"ms\":2860,\"at\":4229}],\"slowCalls\":[{\"u\":\"/api/list?kind=sequences\",\"ms\":404,\"at\":687},{\"u\":\"/api/shows\",\"ms\":404,\"at\":687},{\"u\":\"/api/list?kind=models\",\"ms\":402,\"at\":689},{\"u\":\"/api/list?kind=projects\",\"ms\":406,\"at\":686},{\"u\":\"/api/list?kind=sequences\",\"ms\":413,\"at\":688},{\"u\":\"/api/ports\",\"ms\":392,\"at\":709},{\"u\":\"/api/ports\",\"ms\":390,\"at\":711},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=INFO\",\"ms\":329,\"at\":1401},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=LIMIT%3F\",\"ms\":320,\"at\":1762},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=FILES%20%2Fmoves\",\"ms\":319,\"at\":1763},{\"u\":\"/api/gestures/fit\",\"ms\":29,\"at\":7082}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36"
+}
