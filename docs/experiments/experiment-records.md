@@ -420,3 +420,9 @@ q8_0/q4_0 KV with flash attention is the closest built-in.
 - Reading: the only slow part is the first model load (about 45 s). Warm answers are under 0.2 s, so streaming LLM->TTS would save at most about 0.15 s: NOT worth building (under the 2% / no-gain stop rule). The speech part (TTS 0.6-7.5 s, STT not measured) is where time goes.
 - Change made from this: `local_ai.warm()` loads the model when the voice helper starts (if Ollama is already up) and on the Load-the-AI button; keepAlive 1h keeps it loaded. Effect of the warm-up itself not yet re-measured on the PC.
 - Not measured: STT on a 3 s clip; TTS Edge vs Spark in this run.
+
+### 2026-11-21 PC re-measure after warm-up (main 0dd9955, same PC)
+- `local_ai.warm()` after unloading the model (keep_alive 0): 3.04 s (returned loaded). One Thai chat right after: 0.184 s. Earlier cold first call: about 45 s. CAUTION: this load was with a hot file-system cache, so 3 s is a re-load; the 45 s run was a true first load from disk. Both are real; the warm-up moves either off the visitor's first question.
+- `ai_latency.py --rounds 1` right after warm: Thai first word 0.025 s, whole 0.173 s, 155 tok/s; English 0.038 / 0.124 s.
+- `run_bench.py` (voice helper up): all 25 cases typed text, so STT NOT measured. Answer median 46 ms. Answer hits 1/25: wording differs from the expected saved answer (scoring, not speed; not investigated).
+- TTS: POST /say Thai sentence, 3 runs: 4.99 / 4.73 / 4.69 s, each a JSON error "edge: NoAudioReceived ... local: it gave back an empty sound". Edge TTS was FAILING on the PC at this moment (cause not investigated: offline, edge_tts version, or voice name), so these are time-to-failure, not speech. Spark not timed.

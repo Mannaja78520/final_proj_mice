@@ -1,4 +1,6 @@
-"""Which language a line is written in, from its letters (moved out of service.py 2026-11-21)."""
+"""Which language a line is written in, and clean-up of heard text (moved out of service.py 2026-11-21)."""
+
+import re
 
 
 def scripts_in(text):
@@ -52,3 +54,25 @@ def detect_lang(text):
         if lang in found:
             return lang
     return "th"
+
+
+def drop_ghosts(text, phrases):
+    """Take out what whisper makes up from silence and noise.
+
+    On a quiet or noisy clip whisper writes the closing words of the videos it
+    was trained on (PC test 2026-11-04: "ขอบคุณที่รับชม อย่าลืมกดติดตามช่อง"),
+    and the robot then answered that as if a visitor had said it. The phrases
+    are DATA (stt.ghostPhrases in voice.json); nothing left means nothing heard.
+    """
+    out = text or ""
+    for p in phrases or ():
+        if p:
+            out = out.replace(p, " ")
+    out = re.sub(r"\s+", " ", out).strip()
+    return out if re.search(r"\w", out) else ""
+
+
+def drop_repeats(text):
+    """A word or phrase said over and over is the listener stuck, not the visitor."""
+    text = re.sub(r'(\b\S+)(?:\s+\1\b)+', r'\1', (text or "").strip())
+    return re.sub(r'(.{3,25}?)\1{2,}', r'\1', text).strip()
