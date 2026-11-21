@@ -7,7 +7,9 @@ function plainReport(text){
   try{
     var d = JSON.parse(m[1]);
     var sec = Math.round((d.gapMs || 0) / 100) / 10;
-    return 'Studio stopped answering for ' + sec + ' s (sent automatically)';
+    return window.MiceLang && window.MiceLang.current() === 'th'
+      ? 'Studio ไม่ตอบสนอง ' + sec + ' วินาที (ส่งอัตโนมัติ)'
+      : 'Studio stopped answering for ' + sec + ' s (sent automatically)';
   }catch(e){ return 'Studio stopped answering for a moment (sent automatically)'; }
 }
 // ---- complaints screen --------------------------------------------------

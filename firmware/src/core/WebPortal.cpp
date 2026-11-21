@@ -889,6 +889,19 @@ void WebPortal::setupRoutes() {
         req->send(200, "text/plain", router_->handle(c));
     });
 
+    // Replies from the bus (or from boards behind a bridge), newer than ?after=N.
+    // A command sent with "#<id> ..." or "#>12>7 ..." answers "-> sent"; the real
+    // reply arrives later, and this is how a client without a WebSocket reads it.
+    server_.on("/api/busreplies", HTTP_GET, [this](AsyncWebServerRequest* req) {
+        if (!allowedCommand(req, "INFO")) { req->send(401, "text/plain", "ERR log in first"); return; }
+        uint32_t after = req->hasParam("after") ? (uint32_t)req->getParam("after")->value().toInt() : 0;
+        uint32_t newest = 0;
+        String body = rs485_ ? rs485_->repliesSince(after, newest) : String();
+        AsyncWebServerResponse* r = req->beginResponse(200, "text/plain", body);
+        r->addHeader("X-Newest", String(newest));
+        req->send(r);
+    });
+
     server_.on("/api/files", HTTP_GET, [this](AsyncWebServerRequest* req) {
         String dir = req->hasParam("dir") ? req->getParam("dir")->value() : "/data";
         if (!Util::safePath(dir)) { req->send(400, "text/plain", "ERR bad dir"); return; }
