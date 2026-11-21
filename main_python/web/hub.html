@@ -1051,6 +1051,18 @@ async function submitReport(){
   }
 }
 
+// An automatic freeze report is "STUDIO FREEZE {json}" - numbers, not words
+// (a newcomer saw the raw JSON, 2026-11-21). The list says it plainly; the detail
+// view still holds the full text.
+function plainReport(text){
+  var m = /^STUDIO FREEZE\s*(\{.*\})\s*$/s.exec(text);
+  if(!m) return text;
+  try{
+    var d = JSON.parse(m[1]);
+    var sec = Math.round((d.gapMs || 0) / 100) / 10;
+    return 'Studio stopped answering for ' + sec + ' s (sent automatically)';
+  }catch(e){ return 'Studio stopped answering for a moment (sent automatically)'; }
+}
 // ---- complaints screen --------------------------------------------------
 // Loads /api/reports, renders newest first. One line per report, click for full.
 // Shows English translation (text_en) in the list, original + translation in detail.
@@ -1074,7 +1086,7 @@ async function loadComplaints(){
       row.style.borderLeftColor = rep.status === 'fixed' ? 'var(--ok)' :
                                     rep.status === 'not-a-problem' ? 'var(--mut)' : 'var(--warn)';
       // Use English translation for the preview
-      var displayText = rep.text_en || rep.text || '';
+      var displayText = plainReport(rep.text_en || rep.text || '');
       var short = displayText.slice(0, 120);
       if(displayText.length > 120) short += '…';
       row.innerHTML =

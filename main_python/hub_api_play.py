@@ -82,7 +82,7 @@ class PlayRoutes:
                     return self.send_err("the board refused the stream: " + why)
                 if d.get("file"):
                     pcm = _hub.stream_audio.wav_pcm(_hub.SEQUENCES.parent / "music"
-                                               / _hub.safe_name(str(d["file"])), rate)
+                                               / _hub.pc_name(str(d["file"])), rate)
                     threading.Thread(target=_hub.streamer.feed_all,
                                      args=(pcm, 60.0, st["session"]),
                                      daemon=True).start()
