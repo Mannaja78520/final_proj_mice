@@ -34,3 +34,12 @@ def run(t):
     code, ui = F.get(base + "/mice-ui.js")
     t.ok('/mice-lang.js' in ui, "every page that loads mice-ui.js gets the switch")
     t.ok("?." not in js and "??" not in js, "the switch is Chrome 75 safe")
+    import os
+    got = json.loads(F.get(base + "/lang/index.json")[1]).get("default")
+    t.ok(got == "en", "QC pages default to English (MICE_LANG=en)", str(got))
+    os.environ["MICE_LANG"] = "th"
+    try:
+        got = json.loads(F.get(base + "/lang/index.json")[1]).get("default")
+    finally:
+        os.environ["MICE_LANG"] = "en"
+    t.ok(got == "th", "a hub with no setting offers Thai first", str(got))

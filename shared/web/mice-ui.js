@@ -430,9 +430,13 @@
   else TopBar.mountAll();
 
   // The language switch (mice-lang.js) loads beside every page that loads this one.
-  if (!document.querySelector('script[src="/mice-lang.js"]')) {
-    const l = document.createElement("script");
-    l.src = "/mice-lang.js";
-    document.head.appendChild(l);
-  }
+  // Guarded: the QC fixtures run this file against a bare stub of `document`.
+  try {
+    if (document.head && document.querySelector &&
+        !document.querySelector('script[src="/mice-lang.js"]')) {
+      const l = document.createElement("script");
+      l.src = "/mice-lang.js";
+      document.head.appendChild(l);
+    }
+  } catch (e) { /* no language switch, the page still works */ }
 })();

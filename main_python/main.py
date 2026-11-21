@@ -2195,7 +2195,10 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                             f.read_text(encoding="utf-8")).get("name", f.stem)})
                     except (OSError, ValueError):
                         continue
-                return self.send_json({"languages": [{"code": "en", "name": "English"}] + langs})
+                # The page's language until someone picks one: this PC's own choice
+                # (env MICE_LANG, QC sets "en" so its English text matches stay put).
+                return self.send_json({"default": os.environ.get("MICE_LANG", "th"),
+                                       "languages": [{"code": "en", "name": "English"}] + langs})
             if re.fullmatch(r"[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})?", name) and (folder / (name + ".json")).is_file():
                 return self.send_bytes((folder / (name + ".json")).read_bytes(),
                                        "application/json; charset=utf-8")

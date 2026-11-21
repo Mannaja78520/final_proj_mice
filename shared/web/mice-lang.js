@@ -13,8 +13,9 @@
   var SKIP = {SCRIPT: 1, STYLE: 1, TEXTAREA: 1, CODE: 1, PRE: 1};
   var dict = null;
 
+  var fallback = DEFAULT;   // the hub's own default (index.json), until a person picks
   function current() {
-    try { return localStorage.getItem(KEY) || DEFAULT; } catch (e) { return DEFAULT; }
+    try { return localStorage.getItem(KEY) || fallback; } catch (e) { return fallback; }
   }
   function lookup(text) {
     var t = text.replace(/\s+/g, " ").trim();
@@ -84,6 +85,7 @@
   function start() {
     get("/lang/index.json", function (idx) {
       var langs = idx && idx.languages;
+      if (idx && idx.default) fallback = idx.default;
       picker(langs);
       var code = current();
       if (code === SOURCE) return;
