@@ -21,7 +21,7 @@ SLOT_S = 0.010
 MAX_ID = 247
 
 _PONG = re.compile(r"^@(\d+)\s+PONG\s+(\d+)\s+(.+)\s+(\S+)$")
-_CHIP = re.compile(r"^@(\d+)\s+CHIP\s+([0-9A-Fa-f]{12})$")
+_CHIP = re.compile(r"^@(\d+)\s+CHIP\s+([0-9A-Fa-f]{12})( G)?$")   # " G" = gateway
 
 
 class BusIds:
@@ -29,6 +29,7 @@ class BusIds:
         self.exchange = exchange
         self.salts = salts
         self.garbled = 0     # lines heard that were neither PONG nor CHIP
+        self.gateways = set()   # chips that said "G": a bus hangs behind them
 
     @staticmethod
     def ranges(lo=1, hi=MAX_ID):
@@ -78,6 +79,8 @@ class BusIds:
                     m = _CHIP.match(ln)
                     if m:
                         out.setdefault(int(m.group(1)), set()).add(m.group(2).upper())
+                        if m.group(3):
+                            self.gateways.add(m.group(2).upper())
                     else:
                         bad += 1
                 self.garbled += bad

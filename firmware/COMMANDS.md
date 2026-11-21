@@ -193,6 +193,11 @@ Frame format (ASCII lines ending with `\n`):
                        never do)  e.g.  #~A0B1C2D3E4F5 SET ID 12 ; reply "@~<chip> <reply>"
 ```
 
+`#>12>7 <command>`     through a gateway: board 7 on the bus behind gateway 12 (`#>12>7>3` = two
+                       bridges, at most 4 hops); reply `@>12>7 <reply>`. `#>12>* PING 1 24` scans the
+                       bus behind 12 (broadcasts never cross a bridge on their own). A board with a
+                       second link ends its `CHIPS` reply with ` G`.
+
 Past ~12 boards a plain `#* PING` is unreliable (about ten boards share each
 10 ms slot and destroy each other's replies); the hub then asks range by range.
 Boards on older firmware ignore `CHIPS` and `#~`, and answer a ranged PING like a

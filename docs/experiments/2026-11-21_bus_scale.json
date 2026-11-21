@@ -6,25 +6,42 @@
   "128": 0,
   "247": 0
  },
+ "new_plain_ping_default_ids": {
+  "30": {
+   "boards": 30,
+   "distinct_ids": 29,
+   "heard_ids": 28
+  },
+  "100": {
+   "boards": 100,
+   "distinct_ids": 81,
+   "heard_ids": 65
+  },
+  "247": {
+   "boards": 247,
+   "distinct_ids": 158,
+   "heard_ids": 93
+  }
+ },
  "ranged_census": {
   "found": 247,
   "collisions": 0,
   "virtual_s": 4.29
  },
  "dups_30": {
-  "duplicate_ids": 3,
-  "moved": 3,
-  "virtual_s": 39.0
+  "duplicate_ids": 2,
+  "moved": 2,
+  "virtual_s": 38.8
  },
  "dups_100": {
   "duplicate_ids": 17,
-  "moved": 18,
-  "virtual_s": 87.4
+  "moved": 19,
+  "virtual_s": 100.2
  },
  "dups_247": {
-  "duplicate_ids": 60,
-  "moved": 89,
-  "virtual_s": 240.2
+  "duplicate_ids": 63,
+  "moved": 84,
+  "virtual_s": 292.1
  },
  "mass_poweron": {
   "8": {
@@ -32,19 +49,19 @@
    "all_unique": true
   },
   "24": {
-   "seconds": 40.7,
+   "seconds": 38.2,
    "all_unique": true
   },
   "64": {
-   "seconds": 42.9,
+   "seconds": 61.4,
    "all_unique": true
   },
   "128": {
-   "seconds": 94.7,
+   "seconds": 85.4,
    "all_unique": true
   },
   "247": {
-   "seconds": 140.7,
+   "seconds": 166.0,
    "all_unique": true
   }
  },

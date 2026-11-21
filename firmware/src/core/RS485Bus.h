@@ -33,6 +33,14 @@ public:
     // task of its own clocks it out. Measured 2026-09-21: a 1.3 KB INFO reply
     // sent inline held loop() - and every servo frame - for 116 ms.
     void send(const String& line);
+
+    // A second link makes this board a GATEWAY (BusPath.h): lines addressed
+    // "#>me>rest ..." are put on that link as "#rest ...", and what comes back
+    // from it goes upstream as "@>me>...". `tx` writes one line to the downstream
+    // bus; the owner of that link calls onDownstreamLine() for every line heard.
+    void setDownstream(std::function<void(const String&)> tx) { downstream_ = tx; }
+    void onDownstreamLine(const String& line);
+    bool isGateway() const { return (bool)downstream_; }
     void drain(uint32_t maxMs);   // wait for queued lines to leave (before a reboot)
 
     // "#<id> CMD" / "#* CMD" from USB or the web console. Returns the
@@ -55,6 +63,7 @@ private:
     String pending_[PENDING_N];
     uint32_t pendingAt_[PENDING_N] = {0};
     std::function<void(const String&)> busLine_;
+    std::function<void(const String&)> downstream_;
     SemaphoreHandle_t sendMtx_ = nullptr;
     bool warnedNoMtx_ = false;   // say it once if the lock is missing
     QueueHandle_t txq_ = nullptr;   // String* lines waiting for the wire

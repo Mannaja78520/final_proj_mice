@@ -4,6 +4,7 @@
 #include "core/CommandRouter.h"
 #include "core/Identity.h"
 #include "core/BusAddr.h"
+#include "core/BusPath.h"
 #include "core/HwConfig.h"
 #include <config.h>
 #include <driver/uart.h>
@@ -116,6 +117,24 @@ void RS485Bus::handleLine(String line) {
         return;
     }
 
+    // Through a gateway: "#>12>7 CMD". We are hop 1 when the first id is ours;
+    // the rest goes down our second link. Nothing here is ever re-sent upstream,
+    // and the depth cap stops a miswired ring from carrying a line round forever.
+    if (addr.startsWith(">")) {
+        int hop; const char* rest;
+        if (!BusPath::first(addr.c_str(), hop, rest) || hop != id_->id()) return;
+        if (*rest == '\0') addr = String(hop);                 // ">12" = just us
+        else {
+            if (BusPath::depth(addr.c_str()) > BusPath::MAX_DEPTH) return;
+            if (!downstream_) { send("@>" + String(hop) + " ERR no bridge on this board"); return; }
+            // rest = ">7>3": the next hop is a gateway too, so keep it a path
+            // (">7>3"); rest = ">7" (or ">*", ">~CHIP"): last hop, a plain address.
+            bool more = strchr(rest + 1, '>') != nullptr;
+            downstream_("#" + String(more ? rest : rest + 1) + " " + payload);
+            return;
+        }
+    }
+
     bool broadcast = (addr == "*" || addr == "0");
     if (!broadcast && addr.toInt() != id_->id()) return; // not for us
 
@@ -129,7 +148,7 @@ void RS485Bus::handleLine(String line) {
         String chip = Identity::chip();
         int slot = BusAddr::chipsSlot(id_->id(), lo, hi, chip.c_str(), (uint32_t)salt);
         if (slot < 0) return;
-        queueReply("@" + String(id_->id()) + " CHIP " + chip, (uint32_t)slot * BusAddr::SLOT_MS);
+        queueReply("@" + String(id_->id()) + " CHIP " + chip + (downstream_ ? " G" : ""), (uint32_t)slot * BusAddr::SLOT_MS);
         return;
     }
     int pingLo = 1, pingHi = 247;
@@ -160,6 +179,17 @@ void RS485Bus::handleLine(String line) {
                                 : busslot::censusDelayMs((uint32_t)id_->id());
         queueReply("@" + String(id_->id()) + " " + reply, delay);
     }
+}
+
+// A line heard on the downstream link goes upstream under our path. "@7 OK" ->
+// "@>12>7 OK"; a deeper "@>7>3 OK" -> "@>12>7>3 OK"; "@~CHIP OK" -> "@>12>~CHIP OK".
+void RS485Bus::onDownstreamLine(const String& line) {
+    if (!line.startsWith("@")) return;
+    int sp = line.indexOf(' ');
+    if (sp < 2) return;
+    String who = line.substring(1, sp);
+    if (who.startsWith(">")) who = who.substring(1);
+    send("@>" + String(id_->id()) + ">" + who + line.substring(sp));
 }
 
 // Queue it: first free slot. Full queue? Give up the place of the entry

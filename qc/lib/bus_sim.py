@@ -30,6 +30,7 @@ class Board:
         self.chip, self.id = chip.upper(), ident
         self.name = name or "MOD-" + chip[6:].upper()
         self.type, self.old = type_, old
+        self.gateway = False
 
     def hear(self, line):
         """[(delay_s, text)] this board puts on the wire for one request line."""
@@ -60,7 +61,7 @@ class Board:
                 if not lo <= self.id <= hi:
                     return []
                 slot = (self.id - lo) % 24 + 24 * (fnv(self.chip, salt) % 2)
-                return [(slot * SLOT_S, "@%d CHIP %s" % (self.id, self.chip))]
+                return [(slot * SLOT_S, "@%d CHIP %s%s" % (self.id, self.chip, " G" if self.gateway else ""))]
             return []
         if addr.isdigit() and int(addr) == self.id:
             return [(0, "@%d %s" % (self.id, self._run(cmd)))]
@@ -74,29 +75,65 @@ class Board:
         return "ERR"
 
 
+class Gateway(Board):
+    """A board with a second link: a whole bus behind it (firmware: RS485Bus::setDownstream).
+
+    `#>12>7 cmd` goes down as `#7 cmd`; `#>12>* cmd` is a broadcast on the bus behind
+    it; what comes back is relayed upstream as `@>12>...` (RS485Bus::onDownstreamLine).
+    Broadcasts on its OWN bus are never forwarded. `hop_s` is the relay's own delay.
+    """
+    def __init__(self, *a, down=None, hop_s=0.004, **k):
+        super().__init__(*a, **k)
+        self.down, self.hop_s, self.gateway = down, hop_s, True
+
+    def hear(self, line):
+        m = re.match(r"^#>(\d+)(>\S+)? (.+)$", line)
+        if not m:
+            return super().hear(line)
+        if int(m.group(1)) != self.id:
+            return []
+        rest, cmd = m.group(2), m.group(3)
+        if not rest:                       # ">12" = addressed to us alone
+            return super().hear("#%d %s" % (self.id, cmd))
+        if rest.count(">") + 1 > 4:        # BusPath::MAX_DEPTH
+            return []
+        out = []
+        nxt = rest if ">" in rest[1:] else rest[1:]     # more hops: stay a path
+        for d, text in self.down.frames("#%s %s" % (nxt, cmd)):
+            if text.startswith("@"):
+                who, _, tail = text[1:].partition(" ")
+                out.append((d + self.hop_s, "@>%d>%s %s" % (self.id, who.lstrip(">"), tail)))
+            else:
+                out.append((d + self.hop_s, text))      # wreckage stays wreckage
+        return out
+
+
 class Bus:
     def __init__(self, boards):
         self.boards = list(boards)
         self.clock = 0.0          # virtual seconds spent listening
         self.collisions = 0       # frames destroyed
 
-    def exchange(self, line, window):
+    def frames(self, line):
+        """[(delay_s, text)] this wire carries for one request, collisions applied."""
         frames = []
         for b in self.boards:
             frames += [(d, t) for d, t in b.hear(line)]
         frames.sort()
-        self.clock += window
-        heard, bad, last_end = [], set(), -1.0
+        bad, last_end = set(), -1.0
         for i, (d, t) in enumerate(frames):
             if d < last_end:                     # starts while another is on the wire
                 bad.update((i - 1, i))
             last_end = max(last_end, d + len(t) * BYTE_S)
+        out = []
         for i, (d, t) in enumerate(frames):
-            if d > window:
-                continue
             if i in bad:
                 self.collisions += 1
-                heard.append("\x00garbled")      # wreckage the hub cannot parse
+                out.append((d, "\x00garbled"))      # wreckage the hub cannot parse
             else:
-                heard.append(t)
-        return heard
+                out.append((d, t))
+        return out
+
+    def exchange(self, line, window):
+        self.clock += window
+        return [t for d, t in self.frames(line) if d <= window]

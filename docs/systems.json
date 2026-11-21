@@ -34,8 +34,8 @@
      "checks": ["check_extensions"], "depends": ["hub-apps"]},
 
     {"id": "hub-usb", "summary": "The hub's USB serial manager (one owner of every cable) and the port probe that finds which module is on which cable.",
-     "files": ["main_python/hub_usb.py", "main_python/hub_probe.py", "main_python/bus_ids.py", "qc/lib/bus_sim.py", "docs/architecture/scaling-ids.md"],
-     "checks": ["check_bus_scale"],
+     "files": ["main_python/hub_usb.py", "main_python/hub_probe.py", "main_python/bus_ids.py", "main_python/bus_net.py", "qc/lib/bus_sim.py", "docs/architecture/scaling-ids.md"],
+     "checks": ["check_bus_scale", "check_bus_topology"],
      "names": ["/api/usb/", "/api/scanusb", "/api/ports", "usb_cmd", "probe_usb", "hub_serial"],
      "depends": ["hub-net"]},
 
