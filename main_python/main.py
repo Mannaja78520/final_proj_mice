@@ -1685,6 +1685,8 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         if isinstance(e, ValueError) and text.startswith("bad name"):
             return self.send_err("That name cannot be used - use letters, "
                                  "numbers, spaces or - _ and keep it short.", 400)
+        if isinstance(e, ValueError) and text.startswith("that is too big"):
+            return self.send_err(text, 413)
         if isinstance(e, KeyError):
             return self.send_err("A field is missing: %s" % text.strip("'\""), 400)
         if isinstance(e, (json.JSONDecodeError, UnicodeDecodeError)) or (
@@ -1783,6 +1785,11 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         the venue WiFi — so the route that expects a big body names how big.
         """
         n = max(0, int(self.headers.get("Content-Length") or 0))
+        # Routes anyone on the WiFi may call with no login (hub_auth.NEVER_GATED)
+        # get a ceiling of their own, else one visitor could fill this PC's disk
+        # (60 MB went in unchallenged, 2026-11-21 sweep).
+        if not limit and self.path.split("?")[0] in hub_auth.NEVER_GATED:
+            limit = 100 * 1048576
         if limit and n > limit:
             self._body_read = True
             self.close_connection = True   # unread bytes must not become the next request
