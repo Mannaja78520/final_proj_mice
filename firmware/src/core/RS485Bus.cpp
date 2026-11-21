@@ -3,6 +3,8 @@
 #include "core/Log.h"
 #include "core/CommandRouter.h"
 #include "core/Identity.h"
+#include "core/BusAddr.h"
+#include "core/BusPath.h"
 #include "core/HwConfig.h"
 #include <config.h>
 #include <driver/uart.h>
@@ -105,8 +107,54 @@ void RS485Bus::handleLine(String line) {
     payload.trim();
     if (!payload.length()) return;
 
+    // By chip: "#~A0B1C2D3E4F5 SET ID 12". The id is a byte someone sets and two
+    // boards can share one; the chip cannot be changed and is never shared. It is
+    // how the hub tells apart (and re-addresses) boards whose ids collide. The
+    // reply names the chip so it cannot be mistaken for the other board.
+    if (addr.startsWith("~")) {
+        if (!BusAddr::chipIs(addr.c_str() + 1, Identity::chip().c_str())) return;
+        send("@~" + Identity::chip() + " " + router_->handle(payload));
+        return;
+    }
+
+    // Through a gateway: "#>12>7 CMD". We are hop 1 when the first id is ours;
+    // the rest goes down our second link. Nothing here is ever re-sent upstream,
+    // and the depth cap stops a miswired ring from carrying a line round forever.
+    if (addr.startsWith(">")) {
+        int hop; const char* rest;
+        if (!BusPath::first(addr.c_str(), hop, rest) || hop != id_->id()) return;
+        if (*rest == '\0') addr = String(hop);                 // ">12" = just us
+        else {
+            if (BusPath::depth(addr.c_str()) > BusPath::MAX_DEPTH) return;
+            if (!downstream_) { send("@>" + String(hop) + " ERR no bridge on this board"); return; }
+            // rest = ">7>3": the next hop is a gateway too, so keep it a path
+            // (">7>3"); rest = ">7" (or ">*", ">~CHIP"): last hop, a plain address.
+            bool more = strchr(rest + 1, '>') != nullptr;
+            downstream_("#" + String(more ? rest : rest + 1) + " " + payload);
+            return;
+        }
+    }
+
     bool broadcast = (addr == "*" || addr == "0");
     if (!broadcast && addr.toInt() != id_->id()) return; // not for us
+
+    // Scale-out discovery (BusAddr.h): only boards in the range answer, each in
+    // the slot its own id picks, so 247 boards stop talking over each other.
+    // Old boards never reach here for these lines' range: they answer a plain
+    // PING and the hub copes (see bus_ids.py).
+    if (broadcast && (payload.startsWith("CHIPS ") || payload.startsWith("chips "))) {
+        int lo, hi; long salt = 0;
+        if (!BusAddr::parseRange(payload.c_str() + 6, lo, hi, &salt)) return;
+        String chip = Identity::chip();
+        int slot = BusAddr::chipsSlot(id_->id(), lo, hi, chip.c_str(), (uint32_t)salt);
+        if (slot < 0) return;
+        queueReply("@" + String(id_->id()) + " CHIP " + chip + (downstream_ ? " G" : ""), (uint32_t)slot * BusAddr::SLOT_MS);
+        return;
+    }
+    int pingLo = 1, pingHi = 247;
+    bool ranged = broadcast && (payload.startsWith("PING ") || payload.startsWith("ping ")) &&
+                  BusAddr::parseRange(payload.c_str() + 5, pingLo, pingHi);
+    if (ranged && BusAddr::pingSlot(id_->id(), pingLo, pingHi) < 0) return;
 
     String reply = router_->handle(payload);
 
@@ -125,22 +173,39 @@ void RS485Bus::handleLine(String line) {
         // impossible to see against a fake that answers instantly.
         //
         // 2026-11-21: one slot per id now (BusSlot.h, id x 6 ms, all done by
-        // 1.53 s). The 24 shared slots above lost most answers past ~30 boards.
-        // Queue it: first free slot. Full queue? Give up the place of the entry
-        // scheduled LAST (it has waited least and nothing is about to fire);
-        // signed delta, so a millis() rollover cannot flip the comparison.
-        uint8_t slot = PENDING_N;
-        for (uint8_t i = 0; i < PENDING_N; i++)
-            if (!pending_[i].length()) { slot = i; break; }
-        if (slot == PENDING_N) {
-            slot = 0;
-            for (uint8_t i = 1; i < PENDING_N; i++)
-                if ((int32_t)(pendingAt_[i] - pendingAt_[slot]) > 0) slot = i;
-        }
-        pending_[slot] = "@" + String(id_->id()) + " " + reply;
-        // one slot per id (BusSlot.h): ids 24 apart used to share a slot and garble each other
-        pendingAt_[slot] = millis() + busslot::censusDelayMs((uint32_t)id_->id());
+        // 1.53 s). The 24 shared slots lost most answers past ~30 boards. A
+        // RANGED ping (BusAddr.h) has its own slot inside the range instead.
+        uint32_t delay = ranged ? (uint32_t)BusAddr::pingSlot(id_->id(), pingLo, pingHi) * BusAddr::SLOT_MS
+                                : busslot::censusDelayMs((uint32_t)id_->id());
+        queueReply("@" + String(id_->id()) + " " + reply, delay);
     }
+}
+
+// A line heard on the downstream link goes upstream under our path. "@7 OK" ->
+// "@>12>7 OK"; a deeper "@>7>3 OK" -> "@>12>7>3 OK"; "@~CHIP OK" -> "@>12>~CHIP OK".
+void RS485Bus::onDownstreamLine(const String& line) {
+    if (!line.startsWith("@")) return;
+    int sp = line.indexOf(' ');
+    if (sp < 2) return;
+    String who = line.substring(1, sp);
+    if (who.startsWith(">")) who = who.substring(1);
+    send("@>" + String(id_->id()) + ">" + who + line.substring(sp));
+}
+
+// Queue it: first free slot. Full queue? Give up the place of the entry
+// scheduled LAST (it has waited least and nothing is about to fire);
+// signed delta, so a millis() rollover cannot flip the comparison.
+void RS485Bus::queueReply(const String& line, uint32_t delayMs) {
+    uint8_t slot = PENDING_N;
+    for (uint8_t i = 0; i < PENDING_N; i++)
+        if (!pending_[i].length()) { slot = i; break; }
+    if (slot == PENDING_N) {
+        slot = 0;
+        for (uint8_t i = 1; i < PENDING_N; i++)
+            if ((int32_t)(pendingAt_[i] - pendingAt_[slot]) > 0) slot = i;
+    }
+    pending_[slot] = line;
+    pendingAt_[slot] = millis() + delayMs;
 }
 
 // The ONLY place anything is written to Serial2. That matters: the line and its
@@ -210,7 +275,18 @@ String RS485Bus::bridge(const String& raw, CommandRouter* router) {
     if (!payload.length()) return "ERR empty command";
 
     bool broadcast = (addr == "*" || addr == "0");
-    if (!broadcast && addr.toInt() == id_->id()) {
+    if (addr.startsWith("~") && BusAddr::chipIs(addr.c_str() + 1, Identity::chip().c_str()))
+        return "@~" + Identity::chip() + " " + router->handle(payload);   // our own chip
+    if (broadcast && (payload.startsWith("CHIPS ") || payload.startsWith("chips "))) {
+        // The module the PC is plugged into is on the bus too: report it here,
+        // the rest answer from the wire (their own slots).
+        send(line);
+        int lo, hi;
+        if (!BusAddr::parseRange(payload.c_str() + 6, lo, hi) || id_->id() < lo || id_->id() > hi)
+            return "-> sent";
+        return "@" + String(id_->id()) + " CHIP " + Identity::chip();
+    }
+    if (!broadcast && addr.toInt() == id_->id() && !addr.startsWith("~")) {
         // addressed to the module the PC is plugged into: answer directly
         return "@" + String(id_->id()) + " " + router->handle(payload);
     }
