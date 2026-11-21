@@ -409,3 +409,20 @@ q8_0/q4_0 KV with flash attention is the closest built-in.
   (1 cold round after unload + 3 warm rounds, Thai + English, first word and whole answer).
 - Budget: 4 rounds. Stop rule: stop tuning under 10 % gain.
 - Raw numbers: NOT RUN yet. This was prepared in the cloud (no GPU, no Ollama); needs the PC. No speed claim is made until then.
+
+### 2026-11-21 result (PC, RTX 5070 Ti, Ollama q8_0 KV, typhoon25-4b; `tools/ai_latency.py --rounds 3`, short answers of 13-23 tokens)
+| state | lang | first word s | whole answer s | tokens/s |
+| --- | --- | --- | --- | --- |
+| cold (model not loaded) | th | 44.97 | 46.31 | 17.1 |
+| cold, model already loaded by the call before | en | 0.04 | 0.14 | 128.7 |
+| warm x3 | th | 0.022-0.032 | 0.178-0.205 | 133-155 |
+| warm x3 | en | 0.021-0.035 | 0.114-0.178 | 91-141 |
+- Reading: the only slow part is the first model load (about 45 s). Warm answers are under 0.2 s, so streaming LLM->TTS would save at most about 0.15 s: NOT worth building (under the 2% / no-gain stop rule). The speech part (TTS 0.6-7.5 s, STT not measured) is where time goes.
+- Change made from this: `local_ai.warm()` loads the model when the voice helper starts (if Ollama is already up) and on the Load-the-AI button; keepAlive 1h keeps it loaded. Effect of the warm-up itself not yet re-measured on the PC.
+- Not measured: STT on a 3 s clip; TTS Edge vs Spark in this run.
+
+### 2026-11-21 PC re-measure after warm-up (main 0dd9955, same PC)
+- `local_ai.warm()` after unloading the model (keep_alive 0): 3.04 s (returned loaded). One Thai chat right after: 0.184 s. Earlier cold first call: about 45 s. CAUTION: this load was with a hot file-system cache, so 3 s is a re-load; the 45 s run was a true first load from disk. Both are real; the warm-up moves either off the visitor's first question.
+- `ai_latency.py --rounds 1` right after warm: Thai first word 0.025 s, whole 0.173 s, 155 tok/s; English 0.038 / 0.124 s.
+- `run_bench.py` (voice helper up): all 25 cases typed text, so STT NOT measured. Answer median 46 ms. Answer hits 1/25: wording differs from the expected saved answer (scoring, not speed; not investigated).
+- TTS: POST /say Thai sentence, 3 runs: 4.99 / 4.73 / 4.69 s, each a JSON error "edge: NoAudioReceived ... local: it gave back an empty sound". Edge TTS was FAILING on the PC at this moment (cause not investigated: offline, edge_tts version, or voice name), so these are time-to-failure, not speech. Spark not timed.
