@@ -424,3 +424,8 @@ q8_0/q4_0 KV with flash attention is the closest built-in.
 ### 2026-11-21 Edge TTS silent on the PC
 - edge-tts 7.3.1 (newest), network to speech.platform.bing.com:443 ok. th-TH-PremwadeeNeural: NoAudioReceived (with and without rate/pitch, 3 runs). th-TH-NiwatNeural same text: 19008 bytes in 0.89 s. CLI with Niwat: 11232 bytes. Cause: the service returned nothing for Premwadee at that moment (temporary or not: not tested).
 - Fix: `tts.fallbackVoices` in config/voice.json + retry in `_edge_speak` (QC voice_edge_fallback). Niwat is a male voice: the robot may say ค่ะ in it; set the fallback list to taste.
+### 2026-11-21 PC re-measure after warm-up (main 0dd9955, same PC)
+- `local_ai.warm()` after unloading the model (keep_alive 0): 3.04 s (returned loaded). One Thai chat right after: 0.184 s. Earlier cold first call: about 45 s. CAUTION: this load was with a hot file-system cache, so 3 s is a re-load; the 45 s run was a true first load from disk. Both are real; the warm-up moves either off the visitor's first question.
+- `ai_latency.py --rounds 1` right after warm: Thai first word 0.025 s, whole 0.173 s, 155 tok/s; English 0.038 / 0.124 s.
+- `run_bench.py` (voice helper up): all 25 cases typed text, so STT NOT measured. Answer median 46 ms. Answer hits 1/25: wording differs from the expected saved answer (scoring, not speed; not investigated).
+- TTS: POST /say Thai sentence, 3 runs: 4.99 / 4.73 / 4.69 s, each a JSON error "edge: NoAudioReceived ... local: it gave back an empty sound". Edge TTS was FAILING on the PC at this moment (cause not investigated: offline, edge_tts version, or voice name), so these are time-to-failure, not speech. Spark not timed.
