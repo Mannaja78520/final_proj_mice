@@ -275,6 +275,18 @@ String RS485Bus::bridge(const String& raw, CommandRouter* router) {
     if (!payload.length()) return "ERR empty command";
 
     bool broadcast = (addr == "*" || addr == "0");
+    // A path whose first hop is the module the PC is plugged into: act as that
+    // gateway right here instead of putting the line back on the bus.
+    if (addr.startsWith(">")) {
+        int hop; const char* rest;
+        if (BusPath::first(addr.c_str(), hop, rest) && hop == id_->id()) {
+            if (*rest == '\0') return "@>" + String(hop) + " " + router->handle(payload);
+            if (!downstream_) return "@>" + String(hop) + " ERR no bridge on this board";
+            bool more = strchr(rest + 1, '>') != nullptr;
+            downstream_("#" + String(more ? rest : rest + 1) + " " + payload);
+            return "-> sent, the reply appears when it answers";
+        }
+    }
     if (addr.startsWith("~") && BusAddr::chipIs(addr.c_str() + 1, Identity::chip().c_str()))
         return "@~" + Identity::chip() + " " + router->handle(payload);   // our own chip
     if (broadcast && (payload.startsWith("CHIPS ") || payload.startsWith("chips "))) {

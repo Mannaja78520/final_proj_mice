@@ -313,12 +313,12 @@ def _usb_cmd_once(port, cmd, bus_id=0, wait=2.0, client=True):
             _usb_touch[port] = time.time()
         ser = ent["ser"]
         _drain_to_line_boundary(ser)
-        line = ("#%d %s" % (bus_id, cmd)) if bus_id else cmd
+        line = ("#%s %s" % (bus_id, cmd)) if bus_id else cmd   # id 5 -> "#5", path -> "#>12>7"
         ser.write((line + "\n").encode())
         # the wire time starts here: opening the port and waiting for the
         # lock are not the route's latency (route_latency.py)
         _lat_tls.sent = time.perf_counter()
-        want = ("@%d " % bus_id) if bus_id else None
+        want = ("@%s " % bus_id) if bus_id else None    # the reply carries the same address
         buf, end = b"", time.time() + wait
         # The firmware writes every reply as "\n<reply>\n" in ONE call, so a
         # reply is always preceded by a blank line. That marker is what makes
@@ -454,4 +454,4 @@ def _usb_cmd_once(port, cmd, bus_id=0, wait=2.0, client=True):
             ("%s restarted while answering - the command never reached the "
              "firmware. Ask again." % port) if rebooted[0] else
             ("no reply from " + port +
-             ((" (bus id %d)" % bus_id) if bus_id else "")))
+             ((" (bus id %s)" % bus_id) if bus_id else "")))

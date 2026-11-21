@@ -1119,6 +1119,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
   </div>
 
   <p>หากเล่น หยุด หรือพูดไม่สำเร็จ จะเห็นข้อความใต้แถบด้านบน HOME จะส่งต่อเมื่อได้รับคำตอบหยุดสำเร็จและหุ่นยนต์ตอบรับ STOP โดยไม่มีข้อผิดพลาดแล้วเท่านั้น หากการหยุดงานเดิมล้มเหลว ระบบยังจะพยายามส่ง STOP ไปยังหุ่นยนต์ที่เลือก และแจ้งผลรวม กด Stop หรือเปลี่ยนหุ่นยนต์ระหว่างโหลดรายการ จะยกเลิกการเริ่มเล่นที่ยังรออยู่ รวมคำขอเล่นหรือ HOME ที่ส่งไปแล้วแต่มาถึง Hub ช้า ข้อความที่พิมพ์ไว้จะคงอยู่เมื่อส่งเสียงพูดไม่สำเร็จ</p>
+  <p>ปุ่ม Refresh แสดง "Refreshing…" ระหว่างโหลด แล้วบอกเวลาที่อัปเดตล่าสุด หรือบอกว่าติดต่อ Hub ไม่ได้</p>
+
 </section>
 
 <section id="camera">
@@ -1346,6 +1348,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 
   <p>หาก Load the AI, Unload the AI หรือการอ่านสถานะล้มเหลว ปุ่มจะกลับมากดเพื่อลองใหม่ พร้อมข้อความข้อผิดพลาด การโหลดโมเดลจริงอาจใช้เวลาตามเครื่อง</p>
   <p><b>AI บนเครื่อง (Ollama) เปิดเองเมื่อใช้งาน:</b> ไม่ต้องสตาร์ทเองหลังเปิดคอม และไม่ตั้งให้เปิดตอนล็อกอิน การกดปุ่ม Load the AI หรือถามคำถามครั้งแรกจะสั่งเปิดแบบซ่อนหน้าต่างให้เอง แล้วรอจนพร้อม (ปกติไม่เกินประมาณ 40 วินาที) ถ้าเปิดไม่ขึ้นจะบอกเหตุผลเป็นข้อความธรรมดาและไม่ลองซ้ำเป็นเวลา 1 นาที ให้กด Load the AI ใหม่</p>
+  <p>กดปุ่มพูดแล้วจะเห็น "opening the microphone…" ทันที ถ้าเบราว์เซอร์ยังไม่อนุญาตไมโครโฟนจะบอกวิธีแก้ และยังพิมพ์คำถามแทนได้</p>
+
 </section>
 
 <section id="faces">
@@ -1393,6 +1397,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <div class="info-header"><b>4. ระบบสีและการสืบทอดธีมแบบไดนามิก (Universal Dynamic Theme Sync)</b></div>
     <p>หน้า Reconize สืบทอดธีมสีจาก Hub กลางอัตโนมัติผ่าน <code>MiceThemeManager</code> (เช่น โหมดมืด Midnight) ไม่บังคับแสดงผลพื้นหลังขาวจ้า แสบตา หรือกระพริบเปลี่ยนสี เมื่อผู้ใช้เปลี่ยนธีมใน Hub ทุกแท็บและแอปจะปรับสีตามทันทีแบบเรียลไทม์</p>
   </div>
+
+  <p>ถ้าแอปใบหน้า (Reconize) หยุดส่งภาพกลางทาง หน้านี้จะบอกว่า "กำลังเชื่อมต่อใหม่เอง" และให้ตรวจว่า Reconize ยังเปิดอยู่ ตัวช่วยจะลองต่อใหม่เองโดยไม่ต้องกดอะไร</p>
 
 </section>
 <section id="gacha">
@@ -1761,6 +1767,11 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     as a relay. <code>ONLINE</code> (default) picks a neighbour whose hotspot is itself connected to the
     router; <code>NAME</code> is the old rule (only a neighbour whose name sorts later). A module using a
     relay hides its own hotspot, and a module that others lean on never moves to a relay.</p>
+    <p><code>SET MESH ON|OFF</code> turns on a router-less mesh (off by default). Boards pass short commands
+    to each other over ESP-NOW, hop by hop, so a board with no router and no neighbour in range can still
+    be reached. <code>MESH</code> shows the state; <code>MESH 12 WIFI</code> runs a command on board 12 and
+    <code>MESH * ...</code> asks everyone. Frames are signed with the group key and an old captured frame is refused, a command is sent again up to
+    3 times if no answer comes, and an answer is cut at 200 characters. A board that has just restarted can still be replayed to once. Tested in a model only, not on a real radio.</p>
     <p><code>SET WIFI2 &lt;ssid&gt; &lt;pass&gt;</code> and <code>SET WIFI3 ...</code> save up to two
     backup networks. If the main one cannot be joined the board tries the backups in order, then
     stays on its own hotspot and tries the whole list again every minute. Leave the name empty
@@ -2556,6 +2567,15 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <tr><td>USB</td><td class="wrap2">The board on the cable</td><td class="wrap2">115200 baud. No network needed. Shared by the hub, so several pages can use one cable.</td></tr>
     <tr><td>RS485</td><td class="wrap2">Every module on the bus</td><td class="wrap2">Framed <code>#id …</code> / <code>@id …</code>. Works through a dongle or through another module's USB port.</td></tr>
   </tbody></table></div>
+  <div class="f"><h3>Board numbers — find and fix two boards sharing one<span class="tag t-new">new</span></h3>
+    <p>On the hub's <b>Modules</b> tab, the <b>Board numbers</b> card checks one cable. Pick the cable and press
+       <b>Check numbers</b>. It lists any boards that share a number on that cable and, when some boards are plugged
+       into other boards, who is plugged into whom. Checking changes nothing. If boards share a number, press
+       <b>Give them new numbers…</b> and confirm: each board but one gets a free number, and the hub checks again.
+       Changing numbers needs the same sign-in as flashing. Turn on <b>Show technical details</b> to see each
+       board's permanent chip and its path (for example <code>&gt;100&gt;200&gt;7</code>).</p>
+    <p>A cable holds up to 247 boards. For more, use more cables, or plug boards that have a second link into the
+       bus (up to 3 in a row). The same board seen on USB, RS485 and WiFi is still one row on the Modules tab.</p></div>
 </section>
 
 <!-- ===================== COMMANDS ===================== -->
