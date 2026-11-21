@@ -61,6 +61,36 @@
                "y9": 36, "y8": 36, "y7": 19, "y6": 18,
                "y5": 5, "y4": 4, "y3": 34, "y2": 35,
                "vsync": 22, "href": 26, "pclk": 21}
+    },
+    "esp32s3-eye": {
+      "label": "ESP32-S3 camera (Freenove / ESP32-S3-EYE / generic S3-CAM)",
+      "note": "S3 boards: needs the mice_cam_s3 build. The commonest S3 camera map",
+      "chip": "esp32s3",
+      "extra": {"flash": 48, "led": 2},
+      "pins": {"pwdn": -1, "reset": -1, "xclk": 15, "siod": 4, "sioc": 5,
+               "y9": 16, "y8": 17, "y7": 18, "y6": 12,
+               "y5": 10, "y4": 8, "y3": 9, "y2": 11,
+               "vsync": 6, "href": 7, "pclk": 13}
+    },
+    "xiao-s3-sense": {
+      "label": "Seeed XIAO ESP32S3 Sense",
+      "note": "S3 board: SCCB on 40/39, XCLK on 10",
+      "chip": "esp32s3",
+      "extra": {"flash": -1, "led": -1},
+      "pins": {"pwdn": -1, "reset": -1, "xclk": 10, "siod": 40, "sioc": 39,
+               "y9": 48, "y8": 11, "y7": 12, "y6": 14,
+               "y5": 16, "y4": 18, "y3": 17, "y2": 15,
+               "vsync": 38, "href": 47, "pclk": 13}
+    },
+    "firebeetle-s3": {
+      "label": "DFRobot FireBeetle 2 ESP32-S3",
+      "note": "S3 board: XCLK on 45, SCCB on 1/2",
+      "chip": "esp32s3",
+      "extra": {"flash": -1, "led": -1},
+      "pins": {"pwdn": -1, "reset": -1, "xclk": 45, "siod": 1, "sioc": 2,
+               "y9": 48, "y8": 46, "y7": 8, "y6": 7,
+               "y5": 4, "y4": 41, "y3": 40, "y2": 39,
+               "vsync": 6, "href": 42, "pclk": 5}
     }
   }
 }
