@@ -132,6 +132,8 @@ void WebPortal::applyMode(const String& mode) {
     // factory fallback for a board nobody has set up yet.
     selectNet(0);                  // any mode change goes back to the show
     homeSsid_ = staSsid_;          // network (slot 0); relaying is decided from there
+    onRelay_ = false;              // (selectNet does it too; kept visible: a stale relay must not survive a mode change)
+    relayName_ = "";
 
     if (mode == "off") { radioOff(); return; }
 
