@@ -120,7 +120,7 @@ WiFi and the board's web portal, SD, OTA, and `PERF?`.
 - [fw-cam](fw-cam.md)
 - [bench](bench.md)
 
-## Checks that test it (81)
+## Checks that test it (82)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -134,6 +134,7 @@ WiFi and the board's web portal, SD, OTA, and `PERF?`.
 - `check_build_split`
 - `check_bus_flash`
 - `check_bus_nonblocking`
+- `check_bus_path_cmd`
 - `check_bus_scale`
 - `check_bus_topology`
 - `check_calibration`
@@ -204,4 +205,4 @@ WiFi and the board's web portal, SD, OTA, and `PERF?`.
 - `check_wifi_resilience`
 - `check_wifi_ssid`
 
-Run them: `python qc/run_qc.py --no-build check_accounts check_accounts_firmware check_amp_kind check_amp_wiring check_audio_nong check_board_auth check_board_password check_boot_noise check_brownout_guard check_build_split check_bus_flash check_bus_nonblocking check_bus_scale check_bus_topology check_calibration check_cam_controls check_camera check_cast_mix check_contracts check_design_system check_dev_tools check_docs check_firmware_build check_flash check_gacha_motion check_gacha_ui check_groups check_guards_armed check_history check_hub_api check_hub_users check_id3_skip check_joint_fields check_joint_select check_latency check_lift_motion check_line_protocol check_link_pick check_link_states check_logging`
+Run them: `python qc/run_qc.py --no-build check_accounts check_accounts_firmware check_amp_kind check_amp_wiring check_audio_nong check_board_auth check_board_password check_boot_noise check_brownout_guard check_build_split check_bus_flash check_bus_nonblocking check_bus_path_cmd check_bus_scale check_bus_topology check_calibration check_cam_controls check_camera check_cast_mix check_contracts check_design_system check_dev_tools check_docs check_firmware_build check_flash check_gacha_motion check_gacha_ui check_groups check_guards_armed check_history check_hub_api check_hub_users check_id3_skip check_joint_fields check_joint_select check_latency check_lift_motion check_line_protocol check_link_pick check_link_states`
