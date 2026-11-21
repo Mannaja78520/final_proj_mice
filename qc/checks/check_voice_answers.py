@@ -76,7 +76,7 @@ def run(t):
     t.ok(hit is None, "the store decides which words are only questions",
          "faqStopWords was ignored")
 
-    src = (F.CODE / "apps" / "voice" / "service.py").read_text(encoding="utf-8")
+    src = (F.CODE / "apps" / "voice" / "answerer.py").read_text(encoding="utf-8")
     for words, lang in ((("NEVER invent a password",), "English"),
                         (("ห้ามแต่งรหัสผ่าน",), "Thai"),
                         (("不要编造",), "Chinese"),

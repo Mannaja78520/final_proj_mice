@@ -160,7 +160,7 @@ def _scenarios(t, make):
 
     # The model must be told the scenario's WORDS. Sending the name would
     # make the rig act out the word "Poem".
-    src = (F.CODE / "apps" / "voice" / "service.py").read_text(encoding="utf-8")
+    src = (F.CODE / "apps" / "voice" / "answerer.py").read_text(encoding="utf-8")
     body = src[src.find("    def generate(self, history"):][:1200]
     t.contains(body, 'self.active_scenario().get("prompt")',
                "the answering brain is given the scenario's words, not its name")
