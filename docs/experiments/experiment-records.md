@@ -401,3 +401,11 @@ q8_0/q4_0 KV with flash attention is the closest built-in.
 | Spark ref C | 16.7 | 8.7 | 0.0 | 8.5 | 3.7 / 3.4 / 2.7 | 4.9 / 4.9 / 3.7 |
 - Spark is sampled: the same references gave A 5.3 / B 4.6 / C 7.5 on CPU and 8.5 / 12.6 / 8.5 here, so run-to-run spread (about 8 points) is larger than any gap between references. No reference beats Edge in either run on both.
 - GPU speed: 2.6-7.5 s per line (first line includes warm-up) against 8-18 s on CPU; Edge 0.6-0.8 s.
+
+## 2026-11-21 Local AI latency (keep-alive)
+- Question: does the first answer after a quiet spell cost a model reload?
+- Change: `keepAlive` 1h and `numParallel` 1 in `config/local_ai.json` (Ollama default is 5m).
+- Measuring tool: `python tools/ai_latency.py --out docs/experiments/2026-11-21_ai_latency.json`
+  (1 cold round after unload + 3 warm rounds, Thai + English, first word and whole answer).
+- Budget: 4 rounds. Stop rule: stop tuning under 10 % gain.
+- Raw numbers: NOT RUN yet. This was prepared in the cloud (no GPU, no Ollama); needs the PC. No speed claim is made until then.

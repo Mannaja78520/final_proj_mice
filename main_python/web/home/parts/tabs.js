@@ -59,6 +59,13 @@ function filterMods(){
     el.style.display = show ? '' : 'none';
     if (!show) hidden++;
   });
+  // a kind heading stays only while one of its rows does
+  document.querySelectorAll('#mods .modgroup, #homeMods .modgroup').forEach(function(h){
+    var any = false;
+    for (var n = h.nextElementSibling; n && !n.classList.contains('modgroup'); n = n.nextElementSibling)
+      if (n.style.display !== 'none') { any = true; break; }
+    h.style.display = any ? '' : 'none';
+  });
   var none = document.getElementById('modFindNone');
   if (!none) return;
   if (q && hidden === total && total) {

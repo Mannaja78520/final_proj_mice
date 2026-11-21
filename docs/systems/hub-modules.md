@@ -28,7 +28,6 @@ The one module list: every board once, with every route to it, and the fastest r
 
 - `check_advanced`
 - `check_bus_group`
-- `check_bus_scale`
 - `check_cam_panel`
 - `check_flash_confirm`
 - `check_flash_remote`
@@ -42,6 +41,7 @@ The one module list: every board once, with every route to it, and the fastest r
 - `check_peerpass`
 - `check_pinout`
 - `check_route_latency`
+- `check_scale_robust`
 - `check_shared_modules`
 - `check_speak`
 - `check_studio_auto_route`
@@ -50,4 +50,4 @@ The one module list: every board once, with every route to it, and the fastest r
 - `check_voice_gestures`
 - `check_voice_multi`
 
-Run them: `python qc/run_qc.py --no-build check_advanced check_bus_group check_bus_scale check_cam_panel check_flash_confirm check_flash_remote check_hub_auth check_hub_reach check_identity check_mdns check_name_claim check_one_module_list check_other_pc check_peerpass check_pinout check_route_latency check_shared_modules check_speak check_studio_auto_route check_tv_remote check_ui_states check_voice_gestures check_voice_multi`
+Run them: `python qc/run_qc.py --no-build check_advanced check_bus_group check_cam_panel check_flash_confirm check_flash_remote check_hub_auth check_hub_reach check_identity check_mdns check_name_claim check_one_module_list check_other_pc check_peerpass check_pinout check_route_latency check_scale_robust check_shared_modules check_speak check_studio_auto_route check_tv_remote check_ui_states check_voice_gestures check_voice_multi`

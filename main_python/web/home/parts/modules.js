@@ -131,7 +131,26 @@ function repaintMods(){
   // what*. So Home is the short answer (this robot is here, open it) and the
   // Modules tab is the long one (and here is every cable, PC and bus it can
   // be reached through). Same rows, same order, one line of detail fewer.
+  // Many boards read as a few groups: a heading per kind once there is more
+  // than a screenful and more than one kind (2026-11-21, tested to 255 boards).
+  // Pinned boards stay on top under their own heading.
+  const pins = pinnedIds();
+  const kinds = {}; mods.forEach(m=>{ kinds[(m.type||'')] = 1; });
+  const grouped = mods.length >= 8 && Object.keys(kinds).length > 1;
+  const counts = {};
+  mods.forEach(m=>{ const k = pins.indexOf(m.id)>=0 ? '\u2605' : (m.type||''); counts[k] = (counts[k]||0)+1; });
+  let lastKind = null;
+  const heading = k => '<div class="modgroup">' + (k==='\u2605' ? 'Pinned' : (k ? esc(k) : 'Not set up yet')) +
+                       ' <span>' + counts[k] + (counts[k]===1 ? ' board' : ' boards') + '</span></div>';
   mods.forEach(m=>{
+      if(grouped){
+        const k = pins.indexOf(m.id)>=0 ? '\u2605' : (m.type||'');
+        if(k !== lastKind){
+          lastKind = k;
+          el.insertAdjacentHTML('beforeend', heading(k));
+          if(home) home.insertAdjacentHTML('beforeend', heading(k));
+        }
+      }
       const wifi=(m.routes||[]).filter(x=>x.kind==='wifi')[0];
       const cable=(m.routes||[]).filter(x=>x.kind==='usb'||x.kind==='rs485')[0];
       const far=(m.routes||[]).filter(x=>x.kind==='hub')[0];

@@ -266,6 +266,20 @@ String CommandRouter::handleLocked(const String& line) {
             id_->setType(t);
             return "OK type=" + t + " (reboot to apply)";
         }
+        // SET WIFI2 / SET WIFI3 "ssid" [pass] — backup networks, tried in order
+        // after the main one fails to join (WifiList.h). Empty = forget it.
+        if (what == "WIFI2" || what == "WIFI3") {
+            int slot = what == "WIFI2" ? 1 : 2;
+            std::string sSsid, sPass;
+            String ssid, pass;
+            if (argc >= 3 && wifiargs::parse(Util::joinFrom(argv, argc, 2).c_str(), sSsid, sPass)) {
+                ssid = sSsid.c_str();
+                pass = sPass.c_str();
+            }
+            id_->setWifiN(slot, ssid, pass);
+            return ssid.length() ? "OK backup wifi " + String(slot + 1) + " = \"" + ssid + "\""
+                                 : "OK backup wifi " + String(slot + 1) + " cleared";
+        }
         if (what == "WIFI") {
             String a = argv[2];
             a.toUpperCase();

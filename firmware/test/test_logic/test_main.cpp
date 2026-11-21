@@ -12,6 +12,8 @@
 #include "modules/gacha/GachaMath.h"
 #include "core/WifiArgs.h"
 #include "core/WifiLink.h"
+#include "core/WifiList.h"
+#include "core/BusSlot.h"
 #include "core/Log.h"
 #include "core/Id3.h"
 #include <algorithm>
@@ -189,6 +191,37 @@ void test_pass_needs_its_start_speed_and_limits(void) {
 // Both of these were found by flashing a board and watching it refuse to join
 // a network that was working. Neither crashes; both just quietly never
 // connect, and both read back looking exactly right.
+
+// Several saved WiFi (SET WIFI, SET WIFI2, SET WIFI3): the board walks them in
+// order, skips empty slots, and says "spent" after the last so the caller can
+// fall back to its own hotspot.
+void test_wifi_list_walks_saved_networks_in_order(void) {
+    bool all[3] = {true, true, true};
+    TEST_ASSERT_EQUAL_INT(0, wifilist::first(all));
+    TEST_ASSERT_EQUAL_INT(1, wifilist::next(0, all));
+    TEST_ASSERT_EQUAL_INT(2, wifilist::next(1, all));
+    TEST_ASSERT_EQUAL_INT(-1, wifilist::next(2, all));
+}
+void test_wifi_list_skips_empty_slots(void) {
+    bool gap[3] = {true, false, true};
+    TEST_ASSERT_EQUAL_INT(2, wifilist::next(0, gap));
+    bool backup_only[3] = {false, false, true};
+    TEST_ASSERT_EQUAL_INT(2, wifilist::first(backup_only));
+    bool none[3] = {false, false, false};
+    TEST_ASSERT_EQUAL_INT(-1, wifilist::first(none));
+    bool one[3] = {true, false, false};
+    TEST_ASSERT_EQUAL_INT(-1, wifilist::next(0, one));   // single network: no backup to move to
+}
+
+// The census answers: every id 1..255 gets its own slot, and the longest reply
+// line (60 characters) finishes before the next id starts - so a bus of 255
+// modules cannot garble its own census.
+void test_census_slots_never_overlap(void) {
+    uint32_t frame = busslot::lineMs(60);
+    for (uint32_t id = 1; id < 255; id++)
+        TEST_ASSERT_TRUE(busslot::censusDelayMs(id) + frame <= busslot::censusDelayMs(id + 1));
+    TEST_ASSERT_TRUE(busslot::censusDelayMs(255) + frame < 1700);   // hub listens >= 1.6 s, then until quiet
+}
 
 // "MSI 3058" is one network name, not an ssid and a password.
 void test_quoted_ssid_keeps_its_spaces(void) {
@@ -547,6 +580,9 @@ int main(int, char **) {
     RUN_TEST(test_ease_is_smooth_and_bounded);
     RUN_TEST(test_pass_curve_matches_studio);
     RUN_TEST(test_pass_needs_its_start_speed_and_limits);
+    RUN_TEST(test_census_slots_never_overlap);
+    RUN_TEST(test_wifi_list_walks_saved_networks_in_order);
+    RUN_TEST(test_wifi_list_skips_empty_slots);
     RUN_TEST(test_quoted_ssid_keeps_its_spaces);
     RUN_TEST(test_quoted_password_loses_its_quotes);
     RUN_TEST(test_unquoted_still_works);

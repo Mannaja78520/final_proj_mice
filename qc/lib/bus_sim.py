@@ -49,9 +49,11 @@ class Board:
                     if not lo <= self.id <= hi:
                         return []
                     slot = (self.id - lo) % 24
-                else:
-                    slot = self.id % 24
-                return [(slot * SLOT_S, "@%d PONG %d %s %s" % (self.id, self.id, self.name, self.type))]
+                    return [(slot * SLOT_S, "@%d PONG %d %s %s" % (self.id, self.id, self.name, self.type))]
+                # plain PING: firmware after #154 = one 6 ms slot per id (BusSlot.h);
+                # `old` = before that, id % 24 shared 10 ms slots
+                d = (self.id % 24) * SLOT_S if self.old else self.id * 0.006
+                return [(d, "@%d PONG %d %s %s" % (self.id, self.id, self.name, self.type))]
             mm = re.match(r"(?i)^CHIPS (\d+) (\d+) (\d+)$", cmd)
             if mm and not self.old:
                 lo, hi, salt = map(int, mm.groups())

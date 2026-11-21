@@ -5,6 +5,7 @@ behaviour. main.py imports these names back and calls bind() with itself;
 names that live there, and names QC swaps on main, are read late as _hub.
 """
 import json
+import re
 import socket
 import time
 import urllib.error
@@ -17,6 +18,24 @@ _hub = None           # the main module, set by bind()
 def bind(hub):
     global _hub
     _hub = hub
+
+
+def board_order(mod):
+    """Where a board sits in the list: by kind, then name, then number.
+
+    Same kind together so thirty boards read as a few groups. Numbers inside a
+    name compare as numbers ("nong 2" before "nong 10"), and the board's own id
+    is a number too - the old key sorted both as text, so id 100 came before 20
+    and "lift 10" before "lift 2". Measured 2026-11-21 with 255 simulated boards.
+    A board with no type yet goes last, as "not set up".
+    """
+    def nat(text):
+        return [(0, int(p), "") if p.isdigit() else (1, 0, p)
+                for p in re.split(r"(\d+)", str(text).lower()) if p != ""]
+    ident = mod.get("id")
+    num = int(ident) if str(ident).lstrip("-").isdigit() else 10 ** 9
+    typ = (mod.get("type") or "").lower()
+    return ((typ in ("", "blank"), typ), nat(mod.get("name") or "~"), num, str(ident))
 
 
 def board_key(mod):
@@ -207,8 +226,7 @@ def modules_here(force=False):
 
     # A stable order, so the list does not shuffle under someone's hand between
     # two scans: named boards first, by name, then by whatever identity there is.
-    return sorted(out.values(),
-                  key=lambda m: ((m.get("name") or "~").lower(), str(m.get("id"))))
+    return sorted(out.values(), key=board_order)
 
 
 def remote_modules(force=False):
@@ -290,6 +308,4 @@ def modules_everywhere(force=False):
         if route not in seen["routes"]:
             seen["routes"].append(route)
 
-    return sorted(out.values(),
-                  key=lambda m: ((m.get("name") or "~").lower(),
-                                 str(m.get("id")))), errs
+    return sorted(out.values(), key=board_order), errs

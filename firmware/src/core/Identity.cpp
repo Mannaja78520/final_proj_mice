@@ -28,6 +28,10 @@ void Identity::begin() {
     type_  = prefs_.getString("type", "blank");
     wssid_ = prefs_.getString("wssid", "");
     wpass_ = prefs_.getString("wpass", "");
+    wssid2_ = prefs_.getString("wssid2", "");
+    wpass2_ = prefs_.getString("wpass2", "");
+    wssid3_ = prefs_.getString("wssid3", "");
+    wpass3_ = prefs_.getString("wpass3", "");
     wmode_ = prefs_.getString("wmode", "on");
     group_ = prefs_.getString("group", "");
     appass_ = prefs_.getString("appass", "");
@@ -116,6 +120,13 @@ void Identity::setWifi(const String& ssid, const String& pass) {
     prefs_.putString("wssid", wssid_);
     prefs_.putString("wpass", wpass_);
 }
+
+void Identity::setWifiN(int n, const String& ssid, const String& pass) {
+    if (n == 1) { wssid2_ = ssid; wpass2_ = pass; prefs_.putString("wssid2", ssid); prefs_.putString("wpass2", pass); }
+    else        { wssid3_ = ssid; wpass3_ = pass; prefs_.putString("wssid3", ssid); prefs_.putString("wpass3", pass); }
+}
+
+void Identity::clearWifiBackups() { setWifiN(1, "", ""); setWifiN(2, "", ""); }
 
 void Identity::setWifiMode(const String& m) {
     wmode_ = (m == "off" || m == "ap") ? m : "on";

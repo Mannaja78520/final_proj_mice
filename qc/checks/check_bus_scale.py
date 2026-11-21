@@ -52,6 +52,23 @@ def run(t):
     t.ok(old_plain[247] < 247 * 0.5, "plain PING loses most of a full bus (found %d of 247)" % old_plain[247],
          json.dumps(old_plain))
 
+    # 1b. firmware after #154 (one 6 ms slot per id): fine while ids are unique,
+    # blind exactly where two boards share an id - which default ids make likely
+    new_plain = {}
+    for n in (30, 100, 247):
+        brd = _boards(0, n, rnd, default_ids=True)
+        b = bus_sim.Bus(brd)
+        heard = {int(l.split()[0][1:]) for l in b.exchange("#* PING", 2.0) if l.startswith("@")}
+        new_plain[n] = {"boards": n, "distinct_ids": len({x.id for x in brd}), "heard_ids": len(heard)}
+    rec["new_plain_ping_default_ids"] = new_plain
+    t.ok(new_plain[247]["heard_ids"] < new_plain[247]["distinct_ids"],
+         "slot-per-id PING still misses boards that share an id (%d of %d ids heard, 247 boards)" %
+         (new_plain[247]["heard_ids"], new_plain[247]["distinct_ids"]),
+         "this is the gap CHIPS and chip addressing close")
+    full = bus_sim.Bus(_boards(0, 247, rnd))
+    got = [l for l in full.exchange("#* PING", 2.0) if l.startswith("@")]
+    t.ok(len(got) == 247, "slot-per-id PING finds 247 boards when ids are unique (%d)" % len(got))
+
     # 2. ranged census on a full bus: every board, no collision
     b = bus_sim.Bus(_boards(0, 247, rnd))
     found = bus_ids.BusIds(b.exchange).census()

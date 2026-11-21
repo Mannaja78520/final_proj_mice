@@ -7,7 +7,7 @@
 Why a script: KV-cache type and flash attention are Ollama SERVER settings
 (OLLAMA_KV_CACHE_TYPE, OLLAMA_FLASH_ATTENTION); nothing a request can set.
 """
-import argparse, json, os, subprocess, sys
+import argparse, json, os, re, subprocess, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,13 +31,23 @@ def server_env(cfg, base=None):
     if kv != "f16" and not flash:
         raise ValueError("kvCache %s needs flashAttention true (Ollama ignores it otherwise)" % kv)
     env = dict(os.environ if base is None else base)
-    for k in ("OLLAMA_KV_CACHE_TYPE", "OLLAMA_FLASH_ATTENTION"):
+    for k in ("OLLAMA_KV_CACHE_TYPE", "OLLAMA_FLASH_ATTENTION", "OLLAMA_KEEP_ALIVE", "OLLAMA_NUM_PARALLEL"):
         env.pop(k, None)
     if cfg.get("host"):
         env["OLLAMA_HOST"] = cfg["host"]
     if cfg.get("modelsDir"):
         env["OLLAMA_MODELS"] = cfg["modelsDir"]
     env["OLLAMA_FLASH_ATTENTION"] = "1" if flash else "0"
+    # Ollama unloads a model after 5 idle minutes; the next question then pays the
+    # whole reload (a 3.2 GB model from disk). keepAlive keeps it in memory.
+    keep = cfg.get("keepAlive")
+    if keep is not None:
+        if not re.fullmatch(r"-1|\d+[smh]?", str(keep)):
+            raise ValueError("keepAlive must be like 30m, 1h, 90s or -1 (forever), got %r" % (keep,))
+        env["OLLAMA_KEEP_ALIVE"] = str(keep)
+    # One voice question at a time (Brain holds one lock): extra slots only cost VRAM.
+    if cfg.get("numParallel"):
+        env["OLLAMA_NUM_PARALLEL"] = str(int(cfg["numParallel"]))
     if kv != "f16":
         env["OLLAMA_KV_CACHE_TYPE"] = kv
     return env
@@ -56,7 +66,8 @@ def main(argv=None):
     if a.flash:
         cfg["flashAttention"] = a.flash == "1"
     env = server_env(cfg)
-    keys = ("OLLAMA_HOST", "OLLAMA_MODELS", "OLLAMA_FLASH_ATTENTION", "OLLAMA_KV_CACHE_TYPE")
+    keys = ("OLLAMA_HOST", "OLLAMA_MODELS", "OLLAMA_FLASH_ATTENTION", "OLLAMA_KV_CACHE_TYPE",
+            "OLLAMA_KEEP_ALIVE", "OLLAMA_NUM_PARALLEL")
     if a.show:
         for k in keys:
             print("%s=%s" % (k, env.get(k, "(unset)")))

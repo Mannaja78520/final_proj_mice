@@ -1,4 +1,5 @@
 #include "core/RS485Bus.h"
+#include "core/BusSlot.h"
 #include "core/Log.h"
 #include "core/CommandRouter.h"
 #include "core/Identity.h"
@@ -152,14 +153,12 @@ void RS485Bus::handleLine(String line) {
         // real bus - measured with a nong on id 67 answering at 1344 ms, and
         // impossible to see against a fake that answers instantly.
         //
-        // Now the delay is bounded: 24 slots of 10 ms, so every board has
-        // answered within 240 ms whatever its id. Two boards can share a slot
-        // (ids 24 apart); on a small bus the addressed follow-up covers that.
-        // On a big one it cannot (247 boards = ~10 per slot), which is what the
-        // ranged PING above is for: a range of 24 ids has no shared slot.
-        int slot = ranged ? BusAddr::pingSlot(id_->id(), pingLo, pingHi)
-                          : id_->id() % BusAddr::SLOTS;
-        queueReply("@" + String(id_->id()) + " " + reply, (uint32_t)slot * BusAddr::SLOT_MS);
+        // 2026-11-21: one slot per id now (BusSlot.h, id x 6 ms, all done by
+        // 1.53 s). The 24 shared slots lost most answers past ~30 boards. A
+        // RANGED ping (BusAddr.h) has its own slot inside the range instead.
+        uint32_t delay = ranged ? (uint32_t)BusAddr::pingSlot(id_->id(), pingLo, pingHi) * BusAddr::SLOT_MS
+                                : busslot::censusDelayMs((uint32_t)id_->id());
+        queueReply("@" + String(id_->id()) + " " + reply, delay);
     }
 }
 

@@ -90,22 +90,20 @@ def run(t):
          "5 s still hides the boards with the highest ids")
 
     bus = (F.FIRMWARE / "src" / "core" / "RS485Bus.cpp").read_text(encoding="utf-8")
-    # Since 2026-11-21 the slot count and gap are named constants (BusAddr.h)
-    # shared by plain and ranged PING; the delay is still slot x gap, id % slots.
-    addr = (F.FIRMWARE / "src" / "core" / "BusAddr.h").read_text(encoding="utf-8")
-    t.contains(bus, "id_->id() % BusAddr::SLOTS",
-               "and a board's own delay is bounded, not proportional to its id")
-    ms, mg = re.search(r"SLOTS = (\d+)", addr), re.search(r"SLOT_MS = (\d+)", addr)
-    if t.ok(ms and mg, "the stagger is a slot times a gap",
-            "BusAddr::SLOTS x BusAddr::SLOT_MS"):
-        slots, gap = int(ms.group(1)), int(mg.group(1))
-        worst = slots * gap
-        t.ok(worst <= 300,
-             "so every board has answered within %d ms" % worst,
-             "%d slots x %d ms. The hub probes every port on every scan, and "
-             "pays this each time" % (slots, gap))
-        # A PONG is about 30 characters: 2.6 ms at 115200. A gap under that
-        # means two boards can overlap in the middle of a line.
-        t.ok(gap >= 4,
+    slot_h = (F.FIRMWARE / "src" / "core" / "BusSlot.h").read_text(encoding="utf-8")
+    t.contains(bus, "busslot::censusDelayMs",
+               "a board's census delay comes from BusSlot.h (one slot per id, 2026-11-21)")
+    m2 = re.search(r"SLOT_MS\s*=\s*(\d+)", slot_h)
+    if t.ok(m2, "the stagger is one slot per id", "no SLOT_MS in BusSlot.h"):
+        gap = int(m2.group(1))
+        worst = 255 * gap
+        m3 = re.search(r"at_least=([\d.]+)", window)
+        floor_ms = float(m3.group(1)) * 1000 if m3 else 0
+        t.ok(worst < floor_ms,
+             "so id 255 has answered (%d ms) inside the hub's listening floor" % worst,
+             "%d x 255 ms against a floor of %d ms" % (gap, floor_ms))
+        # A reply line is up to ~60 characters: 5.2 ms at 115200. A shorter
+        # slot lets two neighbouring ids overlap in the middle of a line.
+        t.ok(gap >= 6,
              "and two boards in neighbouring slots cannot overlap",
-             "%d ms between slots, against 2.6 ms for a PONG at 115200" % gap)
+             "%d ms between slots, against 5.2 ms for a 60-character reply at 115200" % gap)
