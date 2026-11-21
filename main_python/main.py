@@ -759,6 +759,7 @@ from hub_usb import (  # noqa: E402
 #   wifi:<ip>              module on the network
 #   usb:<port>             module on a cable
 #   usb:<port>:<busid>     module on the RS485 bus behind that cable
+#   usb:<port>:>12>7       board 7 behind bridge board 12 (a path, BusPath.h)
 #   usb:<port>@<peer>      module behind that one's OWN HOTSPOT   <-- see below
 #   wifi:<ip>@<peer>       ...same, reached over the network
 #
@@ -812,7 +813,12 @@ def parse_dev(dev):
         return ("wifi", dev[5:], 0, peer)
     if dev.startswith("usb:"):
         rest = dev[4:].split(":")
-        return ("usb", rest[0], int(rest[1]) if len(rest) > 1 and rest[1] else 0, peer)
+        # A bus id is a number (a board on the cable's bus) or, behind a bridge
+        # board, a path like ">12>7" (BusPath.h): kept as text for usb_cmd.
+        bus = 0
+        if len(rest) > 1 and rest[1]:
+            bus = rest[1] if rest[1].startswith(">") else int(rest[1])
+        return ("usb", rest[0], bus, peer)
     raise ValueError("bad dev (use wifi:<ip> or usb:<port>[:<id>], optionally @<peer>)")
 
 
