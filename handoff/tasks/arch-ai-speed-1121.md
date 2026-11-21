@@ -38,3 +38,7 @@ qc/checks/check_ollama_kv.py | keepAlive asserts | done | pass | this checkpoint
 tools/ai_latency.py | new | done | not run (no Ollama) | this checkpoint
 docs/systems.json, docs/systems/ | register ai_latency | done | build ok | this checkpoint
 docs/architecture/scorecard-2026-11-21.md, docs/experiments/experiment-records.md | docs | done | n/a | this checkpoint
+
+## Update 2026-11-21 (branch claude/brain-split-translate, off #150)
+- Moved Translator (translate, translate_text, translate_all) to apps/voice/translator.py and detect_lang/scripts_in to apps/voice/langs.py; Brain(FaceLink, Translator). service.py 3913 -> 3200 lines. Voice/resource/systems QC 1251 pass (cloud, fakes). check_resource_policy now parses translator.py too.
+- PC latency run requested via Remote Control (numbers pending).

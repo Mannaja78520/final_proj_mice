@@ -53,7 +53,10 @@ def board_key(mod):
         return ("chip", chip)
     ident = mod.get("id")
     if ident is not None:
-        return ("id", str(ident), (mod.get("type") or "").lower())
+        # `_bus` = the cable a chipless board was heard on. Ids repeat across
+        # buses (each has its own 1..247), so without it board 5 on COM3 and
+        # board 5 on COM4 were ONE board.
+        return ("id", str(ident), (mod.get("type") or "").lower(), mod.get("_bus") or "")
     return ("addr", mod.get("dev") or mod.get("ip") or repr(mod))
 
 
@@ -165,7 +168,7 @@ def modules_here(force=False):
             # that went quiet, not to the board. A nong on a cable that also
             # missed a WiFi sweep is not late - it is in front of you.
             seen = {k: v for k, v in mod.items() if k not in ("dev", "stale",
-                                                              "lastSeen")}
+                                                              "lastSeen", "_bus")}
             seen["routes"] = []
             seen["key"] = "/".join(str(p) for p in key)
             out[key] = seen
@@ -200,6 +203,7 @@ def modules_here(force=False):
         if mod:
             add(mod, {"kind": "usb", "dev": "usb:" + u["port"], "port": u["port"]})
         for b in (u.get("rs485") or []):
+            b = dict(b, _bus=u["port"])
             add(b, {"kind": "rs485", "bus": b.get("id"),
                     "dev": "usb:%s:%s" % (u["port"], b.get("id")),
                     "port": u["port"]})

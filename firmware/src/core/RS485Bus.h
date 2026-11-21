@@ -15,6 +15,8 @@ class Identity;
 //   #3 GOTO 2        -> @3 OK goto 2
 //   #3 SET NAME LiftA
 //   #* RGB 255 0 0     (broadcast: executed by everyone, nobody replies)
+//   #* PING <lo> <hi>  (ranged discovery for big buses, see BusAddr.h)
+//   #~<chip> SET ID 9  (address by chip; ids may collide, chips never do)
 //   #* PING            (broadcast discovery: each module replies @<id> PONG,
 //                       staggered into 24 slots of 10 ms to avoid collisions)
 //
@@ -31,6 +33,14 @@ public:
     // task of its own clocks it out. Measured 2026-09-21: a 1.3 KB INFO reply
     // sent inline held loop() - and every servo frame - for 116 ms.
     void send(const String& line);
+
+    // A second link makes this board a GATEWAY (BusPath.h): lines addressed
+    // "#>me>rest ..." are put on that link as "#rest ...", and what comes back
+    // from it goes upstream as "@>me>...". `tx` writes one line to the downstream
+    // bus; the owner of that link calls onDownstreamLine() for every line heard.
+    void setDownstream(std::function<void(const String&)> tx) { downstream_ = tx; }
+    void onDownstreamLine(const String& line);
+    bool isGateway() const { return (bool)downstream_; }
     void drain(uint32_t maxMs);   // wait for queued lines to leave (before a reboot)
 
     // "#<id> CMD" / "#* CMD" from USB or the web console. Returns the
@@ -53,6 +63,7 @@ private:
     String pending_[PENDING_N];
     uint32_t pendingAt_[PENDING_N] = {0};
     std::function<void(const String&)> busLine_;
+    std::function<void(const String&)> downstream_;
     SemaphoreHandle_t sendMtx_ = nullptr;
     bool warnedNoMtx_ = false;   // say it once if the lock is missing
     QueueHandle_t txq_ = nullptr;   // String* lines waiting for the wire
@@ -60,6 +71,7 @@ private:
     volatile bool sending_ = false;   // a line was taken off the queue and is going out
 
     void handleLine(String line);
+    void queueReply(const String& line, uint32_t delayMs);  // answer after a slot
     void sendNow(const String& line);   // the wire itself; blocks until sent
     static void txTask(void* self);
 };
