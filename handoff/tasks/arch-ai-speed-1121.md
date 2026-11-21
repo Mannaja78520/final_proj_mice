@@ -1,6 +1,12 @@
 # Architecture review + AI speed (2026-11-21)
 Owner: claude (thread "Review architecture and speed up AI")
 Updated: 2026-11-21
+Branch: claude/project-thread-0qwlfz
+Last commit: this checkpoint
+Plan: none
+
+## Goal
+User 2026-11-21: is the architecture good, OOP, easy to change and fast; any way to make every program and the AI faster?
 
 ## Doing now
 Branch claude/project-thread-0qwlfz: PR with keepAlive, face_link split, ai_latency tool, scorecard.
