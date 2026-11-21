@@ -1576,7 +1576,14 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
     const url = URL.createObjectURL(await r.blob());
     const player = new Audio(url);
     player.onplaying = () => this.spoke(text, player.duration);   // A46-1: gestures start now
-    player.onended = () => { URL.revokeObjectURL(url); this.$("wait").textContent = ""; this.$("speakingNow").hidden = true; };
+    player.onended = () => { this.$("wait").textContent = ""; this.$("speakingNow").hidden = true; };
+    // Revoked by listeners, not by onended: the blocked-sound path below
+    // replaces onended, and a failed play() never ends - each of those kept
+    // the whole answer's audio in memory for the life of the tab (found
+    // 2026-11-21, leak hunt).
+    const freeUrl = () => URL.revokeObjectURL(url);
+    player.addEventListener("ended", freeUrl);
+    player.addEventListener("error", freeUrl);
     try {
       await player.play();
     } catch(e) {
