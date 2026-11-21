@@ -84,11 +84,14 @@ from face_history import HistoryCursor, local_when    # noqa: E402
 # Who can do each job besides this PC (A45-1): the wire shapes and the keys.
 sys.path.insert(0, str(CODE / "apps" / "voice"))
 import providers                                     # noqa: E402
+import local_ai                                      # noqa: E402
 from profiles import Profiles, ProfileError, guarded  # noqa: E402
 from user_voice import UserVoice, PERSON as USER_PERSON  # noqa: E402
 # What a question asks for beyond its words (A45-24): reply language,
 # read-aloud, a new verse, Thai-letter loanwords. Data in voice_intents.json.
 import intents                                       # noqa: E402
+from langs import detect_lang, scripts_in           # noqa: E402,F401
+from translator import Translator                    # noqa: E402
 from face_link import (FaceLink, FACE_APP_OFF, FACE_APP_KEEPS, FACE_APP_SAYS,   # noqa: E402,F401
                        short_person_name, call_name, join_names, faces_on)
 
@@ -113,22 +116,6 @@ def drop_repeats(text):
     """A word or phrase said over and over is the listener stuck, not the visitor."""
     text = re.sub(r'(\b\S+)(?:\s+\1\b)+', r'\1', (text or "").strip())
     return re.sub(r'(.{3,25}?)\1{2,}', r'\1', text).strip()
-
-
-def detect_lang(text):
-    """Detect 'th', 'ko', 'ja', 'zh', 'ru', 'ar', 'hi', or 'en' from the letters.
-
-    One script per language family, so a script tells which column, not which
-    exact language: Ukrainian reads as ru, Persian/Urdu as ar, Marathi/Nepali
-    as hi, and French, German, Spanish or Vietnamese as en (same alphabet).
-    Kanji with no kana is zh. Nothing readable (digits, emoji, "") is th, the
-    robot's home language, as before.
-    """
-    found = scripts_in(text)
-    for lang in ("th", "ko", "ja", "zh", "ru", "ar", "hi", "en"):
-        if lang in found:
-            return lang
-    return "th"
 
 
 # ---------------------------------------------------------------------------
@@ -327,43 +314,6 @@ def voice_lang(name):
     return m.group(1) if m else ""
 
 
-def scripts_in(text):
-    """Which writing systems one line really holds, e.g. {"th", "en"}.
-
-    detect_lang answers "which ONE language is this", which is the wrong
-    question for a sentence like *Hello พุฒิพงศ์, welcome*: it is two, and a
-    voice tied to either one drops the other half (user 2026-09-18: *make TTS
-    can read all lang in the same time*).
-
-    The ranges are the whole script, not only its common block: half-width
-    katakana, CJK extension A, Arabic presentation forms, Vietnamese letters
-    and full-width Latin all count (apps/voice/app.js askLang mirrors them).
-    """
-    ranges = (
-        ("th", ((0x0E00, 0x0E7F),)),
-        ("ko", ((0xAC00, 0xD7AF), (0x1100, 0x11FF), (0x3130, 0x318F), (0xA960, 0xA97F),
-                (0xD7B0, 0xD7FF), (0xFFA0, 0xFFDC))),
-        ("ja", ((0x3040, 0x309F), (0x30A0, 0x30FF), (0x31F0, 0x31FF), (0xFF66, 0xFF9F))),
-        ("zh", ((0x4E00, 0x9FFF), (0x3400, 0x4DBF), (0xF900, 0xFAFF), (0x20000, 0x3134F))),
-        ("ru", ((0x0400, 0x052F), (0x2DE0, 0x2DFF), (0xA640, 0xA69F))),
-        ("ar", ((0x0600, 0x06FF), (0x0750, 0x077F), (0x08A0, 0x08FF), (0xFB50, 0xFDFF),
-                (0xFE70, 0xFEFF))),
-        ("hi", ((0x0900, 0x097F), (0xA8E0, 0xA8FF))),
-        ("en", ((0x41, 0x5A), (0x61, 0x7A), (0x00C0, 0x024F), (0x1E00, 0x1EFF),
-                (0xFF21, 0xFF3A), (0xFF41, 0xFF5A))),
-    )
-    found = set()
-    for ch in text or "":
-        cp = ord(ch)
-        if cp == 0xD7 or cp == 0xF7:          # × and ÷ sit inside Latin-1
-            continue
-        for lang, spans in ranges:
-            if any(a <= cp <= b for a, b in spans):
-                found.add(lang)
-                break
-    return found
-
-
 def format_multi_person(person, lang="th", address=("คุณ",)):
     """Format single or multiple detected persons gracefully."""
     p_str = str(person).strip()
@@ -464,7 +414,7 @@ def personalize_answer(answer, person, lang="th", address=("คุณ",)):
         return f"{addressed}ครับ {ans}"
 
 
-class Brain(FaceLink):
+class Brain(FaceLink, Translator):
     """What answers. The FAQ is always there; the model arrives lazily."""
 
     _made = threading.local()       # the sound file say() last used, per thread
@@ -2102,6 +2052,7 @@ class Brain(FaceLink):
             return True
 
         def _worker():
+            self._warm_local_ai(force)
             if force or self.cfg.get("llm", {}).get("enabled"):
                 if not self._llm:
                     self._load_llm()
@@ -2120,6 +2071,24 @@ class Brain(FaceLink):
         self._preload_thread = threading.Thread(target=_worker, daemon=True)
         self._preload_thread.start()
         return True
+
+    def _warm_local_ai(self, force):
+        """Load the think model of a local server (Ollama) before the first question.
+
+        At boot only if the server is already up (it is never started just for
+        this); the Load-the-AI button (force) may start it, as any question would.
+        """
+        for pid in self.chain("think"):
+            prov = self.service(pid)
+            if not prov.get("autoStart"):
+                continue
+            if force:
+                up, _ = local_ai.wake(prov)
+            else:
+                up = local_ai.is_up(prov["autoStart"]["ready"], local_ai.SHORT)
+            if up:
+                local_ai.warm(prov, prov["jobs"].get("think"))
+            return
 
     def unload(self):
         """Unload LLM and STT models from memory and free GPU/RAM."""
@@ -2536,113 +2505,6 @@ class Brain(FaceLink):
             reply = trim_unfinished(reply, lang, self.particles())
         return reply.strip()
 
-    def translate(self, text):
-        """Any language in, English out - or (None, why-not).
-
-        A separate persona from /ask: the helper answers in the visitor's
-        language, the translator always answers in English. One model, two
-        system prompts - never both at once.
-        """
-        with self._lock:
-            ok, why_not = self._ensure_llm()
-            if not ok:
-                return None, why_not
-            messages = [
-                {"role": "system", "content":
-                    "You are a translator at a robot show. Translate the "
-                    "message to English exactly - keep the meaning, plain "
-                    "wording. Reply with ONLY the English translation."},
-                {"role": "user", "content": text}]
-            try:
-                return self._complete(messages), None
-            except Exception as e:              # noqa: BLE001
-                return None, "%s: %s" % (e.__class__.__name__, e)
-
-    def translate_text(self, text, target="en", source="auto"):
-        """Translate text from source to target language (th, en, ja, zh)."""
-        if not text or not text.strip():
-            return "", None
-        src_lang = detect_lang(text) if source in ("auto", "") else source
-        lang_map = {
-            "th": "th",
-            "en": "en",
-            "ja": "ja",
-            "zh": "zh-CN",
-        }
-        tl = lang_map.get(target, target)
-        sl = lang_map.get(src_lang, "auto") if source == "auto" else lang_map.get(source, "auto")
-
-        if src_lang == target:
-            return text.strip(), None
-
-        import urllib.request
-        import urllib.parse
-        try:
-            url = ("https://translate.googleapis.com/translate_a/single?client=gtx&sl=%s&tl=%s&dt=t&q=%s"
-                   % (sl, tl, urllib.parse.quote(text)))
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req, timeout=4) as r:
-                data = json.loads(r.read().decode("utf-8"))
-                if data and data[0]:
-                    res = "".join(x[0] for x in data[0] if x and x[0])
-                    if res:
-                        return res.strip(), None
-        except Exception:
-            pass
-
-        # Fallback to local LLM if available (short reply only)
-        with self._lock:
-            ok, _ = self._ensure_llm()
-            if ok:
-                target_names = {
-                    "th": "Thai",
-                    "en": "English",
-                    "ja": "Japanese",
-                    "zh": "Chinese",
-                    "ko": "Korean",
-                    "fr": "French",
-                    "de": "German",
-                    "es": "Spanish",
-                    "ru": "Russian",
-                    "ar": "Arabic",
-                    "hi": "Hindi",
-                    "vi": "Vietnamese",
-                    "id": "Indonesian",
-                    "ms": "Malay",
-                }
-                tname = target_names.get(target, target)
-                messages = [
-                    {"role": "system", "content":
-                     f"You are a translator. Translate the text into {tname} accurately and concisely. Reply ONLY with the translated text, no explanation."},
-                    {"role": "user", "content": text}
-                ]
-                try:
-                    res = self._complete(messages, max_tokens=48)
-                    if res:
-                        return res.strip(), None
-                except Exception:
-                    pass
-
-        return text.strip(), "translation unavailable"
-
-    def translate_all(self, text, source="auto"):
-        """Return dict of {lang: ...} across all configured languages for given text."""
-        langs = self.supported_langs() if hasattr(self, "supported_langs") else ("th", "en", "ja", "zh")
-        src = detect_lang(text) if source in ("auto", "") else source
-        results = {src: text.strip()}
-        targets = [t for t in langs if t != src]
-        def translate(target):
-            try:
-                trans, _ = self.translate_text(text, target=target, source=src)
-                return target, trans or text.strip()
-            except Exception:
-                return target, text.strip()
-        for target, translated in self._resources.map(translate, targets):
-            results[target] = translated
-        for t in langs:
-            if t not in results:
-                results[t] = text.strip()
-        return results
 
     def health(self):
         n = len(self.faqs())
@@ -2665,7 +2527,6 @@ class Brain(FaceLink):
                          "last": (getattr(self, "_jobs", None) or {}).get(j) or {}}
                      for j in (self.services().get("jobs") or {})},
         }
-
 
 
 def plain_wav(data, rate=0):
