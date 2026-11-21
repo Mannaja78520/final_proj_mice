@@ -401,3 +401,22 @@ q8_0/q4_0 KV with flash attention is the closest built-in.
 | Spark ref C | 16.7 | 8.7 | 0.0 | 8.5 | 3.7 / 3.4 / 2.7 | 4.9 / 4.9 / 3.7 |
 - Spark is sampled: the same references gave A 5.3 / B 4.6 / C 7.5 on CPU and 8.5 / 12.6 / 8.5 here, so run-to-run spread (about 8 points) is larger than any gap between references. No reference beats Edge in either run on both.
 - GPU speed: 2.6-7.5 s per line (first line includes warm-up) against 8-18 s on CPU; Edge 0.6-0.8 s.
+
+## 2026-11-21 Local AI latency (keep-alive)
+- Question: does the first answer after a quiet spell cost a model reload?
+- Change: `keepAlive` 1h and `numParallel` 1 in `config/local_ai.json` (Ollama default is 5m).
+- Measuring tool: `python tools/ai_latency.py --out docs/experiments/2026-11-21_ai_latency.json`
+  (1 cold round after unload + 3 warm rounds, Thai + English, first word and whole answer).
+- Budget: 4 rounds. Stop rule: stop tuning under 10 % gain.
+- Raw numbers: NOT RUN yet. This was prepared in the cloud (no GPU, no Ollama); needs the PC. No speed claim is made until then.
+
+### 2026-11-21 result (PC, RTX 5070 Ti, Ollama q8_0 KV, typhoon25-4b; `tools/ai_latency.py --rounds 3`, short answers of 13-23 tokens)
+| state | lang | first word s | whole answer s | tokens/s |
+| --- | --- | --- | --- | --- |
+| cold (model not loaded) | th | 44.97 | 46.31 | 17.1 |
+| cold, model already loaded by the call before | en | 0.04 | 0.14 | 128.7 |
+| warm x3 | th | 0.022-0.032 | 0.178-0.205 | 133-155 |
+| warm x3 | en | 0.021-0.035 | 0.114-0.178 | 91-141 |
+- Reading: the only slow part is the first model load (about 45 s). Warm answers are under 0.2 s, so streaming LLM->TTS would save at most about 0.15 s: NOT worth building (under the 2% / no-gain stop rule). The speech part (TTS 0.6-7.5 s, STT not measured) is where time goes.
+- Change made from this: `local_ai.warm()` loads the model when the voice helper starts (if Ollama is already up) and on the Load-the-AI button; keepAlive 1h keeps it loaded. Effect of the warm-up itself not yet re-measured on the PC.
+- Not measured: STT on a 3 s clip; TTS Edge vs Spark in this run.

@@ -1116,11 +1116,17 @@ def main(argv=None):
                 if feed is not None:
                     feed.close()
             time.sleep(wait)
-            wait = min(30.0, wait * 2)
+            # Cap 5 s (was 30): measured on the PC 2026-11-21, the friend's app was up again in
+            # 8 s and this service saw it only 27 s after the kill, 19 s of it pure backoff.
+            wait = min(5.0, wait * 2)
 
     threading.Thread(target=watch, daemon=True).start()
     threading.Thread(target=live_feed, daemon=True).start()
 
+    # The listen queue defaults to 5 connections. Measured 2026-11-21 with 200
+    # clients at once: every burst past 5 waited for a SYN retry (1 s, 3 s, 7 s)
+    # and a few timed out - a venue of phones and TVs all opening the page.
+    ThreadingHTTPServer.request_queue_size = 256
     httpd = ThreadingHTTPServer((host, port), Handler)
     print("[faces] answering on http://%s:%d  (/health, /state; POST /count, /act)"
           % (host, port))

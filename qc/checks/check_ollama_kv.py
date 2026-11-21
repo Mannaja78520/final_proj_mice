@@ -36,3 +36,15 @@ def run(t):
     cfg = mod.load()
     t.ok(cfg.get("kvCache") in mod.KV_TYPES, "shipped config is valid", str(cfg))
     mod.server_env(cfg, {})
+
+    env = mod.server_env({"keepAlive": "1h", "numParallel": 1}, {"OLLAMA_KEEP_ALIVE": "stale"})
+    t.ok(env.get("OLLAMA_KEEP_ALIVE") == "1h" and env.get("OLLAMA_NUM_PARALLEL") == "1",
+         "keepAlive and numParallel reach the env", str(env))
+    t.ok("OLLAMA_KEEP_ALIVE" not in mod.server_env({}, {"OLLAMA_KEEP_ALIVE": "stale"}),
+         "unset keepAlive leaves Ollama's own default", "stale value kept")
+    try:
+        mod.server_env({"keepAlive": "soon"}, {})
+        ok = False
+    except ValueError:
+        ok = True
+    t.ok(ok, "a bad keepAlive is refused", "no ValueError")

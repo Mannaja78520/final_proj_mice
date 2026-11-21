@@ -103,6 +103,11 @@
        the spot, <code>WIFI RETRY</code> tries the stored network again without waiting for
        the 60&nbsp;second clock, and <code>WIFI SCAN</code> lists the 2.4&nbsp;GHz networks
        this board can actually see — which answers "why won't it join?" directly.</p>
+    <p><code>SET WIFI2 &lt;ssid&gt; &lt;pass&gt;</code> and <code>SET WIFI3 ...</code> save up to two
+    backup networks. If the main one cannot be joined the board tries the backups in order, then
+    stays on its own hotspot and tries the whole list again every minute. Leave the name empty
+    (<code>SET WIFI2</code>) to forget a backup; <code>WIFI CLEAR</code> forgets all of them.
+    <code>WIFI</code> shows which one it is on (<code>net=1</code> is the main one).</p>
     <p><code>SET WIFI &lt;ssid&gt; &lt;pass&gt;</code> now joins immediately too. It used to
        answer <i>"reboot to apply"</i>, so correcting a mistyped network name meant
        power-cycling a module and leaving the arm wherever it stopped. The scan is
