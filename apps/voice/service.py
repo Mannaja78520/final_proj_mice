@@ -3886,6 +3886,10 @@ def main():
     port = args.port or u.port or 8767
     host = u.hostname or "127.0.0.1"
 
+    # The listen queue defaults to 5 connections. Measured 2026-11-21 with 200
+    # clients at once: every burst past 5 waited for a SYN retry (1 s, 3 s, 7 s)
+    # and a few timed out - a venue of phones and TVs all opening the page.
+    ThreadingHTTPServer.request_queue_size = 256
     httpd = ThreadingHTTPServer((host, port), VoiceHandler)
     print("[voice] answering on %s:%d" % (host, port))
     if host not in ("127.0.0.1", "localhost", "::1"):

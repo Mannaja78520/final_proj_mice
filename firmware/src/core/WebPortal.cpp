@@ -12,6 +12,7 @@
 #include "core/SDStore.h"
 #include "core/Util.h"
 #include "core/WifiLink.h"
+#include "core/WifiList.h"
 #include "core/SequencePlayer.h"
 #include "core/BuildTypes.h"
 #include "core/AudioStream.h"
@@ -98,17 +99,39 @@ void WebPortal::begin(Identity* id, CommandRouter* router, SDStore* sd, RS485Bus
 // Bring the radio to `mode` immediately. Called at boot and again by every
 // WIFI / SET WIFI command, so there is exactly ONE piece of code that decides
 // what the radio does — boot and a live change cannot drift apart.
+// Saved home networks: slot 0 is the one SET WIFI wrote (or the compiled
+// factory one), slots 1-2 are SET WIFI2/3. See WifiList.h.
+bool WebPortal::savedNets(bool present[3]) const {
+    present[0] = id_->wifiSsid().length() || String(WIFI_SSID).length();
+    present[1] = id_->wifiSsidN(1).length();
+    present[2] = id_->wifiSsidN(2).length();
+    return present[0] || present[1] || present[2];
+}
+
+bool WebPortal::selectNet(int n) {
+    if (n == 0) {
+        homeSsid_ = id_->wifiSsid().length() ? id_->wifiSsid() : String(WIFI_SSID);
+        homePass_ = id_->wifiSsid().length() ? id_->wifiPass() : String(WIFI_PASS);
+    } else {
+        homeSsid_ = id_->wifiSsidN(n);
+        homePass_ = id_->wifiPassN(n);
+    }
+    if (n != 0 && !homeSsid_.length()) return false;
+    netIdx_ = n;
+    staSsid_ = homeSsid_;
+    staPass_ = homePass_;
+    onRelay_ = false;
+    relayName_ = "";
+    return true;
+}
+
 void WebPortal::applyMode(const String& mode) {
     wifiModeCfg_ = mode;
     // the setup network is ALWAYS what gets tried: credentials entered on the
     // module win over the ones compiled into config.h, which are only a
     // factory fallback for a board nobody has set up yet.
-    homeSsid_ = id_->wifiSsid().length() ? id_->wifiSsid() : String(WIFI_SSID);
-    homePass_ = id_->wifiSsid().length() ? id_->wifiPass() : String(WIFI_PASS);
-    staSsid_ = homeSsid_;          // any mode change goes back to the show
-    staPass_ = homePass_;          // network; relaying is decided from there
-    onRelay_ = false;
-    relayName_ = "";
+    selectNet(0);                  // any mode change goes back to the show
+    homeSsid_ = staSsid_;          // network (slot 0); relaying is decided from there
 
     if (mode == "off") { radioOff(); return; }
 
@@ -402,6 +425,7 @@ String WebPortal::wifiCommand(const String& arg) {
     // hotspot for a bench test and now has to rejoin the real show network.
     if (a == "CLEAR") {
         id_->setWifi("", "");
+        id_->clearWifiBackups();
         applyMode("on");
         return "OK forgot the stored network, now using \"" + staSsid_ +
                "\" from the firmware";
@@ -459,7 +483,7 @@ String WebPortal::wifiCommand(const String& arg) {
         case W_AP:         s += "ap-only"; break;
         default:           s += "idle"; break;
     }
-    s += " ssid=\"" + staSsid_ + "\"";
+    s += " ssid=\"" + staSsid_ + "\" net=" + String(netIdx_ + 1);
     if (onRelay_) s += " via=\"" + relayName_ + "\"";   // leaning on a neighbour
     if (wstate_ == W_ONLINE) {
         s += " ip=" + WiFi.localIP().toString() + " rssi=" + String(WiFi.RSSI());
@@ -1351,7 +1375,16 @@ void WebPortal::loop() {
                      WiFi.localIP().toString().c_str(), WiFi.softAPSSID().c_str());
                 networkUp();
             } else if (now - wstateAt_ >= WIFI_CONNECT_TIMEOUT_MS) {
-                startDiagnostic();
+                // a saved backup network left to try? go there before giving up
+                bool have[3];
+                savedNets(have);
+                int nx = onRelay_ ? -1 : wifilist::next(netIdx_, have);
+                if (nx >= 0 && selectNet(nx)) {
+                    LOGF(wifi, "could not join slot %d — trying backup \"%s\"", nx, staSsid_.c_str());
+                    beginSta();
+                } else {
+                    startDiagnostic();
+                }
             }
             break;
 
@@ -1377,9 +1410,20 @@ void WebPortal::loop() {
                     LOGF(wifi, "joined \"%s\" late, ip=%s (fallback AP stays up)",
                          staSsid_.c_str(), WiFi.localIP().toString().c_str());
                     networkUp();
-                } else if (now - lastStaRetry_ >= 60000) {
-                    lastStaRetry_ = now;
-                    WiFi.begin(staSsid_.c_str(), staPass_.length() ? staPass_.c_str() : nullptr);
+                } else {
+                    // One try per tick, the next saved network each time and
+                    // round to the main one again. With several saved the gap
+                    // is shorter, so the whole list is covered in about a minute.
+                    bool have[3];
+                    savedNets(have);
+                    int cnt = (int)have[0] + (int)have[1] + (int)have[2];
+                    if (now - lastStaRetry_ >= (cnt > 1 ? 20000u : 60000u)) {
+                        lastStaRetry_ = now;
+                        int nx = wifilist::next(netIdx_, have);
+                        if (nx < 0) nx = wifilist::first(have);
+                        if (nx >= 0) selectNet(nx);
+                        WiFi.begin(staSsid_.c_str(), staPass_.length() ? staPass_.c_str() : nullptr);
+                    }
                 }
             }
             break;
@@ -1398,6 +1442,7 @@ void WebPortal::loop() {
                 if (WiFi.status() != WL_CONNECTED || noIp) {
                     LOGF(wifi, "link lost (%s) — re-establishing",
                          noIp ? "no address" : "disconnected");
+                    if (!onRelay_ && netIdx_ != 0) selectNet(0);   // main network first again
                     beginSta();       // full re-join, not a bare reconnect
                 }
             }
