@@ -759,6 +759,7 @@ from hub_usb import (  # noqa: E402
 #   wifi:<ip>              module on the network
 #   usb:<port>             module on a cable
 #   usb:<port>:<busid>     module on the RS485 bus behind that cable
+#   usb:<port>:>12>7       board 7 behind bridge board 12 (a path, BusPath.h)
 #   usb:<port>@<peer>      module behind that one's OWN HOTSPOT   <-- see below
 #   wifi:<ip>@<peer>       ...same, reached over the network
 #
@@ -809,10 +810,18 @@ def parse_dev(dev):
     if "@" in dev:
         dev, peer = dev.split("@", 1)
     if dev.startswith("wifi:"):
-        return ("wifi", dev[5:], 0, peer)
+        # wifi:<ip>:>12>7 = board 7 behind bridge board 12, reached THROUGH the
+        # board at <ip> (its own bridge() puts the line on the second link).
+        host, sep, path = dev[5:].partition(":>")
+        return ("wifi", host, (">" + path) if sep else 0, peer)
     if dev.startswith("usb:"):
         rest = dev[4:].split(":")
-        return ("usb", rest[0], int(rest[1]) if len(rest) > 1 and rest[1] else 0, peer)
+        # A bus id is a number (a board on the cable's bus) or, behind a bridge
+        # board, a path like ">12>7" (BusPath.h): kept as text for usb_cmd.
+        bus = 0
+        if len(rest) > 1 and rest[1]:
+            bus = rest[1] if rest[1].startswith(">") else int(rest[1])
+        return ("usb", rest[0], bus, peer)
     raise ValueError("bad dev (use wifi:<ip> or usb:<port>[:<id>], optionally @<peer>)")
 
 
@@ -921,6 +930,8 @@ def dev_cmd(dev, c, wait=None):
     answers: the operator reflashes a board that was already fine.
     """
     kind, addr, bus, peer = parse_dev(dev)
+    if kind == "wifi" and bus:
+        return wifi_path_cmd(addr, bus, _via(c, peer), wait or 3.0)
     if kind == "wifi":
         # A FORWARDED COMMAND IS TWO HOPS ON EVERY TRANSPORT, not just USB.
         # PEER_WAIT was applied only on the cable path, so `wifi:<ip>@<peer>`
@@ -933,6 +944,33 @@ def dev_cmd(dev, c, wait=None):
                         timed=not peer).decode(errors="replace")
     return usb_cmd(addr, _via(c, peer), bus,
                    wait=wait or (PEER_WAIT if peer else 2.0))
+
+
+def wifi_path_cmd(ip, path, cmd, wait):
+    """A command to the board behind a bridge, through the bridge board's WiFi.
+
+    The board's /api/cmd answers "-> sent" at once; the real answer comes off
+    the second link later and is kept in the board's last-replies list
+    (GET /api/busreplies, RS485Bus::repliesSince). So: note where that list is,
+    send, then poll it for the line that carries this path. Commands only:
+    files and status of a board behind a bridge are not reachable this way.
+    """
+    def newer(after):
+        rows = wifi_get(ip, "/api/busreplies?after=%d" % after, timed=False).decode(errors="replace")
+        return [r.split(" ", 1) for r in rows.split("\n") if " " in r]
+
+    base = max([int(n) for n, _ in newer(0) if n.isdigit()] or [0])
+    wifi_get(ip, "/api/cmd?c=" + urllib.parse.quote("#%s %s" % (path, cmd)), timed=False)
+    want = "@%s " % path
+    end = time.time() + wait
+    while time.time() < end:
+        time.sleep(0.15)
+        for n, line in newer(base):
+            if n.isdigit():
+                base = max(base, int(n))
+                if line.startswith(want):
+                    return line[len(want):]
+    raise TimeoutError("no reply from %s (bridge path %s)" % (ip, path))
 
 
 def wifi_get(addr, path, timeout=None, timed=True):
@@ -999,8 +1037,17 @@ def pinout_for(dev):
                    % (b.get("label") or board)}
 
 
+def _no_wifi_path(kind, bus):
+    """Files and status go to the board at the address; behind a bridge over WiFi
+    that would silently be the WRONG board, so refuse (commands are supported)."""
+    if kind == "wifi" and bus:
+        raise ValueError("a board behind a bridge answers commands over WiFi, "
+                         "not files or status: use the cable, or the bridge board's own page")
+
+
 def dev_status(dev):
     kind, addr, bus, peer = parse_dev(dev)
+    _no_wifi_path(kind, bus)
     if peer:
         # the far module's own INFO, forwarded — never the middleman's, or
         # every page would show the wrong robot
@@ -1012,6 +1059,7 @@ def dev_status(dev):
 
 def dev_files(dev, d):
     kind, addr, bus, peer = parse_dev(dev)
+    _no_wifi_path(kind, bus)
     if peer:
         return dev_cmd(dev, "FILES " + d).encode()
     if kind == "wifi":
@@ -1021,6 +1069,7 @@ def dev_files(dev, d):
 
 def dev_download(dev, path):
     kind, addr, bus, peer = parse_dev(dev)
+    _no_wifi_path(kind, bus)
     if kind == "wifi" and not peer:
         return wifi_get(addr, "/api/download?path=" + urllib.parse.quote(path))
     # USB: FREAD loop (base64 chunks)
@@ -1046,6 +1095,7 @@ def dev_download(dev, path):
 
 def dev_delete(dev, path):
     kind, addr, bus, peer = parse_dev(dev)
+    _no_wifi_path(kind, bus)
     if kind == "wifi" and not peer:
         return wifi_get(addr, "/api/delete?path=" + urllib.parse.quote(path)).decode(errors="replace")
     name = path.rsplit("/", 1)[-1]
@@ -1099,6 +1149,7 @@ def dev_upload(dev, dirp, name, data: bytes, job=None):
     """`job`, when given, is UPLOAD: its `sent` counts up as chunks go, and
     setting its `cancel` stops the transfer and removes the half-written file."""
     kind, addr, bus, peer = parse_dev(dev)
+    _no_wifi_path(kind, bus)
     if kind == "wifi" and not peer:
         boundary = "----micehub%d" % int(time.time())
         body = (
@@ -1581,6 +1632,8 @@ import hub_api_support  # noqa: E402
 hub_api_support.bind(sys.modules[__name__])
 import hub_api_flash  # noqa: E402
 hub_api_flash.bind(sys.modules[__name__])
+import hub_busmap  # noqa: E402
+hub_busmap.bind(sys.modules[__name__])
 import hub_api_play  # noqa: E402
 hub_api_play.bind(sys.modules[__name__])
 import hub_api_studio  # noqa: E402
@@ -1595,7 +1648,7 @@ hub_api_gacha.bind(sys.modules[__name__])
 
 # ---------------------------------------------------------------- handler
 class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
-              hub_api_extensions.ExtensionRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, BaseHTTPRequestHandler):
+              hub_api_extensions.ExtensionRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_busmap.BusMapRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, BaseHTTPRequestHandler):
     # HTTP/1.1, so a browser can KEEP ITS CONNECTION.
     #
     # BaseHTTPRequestHandler defaults to HTTP/1.0, which means every response
@@ -2725,6 +2778,9 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
 
         r = self.api_flash(method, path, q)   # hub_api_flash.py
         if r is not hub_api_flash.NOT_MINE:
+            return r
+        r = self.api_busmap(method, path, q)  # hub_busmap.py
+        if r is not hub_busmap.NOT_MINE:
             return r
 
         # ---- the way a phone gets here ----

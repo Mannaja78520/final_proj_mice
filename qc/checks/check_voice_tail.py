@@ -91,6 +91,7 @@ def run(t):
          "sent %r" % sent)
 
     code = (F.CODE / "apps" / "voice" / "service.py").read_text(encoding="utf-8")
+    code += (F.CODE / "apps" / "voice" / "speaker.py").read_text(encoding="utf-8")   # Speaker moved out of Brain
     t.ok('"|tune=" + json.dumps(sjob["tune"]' in code,
          "a new tune is a new cache name: an old cut clip is never replayed",
          "the feeling cache name ignores the tune")

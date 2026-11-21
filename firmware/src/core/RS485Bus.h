@@ -41,6 +41,11 @@ public:
     void setDownstream(std::function<void(const String&)> tx) { downstream_ = tx; }
     void onDownstreamLine(const String& line);
     bool isGateway() const { return (bool)downstream_; }
+
+    // The last few replies heard from the bus, numbered, so a client on WiFi can
+    // ask for them (GET /api/busreplies?after=N) instead of holding a WebSocket
+    // open. "<seq> <line>\n" per reply newer than `after`; `newest` = latest seq.
+    String repliesSince(uint32_t after, uint32_t& newest);
     void drain(uint32_t maxMs);   // wait for queued lines to leave (before a reboot)
 
     // "#<id> CMD" / "#* CMD" from USB or the web console. Returns the
@@ -64,6 +69,13 @@ private:
     uint32_t pendingAt_[PENDING_N] = {0};
     std::function<void(const String&)> busLine_;
     std::function<void(const String&)> downstream_;
+    static const uint8_t RECENT_N = 8;
+    String recent_[RECENT_N];
+    uint32_t recentSeq_[RECENT_N] = {0};
+    uint32_t seq_ = 0;
+    uint32_t bridgedAt_ = 0;               // last time a PC bridged a line through us
+    SemaphoreHandle_t recentMtx_ = nullptr; // loop() writes, the web task reads
+    void noteReply(const String& line);    // remember + show (USB, web console)
     SemaphoreHandle_t sendMtx_ = nullptr;
     bool warnedNoMtx_ = false;   // say it once if the lock is missing
     QueueHandle_t txq_ = nullptr;   // String* lines waiting for the wire

@@ -114,6 +114,7 @@ def _switches(t, uv, cfg, tmp):
 
 def _service(t):
     text = (F.CODE / "apps" / "voice" / "service.py").read_text(encoding="utf-8")
+    text += (F.CODE / "apps" / "voice" / "speaker.py").read_text(encoding="utf-8")   # Speaker moved out of Brain
     t.ok("{USER_PERSON: extra}" in text and 'req.get("event")' in text and ".event_clip(" in text,
          "the helper lists the recorded voice and plays an event clip through UserVoice")
     folder = (F.CODE / "config" / "voice_profiles.json").read_text(encoding="utf-8")

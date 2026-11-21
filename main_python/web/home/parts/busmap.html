@@ -1,0 +1,17 @@
+  <!-- Board addresses: duplicates and chained cables (user 2026-11-21). Plain
+       words on top; permanent ids and routes only behind the technical switch. -->
+  <div class="card" data-tab="modules" id="busmapCard" data-needs-login="flash" style="grid-column:1/-1">
+    <h2>🧭 Board numbers
+      <button onclick="busmapPorts()" style="float:right">⟳ Cables</button></h2>
+    <div class="mini">Every board on a cable has a short number. If two boards share
+      one, they answer each other's commands. This looks for that. If some boards are
+      plugged into other boards, it also shows who hangs off whom. Looking changes
+      nothing on any board.</div>
+    <div style="margin:8px 0">
+      <select id="busmapPort" aria-label="Which cable"></select>
+      <button onclick="busmapRun(false)">Check numbers</button>
+    </div>
+    <div id="busmapState" class="mini" aria-live="polite"></div>
+    <div id="busmapOut"></div>
+  </div>
+

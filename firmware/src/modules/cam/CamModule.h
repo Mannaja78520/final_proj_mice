@@ -5,6 +5,8 @@
 #include <esp_camera.h>
 #include "modules/Module.h"
 
+struct CamPins;   // modules/cam/CamBoards.h (generated)
+
 class SDStore;
 
 // Camera module: an ESP32-CAM that takes stills and shows a live view.
@@ -58,6 +60,8 @@ private:
     // What the sensor says it is, read directly, for when the driver refuses
     // it without saying which sensor it refused.
     static String probeSensor();
+    static String wantedBoard();                       // NVS "cam"/"board", "" = auto
+    static esp_err_t initBoard(camera_config_t& c, const CamPins& m);
     // One SCCB bus, scanned. probeSensor() walks every pin pair the
     // board table knows and calls this for each distinct one.
     static String probeBus(int sda, int scl);

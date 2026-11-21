@@ -13,6 +13,7 @@ void RS485Bus::begin(Identity* id, CommandRouter* router) {
     id_ = id;
     router_ = router;
     sendMtx_ = xSemaphoreCreateMutex(); // web (async task) and loop both send
+    recentMtx_ = xSemaphoreCreateMutex();
     pinMode(hw.pins.rs485De, OUTPUT);
     digitalWrite(hw.pins.rs485De, LOW); // listen
     // A TX ring buffer, so print() copies and returns instead of waiting for
@@ -95,7 +96,7 @@ void RS485Bus::handleLine(String line) {
     if (line.startsWith("@")) {
         // a reply from another module — someone (possibly the PC bridged
         // through us) asked for it; surface it on USB / the web console
-        if (busLine_) busLine_(line);
+        noteReply(line);
         return;
     }
     if (!line.startsWith("#")) return;
@@ -189,7 +190,33 @@ void RS485Bus::onDownstreamLine(const String& line) {
     if (sp < 2) return;
     String who = line.substring(1, sp);
     if (who.startsWith(">")) who = who.substring(1);
-    send("@>" + String(id_->id()) + ">" + who + line.substring(sp));
+    String up = "@>" + String(id_->id()) + ">" + who + line.substring(sp);
+    // A PC bridged a line through us a moment ago (USB or WiFi): the answer is
+    // for IT, not for a master on the bus above. Otherwise relay upstream.
+    if (bridgedAt_ && millis() - bridgedAt_ < 5000) noteReply(up);
+    else send(up);
+}
+
+void RS485Bus::noteReply(const String& line) {
+    if (recentMtx_ && xSemaphoreTake(recentMtx_, pdMS_TO_TICKS(20)) == pdTRUE) {
+        uint8_t i = seq_ % RECENT_N;
+        recent_[i] = line;
+        recentSeq_[i] = ++seq_;
+        xSemaphoreGive(recentMtx_);
+    }
+    if (busLine_) busLine_(line);
+}
+
+String RS485Bus::repliesSince(uint32_t after, uint32_t& newest) {
+    String out;
+    if (!recentMtx_ || xSemaphoreTake(recentMtx_, pdMS_TO_TICKS(50)) != pdTRUE) { newest = after; return out; }
+    newest = seq_;
+    for (uint32_t s = (seq_ > RECENT_N ? seq_ - RECENT_N + 1 : 1); s <= seq_; s++) {
+        uint8_t i = (s - 1) % RECENT_N;
+        if (s > after && recentSeq_[i] == s) out += String(s) + " " + recent_[i] + "\n";
+    }
+    xSemaphoreGive(recentMtx_);
+    return out;
 }
 
 // Queue it: first free slot. Full queue? Give up the place of the entry
@@ -265,6 +292,7 @@ void RS485Bus::sendNow(const String& line) {
 // A '#' line typed on USB serial or the website console: the PC uses this
 // module as a gateway to the whole bus.
 String RS485Bus::bridge(const String& raw, CommandRouter* router) {
+    bridgedAt_ = millis();
     String line = raw;
     line.trim();
     int sp = line.indexOf(' ');
@@ -275,6 +303,18 @@ String RS485Bus::bridge(const String& raw, CommandRouter* router) {
     if (!payload.length()) return "ERR empty command";
 
     bool broadcast = (addr == "*" || addr == "0");
+    // A path whose first hop is the module the PC is plugged into: act as that
+    // gateway right here instead of putting the line back on the bus.
+    if (addr.startsWith(">")) {
+        int hop; const char* rest;
+        if (BusPath::first(addr.c_str(), hop, rest) && hop == id_->id()) {
+            if (*rest == '\0') return "@>" + String(hop) + " " + router->handle(payload);
+            if (!downstream_) return "@>" + String(hop) + " ERR no bridge on this board";
+            bool more = strchr(rest + 1, '>') != nullptr;
+            downstream_("#" + String(more ? rest : rest + 1) + " " + payload);
+            return "-> sent, the reply appears when it answers";
+        }
+    }
     if (addr.startsWith("~") && BusAddr::chipIs(addr.c_str() + 1, Identity::chip().c_str()))
         return "@~" + Identity::chip() + " " + router->handle(payload);   // our own chip
     if (broadcast && (payload.startsWith("CHIPS ") || payload.startsWith("chips "))) {

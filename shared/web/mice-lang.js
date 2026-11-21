@@ -66,6 +66,9 @@
     var sel = document.createElement("select");
     sel.id = "miceLang";
     sel.className = "mini";
+    // Natural width: inside a flex or grid header a bare select stretched across
+    // the screen (Chrome 75 on the TV VM, 2026-11-21).
+    sel.style.cssText = "width:auto;max-width:11em;flex:0 0 auto;align-self:center";
     sel.setAttribute("aria-label", "Language");
     sel.title = "Language";
     var cur = current();

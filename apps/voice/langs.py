@@ -76,3 +76,7 @@ def drop_repeats(text):
     """A word or phrase said over and over is the listener stuck, not the visitor."""
     text = re.sub(r'(\b\S+)(?:\s+\1\b)+', r'\1', (text or "").strip())
     return re.sub(r'(.{3,25}?)\1{2,}', r'\1', text).strip()
+
+
+DEF_PARTICLES = ("ครับ", "คร้าบ", "ค่ะ", "คะ", "ฮะ", "จ้า", "จ้ะ", "จ๊ะ")
+DEF_PRONOUNS = ("ผม", "ฉัน", "ดิฉัน", "กระผม", "ข้าพเจ้า")
