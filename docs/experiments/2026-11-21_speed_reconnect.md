@@ -80,3 +80,11 @@ No crash can show in a model; memory and join churn go on the lab list.
 Friend apps (8000/5173; not in the cloud), Ollama down/up and cloud think failover timing (PC), real WiFi radio, real
 RS485 timing with 30+ boards, real OTA. Hub census asks INFO of only the first 6 boards per bus (hub_probe.py): boards 7+
 show no chip/group.
+
+## Mesh without a router (ESP-NOW), model only (2026-11-21)
+Real MeshLogic.h compiled into tools/bench/mesh_model.py, collision and airtime modelled, not a real radio.
+* Flood needs ttl >= field diameter: 255 boards ~19 hops, so default ttl 20.
+* k=2 and one try: 30 boards 11/20, 100 boards 16/20 answered. k=3 with 3 tries (900 ms): 10/10 to 20/20 at ~175 tx per command on 100 boards.
+* Round trip mean 200-600 ms at 30-255 boards, worst ~2.2 s with retries.
+* Shipped: off by default (`SET MESH ON`), ttl 20, k 3, 3 tries, HMAC tag from group key (replay not blocked, documented).
+* Lab: real range and collisions, ESP-NOW with WiFi on the same channel, memory under churn. Raw: experiments/2026-11-21_speed_reconnect/mesh_model.json.
