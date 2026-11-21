@@ -215,7 +215,7 @@ def run(t):
     # board - it succeeds and the loop never runs. board_ then kept its default
     # and the hub showed the pin diagram marked as a GUESS, about the one board
     # the firmware is certain of.
-    first = src[src.find("esp_err_t err = esp_camera_init(&c);"):]
+    first = src[src.find("err = esp_camera_init(&c);"):]
     first = first[:first.find("for (int b = 0; err != ESP_OK")]
     t.contains(first, "board_ = m.name",
                "a board found on the compiled-in pins is still named")

@@ -2427,7 +2427,11 @@ function renderRigCadUI() {
 const gizmo = new THREE.Group();
 let rings = [];
 function clearGizmo() {
-  rings.forEach((r) => r.mesh.parent && r.mesh.parent.remove(r.mesh));
+  rings.forEach((r) => {
+    if (r.mesh.parent) r.mesh.parent.remove(r.mesh);
+    r.mesh.geometry.dispose();
+    r.mesh.material.dispose();
+  });
   rings = [];
 }
 function showGizmo(pairIdx) {
