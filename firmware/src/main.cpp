@@ -24,6 +24,7 @@
 #include "core/BrownoutGuard.h"
 #include "core/Perf.h"
 #include "core/RS485Bus.h"
+#include "core/MeshLink.h"
 #include "core/WebPortal.h"
 #include "modules/Module.h"
 #include "modules/ModuleFactory.h"
@@ -118,6 +119,8 @@ void setup() {
   module->begin();
   rs485.begin(&identity, &router);
   portal.begin(&identity, &router, &sdstore, &rs485);
+  MeshLink::begin(&identity, &router);
+  MeshLink::onReply([](const String& line) { emitLine(line); portal.pushConsole(line); });
 
   // modules may put frames on the bus themselves (nong "link" mode
   // broadcasts POSE to follower boards so multiple ESP32s move in sync)
@@ -148,6 +151,8 @@ void loop() {
   perf::part("module");
   portal.loop();
   perf::part("web");
+  MeshLink::loop();
+  perf::part("mesh");
 
   // USB serial accepts the same command lines (handy for bring-up).
   // Lines starting with '#' are bridged onto the RS485 bus (address any

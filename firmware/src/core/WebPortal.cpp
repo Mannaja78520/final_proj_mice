@@ -195,6 +195,14 @@ void WebPortal::raiseAp() {
          WiFi.softAPIP().toString().c_str());
 }
 
+// While a module relays it takes its hotspot off the scan: its station side is
+// on a neighbour's 192.168.4.1/24 and a third module joining it could not be
+// routed. Shown again on RETURN. Re-calling softAP restarts the hotspot.
+void WebPortal::hideAp(bool hidden) {
+    String apName = appliedHost_.length() > 30 ? appliedHost_.substring(0, 30) : appliedHost_;
+    WiFi.softAP(apName.c_str(), id_->apPassword().c_str(), 1, hidden ? 1 : 0);
+}
+
 void WebPortal::beginSta() {
     // core 2.x: the hostname must be stored BEFORE the STA interface is
     // created — the core applies it on the STA_START event, ahead of the
@@ -238,6 +246,10 @@ void WebPortal::applyCreds(const String& ssid, const String& pass) {
 void WebPortal::checkLink(int n) {
     int mainRssi = 0;
     wifilink::PeerPick pick;
+    // the router's channel first: it says which hotspots are online (WifiLink.h)
+    for (int i = 0; i < n; i++)
+        if (WiFi.SSID(i) == homeSsid_) { routerCh_ = WiFi.channel(i); break; }
+    const bool nameRule = id_->relayRule() == "name";
     for (int i = 0; i < n; i++) {
         String ssid = WiFi.SSID(i);
         int rssi = WiFi.RSSI(i);
@@ -250,7 +262,13 @@ void WebPortal::checkLink(int n) {
 
         // one-way joins only: a name that sorts before ours could be the very
         // board leaning on our hotspot (A13-7, wifilink::mayJoin)
-        if (!wifilink::mayJoin(WiFi.softAPSSID().c_str(), ssid.c_str())) continue;
+        // (or, by default, only a hotspot that is itself online: wifilink::mayJoinRule)
+        if (nameRule) {
+            if (!wifilink::mayJoin(WiFi.softAPSSID().c_str(), ssid.c_str())) continue;
+        } else if (!wifilink::mayJoinRule(false, WiFi.softAPSSID().c_str(), ssid.c_str(),
+                                          WiFi.channel(i), routerCh_)) {
+            continue;
+        }
 
         PeerDiscovery::Peer p;
         bool known = peers_.find(ssid, p);
@@ -283,7 +301,11 @@ void WebPortal::checkLink(int n) {
     const char* bestNameC = pick.best(bestRssi, bestKnown);
     String bestName(bestNameC ? bestNameC : "");
 
-    switch (wifilink::decide(onRelay_, mainRssi, bestRssi)) {
+    wifilink::Action act = wifilink::decide(onRelay_, mainRssi, bestRssi);
+    // A module another one leans on never leaves for a relay of its own: hiding
+    // its hotspot would kick that module (online rule; model: flips 0.55 -> lower)
+    if (act == wifilink::RELAY && !nameRule && WiFi.softAPgetStationNum() > 0) act = wifilink::STAY;
+    switch (act) {
         case wifilink::RELAY:
             LOGF(wifi, "\"%s\" is weak (%d dBm) — going through \"%s\" (%d dBm)",
                  homeSsid_.c_str(), mainRssi, bestName.c_str(), bestRssi);
@@ -294,6 +316,7 @@ void WebPortal::checkLink(int n) {
             if (!staPass_.length()) staPass_ = id_->apPassword();
             onRelay_ = true;
             relayName_ = bestName;
+            if (!nameRule) hideAp(true);   // nobody may lean on a relay
             // remember an UNKNOWN one we are about to try, so that if it does
             // not let us in we move on to a different candidate next time
             triedAp_ = bestKnown ? String("") : bestName;
@@ -306,6 +329,7 @@ void WebPortal::checkLink(int n) {
             staPass_ = homePass_;
             onRelay_ = false;
             relayName_ = "";
+            if (!nameRule) hideAp(false);
             beginSta();
             break;
         default:
@@ -1373,6 +1397,7 @@ void WebPortal::loop() {
                 wstate_ = W_ONLINE;
                 // the AP deliberately STAYS up: that is how a module out of
                 // router range gets on the network through this one
+                if (!onRelay_) routerCh_ = WiFi.channel();
                 LOGF(wifi, "connected, ip=%s — still sharing AP \"%s\"",
                      WiFi.localIP().toString().c_str(), WiFi.softAPSSID().c_str());
                 networkUp();

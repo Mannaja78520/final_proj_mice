@@ -384,6 +384,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
   <details><summary>สำหรับผู้ดูแล: โฟลเดอร์อัปเดตระบบ</summary><p>เครื่องมือนำงานที่ตรวจผ่านเข้าระบบอ้างอิงโฟลเดอร์หลักของโครงการ แม้เรียกจากสำเนาทำงาน โฟลเดอร์งานและบันทึกการอัปเดตจึงไม่ซ้อนอยู่ในสำเนาอีกชั้น</p></details>
   <p><b>AI Watch:</b> ใช้ทางลัด ON / OFF บนเดสก์ท็อปเพื่อเปิดหรือหยุดตัวติดตามลิมิต ตัวติดตามทำงานด้วยลำดับความสำคัญต่ำเพื่อลดการแย่งทรัพยากร การกด OFF หยุดตัวติดตาม แต่งาน AI ที่เริ่มไปแล้วจะทำต่อ</p>
   <div class="info-box"><h3>ประสิทธิภาพตามเครื่องที่ใช้</h3><p>Settings → ประสิทธิภาพของเครื่อง Hub มีอัตโนมัติ ประหยัด สมดุล และเร็วขึ้น ตั้งหน่วยประมวลผล จำนวนเธรด งานพร้อมกัน และหน่วยความจำที่เว้นไว้ได้ในรายละเอียดทางเทคนิค ค่าแต่ละเครื่องแยกกันและยังคงโมเดลที่เลือกไว้ การบันทึกมีผลต่อการโหลดงานครั้งถัดไป ส่วนเธรดและชุดงานแปลที่เปิดแล้วต้องเปิดตัวช่วยเสียงใหม่ ไม่ปิดงานที่กำลังรัน</p><p>ภาพ 3D เลือกตามอุปกรณ์ที่เปิดเว็บและปรับเองได้ ภาพประหยัดลดความละเอียดและจำนวนภาพที่วาด โดยคงการเคลื่อนไหวและการตรวจชนเดิมไว้ ขอบภาพใช้ค่าใหม่เมื่อโหลดหน้าใหม่</p><p>งบ RAM/VRAM ใช้ช่วยเลือกวิธีโหลด ไม่รับประกันเพดานการใช้ทั้งหมด GPU ที่ตรวจพบยังต้องมีไลบรารีพร้อมใช้ หากใช้ไม่ได้จะกลับมาใช้ CPU</p></div>
+  <p><b>ภาษา:</b> ทุกหน้ามีช่องเลือกภาษาข้างสวิตช์ "แสดงรายละเอียดทางเทคนิค" ค่าเริ่มต้นเป็นไทย ข้อความที่ยังไม่มีคำแปลจะแสดงเป็นอังกฤษ เพิ่มภาษาใหม่ได้โดยวางไฟล์ <code>shared/web/lang/&lt;รหัส&gt;.json</code> หนึ่งไฟล์ (ชื่อภาษา + คู่ข้อความอังกฤษ → คำแปล) ไม่ต้องแก้โค้ด</p>
   <div class="shead">
     <span class="where tech">code/main_python · MiceHub.exe · port 8642</span>
     <h2>Mice Hub — ศูนย์กลางควบคุมและปรับแต่งทุกระบบ</h2>
@@ -1750,6 +1751,15 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        the spot, <code>WIFI RETRY</code> tries the stored network again without waiting for
        the 60&nbsp;second clock, and <code>WIFI SCAN</code> lists the 2.4&nbsp;GHz networks
        this board can actually see — which answers "why won't it join?" directly.</p>
+    <p><code>SET RELAY ONLINE|NAME</code> chooses which neighbour a module far from the router may use
+    as a relay. <code>ONLINE</code> (default) picks a neighbour whose hotspot is itself connected to the
+    router; <code>NAME</code> is the old rule (only a neighbour whose name sorts later). A module using a
+    relay hides its own hotspot, and a module that others lean on never moves to a relay.</p>
+    <p><code>SET MESH ON|OFF</code> turns on a router-less mesh (off by default). Boards pass short commands
+    to each other over ESP-NOW, hop by hop, so a board with no router and no neighbour in range can still
+    be reached. <code>MESH</code> shows the state; <code>MESH 12 WIFI</code> runs a command on board 12 and
+    <code>MESH * ...</code> asks everyone. Frames are signed with the group key and an old captured frame is refused, a command is sent again up to
+    3 times if no answer comes, and an answer is cut at 200 characters. A board that has just restarted can still be replayed to once. Tested in a model only, not on a real radio.</p>
     <p><code>SET WIFI2 &lt;ssid&gt; &lt;pass&gt;</code> and <code>SET WIFI3 ...</code> save up to two
     backup networks. If the main one cannot be joined the board tries the backups in order, then
     stays on its own hotspot and tries the whole list again every minute. Leave the name empty

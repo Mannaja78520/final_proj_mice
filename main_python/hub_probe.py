@@ -9,6 +9,7 @@ import re
 import sys
 import threading
 import time
+import bus_ids
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutTimeout
 
 from hub_usb import (_drain_to_line_boundary, _flash_ports, _usb_get, _usb_ident,
@@ -204,11 +205,31 @@ def probe_usb_port(port, full=False):
             # above 80 answers after the floor and may be missed if nothing
             # else is talking. Reflashing it fixes that permanently, because
             # the bounded stagger lands every board inside the floor.
+            junk = 0
             for ln in _read_lines(ser, 5.4, quiet=0.3, at_least=1.6):
                 m = re.match(r"^@(\d+)\s+PONG\s+(\d+)\s+(.+)\s+(\S+)$", ln)
                 if m:
                     seen[int(m.group(1))] = {"id": int(m.group(1)), "name": m.group(3),
                                              "type": m.group(4), "ip": "", "wifi_mode": ""}
+                else:
+                    junk += 1
+            # Wreckage on the wire, or a crowd: ~10 boards share each 10 ms slot
+            # on a full bus and destroy each other (qc/lib/bus_sim.py: a plain
+            # PING finds 0 of 247). Ask range by range instead (bus_ids.py). It
+            # takes ~4 s per 247 ids, so it runs at most once a minute per
+            # port; in between, the last answer stands.
+            if junk or len(seen) >= 12:
+                cached = _bus_census.get(port)
+                if not cached or time.time() - cached[0] > 60:
+                    def _xr(line, seconds):
+                        _drain_to_line_boundary(ser)
+                        ser.write((line + "\n").encode())
+                        return _read_lines(ser, seconds + 1.0, quiet=0.3, at_least=seconds)
+                    cached = (time.time(), bus_ids.BusIds(_xr).census())
+                    _bus_census[port] = cached
+                for ident, v in cached[1].items():
+                    seen.setdefault(ident, {"id": ident, "name": v["name"], "type": v["type"],
+                                            "ip": "", "wifi_mode": ""})
             # ask each bus module for its INFO to learn its WiFi ip (for links)
             #
             # THE LIMIT, said out loud: INFO is asked in id order until a time
@@ -245,6 +266,30 @@ def probe_usb_port(port, full=False):
                         except ValueError:
                             pass
                         break
+            # Past six boards nobody asked INFO, so those boards have no chip and
+            # the hub would name them by id - and ids repeat across buses and
+            # clash inside one. CHIPS gets every chip in one pass per range
+            # (BusAddr.h). A bus of old firmware just answers nothing here and
+            # keeps the old behaviour. Two chips on one id = a duplicate, kept
+            # visible on the entry instead of silently merged.
+            known = _bus_chips.setdefault(port, {})
+            for ident, v in seen.items():          # remembered: chips never change
+                if not v.get("chip") and known.get(ident, ("",))[0:1] == (v["name"],):
+                    v["chip"] = known[ident][1]
+            if len(seen) > 6 and any(not v.get("chip") and not v.get("dupChips")
+                                     for v in seen.values()):
+                def _xchg(line, seconds):
+                    _drain_to_line_boundary(ser)
+                    ser.write((line + "\n").encode())
+                    return _read_lines(ser, seconds + 1.0, quiet=0.3, at_least=seconds)
+                got = bus_ids.BusIds(_xchg, salts=(1,)).chips()
+                for ident, chips in got.items():
+                    if ident in seen and not seen[ident].get("chip"):
+                        if len(chips) == 1:
+                            seen[ident]["chip"] = next(iter(chips))
+                            known[ident] = (seen[ident]["name"], seen[ident]["chip"])
+                        else:
+                            seen[ident]["dupChips"] = sorted(chips)
             # A board on its OWN cable answers the broadcast too, so "no
             # direct answer, one board in the census" is ambiguous: it is
             # either an RS485 adapter with one module behind it, or a board
@@ -280,6 +325,10 @@ def probe_usb_port(port, full=False):
             usb_close(port)  # reset a wedged port for the next attempt
     return out
 
+
+# per port: when the ranged census last ran + what it found; id -> (name, chip)
+_bus_census = {}
+_bus_chips = {}
 
 _usbscan_lock = threading.Lock()
 _usbscan_cache = {"at": 0.0, "usb": []}

@@ -154,14 +154,14 @@ class StudioRoutes:
             return self.send_json({"ok": True, "files": files})
 
         if path == "/api/load":
-            name = _hub.safe_name((q.get("name") or [""])[0])
+            name = _hub.pc_name((q.get("name") or [""])[0])
             f = _hub.PROJECTS / name
             if not f.is_file():
                 return self.send_err("no project " + name, 404)
             return self.send_bytes(f.read_bytes())
 
         if path == "/api/loadseq":
-            name = _hub.safe_name((q.get("name") or [""])[0])
+            name = _hub.pc_name((q.get("name") or [""])[0])
             f = _hub.SEQUENCES / name
             if not f.is_file():
                 return self.send_err("no sequence " + name, 404)
@@ -173,7 +173,7 @@ class StudioRoutes:
             # is a person's work and a mis-click must be recoverable by hand.
             data = json.loads(self.body().decode() or "{}")
             try:
-                name = _hub.safe_name(str(data.get("name") or ""))
+                name = _hub.pc_name(str(data.get("name") or ""))
             except ValueError:
                 name = ""
             f = _hub.SEQUENCES / name
@@ -215,7 +215,7 @@ class StudioRoutes:
 
         if path == "/api/save" and method == "POST":
             data = json.loads(self.body().decode())
-            name = _hub.safe_name(data["name"])
+            name = _hub.pc_name(data["name"])
             if not name.endswith(".json"):
                 name += ".json"
             existed = (_hub.PROJECTS / name).exists()
@@ -228,7 +228,7 @@ class StudioRoutes:
             return self.send_json({"ok": True, "file": name, "replaced": existed})
 
         if path == "/api/model/upload" and method == "POST":
-            name = _hub.safe_name((q.get("name") or [""])[0])
+            name = _hub.pc_name((q.get("name") or [""])[0])
             if not name.lower().endswith(_hub.UPLOAD_EXT):
                 return self.send_err("allowed: " + " ".join(_hub.UPLOAD_EXT))
             (_hub.MODELS / name).write_bytes(self.body())

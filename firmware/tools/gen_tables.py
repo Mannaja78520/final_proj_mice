@@ -930,7 +930,8 @@ def gen_cam_boards(out, types):
     if not boards:
         raise SystemExit("no boards in %s" % CAM_BOARDS_JSON)
 
-    rows = []
+    rows_classic = []   # classic ESP32 boards
+    rows_s3 = []     # boards with "chip": "esp32s3" - only compiled into S3 builds
     for key, b in boards.items():
         if not re.match(r"^[a-z][a-z0-9-]*$", key):
             raise SystemExit("camera board %r must be lower-case letters, "
@@ -952,6 +953,10 @@ def gen_cam_boards(out, types):
         # nothing rather than guessing.
         ex = b.get("extra") or {}
         nums = ", ".join("%3d" % pins[k] for k in CAM_PIN_ORDER)
+        # An S3 pin map tried on a classic chip (or the reverse) would configure
+        # GPIOs that are flash or PSRAM lines on the other chip, so each chip
+        # only ever sees its own rows.
+        rows = rows_s3 if b.get("chip", "esp32") == "esp32s3" else rows_classic
         rows.append("    { %-18s %s, %3d, %3d }," % (
             c_str(key) + ",", nums,
             int(ex.get("flash", -1)), int(ex.get("led", -1))))
@@ -975,7 +980,11 @@ struct CamPins {
 // Tried in this order until a sensor answers on the SCCB bus, so the commonest
 // board is first: every wrong guess costs one failed init.
 static const CamPins CAM_BOARDS[] = {
-""" + chr(10).join(rows) + """
+#if CONFIG_IDF_TARGET_ESP32S3
+""" + chr(10).join(rows_s3) + """
+#else
+""" + chr(10).join(rows_classic) + """
+#endif
 };
 static const int CAM_BOARD_COUNT = sizeof(CAM_BOARDS) / sizeof(CAM_BOARDS[0]);
 """

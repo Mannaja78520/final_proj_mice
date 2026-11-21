@@ -51,6 +51,16 @@ inside the hub's 1.6 s listening floor. QEMU check: ids 9 and 33 (same old slot)
   every hotspot is 192.168.4.1/24). Not fixed: needs a rule choosing a host that is itself online. Proposal: host announces
   "online to router" in its hotspot name or beacon; join only such hosts, strongest first.
 
+## 5b. No router at all, one company (wifi_topology_model.py, `run_no_router`)
+
+Boards of one group, all hotspots on channel 1, all in range of each other. The name rule decides (the highest name is
+a root). Result with the hotspot client limit at the ESP32 default 4 and at 8: 2 boards 1 cluster; 5 boards 2 clusters
+(largest 3); 10 boards 3 (largest 5); 30 boards 10 (largest 5); 100 boards 30-32 (largest 5-6); 255 boards 82-84 (largest 5-7).
+So they do find each other, but they form pairs and small clusters, not one network, and 8 clients instead of 4 changes
+almost nothing: the limit is the one-hop rule, not the client count. A real mesh (several hops with routing, for example
+ESP-MESH or ESP-NOW command relay) does not exist in the firmware and was not built: it cannot be checked without a radio.
+No crash can show in a model; memory and join churn go on the lab list.
+
 ## 6. On the PC (Windows 11, real hub, real friend app, real Ollama; measured before #154 reached the PC)
 
 - Hub, one client p50: 11-18 ms per page (cloud 1-2 ms). 200 clients: p95 about 2010 ms and 25-114 failed requests per page
@@ -70,3 +80,11 @@ inside the hub's 1.6 s listening floor. QEMU check: ids 9 and 33 (same old slot)
 Friend apps (8000/5173; not in the cloud), Ollama down/up and cloud think failover timing (PC), real WiFi radio, real
 RS485 timing with 30+ boards, real OTA. Hub census asks INFO of only the first 6 boards per bus (hub_probe.py): boards 7+
 show no chip/group.
+
+## Mesh without a router (ESP-NOW), model only (2026-11-21)
+Real MeshLogic.h compiled into tools/bench/mesh_model.py, collision and airtime modelled, not a real radio.
+* Flood needs ttl >= field diameter: 255 boards ~19 hops, so default ttl 20.
+* k=2 and one try: 30 boards 11/20, 100 boards 16/20 answered. k=3 with 3 tries (900 ms): 10/10 to 20/20 at ~175 tx per command on 100 boards.
+* Round trip mean 200-600 ms at 30-255 boards, worst ~2.2 s with retries.
+* Shipped: off by default (`SET MESH ON`), ttl 20, k 3, 3 tries, HMAC tag from group key (replay not blocked, documented).
+* Lab: real range and collisions, ESP-NOW with WiFi on the same channel, memory under churn. Raw: experiments/2026-11-21_speed_reconnect/mesh_model.json.
