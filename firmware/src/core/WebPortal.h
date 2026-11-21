@@ -152,6 +152,9 @@ private:
     // another module we are joined to that module's hotspot, but this is
     // still where we want to be, and what we measure the signal of.
     String homeSsid_, homePass_;
+    int netIdx_ = 0;             // which saved network (0 main, 1-2 backups) staSsid_ is
+    bool savedNets(bool present[3]) const;
+    bool selectNet(int n);       // make slot n the home network; false when empty
     bool onRelay_ = false;        // joined via a neighbouring module's hotspot
     String relayName_;
     String triedAp_;             // last unknown AP we tried, so we rotate

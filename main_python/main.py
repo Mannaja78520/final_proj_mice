@@ -2981,6 +2981,10 @@ def main():
                 return
     except Exception:                       # noqa: BLE001 - nothing there: bind
         pass
+    # The listen queue defaults to 5 connections. Measured 2026-11-21 with 200
+    # clients at once: every burst past 5 waited for a SYN retry (1 s, 3 s, 7 s)
+    # and a few timed out - a venue of phones and TVs all opening the page.
+    ThreadingHTTPServer.request_queue_size = 256
     srv = ThreadingHTTPServer((HOST, PORT), Handler)
     local = "http://127.0.0.1:%d/" % PORT
     try:

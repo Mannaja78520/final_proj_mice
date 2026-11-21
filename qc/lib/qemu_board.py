@@ -203,6 +203,7 @@ class Rs485Bus:
         import threading
         self.socks = [socket.create_connection(("127.0.0.1", b.bus_port), timeout=5) for b in boards]
         self.frames = []                    # every chunk that crossed the bus: (sender index, bytes)
+        self.timed = []                     # (sender index, bytes, time.time()), appended in one step
         self._stop = False
         self._threads = [threading.Thread(target=self._pipe, args=(i,), daemon=True)
                          for i in range(len(self.socks))]
@@ -222,6 +223,7 @@ class Rs485Bus:
             if not data:
                 return
             self.frames.append((i, data))
+            self.timed.append((i, data, time.time()))
             for j, o in enumerate(self.socks):
                 if j != i:
                     try:

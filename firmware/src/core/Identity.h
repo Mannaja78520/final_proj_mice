@@ -30,6 +30,10 @@ public:
     const String& type() const { return type_; }
     const String& wifiSsid() const { return wssid_; }
     const String& wifiPass() const { return wpass_; }
+    // Backup home networks (slots 1..2), tried after the main one fails.
+    const String& wifiSsidN(int n) const { return n == 1 ? wssid2_ : wssid3_; }
+    const String& wifiPassN(int n) const { return n == 1 ? wpass2_ : wpass3_; }
+    void setWifiN(int n, const String& ssid, const String& pass);
     const String& wifiMode() const { return wmode_; } // "on" | "off" | "ap"
 
     // The GROUP this module belongs to — one installation, one company.
@@ -69,6 +73,7 @@ public:
     void setName(const String& n);
     void setType(const String& t);      // takes effect after reboot
     void setWifi(const String& ssid, const String& pass);
+    void clearWifiBackups();
     void setWifiMode(const String& m);  // takes effect after reboot
 
     // name sanitized for mDNS / AP SSID: lowercase alnum and '-'
@@ -79,4 +84,5 @@ private:
     uint8_t id_ = 1;
     String name_, type_;
     String wssid_, wpass_, wmode_, group_, appass_;
+    String wssid2_, wpass2_, wssid3_, wpass3_;   // backup networks (WifiList.h)
 };
