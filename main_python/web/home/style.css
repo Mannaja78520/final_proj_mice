@@ -3,6 +3,8 @@
 
 /* a module row: name / type / address / what you can do with it */
 .mod{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-2) var(--sp-3);margin:var(--sp-2) 0;background:var(--sunk)}
+.modgroup{margin:var(--sp-4) 0 0;font-weight:700;text-transform:capitalize;position:sticky;top:0;background:var(--bg,#fff);padding:var(--sp-1) 0;z-index:1}
+.modgroup span{font-weight:400;color:var(--mut);font-size:13px;text-transform:none}
 .mod .nm{font-weight:700}
 /* Every way this board can be reached, under the row rather than beside it:
    a board on a cable, on the WiFi and on the laptop next door has three, and

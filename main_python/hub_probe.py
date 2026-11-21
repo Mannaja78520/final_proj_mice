@@ -175,13 +175,13 @@ def probe_usb_port(port, full=False):
             # was id x 20 ms and ids go to 247. It almost never costs
             # that, because the read stops once the bus has been quiet
             # for 300 ms - one board with a low id is a fifth of a
-            # second. Current firmware answers within 240 ms whatever
-            # the id (RS485Bus.cpp).
+            # second. Current firmware answers id x 6 ms after the ping
+            # (BusSlot.h): 1.53 s for id 255, one slot per id, no collisions.
             # 1.6 s floor, then stop when the bus goes quiet, cap 5.4 s.
             #
             # The floor is what makes a late board findable: with the OLD
             # stagger of id x 20 ms it covers every id up to 80, and current
-            # firmware answers within 240 ms whatever the id. The cap is the
+            # firmware answers by 1.53 s whatever the id. The cap is the
             # true worst case, id 247 on old firmware.
             #
             # THE LIMIT, said out loud: a board running old firmware with an id
