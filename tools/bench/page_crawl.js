@@ -18,7 +18,10 @@ async function discover(page) {
   await page.waitForTimeout(1500);
   const links = await page.evaluate(() => Array.from(document.querySelectorAll('a[href]'))
     .map(a => a.getAttribute('href')).filter(h => h && h.startsWith('/') && !h.startsWith('//')));
-  const set = new Set(['/', '/studio/', '/help', '/help.html', ...links.map(h => h.split('#')[0])]);
+  // every app the hub lists, and every tab of the home page (#tab opens it)
+  const apps = await page.evaluate(() => fetch('/api/apps').then(r => r.json()).then(d => (d.apps || []).map(a => a.path)).catch(() => []));
+  const tabs = await page.evaluate(() => Array.from(document.querySelectorAll('#tabs [data-go]')).map(e => '/#' + e.getAttribute('data-go')));
+  const set = new Set(['/', '/studio/', '/help', '/help.html', ...apps, ...tabs, ...links.map(h => h.split('#')[0])]);
   return Array.from(set).filter(h => !/\.(png|jpg|svg|zip|exe|json|js|css|mp3|wav)$/i.test(h) && !h.startsWith('/api/'));
 }
 
@@ -59,7 +62,7 @@ async function discover(page) {
       row.pressed++;
       const after = await page.evaluate(() => document.body.innerText.length + '|' + location.href + '|' + document.querySelectorAll('*').length);
       if (before === after && errs.length === nErr) row.dead.push(b.t || '(no label)');
-      if (!page.url().startsWith(base + path.split('#')[0])) await page.goto(base + path, { waitUntil: 'load' }).catch(() => {});
+      if (!page.url().startsWith(base + path.split('#')[0].replace(/\/$/, ''))) await page.goto(base + path, { waitUntil: 'load' }).catch(() => {});
     }
     const text = await page.evaluate(() => document.body.innerText);
     const m = text.match(BAD_TEXT);
