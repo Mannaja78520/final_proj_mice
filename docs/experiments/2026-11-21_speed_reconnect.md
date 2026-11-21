@@ -51,6 +51,20 @@ inside the hub's 1.6 s listening floor. QEMU check: ids 9 and 33 (same old slot)
   every hotspot is 192.168.4.1/24). Not fixed: needs a rule choosing a host that is itself online. Proposal: host announces
   "online to router" in its hotspot name or beacon; join only such hosts, strongest first.
 
+## 6. On the PC (Windows 11, real hub, real friend app, real Ollama; measured before #154 reached the PC)
+
+- Hub, one client p50: 11-18 ms per page (cloud 1-2 ms). 200 clients: p95 about 2010 ms and 25-114 failed requests per page
+  (Windows connection retry: same cause as the cloud; re-measure after #154 reaches the PC).
+- Voice kill x3: hub answers 503 about 1 s, revives it itself in 5.4 s (first kill 10.1 s). Faces kill x3: hub revived it once (11 s), twice not within 25 s.
+- Friend app Face_Regonize, read-only, 1/10/50 clients p95: /api/health 39/17/219 ms, /openapi.json 42/92/169 ms, page 5173 13/15/34 ms, no errors.
+  /api/history needs a login (not measured). It was not running at the start (nothing keeps it up).
+- Friend backend killed: our faces service saw the live feed drop in under 4 s, the hub page showed only live=false (no message),
+  friend back in 8 s, our feed live again at 27 s (19 s of reconnect backoff). Fixed: backoff cap 30 s to 5 s.
+- Ollama: normal 0.3-0.8 s. Killed: next question 9.3 s (hub restarts it) then 0.3 s. Blocked from starting: first turn 45 s
+  (40 s wait, then Qwen 0.5B), recovery to Typhoon about 60 s (cooldown) plus 6.9 s model load. Changed: start wait 40 s to 15 s.
+- Cloud provider with a bad key (Groq): first turn 11 s (includes Qwen cold load), later turns 2 s.
+- Not run: replug check (no USB/RS485 adapter on the PC), cloud provider with the network blocked.
+
 ## Not covered here
 
 Friend apps (8000/5173; not in the cloud), Ollama down/up and cloud think failover timing (PC), real WiFi radio, real
