@@ -237,7 +237,8 @@ body.mode-tech .tv-grid {
 <header class="topbar">
   <h1>📺 TV Remote &amp; Monitor</h1>
   <span class="mini" id="statBadge">connecting…</span>
-  <button onclick="app.refresh()" style="margin-left:auto;">⟳ Refresh</button>
+  <span id="refreshNote" class="mini" role="status" aria-live="polite" style="margin-left:auto;"></span>
+  <button id="refreshBtn" onclick="app.refresh()">⟳ Refresh</button>
 </header>
 <div id="actionStat" class="statline" role="status"></div>
 
@@ -410,8 +411,17 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
   }
 
   async refresh() {
-    await this.loadSequences();
-    await this.poll();
+    // feedback for the press itself: a refresh that finds nothing new used to look like a dead button
+    const note = this.$("refreshNote"), btn = this.$("refreshBtn");
+    note.textContent = "Refreshing…"; btn.disabled = true;
+    try {
+      await this.loadSequences();
+      await this.poll();
+      note.textContent = "Updated " + new Date().toLocaleTimeString();
+    } catch (e) {
+      note.textContent = "Could not reach the hub. Try again in a moment.";
+    }
+    btn.disabled = false;
   }
 
   async loadSequences() {

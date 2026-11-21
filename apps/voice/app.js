@@ -888,6 +888,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
 
   async talk(){
   if(this.rec && this.rec.state==="recording") return this.rec.stop();
+  this.$("wait").textContent = "opening the microphone…";   // the press is acknowledged at once, even if the browser asks first
   try {
     const s = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
@@ -916,7 +917,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
     this.rec.start();
     this.$("talk").textContent = "■ Stop recording";
     this.$("wait").textContent = "listening…";
-  } catch(e) { this.$("wait").textContent = "No microphone."; }
+  } catch(e) { this.$("wait").textContent = "The microphone is not available. Allow it in the browser, or type the question instead."; }
 }
 
 // ---- Conversation mode (A26-11) ----------------------------------------
