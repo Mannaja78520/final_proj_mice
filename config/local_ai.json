@@ -13,5 +13,10 @@
   "host": "127.0.0.1:11435",
   "modelsDir": "D:\\local-ai\\ollama-models",
   "kvCache": "q8_0",
-  "flashAttention": true
+  "flashAttention": true,
+  // keepAlive: how long an idle model stays loaded (Ollama's own default is 5m, so
+  // the first question after a quiet spell paid a full reload). 1h = a show day.
+  // numParallel: the voice answers one question at a time, so 1 slot (less VRAM).
+  "keepAlive": "1h",
+  "numParallel": 1
 }

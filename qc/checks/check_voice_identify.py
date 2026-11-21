@@ -322,7 +322,7 @@ def _face_app_off(t, base, srv):
          "the WinError is kept as technical detail, out of the plain sentence",
          "answer was %r" % got)
 
-    src = (F.CODE / "apps" / "voice" / "service.py").read_text(encoding="utf-8")
+    src = (F.CODE / "apps" / "voice" / "face_link.py").read_text(encoding="utf-8")
     at = src.find("    def identify(self, jpeg):")
     block = src[at:src.find("\n    def _query_reconize_direct", at)] if at >= 0 else ""
     t.ok("except urllib.error.HTTPError" in block and "except OSError" in block,
