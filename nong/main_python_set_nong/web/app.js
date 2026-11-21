@@ -2508,7 +2508,14 @@ function renderRigCadUI() {
 const gizmo = new THREE.Group();
 let rings = [];            // [{mesh, joint, localAxis}]
 function clearGizmo() {
-  rings.forEach(r => r.mesh.parent && r.mesh.parent.remove(r.mesh));
+  // Free the GPU side too: each showGizmo() builds a fresh torus geometry and
+  // material per ring, and remove() alone keeps both on the card (found
+  // 2026-11-21 by the leak hunt; every joint click leaked 2-3 of each).
+  rings.forEach(r => {
+    if (r.mesh.parent) r.mesh.parent.remove(r.mesh);
+    r.mesh.geometry.dispose();
+    r.mesh.material.dispose();
+  });
   rings = [];
 }
 function showGizmo(pairIdx) {

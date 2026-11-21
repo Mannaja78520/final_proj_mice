@@ -24,11 +24,12 @@ Camera viewer app.
 
 - nothing
 
-## Checks that test it (4)
+## Checks that test it (5)
 
+- `check_browser_leaks`
 - `check_build_web`
 - `check_login_anywhere`
 - `check_old_browser`
 - `check_page_frame`
 
-Run them: `python qc/run_qc.py --no-build check_build_web check_login_anywhere check_old_browser check_page_frame`
+Run them: `python qc/run_qc.py --no-build check_browser_leaks check_build_web check_login_anywhere check_old_browser check_page_frame`

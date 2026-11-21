@@ -244,7 +244,13 @@ void CamModule::begin() {
     // "init failed" - so the only way to tell them apart is to try. Init is
     // cheap and happens once at boot; a person holding an unknown clone would
     // otherwise be reading pinout diagrams.
-    esp_err_t err = esp_camera_init(&c);
+    // On an S3 the compiled-in pins are the AI-Thinker's, and several of those
+    // (26-32) are the S3's flash and PSRAM lines: never drive them. The S3
+    // starts straight at its own rows in the table.
+    esp_err_t err = ESP_FAIL;
+#if !CONFIG_IDF_TARGET_ESP32S3
+    err = esp_camera_init(&c);
+#endif
     if (err == ESP_OK) {
         // IT STILL HAS TO SAY WHICH BOARD. The compiled-in pins are a board -
         // they are one of the rows in the table - and leaving board_ empty

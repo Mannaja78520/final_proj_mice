@@ -1559,10 +1559,12 @@ const _VoiceApp = class _VoiceApp extends (typeof Mice !== "undefined" && Mice.A
       const player = new Audio(url);
       player.onplaying = () => this.spoke(text, player.duration);
       player.onended = () => {
-        URL.revokeObjectURL(url);
         this.$("wait").textContent = "";
         this.$("speakingNow").hidden = true;
       };
+      const freeUrl = () => URL.revokeObjectURL(url);
+      player.addEventListener("ended", freeUrl);
+      player.addEventListener("error", freeUrl);
       try {
         await player.play();
       } catch (e) {
