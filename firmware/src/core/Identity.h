@@ -34,6 +34,9 @@ public:
     const String& wifiSsidN(int n) const { return n == 1 ? wssid2_ : wssid3_; }
     const String& wifiPassN(int n) const { return n == 1 ? wpass2_ : wpass3_; }
     void setWifiN(int n, const String& ssid, const String& pass);
+    // which hotspot a far module may lean on: "online" (default) or "name" (the old name-order rule)
+    const String& relayRule() const { return relayRule_; }
+    void setRelayRule(const String& r);
     const String& wifiMode() const { return wmode_; } // "on" | "off" | "ap"
 
     // The GROUP this module belongs to — one installation, one company.
@@ -84,5 +87,6 @@ private:
     uint8_t id_ = 1;
     String name_, type_;
     String wssid_, wpass_, wmode_, group_, appass_;
+    String relayRule_ = "online";
     String wssid2_, wpass2_, wssid3_, wpass3_;   // backup networks (WifiList.h)
 };

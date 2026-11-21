@@ -37,3 +37,27 @@ def run(t):
     t.ok(code == 200, "the hub still answers afterwards")
     code, _ = F.get(base + "/favicon.ico")
     t.ok(code in (200, 204), "/favicon.ico answers", str(code))
+
+    # A newcomer's Complaints tab showed raw "STUDIO FREEZE {json}" (2026-11-21);
+    # the list now says it in words, and a fresh checkout knows no other PC.
+    code, page = F.get(base + "/")
+    t.ok("Studio stopped answering for" in page, "Complaints lists an automatic freeze report in words")
+    import json
+    known = json.loads((F.HUB / "known_hubs.json").read_text(encoding="utf-8"))
+    t.ok(known.get("hubs") == [], "a fresh checkout ships no stale PC address", str(known))
+
+    # Routes with no login (hub_auth.NEVER_GATED) have a size ceiling: a 150 MB
+    # model upload used to be written to disk for any visitor on the WiFi.
+    import http.client
+    c = http.client.HTTPConnection(base.split("//")[1], timeout=8)
+    c.putrequest("POST", "/api/model/upload?name=big.stl")
+    c.putheader("Content-Length", str(150 * 1048576))
+    c.endheaders()
+    try:
+        status = c.getresponse().status
+    except OSError as e:          # no answer = the hub is waiting to read 150 MB
+        status = repr(e)
+    t.ok(status == 413, "an unauthenticated 150 MB upload is refused up front", str(status))
+    c.close()
+    code, _ = F.get(base + "/api/version")
+    t.ok(code == 200, "the hub answers after it")

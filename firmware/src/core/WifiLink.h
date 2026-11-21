@@ -108,4 +108,37 @@ inline bool mayJoin(const char* self, const char* other) {
     return std::string(other) > std::string(self);
 }
 
+// ---- WHICH hotspot is worth joining: one that is itself online (2026-11-21) ----
+// mayJoin above breaks rings by NAME ORDER, which has nothing to do with where
+// the router is: in the model (tools/bench/wifi_topology_model.py) a line of 10
+// boards whose names rise away from the router left 9 stranded, because a far
+// board may only join a name sorting after its own and the boards between sort
+// before it. The rule that matters is "join a module that is connected to the
+// router", and the scan already says so without any new protocol: a module that
+// is online puts its hotspot on the ROUTER'S channel, while one that is not
+// (AP-only, still connecting) stays on channel 1 (WebPortal.cpp raiseAp).
+//   router channel known and not 1 : a hotspot on that channel is online, else not
+//   router channel unknown         : any channel but 1 is probably online
+//   channel 1 either way           : cannot tell - AMBIGUOUS, the name rule decides
+// A module that is relaying hides its own hotspot, so nobody joins a relay
+// (a station of a station has no route: every hotspot is 192.168.4.1/24).
+enum HostState { HOST_NO, HOST_YES, HOST_AMBIGUOUS };
+inline HostState hostState(int candChannel, int routerChannel) {
+    if (routerChannel > 1) return candChannel == routerChannel ? HOST_YES : HOST_NO;
+    if (routerChannel == 1) return HOST_AMBIGUOUS;
+    return candChannel > 1 ? HOST_YES : HOST_AMBIGUOUS;
+}
+
+// One answer for checkLink. rule "name" is the old behaviour, selectable with
+// `SET RELAY NAME`; anything else is the online-host rule, falling back to the
+// name rule when the channel cannot tell.
+inline bool mayJoinRule(bool nameRule, const char* self, const char* other,
+                        int candChannel, int routerChannel) {
+    if (nameRule) return mayJoin(self, other);
+    HostState h = hostState(candChannel, routerChannel);
+    if (h == HOST_YES) return true;
+    if (h == HOST_NO) return false;
+    return mayJoin(self, other);
+}
+
 }  // namespace wifilink
