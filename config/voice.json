@@ -200,6 +200,10 @@
    "ja": "ja-JP-NanamiNeural",
    "zh": "zh-CN-XiaoxiaoNeural"
   },
+  "fallbackVoices": {
+   "th": ["th-TH-NiwatNeural"],
+   "en": ["en-US-AriaNeural"]
+  },
   "oneVoice": "",
   "mixedVoice": "",
   "style": "friendly"
