@@ -152,6 +152,8 @@ private:
     // another module we are joined to that module's hotspot, but this is
     // still where we want to be, and what we measure the signal of.
     String homeSsid_, homePass_;
+    int routerCh_ = 0;           // channel of the show network, 0 = not seen yet
+    void hideAp(bool hidden);
     int netIdx_ = 0;             // which saved network (0 main, 1-2 backups) staSsid_ is
     bool savedNets(bool present[3]) const;
     bool selectNet(int n);       // make slot n the home network; false when empty

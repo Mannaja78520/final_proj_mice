@@ -30,11 +30,12 @@ Scripts for real boards on the bench.
 
 - nothing
 
-## Checks that test it (4)
+## Checks that test it (5)
 
 - `check_app_window`
 - `check_bench_nongpins`
 - `check_qemu_census`
+- `check_relay_rule`
 - `check_scale_robust`
 
-Run them: `python qc/run_qc.py --no-build check_app_window check_bench_nongpins check_qemu_census check_scale_robust`
+Run them: `python qc/run_qc.py --no-build check_app_window check_bench_nongpins check_qemu_census check_relay_rule check_scale_robust`

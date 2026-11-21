@@ -40,11 +40,13 @@ def load_logic():
 #include "WifiLink.h"
 extern "C" int decide(int on, int m, int p) { return (int)wifilink::decide(on != 0, m, p); }
 extern "C" int mayjoin(const char* a, const char* b) { return wifilink::mayJoin(a, b) ? 1 : 0; }
+extern "C" int mayrule(int nameRule, const char* a, const char* b, int cc, int rc) { return wifilink::mayJoinRule(nameRule != 0, a, b, cc, rc) ? 1 : 0; }
 ''')
     subprocess.check_call(["g++", "-shared", "-fPIC", "-O1", "-I", str(d), str(d / "shim.cpp"),
                            "-o", str(d / "shim.so")])
     lib = ctypes.CDLL(str(d / "shim.so"))
     lib.mayjoin.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+    lib.mayrule.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
     return lib
 
 
@@ -54,24 +56,45 @@ def rssi(a, b, rng, noise):
     return int(v) if v > -90 else 0          # 0 = not seen, like the scan
 
 
-def run(lib, name, router, pos, rounds=30, noise=3.0, known=True, seed=1):
+def run(lib, name, router, pos, rounds=30, noise=3.0, rule="name", seed=1):
     rng = random.Random(seed)
     names = ["m%02d" % i for i in range(len(pos))]
     host = [None] * len(pos)                  # index of the module it leans on
+    heard = [0] * len(pos)                    # router channel once heard (0 = never)
+    ROUTER_CH = 6
     flips = 0
     for _ in range(rounds):
+        # who is on air with which channel THIS round: online = hotspot on the router's channel,
+        # not online = channel 1, relaying = hidden (online rule only)
+        if rule == "online":                  # a relay hides its hotspot, which kicks whoever leaned on it
+            for k in range(len(pos)):
+                if host[k] is not None and host[host[k]] is not None:
+                    host[k] = None
+                    flips += 1
+        online = [host[k] is None and rssi(pos[k], router, random.Random(0), 0) != 0 for k in range(len(pos))]
         for i in range(len(pos)):
             main = rssi(pos[i], router, rng, noise)
+            if main:
+                heard[i] = ROUTER_CH
             best, best_name = 0, None
             for j in range(len(pos)):
-                if j == i or not lib.mayjoin(names[i].encode(), names[j].encode()):
+                if j == i:
                     continue
-                if not known and False:
-                    continue
+                if rule == "name":
+                    if not lib.mayjoin(names[i].encode(), names[j].encode()):
+                        continue
+                else:
+                    if host[j] is not None:
+                        continue                 # a relaying board hides its hotspot
+                    ch = ROUTER_CH if online[j] else 1
+                    if not lib.mayrule(0, names[i].encode(), names[j].encode(), ch, heard[i]):
+                        continue
                 r = rssi(pos[i], pos[j], rng, noise)
                 if r and (not best or r > best):
                     best, best_name = r, j
             act = lib.decide(1 if host[i] is not None else 0, main, best)
+            if rule == "online" and act == 1 and any(host[k] == i for k in range(len(pos))):
+                act = 0                          # a board others lean on never leaves (hiding would kick them)
             old = host[i]
             if act == 1:
                 host[i] = best_name
@@ -89,7 +112,7 @@ def run(lib, name, router, pos, rounds=30, noise=3.0, known=True, seed=1):
         return None if d is None else d + 1
     depths = [depth(i) for i in range(len(pos))]
     one_hop = sum(d == 1 for d in depths)
-    return {"scenario": name, "boards": len(pos), "direct": sum(d == 0 for d in depths),
+    return {"rule": rule, "scenario": name, "boards": len(pos), "direct": sum(d == 0 for d in depths),
             "one_hop": one_hop, "two_or_more_hops": sum(d is not None and d >= 2 for d in depths),
             "stranded": sum(d is None for d in depths), "longest_chain": max([d for d in depths if d is not None] or [0]),
             "flips_per_board_per_round": round(flips / len(pos) / rounds, 3), "noise_db": noise}
@@ -102,14 +125,14 @@ def main():
     lib = load_logic()
     rows = []
     r = (0, 0)
-    for step in (8, 15, 25):                 # boards in a line away from the router, step m apart
-        rows.append(run(lib, "line of 10, %d m apart" % step, r, [(step * (i + 1), 0) for i in range(10)]))
-    rows.append(run(lib, "line of 10, 15 m apart, no shadowing", r, [(15 * (i + 1), 0) for i in range(10)], noise=0.0))
-    for n, side in ((30, 60), (100, 120), (255, 200)):
-        rng = random.Random(n)
-        pts = [(rng.uniform(5, side), rng.uniform(-side / 2, side / 2)) for _ in range(n)]
-        rows.append(run(lib, "%d boards random in %dx%d m" % (n, side, side), r, pts))
-    rows.append(run(lib, "robot 60 m out, only 2 boards between", r, [(20, 0), (40, 0), (60, 0)]))
+    for rule in ("name", "online"):         # old rule vs new rule, same layouts
+        for step in (8, 15, 25):             # boards in a line away from the router, step m apart
+            rows.append(run(lib, "line of 10, %d m apart" % step, r, [(step * (i + 1), 0) for i in range(10)], rule=rule))
+        for n, side in ((30, 60), (100, 120), (255, 200)):
+            rng = random.Random(n)
+            pts = [(rng.uniform(5, side), rng.uniform(-side / 2, side / 2)) for _ in range(n)]
+            rows.append(run(lib, "%d boards random in %dx%d m" % (n, side, side), r, pts, rule=rule))
+        rows.append(run(lib, "robot 60 m out, only 2 boards between", r, [(20, 0), (40, 0), (60, 0)], rule=rule))
     for x in rows:
         print(x)
     if a.out:
