@@ -198,6 +198,10 @@ Frame format (ASCII lines ending with `\n`):
                        bus behind 12 (broadcasts never cross a bridge on their own). A board with a
                        second link ends its `CHIPS` reply with ` G`.
 
+Over WiFi, a `#...` line sent to `GET /api/cmd?c=` answers "-> sent"; the reply is read from
+`GET /api/busreplies?after=N` (lines `"<seq> @<addr> <reply>"`, last 8 kept, same login rule as a read
+command). The hub does this for `wifi:<ip>:>12>7` (commands only, not files/status).
+
 Past ~12 boards a plain `#* PING` is unreliable (about ten boards share each
 10 ms slot and destroy each other's replies); the hub then asks range by range.
 Boards on older firmware ignore `CHIPS` and `#~`, and answer a ranged PING like a
