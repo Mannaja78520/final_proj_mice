@@ -4,6 +4,7 @@
 #include "core/Log.h"
 #include "core/MeshLogic.h"
 #include <WiFi.h>
+#include <Preferences.h>
 #include <esp_now.h>
 #include <esp_random.h>
 #include <mbedtls/md.h>
@@ -82,6 +83,12 @@ void MeshLink::loop() {
         c.keyLen = g_key.length();
         c.tag = hmacTag;
         c.rng = rng;
+        {   // seq must rise on every boot: keep a base in flash, step it by 65536 per start
+            Preferences pr; pr.begin("mesh", false);
+            uint32_t base = pr.getUInt("seq", 0) + 65536;
+            pr.putUInt("seq", base); pr.end();
+            c.seqStart = base ? base : 65536;
+        }
         delete g_node;
         g_node = new mesh::MeshNode(c);
         g_up = startRadio();

@@ -303,6 +303,19 @@ void test_mesh_refuses_forged_and_foreign_frames(void) {
     buf[mesh::HEADER] ^= 1;
     TEST_ASSERT_EQUAL_INT(mesh::RX_DELIVERED, b.rx(buf, k, 100));
 }
+void test_mesh_drops_a_replayed_old_frame_even_after_the_ring_forgot_it(void) {
+    mesh::MeshNode a = mesh_node(1), b = mesh_node(2);
+    uint8_t first[mesh::MAX_FRAME], buf[mesh::MAX_FRAME];
+    a.send(2, mesh::TYPE_CMD, "PING", 4, 0);
+    size_t k0 = a.poll(100, first, sizeof first);
+    TEST_ASSERT_EQUAL_INT(mesh::RX_DELIVERED, b.rx(first, k0, 100));
+    for (int i = 0; i < 100; i++) {                 // 100 newer frames push it out of the 64-entry ring
+        a.send(2, mesh::TYPE_CMD, "PING", 4, 200 + i);
+        size_t k = a.poll(300 + i, buf, sizeof buf);
+        b.rx(buf, k, 300 + i);
+    }
+    TEST_ASSERT_EQUAL_INT(mesh::RX_DROPPED_OLD, b.rx(first, k0, 900));   // the capture is refused
+}
 void test_mesh_drops_repeats_and_respects_ttl_and_suppression(void) {
     mesh::MeshNode a = mesh_node(1), b = mesh_node(2, MESH_KEY, 5, 6);
     uint8_t buf[mesh::MAX_FRAME];
@@ -683,6 +696,7 @@ int main(int, char **) {
     RUN_TEST(test_online_rule_ignores_name_order_and_old_rule_keeps_it);
     RUN_TEST(test_mesh_reaches_a_board_two_hops_away_and_the_reply_comes_back);
     RUN_TEST(test_mesh_refuses_forged_and_foreign_frames);
+    RUN_TEST(test_mesh_drops_a_replayed_old_frame_even_after_the_ring_forgot_it);
     RUN_TEST(test_mesh_drops_repeats_and_respects_ttl_and_suppression);
     RUN_TEST(test_census_slots_never_overlap);
     RUN_TEST(test_wifi_list_walks_saved_networks_in_order);
