@@ -403,9 +403,18 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
     this.$("lowN").value = this.S.low_stock || 0;
     const live = this.S.machines.filter(m => !m.live.error).length;
     this.stat.ready(live + " of " + this.S.machines.length + " machines answering", "GET /api/gacha");
-    this.gmDraw(); this.keysLoad(); this.poDraw(); this.bxDraw(); this.stockLoad();
-    this.loadRules(); this.loadLog();
+    this.gmDraw(); this.poDraw(); this.bxDraw(); this.stockLoad();
+    this.loadAdmin();
     return true;
+  }
+
+  // Keys, rules, log and stats are admin-only. Asking while logged out gave 4
+  // red 401s in the console on every open of this page (newcomer sweep,
+  // 2026-11-21), so ask who we are first and only then fetch them.
+  async loadAdmin() {
+    const authed = window.miceLogin ? await miceLogin.refresh() : true;
+    if (!authed) return;
+    this.keysLoad(); this.loadRules(); this.loadLog();
   }
 
   modeCell(mode) {
@@ -991,6 +1000,7 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
     this.drawHooks();
     this.vpLoad();
     if (window.miceLogin) miceLogin.mount(this.$("loginHere"));
+    document.addEventListener("mice-login", () => this.loadAdmin());
     this.load();
   }
 }
