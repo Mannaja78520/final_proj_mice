@@ -79,6 +79,7 @@
         "apps_manage.js",
         "page_version.js",
         "modules.js",
+        "busmap.js",
         "usb.js",
         "shared_pcs.js",
         "boot_scans.js",
