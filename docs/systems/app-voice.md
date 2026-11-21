@@ -183,7 +183,7 @@ model), speech out.
 
 - [app-gacha](app-gacha.md)
 
-## Checks that test it (51)
+## Checks that test it (52)
 
 - `check_browser_leaks`
 - `check_build_web`
@@ -202,6 +202,7 @@ model), speech out.
 - `check_old_browser`
 - `check_ollama_kv`
 - `check_page_frame`
+- `check_press_feedback`
 - `check_qc_receipt`
 - `check_resource_policy`
 - `check_scale_robust`
@@ -237,4 +238,4 @@ model), speech out.
 - `check_voice_user_clips`
 - `check_voice_view`
 
-Run them: `python qc/run_qc.py --no-build check_browser_leaks check_build_web check_face_photos check_faces_cursor check_faces_loopback check_faces_presence check_friend_api check_gesture_legs check_gestures check_local_ai_on_demand check_local_ai_warm check_login_anywhere check_no_console_window check_nong_sim check_old_browser check_ollama_kv check_page_frame check_qc_receipt check_resource_policy check_scale_robust check_speak check_stale_build check_translate check_voice check_voice_answers check_voice_bench check_voice_conversation check_voice_edge_fallback check_voice_fast check_voice_gestures check_voice_guard check_voice_helper check_voice_identify check_voice_intents check_voice_move check_voice_multi check_voice_one_voice check_voice_people check_voice_profiles check_voice_reconize`
+Run them: `python qc/run_qc.py --no-build check_browser_leaks check_build_web check_face_photos check_faces_cursor check_faces_loopback check_faces_presence check_friend_api check_gesture_legs check_gestures check_local_ai_on_demand check_local_ai_warm check_login_anywhere check_no_console_window check_nong_sim check_old_browser check_ollama_kv check_page_frame check_press_feedback check_qc_receipt check_resource_policy check_scale_robust check_speak check_stale_build check_translate check_voice check_voice_answers check_voice_bench check_voice_conversation check_voice_edge_fallback check_voice_fast check_voice_gestures check_voice_guard check_voice_helper check_voice_identify check_voice_intents check_voice_move check_voice_multi check_voice_one_voice check_voice_people check_voice_profiles`

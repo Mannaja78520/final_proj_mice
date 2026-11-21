@@ -15,6 +15,22 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutTimeout
 from hub_usb import (_drain_to_line_boundary, _flash_ports, _usb_get, _usb_ident,
                      usb_close, usb_in_use)
 
+INFO_BUDGET_S = 8.0     # time the bus scan may spend asking boards for INFO
+
+
+_ports_cache = {"at": 0.0, "val": []}
+_ports_lock = threading.Lock()
+
+
+def serial_ports_cached(ttl=2.0):
+    """serial_ports() at most once per `ttl` seconds: 200 pages polling
+    /api/ports each enumerated the OS device list (3.5 s p95, 2026-11-21)."""
+    with _ports_lock:
+        if time.time() - _ports_cache["at"] > ttl:
+            _ports_cache["val"] = serial_ports()
+            _ports_cache["at"] = time.time()
+        return [dict(p) for p in _ports_cache["val"]]
+
 
 def serial_ports():
     """USB serial ports on this PC, WITH their device type — so Bluetooth
@@ -216,16 +232,19 @@ def probe_usb_port(port, full=False):
                                             "ip": "", "wifi_mode": ""})
             # ask each bus module for its INFO to learn its WiFi ip (for links)
             #
-            # THE LIMIT, said out loud: only the first SIX are asked. Each ask
-            # costs up to 0.6 s and the scan walks every port, so a seventh
-            # board on one bus keeps an empty group and chip - it is listed
-            # and reachable, but reads as "not linked" the way every bus board
-            # did before A3-5. Raising this trades a slower Modules screen for
-            # correctness on buses that big, and no bench here has one yet.
-            for mid in list(seen)[:6]:
+            # THE LIMIT, said out loud: INFO is asked in id order until a time
+            # budget (INFO_BUDGET_S) runs out, no longer a count of six
+            # (2026-11-21: a bus of 30 boards left 24 with an empty group and
+            # chip). A board answers in ~20 ms, so the wait stops at 0.15 s of
+            # quiet instead of the whole 0.6 s. Boards past the budget are
+            # listed and reachable but read "not linked", as before.
+            _info_end = time.time() + INFO_BUDGET_S
+            for mid in sorted(seen):
+                if time.time() > _info_end:
+                    break
                 _drain_to_line_boundary(ser)
                 ser.write(("#%d INFO\n" % mid).encode())
-                for ln in _read_lines(ser, 0.6):
+                for ln in _read_lines(ser, 0.6, quiet=0.15, at_least=0.05):
                     if ln.startswith("@%d {" % mid):
                         try:
                             st = json.loads(ln.split(" ", 1)[1])
