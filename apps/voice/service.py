@@ -84,6 +84,7 @@ from face_history import HistoryCursor, local_when    # noqa: E402
 # Who can do each job besides this PC (A45-1): the wire shapes and the keys.
 sys.path.insert(0, str(CODE / "apps" / "voice"))
 import providers                                     # noqa: E402
+import local_ai                                      # noqa: E402
 from profiles import Profiles, ProfileError, guarded  # noqa: E402
 from user_voice import UserVoice, PERSON as USER_PERSON  # noqa: E402
 # What a question asks for beyond its words (A45-24): reply language,
@@ -2051,6 +2052,7 @@ class Brain(FaceLink, Translator):
             return True
 
         def _worker():
+            self._warm_local_ai(force)
             if force or self.cfg.get("llm", {}).get("enabled"):
                 if not self._llm:
                     self._load_llm()
@@ -2069,6 +2071,24 @@ class Brain(FaceLink, Translator):
         self._preload_thread = threading.Thread(target=_worker, daemon=True)
         self._preload_thread.start()
         return True
+
+    def _warm_local_ai(self, force):
+        """Load the think model of a local server (Ollama) before the first question.
+
+        At boot only if the server is already up (it is never started just for
+        this); the Load-the-AI button (force) may start it, as any question would.
+        """
+        for pid in self.chain("think"):
+            prov = self.service(pid)
+            if not prov.get("autoStart"):
+                continue
+            if force:
+                up, _ = local_ai.wake(prov)
+            else:
+                up = local_ai.is_up(prov["autoStart"]["ready"], local_ai.SHORT)
+            if up:
+                local_ai.warm(prov, prov["jobs"].get("think"))
+            return
 
     def unload(self):
         """Unload LLM and STT models from memory and free GPU/RAM."""

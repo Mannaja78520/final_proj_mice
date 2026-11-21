@@ -76,3 +76,33 @@ def wake(prov):
             time.sleep(0.5)
         _failed_at[url] = time.time()
         return False, "the local AI did not answer within %d s" % int(cfg.get("waitSeconds", 40))
+
+
+def warm(prov, job=None):
+    """Load the model into memory now, so the first visitor does not wait for it.
+
+    Measured on the PC 2026-11-21 (docs/experiments/experiment-records.md): the
+    first question after Ollama had no model loaded took 45 s, every later one
+    0.18 s. An empty /api/generate loads the model; how long it then stays is
+    the server's OLLAMA_KEEP_ALIVE (config/local_ai.json keepAlive). Returns
+    (loaded, why). Never starts the server: use wake() first when that is wanted.
+    """
+    import json
+    root = prov["base"].rstrip("/")
+    if root.endswith("/v1"):
+        root = root[:-3]
+    try:
+        model = (job or {}).get("model") or ""
+        if not model:
+            with urllib.request.urlopen(root + "/api/tags", timeout=3) as r:
+                tags = json.loads(r.read().decode("utf-8")).get("models") or []
+            model = (tags[0] if tags else {}).get("name") or ""
+        if not model:
+            return False, "no model is installed there yet"
+        req = urllib.request.Request(root + "/api/generate", json.dumps({"model": model}).encode(),
+                                    {"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=120):
+            pass
+        return True, ""
+    except Exception as e:                          # noqa: BLE001 - warm-up is best effort
+        return False, "%s" % e
