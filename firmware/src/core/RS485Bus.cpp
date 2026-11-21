@@ -1,4 +1,5 @@
 #include "core/RS485Bus.h"
+#include "core/BusSlot.h"
 #include "core/Log.h"
 #include "core/CommandRouter.h"
 #include "core/Identity.h"
@@ -123,11 +124,8 @@ void RS485Bus::handleLine(String line) {
         // real bus - measured with a nong on id 67 answering at 1344 ms, and
         // impossible to see against a fake that answers instantly.
         //
-        // Now the delay is bounded: 24 slots of 10 ms, so every board has
-        // answered within 240 ms whatever its id. Two boards can share a slot
-        // (ids 24 apart); that is what the addressed follow-up is for, and a
-        // collision that loses one answer is recoverable where a five second
-        // wait is simply never made.
+        // 2026-11-21: one slot per id now (BusSlot.h, id x 6 ms, all done by
+        // 1.53 s). The 24 shared slots above lost most answers past ~30 boards.
         // Queue it: first free slot. Full queue? Give up the place of the entry
         // scheduled LAST (it has waited least and nothing is about to fire);
         // signed delta, so a millis() rollover cannot flip the comparison.
@@ -140,7 +138,8 @@ void RS485Bus::handleLine(String line) {
                 if ((int32_t)(pendingAt_[i] - pendingAt_[slot]) > 0) slot = i;
         }
         pending_[slot] = "@" + String(id_->id()) + " " + reply;
-        pendingAt_[slot] = millis() + (uint32_t)(id_->id() % 24) * 10;
+        // one slot per id (BusSlot.h): ids 24 apart used to share a slot and garble each other
+        pendingAt_[slot] = millis() + busslot::censusDelayMs((uint32_t)id_->id());
     }
 }
 

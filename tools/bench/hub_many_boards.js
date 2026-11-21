@@ -28,8 +28,11 @@ function board(i, type) {
 function make(n, skip) {
   const l = [];
   for (let i = 1; i <= n; i++) if (!(skip && skip.has(i))) l.push(board(i, TYPES[(i * 7) % TYPES.length]));
-  // the hub's own order: sorted by lowercase name then str(id) (hub_modules.py)
-  return l.sort((a, b) => (a.name.toLowerCase() < b.name.toLowerCase() ? -1 : a.name.toLowerCase() > b.name.toLowerCase() ? 1 : String(a.id) < String(b.id) ? -1 : 1));
+  // the hub's own order (hub_modules.board_order): kind, then name with numbers
+  // compared as numbers, then id
+  const nat = t => t.toLowerCase().split(/(\d+)/).filter(Boolean).map(p => /^\d+$/.test(p) ? [0, +p, ''] : [1, 0, p]);
+  const cmp = (x, y) => { for (let i = 0; i < Math.min(x.length, y.length); i++) for (let k = 0; k < 3; k++) if (x[i][k] !== y[i][k]) return x[i][k] < y[i][k] ? -1 : 1; return x.length - y.length; };
+  return l.sort((a, b) => (a.type < b.type ? -1 : a.type > b.type ? 1 : cmp(nat(a.name), nat(b.name)) || a.id - b.id));
 }
 
 (async () => {
@@ -49,19 +52,20 @@ function make(n, skip) {
       await page.route('**/api/modules', serve);
       const t0 = Date.now();
       await page.goto('http://127.0.0.1:8642/', { waitUntil: 'load' });
-      await page.waitForFunction((n) => document.querySelectorAll('#mods > *').length >= Math.min(n, 1), n, { timeout: 60000 }).catch(() => {});
+      await page.waitForFunction((n) => document.querySelectorAll('#mods > .mod, #mods > .modgroup').length >= Math.min(n, 1), n, { timeout: 60000 }).catch(() => {});
       await page.waitForTimeout(1500);
-      const rows = await page.evaluate(() => Array.from(document.querySelectorAll('#mods > *')).map(e => (e.innerText || '').split('\n')[0]));
+      const rows = await page.evaluate(() => Array.from(document.querySelectorAll('#mods > .mod, #mods > .modgroup')).map(e => (e.innerText || '').split('\n')[0]));
       const t1 = Date.now();
       const sideways = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
       const height = await page.evaluate(() => document.getElementById('mods') ? document.getElementById('mods').scrollHeight : -1);
+      await page.evaluate(() => { const e = document.getElementById('homeMods'); if (e) e.scrollIntoView(); });
       await page.screenshot({ path: path.join(out, `modules_${n}_${tag}.png`), fullPage: false });
       // rescan with a few boards gone, then back: the order of the others must not move
       const gone = new Set([3, 4, 5].filter(x => x <= n));
       current = make(n, gone);
       await page.evaluate(() => window.mergeFar && window.mergeFar(true, window.scanGen));
       await page.waitForTimeout(800);
-      const again = await page.evaluate(() => Array.from(document.querySelectorAll('#mods > *')).map(e => (e.innerText || '').split('\n')[0]));
+      const again = await page.evaluate(() => Array.from(document.querySelectorAll('#mods > .mod, #mods > .modgroup')).map(e => (e.innerText || '').split('\n')[0]));
       res.push({ boards: n, view: tag, rows: rows.length, load_ms: t1 - t0, sideways, list_px: height,
                  first10: rows.slice(0, 10), after_leave_rows: again.length });
       console.log(JSON.stringify(res[res.length - 1]));

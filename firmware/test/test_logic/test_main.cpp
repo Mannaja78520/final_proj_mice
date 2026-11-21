@@ -13,6 +13,7 @@
 #include "core/WifiArgs.h"
 #include "core/WifiLink.h"
 #include "core/WifiList.h"
+#include "core/BusSlot.h"
 #include "core/Log.h"
 #include "core/Id3.h"
 #include <algorithm>
@@ -210,6 +211,16 @@ void test_wifi_list_skips_empty_slots(void) {
     TEST_ASSERT_EQUAL_INT(-1, wifilist::first(none));
     bool one[3] = {true, false, false};
     TEST_ASSERT_EQUAL_INT(-1, wifilist::next(0, one));   // single network: no backup to move to
+}
+
+// The census answers: every id 1..255 gets its own slot, and the longest reply
+// line (60 characters) finishes before the next id starts - so a bus of 255
+// modules cannot garble its own census.
+void test_census_slots_never_overlap(void) {
+    uint32_t frame = busslot::lineMs(60);
+    for (uint32_t id = 1; id < 255; id++)
+        TEST_ASSERT_TRUE(busslot::censusDelayMs(id) + frame <= busslot::censusDelayMs(id + 1));
+    TEST_ASSERT_TRUE(busslot::censusDelayMs(255) + frame < 1700);   // hub listens >= 1.6 s, then until quiet
 }
 
 // "MSI 3058" is one network name, not an ssid and a password.
@@ -569,6 +580,7 @@ int main(int, char **) {
     RUN_TEST(test_ease_is_smooth_and_bounded);
     RUN_TEST(test_pass_curve_matches_studio);
     RUN_TEST(test_pass_needs_its_start_speed_and_limits);
+    RUN_TEST(test_census_slots_never_overlap);
     RUN_TEST(test_wifi_list_walks_saved_networks_in_order);
     RUN_TEST(test_wifi_list_skips_empty_slots);
     RUN_TEST(test_quoted_ssid_keeps_its_spaces);
