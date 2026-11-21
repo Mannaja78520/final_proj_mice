@@ -37,3 +37,11 @@ def run(t):
     t.ok(code == 200, "the hub still answers afterwards")
     code, _ = F.get(base + "/favicon.ico")
     t.ok(code in (200, 204), "/favicon.ico answers", str(code))
+
+    # A newcomer's Complaints tab showed raw "STUDIO FREEZE {json}" (2026-11-21);
+    # the list now says it in words, and a fresh checkout knows no other PC.
+    code, page = F.get(base + "/")
+    t.ok("Studio stopped answering for" in page, "Complaints lists an automatic freeze report in words")
+    import json
+    known = json.loads((F.HUB / "known_hubs.json").read_text(encoding="utf-8"))
+    t.ok(known.get("hubs") == [], "a fresh checkout ships no stale PC address", str(known))
