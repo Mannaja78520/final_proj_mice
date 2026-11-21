@@ -251,6 +251,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/checks/check_ref.py`
 - `qc/checks/check_registries.py`
 - `qc/checks/check_relax.py`
+- `qc/checks/check_relay_rule.py`
 - `qc/checks/check_remote_scripts.py`
 - `qc/checks/check_report_button.py`
 - `qc/checks/check_resource_policy.py`

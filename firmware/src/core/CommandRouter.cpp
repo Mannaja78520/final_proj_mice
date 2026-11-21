@@ -268,6 +268,14 @@ String CommandRouter::handleLocked(const String& line) {
         }
         // SET WIFI2 / SET WIFI3 "ssid" [pass] — backup networks, tried in order
         // after the main one fails to join (WifiList.h). Empty = forget it.
+        // SET RELAY ONLINE|NAME — which hotspot a far module may join (WifiLink.h)
+        if (what == "RELAY") {
+            String r = argv[2];
+            r.toLowerCase();
+            if (r != "online" && r != "name") return "ERR usage: SET RELAY ONLINE|NAME";
+            id_->setRelayRule(r);
+            return "OK relay rule=" + r;
+        }
         if (what == "WIFI2" || what == "WIFI3") {
             int slot = what == "WIFI2" ? 1 : 2;
             std::string sSsid, sPass;

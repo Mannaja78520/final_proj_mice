@@ -103,6 +103,10 @@
        the spot, <code>WIFI RETRY</code> tries the stored network again without waiting for
        the 60&nbsp;second clock, and <code>WIFI SCAN</code> lists the 2.4&nbsp;GHz networks
        this board can actually see — which answers "why won't it join?" directly.</p>
+    <p><code>SET RELAY ONLINE|NAME</code> chooses which neighbour a module far from the router may use
+    as a relay. <code>ONLINE</code> (default) picks a neighbour whose hotspot is itself connected to the
+    router; <code>NAME</code> is the old rule (only a neighbour whose name sorts later). A module using a
+    relay hides its own hotspot, and a module that others lean on never moves to a relay.</p>
     <p><code>SET WIFI2 &lt;ssid&gt; &lt;pass&gt;</code> and <code>SET WIFI3 ...</code> save up to two
     backup networks. If the main one cannot be joined the board tries the backups in order, then
     stays on its own hotspot and tries the whole list again every minute. Leave the name empty
