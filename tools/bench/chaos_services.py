@@ -19,6 +19,7 @@ import signal
 import statistics
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import urllib.error
@@ -75,9 +76,21 @@ def load(url, clients, per_client):
             "req_per_s": round(len(lat) / wall, 1)}
 
 
+def kill_service(name):
+    """SIGKILL whatever listens on the service's port (psutil: Windows and Linux), else pkill."""
+    port = SERVICES[name]["port"]
+    try:
+        import psutil
+        for c in psutil.net_connections(kind="tcp"):
+            if c.status == psutil.CONN_LISTEN and c.laddr and c.laddr.port == port and c.pid:
+                psutil.Process(c.pid).kill()
+    except ImportError:
+        subprocess.run(["pkill", "-9", "-f", SERVICES[name]["cmd"][1]])
+
+
 def start(name):
     s = SERVICES[name]
-    log = open("/tmp/chaos_%s.log" % name, "ab")
+    log = open(os.path.join(tempfile.gettempdir(), "chaos_%s.log" % name), "ab")
     return subprocess.Popen(s["cmd"], cwd=str(ROOT), stdout=log, stderr=log)
 
 
@@ -124,7 +137,7 @@ def main():
         base = "http://127.0.0.1:%d" % s["port"]
         info = {"cold_start_s": wait_up(base + s["direct"], 90)}
         if info["cold_start_s"] is None:
-            info["note"] = "never came up; see /tmp/chaos_%s.log" % n
+            info["note"] = "never came up; see the temp folder chaos_%s.log" % n
             res["services"][n] = info
             continue
         info["direct"] = [load(base + s["direct"], c, max(5, 300 // c)) for c in (1, 10, 50)]
@@ -133,7 +146,7 @@ def main():
         for k in range(3):                           # kill -9 three times in a row
             # kill whoever answers on the port, not only the copy started here:
             # the hub starts its own voice helper on first use (voice_helper.py)
-            subprocess.run(["pkill", "-9", "-f", s["cmd"][1]])
+            kill_service(n)
             t_kill = time.perf_counter()
             down_s, _ = wait_down(base + s["direct"], 10)
             c, ms = get(HUB + s["via_hub"], 10)     # what the hub says while it is down
@@ -158,7 +171,7 @@ def main():
 
     def flap():
         while not stop.is_set():
-            subprocess.run(["pkill", "-9", "-f", SERVICES["voice"]["cmd"][1]])
+            kill_service("voice")
             time.sleep(0.5)
             get(HUB + SERVICES["voice"]["via_hub"], 3)
             stop.wait(4)
@@ -169,8 +182,8 @@ def main():
     th.join()
     print("hub while voice flaps:", res["hub_while_voice_flaps"])
 
-    subprocess.run(["pkill", "-f", "apps/voice/service.py"])
-    subprocess.run(["pkill", "-f", "apps/faces/service.py"])
+    for n in SERVICES:
+        kill_service(n)
     (out / "services.json").write_text(json.dumps(res, indent=1), encoding="utf-8")
     print("raw ->", out / "services.json")
 

@@ -46,3 +46,13 @@ def run(t):
          "a failed join moves to the next saved network", "")
     t.ok("wifilist::first(have)" in web or "nx = wifilist::first" in web,
          "a spent list starts again from the main network", "")
+
+    # PC measurements 2026-11-21 (Windows, real Ollama and friend app)
+    faces = (F.CODE / "apps/faces/service.py").read_text(encoding="utf-8", errors="replace")
+    m = re.search(r"wait = min\(([\d.]+), wait \* 2\)", faces)
+    t.ok(bool(m) and float(m.group(1)) <= 10, "the live feed reconnects within 10 s of the friend app returning",
+         m.group(0) if m else "no backoff found (was a 30 s cap: 19 s of pure waiting after a restart)")
+    prov = (F.CODE / "config/voice_providers.json").read_text(encoding="utf-8", errors="replace")
+    m = re.search(r'"ready": "http://127.0.0.1:11435/api/tags", "waitSeconds": (\d+)', prov)
+    t.ok(bool(m) and int(m.group(1)) <= 20, "a question waits at most 20 s for Ollama before the backup answers",
+         m.group(0) if m else "not found (was 40 s: the first visitor heard nothing for 45 s)")

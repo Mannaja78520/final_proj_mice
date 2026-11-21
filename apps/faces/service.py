@@ -1116,7 +1116,9 @@ def main(argv=None):
                 if feed is not None:
                     feed.close()
             time.sleep(wait)
-            wait = min(30.0, wait * 2)
+            # Cap 5 s (was 30): measured on the PC 2026-11-21, the friend's app was up again in
+            # 8 s and this service saw it only 27 s after the kill, 19 s of it pure backoff.
+            wait = min(5.0, wait * 2)
 
     threading.Thread(target=watch, daemon=True).start()
     threading.Thread(target=live_feed, daemon=True).start()
