@@ -91,7 +91,9 @@
       if (idx && idx.default) fallback = idx.default;
       picker(langs);
       var code = current();
-      if (code === SOURCE) return;
+      if (code === "off") return;     // QC: the page exactly as written
+      // English is the source language, but a page may carry Thai text of its own
+      // (lang/en.json, optional) that English must turn back into English.
       get("/lang/" + encodeURIComponent(code) + ".json", function (f) {
         if (!f || !f.strings) return;
         dict = f.strings;
