@@ -128,4 +128,5 @@ class BusIds:
             if chip not in now.get(new, set()):
                 failed.append(chip)
                 del moved[chip]
-        return {"moved": moved, "failed": failed}
+        # one entry per chip: a full bus retried every round and listed the same chip 12 times
+        return {"moved": moved, "failed": sorted(set(failed))}

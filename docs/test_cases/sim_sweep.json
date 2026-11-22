@@ -1,0 +1,236 @@
+[
+ {
+  "id": "FW-001",
+  "ok": true,
+  "label": "INFO shows seeded id 7",
+  "seen": "{\"id\":7,\"chip\":\"000000000000\",\"name\":\"QEMU-NONG\",\"type\":\"nong\",\"group\":\"\",\"fw\":\"1.0.0\",\"sd\":false,\"types\":[\"nong\",\"blank\"],\"caps\":[\"pins\",\"sequences\",\"users\",\"r"
+ },
+ {
+  "id": "FW-012",
+  "ok": true,
+  "label": "PERF? has loop/heap/stack/lock",
+  "seen": "PERF loop_avg_us=12679 loop_max_us=23020 work_max_us=21807 passes=3 frames=0 frame_max_ms=0 lock_max_us=11830 lock_by=status@loopTask slow_part=usb:21709 heap=2"
+ },
+ {
+  "id": "FW-069",
+  "ok": true,
+  "label": "blank line: ERR or silent, board alive",
+  "seen": ""
+ },
+ {
+  "id": "FW-069b",
+  "ok": true,
+  "label": "PING after blank line",
+  "seen": "PONG 7 QEMU-NONG nong"
+ },
+ {
+  "id": "FW-070",
+  "ok": true,
+  "label": "17 words refused",
+  "seen": "ERR too many words (max 16)"
+ },
+ {
+  "id": "FW-071",
+  "ok": true,
+  "label": "unknown command",
+  "seen": "ERR unknown cmd: XYZZY"
+ },
+ {
+  "id": "FW-072a",
+  "ok": true,
+  "label": "10 KB line answered with one ERR",
+  "seen": "ERR unknown cmd: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+ },
+ {
+  "id": "FW-072",
+  "ok": true,
+  "label": "alive after 10 KB line",
+  "seen": "PONG 7 QEMU-NONG nong"
+ },
+ {
+  "id": "FW-073",
+  "ok": true,
+  "label": "unmatched quote: clean reply",
+  "seen": "ERR need an ssid \ufffd\ufffd\ufffd SET WIFI \"my ssid\" [pass]"
+ },
+ {
+  "id": "FW-074",
+  "ok": true,
+  "label": "case-insensitive verbs",
+  "seen": "('PONG 7 QEMU-NONG nong', 'PONG 7 QEMU-NONG nong')"
+ },
+ {
+  "id": "FW-075",
+  "ok": false,
+  "label": "SET ID bad values refused",
+  "seen": "[('1.5', 'OK id=1')]"
+ },
+ {
+  "id": "FW-076",
+  "ok": true,
+  "label": "SET NAME odd values answered",
+  "seen": "[]"
+ },
+ {
+  "id": "FW-077",
+  "ok": true,
+  "label": "SET MESH/RELAY bad word",
+  "seen": "('ERR usage: SET MESH ON|OFF', 'ERR usage: SET RELAY ONLINE|NAME')"
+ },
+ {
+  "id": "FW-016",
+  "ok": true,
+  "label": "SET WIFI no args",
+  "seen": "ERR usage: SET ID|NAME|TYPE|WIFI ..."
+ },
+ {
+  "id": "FW-017",
+  "ok": true,
+  "label": "APPASS length/space rules",
+  "seen": "[]"
+ },
+ {
+  "id": "FW-007",
+  "ok": true,
+  "label": "SET TYPE lift on nong build",
+  "seen": "ERR unknown type (nong,blank)"
+ },
+ {
+  "id": "FW-021",
+  "ok": true,
+  "label": "REACH on no-radio build answers",
+  "seen": "ERR usage: REACH <ip|name|id> <command>"
+ },
+ {
+  "id": "FW-078",
+  "ok": false,
+  "label": "53 verbs with no args each answer",
+  "seen": "['FILES', 'RATE', 'REACH']"
+ },
+ {
+  "id": "FW-079",
+  "ok": false,
+  "label": "fuzz args: every reply, board alive",
+  "seen": "[('PIN?', '99999999999'), ('PIN?', '-5'), ('PIN?', 'inf'), ('PING', 'nan'), ('PING', '99999999999'), ('PING', '-5')]"
+ },
+ {
+  "id": "FW-082",
+  "ok": false,
+  "label": "FWBEGIN without md5",
+  "seen": ""
+ },
+ {
+  "id": "FW-083",
+  "ok": false,
+  "label": "FWBEGIN bad md5",
+  "seen": ""
+ },
+ {
+  "id": "FW-084a",
+  "ok": false,
+  "label": "FWBEGIN size 0",
+  "seen": ""
+ },
+ {
+  "id": "FW-084b",
+  "ok": false,
+  "label": "FWBEGIN size 0xFFFFFFFF",
+  "seen": ""
+ },
+ {
+  "id": "FW-099",
+  "ok": false,
+  "label": "FWBEGIN over slot size",
+  "seen": ""
+ },
+ {
+  "id": "FW-086a",
+  "ok": false,
+  "label": "FWDATA without FWBEGIN",
+  "seen": ""
+ },
+ {
+  "id": "FW-086b",
+  "ok": false,
+  "label": "FWEND without FWBEGIN",
+  "seen": ""
+ },
+ {
+  "id": "FW-087",
+  "ok": false,
+  "label": "FWEND short of promised",
+  "seen": ""
+ },
+ {
+  "id": "FW-091",
+  "ok": false,
+  "label": "second FWBEGIN restarts cleanly",
+  "seen": ""
+ },
+ {
+  "id": "FW-091b",
+  "ok": false,
+  "label": "alive after aborted updates",
+  "seen": ""
+ },
+ {
+  "id": "FW-157",
+  "ok": false,
+  "label": "300 SET NAME writes, all answered",
+  "seen": ""
+ },
+ {
+  "id": "FW-153",
+  "ok": false,
+  "label": "name survives reboot",
+  "seen": ""
+ },
+ {
+  "id": "FW-009",
+  "ok": false,
+  "label": "reset reason after REBOOT",
+  "seen": ""
+ },
+ {
+  "id": "FW-008",
+  "ok": false,
+  "label": "SET TYPE blank persists",
+  "seen": ""
+ },
+ {
+  "id": "FW-172",
+  "ok": false,
+  "label": "6000 bytes without newline, then PING",
+  "seen": ""
+ },
+ {
+  "id": "FW-053",
+  "ok": false,
+  "label": "CR / CRLF / empty lines",
+  "seen": ""
+ },
+ {
+  "id": "FW-052",
+  "ok": false,
+  "label": "2000 random bytes then PING",
+  "seen": ""
+ },
+ {
+  "id": "FW-054",
+  "ok": false,
+  "label": "0xFF bytes in command",
+  "seen": ""
+ },
+ {
+  "id": "FW-067",
+  "ok": false,
+  "label": "100 PINGs back to back, all answered (300.8s)",
+  "seen": "0"
+ },
+ {
+  "id": "FW-171",
+  "ok": false,
+  "label": "stack high-water readable after fuzz",
+  "seen": ""
+ }
+]

@@ -341,6 +341,9 @@ void WebPortal::checkLink(int n) {
 }
 
 String WebPortal::peersJson() {
+    // peers_.begin() runs only once the network is up. With WiFi off, PEERS read a
+    // null identity and the board panicked (LoadProhibited) - found on QEMU 2026-11-22.
+    if (!peersStarted_) return "[]";
     String selfIp = apMode_ ? WiFi.softAPIP().toString() : WiFi.localIP().toString();
     return peers_.peersJson(selfIp);   // caller already holds the router mutex
 }

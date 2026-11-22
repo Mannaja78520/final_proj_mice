@@ -333,7 +333,7 @@ interchangeably.
 | `PING` | `PONG <id> <name> <type>` | safe on broadcast, used for discovery |
 | `INFO` | one-line status JSON | same content as `/api/status` (minus wifi). Includes `chip` — the board's eFuse MAC as twelve hex digits, which is the only identifier on it that nobody can change: `id`, `name` and `type` are all set by a person. The hub matches on it to tell that the board on a cable and the board at an address are one board, and that two boards sharing a default id are not |
 | `HELP` / `HELP <cmd>` | `POSE <a1..a10> [T <ms>] - move every joint…` | every command **this board** understands, straight from `config/commands.json` and filtered at build time to this binary's module type — so it can never advertise one it lacks |
-| `SET ID <1-247>` | `OK id=3` | RS485 address, saved to chip immediately |
+| `SET ID <1-247>` | `OK id=3` | RS485 address, whole number only (`1.5` and `12abc` are refused), saved to chip immediately |
 | `SET NAME <name>` | `OK name=...` | spaces allowed; also renames WiFi hostname, `<name>.local`, AP SSID |
 | `SET TYPE <lift\|nong\|blank>` | `OK ... (reboot to apply)` | which module code runs after reboot. Only types this binary was BUILT with are accepted — on a `mice_nong` board, `SET TYPE lift` answers `ERR unknown type (nong,blank)` |
 | `SET WIFI <ssid> [pass]` | `OK joining "..." now (WIFI for progress)` | **quote an ssid containing spaces**: `SET WIFI "MSI 3058" mypass`. Omit pass for an open network |
@@ -351,7 +351,7 @@ interchangeably.
 | `PEERPASS` | `PEERPASS nong,lift-2` | the group-mates whose hotspot password this module holds (names only) |
 | `PEERPASS <wifi> <password>` | `OK peer nong` | remember a group-mate's hotspot password. The hub sends these by itself to every module in a group, so a module can still link to one whose owner changed its password |
 | `PEERPASS CLEAR` | `OK peers forgotten` | forget them all |
-| `PEERS` | `[{"id":85,"name":"lift-test",...},...]` | the other modules this one can see. Same list as `/api/peers` |
+| `PEERS` | `[{"id":85,"name":"lift-test",...},...]` | the other modules this one can see. Same list as `/api/peers`. `[]` while WiFi is off |
 | `REACH <ip\|name\|id> <command>` | whatever that module answered | run a command on **another** module through this one. Refused while this module is moving — it blocks up to 800 ms and would stall a joint |
 | `WIFI` | `WIFI mode=on state=online ssid="manny" ip=192.168.137.42 rssi=-51 ap="nong" apip=192.168.4.1 apclients=1` | where the radio is right now, in one line |
 | `WIFI ON\|OFF\|AP` | `OK wifi on — applied now, no reboot` | same as `SET WIFI ON\|OFF\|AP`; **takes effect immediately** |

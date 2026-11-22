@@ -120,6 +120,14 @@ def run(t):
         t.eq(b.cmd("PING"), "PONG 7 QEMU-NONG nong", "still the old firmware after the refusal")
 
         # ---- settings survive a power cycle --------------------------
+        mark = len(b.log)                         # cmd() skips lines that start with "[": that is a log line to it
+        b.write("PEERS")
+        t.ok(b.wait_for("[]", 6, since=mark), "PEERS with WiFi off answers an empty list (it used to panic the board)", b.log[mark:mark + 200])
+        t.ok("Guru Meditation" not in b.log, "and nothing crashed", b.log[-300:])
+        for bad in ("1.5", "12abc", "0", "248", "-3", "abc", "1000"):
+            t.contains(b.cmd("SET ID " + bad), "ERR id must be 1-247",
+                       "SET ID %s is refused, not read as another number" % bad)
+        t.eq(b.cmd("PING"), "PONG 7 QEMU-NONG nong", "and the id is still 7 after the bad SET ID tries")
         t.contains(b.cmd("SET NAME bench-one"), "name=bench-one", "SET NAME answers")
         long_r = b.cmd("SET NAME " + "A" * 200)
         t.ok(long_r.count("A") <= 31, "a 200-letter name is cut short, not stored whole", long_r[:120])
