@@ -382,7 +382,7 @@
   "Rules": "ルール",
   "กำหนดจำนวนรวมของงานและจำนวนต่อคน แยกตามชนิดของรางวัล หรือกำหนดให้บุคคลเฉพาะ": "景品の種類ごとに、イベント全体の数と 1 人あたりの数を設定します。特定の人向けの設定もできます。",
   "แจกให้ผู้ร่วมงาน": "参加者に渡す",
-  "เลือก Kind ผู้รับ และ Machine กด Can they have one? เพื่อตรวจสิทธิ์ หรือ Give เพื่อสั่งแจกจริง": "種類、受け取る人、マシンを選びます。「もらえますか？」で資格を確認し、「渡す」で実際に渡します。",
+  "เลือก Kind ผู้รับ และ Machine กด Check if this guest can win เพื่อตรวจสิทธิ์ หรือ Give เพื่อสั่งแจกจริง": "種類、受け取る人、マシンを選びます。「もらえますか？」で資格を確認し、「渡す」で実際に渡します。",
   "ดูว่าแจกให้ใครแล้ว": "誰に渡したかを見る",
   "Prizes given": "渡した景品",
   "ดูประวัติการแจกและจำนวนที่แจกไป": "渡した履歴と、出た数を見られます。",
@@ -837,7 +837,7 @@
   "When something fails, the page says what to do": "何かが失敗すると、ページが何をすればよいか伝える",
   "- for example \"the hub did not answer - check it is still running and this device is on the same network\" - not the browser's own text. The original message is still there under": "— たとえば「ハブが応答しません。まだ動いているか、この端末が同じネットワークにあるか確認してください」のように伝え、ブラウザー自身の文言は出しません。元のメッセージは、手伝ってくれる人のために次の下に残っています：",
   "for whoever helps you. Pages also load smaller (compressed) and are not downloaded again when nothing changed, which helps on a TV.": "。ページは小さく（圧縮して）読み込まれ、何も変わっていなければ再ダウンロードしないので、テレビでも助かります。",
-  "has one row of tabs: Home, Tools, Modules, Firmware, Network, Settings and Complaints.": "にはタブが 1 列あります：ホーム、ツール、モジュール、ファームウェア、ネットワーク、設定、報告一覧。",
+  "has one row of tabs: Home, Tools, Modules, Firmware, Network, Settings and Problem reports.": "にはタブが 1 列あります：ホーム、ツール、モジュール、ファームウェア、ネットワーク、設定、報告一覧。",
   "STOP": "停止",
   "Report": "報告",
   "Shortcuts": "ショートカット",
@@ -873,7 +873,7 @@
   "For recorded still frames, fits a camera from independently measured joint centres and known holds. The private manifest selects settled windows, validated landmarks, robot bounds, video-level train/validation splits and observed pose acceptance. A command acknowledgement alone does not prove the robot reached the pose: moving or visibly wrong frames are dropped. Only validated landmarks receive labels. Review at least 50 frame overlays before training; a single planar pose does not establish metric camera calibration.": "記録した静止フレームについて、独立して測った関節中心と既知の静止から、カメラをフィットさせます。非公開のマニフェストが、安定した区間、検証済みのランドマーク、ロボットの範囲、動画単位の学習・検証の分割、観測されたポーズの受け入れを選びます。コマンドの受け付けだけでは、ロボットがそのポーズに着いた証明にはなりません。動いているフレームや明らかに間違ったフレームは捨てられます。検証済みのランドマークだけにラベルが付きます。学習の前に、少なくとも 50 枚のフレームのオーバーレイを確認してください。1 つの平面的なポーズだけでは、メートル単位のカメラのキャリブレーションは確立できません。",
   "ไม่ต้องกดอะไร ทำงานเองกับทุกท่า: ชุดท่าใน Studio, ท่าจากวิดีโอ, ทางอ้อมที่ Studio หาให้, ท่าพูด, ท่าจาก RL และ Shows ถ้าข้อต่อยังไปทางเดิม แขนจะวิ่งผ่านคีย์เฟรมต่อเลยแทนที่จะหยุดทุกคีย์ ตรงที่ข้อต่อกลับทิศ (ท่าสะบัด) ตรงที่มีพัก (hold) และต้น/ท้ายยังหยุดตรงคีย์พอดี เวลาของทุกท่าไม่เปลี่ยน จึงยังตรงเพลง ปิด/เปิดแยกตามที่มาของท่าได้ในไฟล์ (sources) ไฟล์ท่าที่ทำนอก Studio (เช่น RL) ใช้ ตัวลื่นไม่มีทางทำให้ท่ากระตุกกว่าแบบเดิม: คีย์ไหนที่เส้นโค้งกระตุกกว่าแบบหยุดทุกคีย์ จะถูกลดความเร็วลงเอง () ท่าจาก RL ที่ย่อจากท่าละเอียด 50 ครั้งต่อวินาที แขนจะผ่านแต่ละคีย์ด้วยความเร็วของท่าเดิม และเกาะเส้นทางเดิมที่ตรวจการชนแล้ว ()": "押すボタンはなく、すべての動きで自動的に働きます。Studio のシーケンス、動画からの動き、Studio が見つけた迂回、話す動き、RL からの動き、ショーです。関節が同じ向きに動き続けるなら、腕は各キーで止まらずキーフレームを通り抜けて進みます。関節が反転する場所（はねる動き）、ホールドのある場所、最初と最後では、これまでどおりキーでぴったり止まります。どの動きも時間は変わらないので、音楽にも合ったままです。動きの出どころごとにオン・オフできます（ファイルの sources）。Studio の外で作った動きのファイル（RL など）は を使います。スムーザーが動きを以前よりぎこちなくすることはありません。曲線が「各キーで止まる」方式よりぎこちなくなるキーは、自動で速度が下げられます（）。毎秒 50 回の細かい動きから間引いた RL の動きは、元の動きの速度で各キーを通り、衝突確認済みの元の経路にそのまま沿います（）。",
   "reference": "リファレンス",
-  "Transports — the same features on every link": "通信方式 — どのリンクでも同じ機能",
+  "Connections — the same features on every link": "通信方式 — どのリンクでも同じ機能",
   "Text commands and SD file transfer work identically on all three. The difference is reach and speed, never capability.": "文字コマンドと SD ファイルの転送は、3 つのどれでも同じように動きます。違いは届く範囲と速さで、機能が違うことはありません。",
   "Link": "リンク",
   "Reaches": "届く範囲",
@@ -1043,6 +1043,8 @@
   "Stopping everything on any PC": "どのPCでもワンクリックで全部止められます",
   "Close the hub with stop_hub.bat, or press Ctrl+C, or just close its window: the voice helper, the face helper and the friends’ apps the hub started stop with it, so the next start on any PC begins clean with nothing left running in the background. The hub on another PC needs no setup: it finds the apps next to it and a free address by itself.": "stop_hub.bat でハブを閉じるか、Ctrl+C を押すか、ウィンドウを閉じるだけです。ハブが起動した音声ヘルパー、顔認識ヘルパー、友人のアプリも一緒に止まるので、次にどのPCで起動してもきれいな状態で始まり、裏で動き続けるものは残りません。別のPCのハブも設定は不要で、隣にあるアプリと空いているアドレスを自分で見つけます。",
   "One voice at a time": "声は一度にひとつだけ",
-  "If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.": "答えが再生されている途中で Try を押したり新しい質問をすると、古い答えが先に止まり、二つの声が重なりません。音声ヘルパーが1分以内に答えないときはページがそう伝え、ずっと待たずにもう一度試せます。ページを離れると声も止まります。"
+  "If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.": "答えが再生されている途中で Try を押したり新しい質問をすると、古い答えが先に止まり、二つの声が重なりません。音声ヘルパーが1分以内に答えないときはページがそう伝え、ずっと待たずにもう一度試せます。ページを離れると声も止まります。",
+  "กด <b>Start a new event and reset counts</b> เพื่อเริ่มงานใหม่และล้างตัวนับของทุกตู้ (ระบบถามยืนยันก่อนเสมอ)": "<b>Start a new event and reset counts</b> を押すと新しいイベントを始め、全マシンのカウントをゼロに戻します(必ず先に確認が出ます)",
+  "• <b>Mute all speech:</b> ปุ่มเล็กในกล่องพูดด่วน หยุดเสียงพูดทั้งหมดที่กำลังเล่นอยู่ทันที": "• <b>Mute all speech:</b> すぐに話すボックスの小さなボタン。再生中の音声をすべて止めます"
  }
 }

@@ -24,7 +24,6 @@
   "Firmware": "ファームウェア",
   "Network": "ネットワーク",
   "Settings": "設定",
-  "📋 Complaints": "📋 報告一覧",
   "Your modules": "あなたのモジュール",
   "Looking for modules — over WiFi, on the cables, and on any other PC running this hub…": "モジュールを探しています — WiFi、ケーブル、このハブを動かしている他の PC から…",
   "📡 Every module — one row each": "📡 すべてのモジュール — 1 行ずつ",
@@ -128,7 +127,6 @@
   "Give a prize": "景品を渡す",
   "🎁 Give": "🎁 渡す",
   "Give one anyway (admin)": "それでも 1 つ渡す（管理者）",
-  "Can they have one?": "もらえますか？",
   "Kind": "種類",
   "Machine": "マシン",
   "Event": "イベント",
@@ -139,7 +137,6 @@
   "Save on every machine": "すべてのマシンに保存",
   "Start the event": "イベントを開始",
   "Close the event": "イベントを終了",
-  "New event (counts to zero)": "新しいイベント（カウントを 0 に）",
   "Save rules": "ルールを保存",
   "Save machines": "マシンを保存",
   "Save kinds": "種類を保存",
@@ -546,7 +543,6 @@
   "What": "内容",
   "From": "送信元",
   "Admin": "管理者",
-  "name, or empty": "名前、または空欄",
   "whoever the face app sees nearest": "顔アプリが最も近くで見ている人",
   "📖 คู่มือ Help ↗": "📖 ヘルプ ↗",
   "ไทย": "ไทย",
@@ -759,7 +755,6 @@
   "Mice cannot tell which version of Reconize is installed.": "インストール済みReconizeのバージョンがMiceからは分かりません。",
   "📂 Saved Sequences": "📂 保存したシーケンス",
   "🗣️ Quick Speech & Actions": "🗣️ すぐに話す・動く",
-  "Silenced All": "すべて消音",
   "🦾 Joint Monitor (Real-time)": "🦾 関節モニター(リアルタイム)",
   "10 Servos": "サーボ10個",
   "🏠 Home": "🏠 ホームポーズへ",
@@ -774,6 +769,12 @@
   "R 🤚 back up": "右 🤚 手の甲を上",
   "start": "開始",
   "start pose": "開始ポーズ",
-  "name this move": "この動きに名前を付ける"
+  "name this move": "この動きに名前を付ける",
+  "Mute all speech": "すべて消音",
+  "guest name (optional)": "名前、または空欄",
+  "Check if this guest can win": "もらえますか？",
+  "Start a new event and reset counts": "新しいイベント（カウントを 0 に）",
+  "📋 Problem reports": "📋 報告一覧",
+  "Prize type": "種類"
  }
 }

@@ -382,7 +382,7 @@
   "Rules": "规则",
   "กำหนดจำนวนรวมของงานและจำนวนต่อคน แยกตามชนิดของรางวัล หรือกำหนดให้บุคคลเฉพาะ": "按奖品种类设置活动总数和每人的数量，或为特定的人设置。",
   "แจกให้ผู้ร่วมงาน": "发放给参与者",
-  "เลือก Kind ผู้รับ และ Machine กด Can they have one? เพื่อตรวจสิทธิ์ หรือ Give เพื่อสั่งแจกจริง": "选择种类、接收人和机器。按“他们可以领取吗？”检查资格，或按“发放”真正发出。",
+  "เลือก Kind ผู้รับ และ Machine กด Check if this guest can win เพื่อตรวจสิทธิ์ หรือ Give เพื่อสั่งแจกจริง": "选择种类、接收人和机器。按“他们可以领取吗？”检查资格，或按“发放”真正发出。",
   "ดูว่าแจกให้ใครแล้ว": "查看已经发给了谁",
   "Prizes given": "已发放奖品",
   "ดูประวัติการแจกและจำนวนที่แจกไป": "查看发放历史和已发出的数量。",
@@ -837,7 +837,7 @@
   "When something fails, the page says what to do": "出问题时，页面会告诉你该怎么做",
   "- for example \"the hub did not answer - check it is still running and this device is on the same network\" - not the browser's own text. The original message is still there under": "——例如“中心没有应答——请检查它是否仍在运行，以及此设备是否在同一网络”——而不是浏览器自己的文字。原始消息仍保留在",
   "for whoever helps you. Pages also load smaller (compressed) and are not downloaded again when nothing changed, which helps on a TV.": "，供帮助你的人查看。页面也加载得更小（压缩），并且在没有变化时不会重复下载，这对电视很有帮助。",
-  "has one row of tabs: Home, Tools, Modules, Firmware, Network, Settings and Complaints.": "有一行标签页：主页、工具、模块、固件、网络、设置和反馈。",
+  "has one row of tabs: Home, Tools, Modules, Firmware, Network, Settings and Problem reports.": "有一行标签页：主页、工具、模块、固件、网络、设置和反馈。",
   "STOP": "停止",
   "Report": "反馈",
   "Shortcuts": "快捷键",
@@ -874,7 +874,7 @@
   "For recorded still frames, fits a camera from independently measured joint centres and known holds. The private manifest selects settled windows, validated landmarks, robot bounds, video-level train/validation splits and observed pose acceptance. A command acknowledgement alone does not prove the robot reached the pose: moving or visibly wrong frames are dropped. Only validated landmarks receive labels. Review at least 50 frame overlays before training; a single planar pose does not establish metric camera calibration.": "针对已录制的静止帧，根据独立测得的关节中心和已知的静止姿势来拟合摄像机。私有清单会选出稳定的时间窗口、经过验证的特征点、机器人边界、视频级的训练/验证划分，以及观测到的姿势接受情况。仅有命令确认并不能证明机器人到达了该姿势：正在移动或明显错误的帧会被丢弃。只有经过验证的特征点才会获得标签。训练前请至少复核 50 张帧叠加图；单个平面姿势并不能确立度量级的摄像机标定。",
   "ไม่ต้องกดอะไร ทำงานเองกับทุกท่า: ชุดท่าใน Studio, ท่าจากวิดีโอ, ทางอ้อมที่ Studio หาให้, ท่าพูด, ท่าจาก RL และ Shows ถ้าข้อต่อยังไปทางเดิม แขนจะวิ่งผ่านคีย์เฟรมต่อเลยแทนที่จะหยุดทุกคีย์ ตรงที่ข้อต่อกลับทิศ (ท่าสะบัด) ตรงที่มีพัก (hold) และต้น/ท้ายยังหยุดตรงคีย์พอดี เวลาของทุกท่าไม่เปลี่ยน จึงยังตรงเพลง ปิด/เปิดแยกตามที่มาของท่าได้ในไฟล์ (sources) ไฟล์ท่าที่ทำนอก Studio (เช่น RL) ใช้ ตัวลื่นไม่มีทางทำให้ท่ากระตุกกว่าแบบเดิม: คีย์ไหนที่เส้นโค้งกระตุกกว่าแบบหยุดทุกคีย์ จะถูกลดความเร็วลงเอง () ท่าจาก RL ที่ย่อจากท่าละเอียด 50 ครั้งต่อวินาที แขนจะผ่านแต่ละคีย์ด้วยความเร็วของท่าเดิม และเกาะเส้นทางเดิมที่ตรวจการชนแล้ว ()": "无需按任何按钮，它会自动作用于每一种动作：Studio 中的序列、来自视频的动作、Studio 找到的绕行动作、说话动作、来自 RL 的动作和演出。如果某个关节继续朝同一方向运动，手臂就会一路通过关键帧，而不是在每个关键帧都停下。在关节反向的地方（甩动）、有停顿（hold）的地方以及开头和结尾，仍然会准确地停在关键帧上。每个动作的时间都不变，所以仍与音乐对齐。可以在文件（sources）中按动作的来源开启或关闭。在 Studio 之外制作的动作文件（例如 RL）使用 。平滑处理绝不会让动作比以前更生硬：任何曲线会比“每个关键帧都停”更生硬的关键帧，都会自动降低速度（）。对于由每秒 50 次的精细动作降采样而来的 RL 动作，手臂会以原动作的速度经过每个关键帧，并紧贴已经过碰撞检查的原路径（）。",
   "reference": "参考",
-  "Transports — the same features on every link": "传输方式——每种连接上的功能都相同",
+  "Connections — the same features on every link": "传输方式——每种连接上的功能都相同",
   "Text commands and SD file transfer work identically on all three. The difference is reach and speed, never capability.": "文本命令和 SD 文件传输在这三种方式上完全一致。区别在于覆盖范围和速度，绝不在于功能。",
   "Link": "连接",
   "Reaches": "覆盖范围",
@@ -1044,6 +1044,8 @@
   "Stopping everything on any PC": "在任何电脑上都能一键全部停止",
   "Close the hub with stop_hub.bat, or press Ctrl+C, or just close its window: the voice helper, the face helper and the friends’ apps the hub started stop with it, so the next start on any PC begins clean with nothing left running in the background. The hub on another PC needs no setup: it finds the apps next to it and a free address by itself.": "用 stop_hub.bat 关闭中心，或按 Ctrl+C，或直接关闭它的窗口：中心启动的语音助手、人脸助手和朋友的应用会一起停止，所以在任何电脑上下次启动都是干净的，后台不会留下任何东西。另一台电脑上的中心不需要设置：它会自己找到旁边的应用和空闲的地址。",
   "One voice at a time": "一次只有一个声音",
-  "If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.": "如果在答案还在播放时按下 Try 或提出新问题，旧的答案会先停止，两个声音不会互相重叠。如果语音助手一分钟内没有回应，页面会告诉你，你可以再试一次，而不是一直等下去。离开页面时声音也会停止。"
+  "If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.": "如果在答案还在播放时按下 Try 或提出新问题，旧的答案会先停止，两个声音不会互相重叠。如果语音助手一分钟内没有回应，页面会告诉你，你可以再试一次，而不是一直等下去。离开页面时声音也会停止。",
+  "กด <b>Start a new event and reset counts</b> เพื่อเริ่มงานใหม่และล้างตัวนับของทุกตู้ (ระบบถามยืนยันก่อนเสมอ)": "点击 <b>Start a new event and reset counts</b> 开始新活动并将所有机器的计数清零(系统会先请您确认)",
+  "• <b>Mute all speech:</b> ปุ่มเล็กในกล่องพูดด่วน หยุดเสียงพูดทั้งหมดที่กำลังเล่นอยู่ทันที": "• <b>Mute all speech:</b> 快速说话框里的小按钮,立即停止正在播放的所有语音"
  }
 }

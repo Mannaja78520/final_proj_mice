@@ -24,7 +24,6 @@
   "Firmware": "固件",
   "Network": "网络",
   "Settings": "设置",
-  "📋 Complaints": "📋 反馈",
   "Your modules": "你的模块",
   "Looking for modules — over WiFi, on the cables, and on any other PC running this hub…": "正在查找模块——通过 WiFi、线缆以及运行此中心的其他电脑……",
   "📡 Every module — one row each": "📡 所有模块——每个一行",
@@ -128,7 +127,6 @@
   "Give a prize": "发放奖品",
   "🎁 Give": "🎁 发放",
   "Give one anyway (admin)": "仍然发放一个（管理员）",
-  "Can they have one?": "他们可以领取吗？",
   "Kind": "种类",
   "Machine": "机器",
   "Event": "活动",
@@ -139,7 +137,6 @@
   "Save on every machine": "保存到每台机器",
   "Start the event": "开始活动",
   "Close the event": "结束活动",
-  "New event (counts to zero)": "新活动（计数归零）",
   "Save rules": "保存规则",
   "Save machines": "保存机器",
   "Save kinds": "保存种类",
@@ -546,7 +543,6 @@
   "What": "内容",
   "From": "来自",
   "Admin": "管理员",
-  "name, or empty": "姓名，或留空",
   "whoever the face app sees nearest": "人脸应用看到的最近的人",
   "📖 คู่มือ Help ↗": "📖 帮助 ↗",
   "ไทย": "ไทย",
@@ -759,7 +755,6 @@
   "Mice cannot tell which version of Reconize is installed.": "Mice 无法得知已安装的 Reconize 版本。",
   "📂 Saved Sequences": "📂 已保存的序列",
   "🗣️ Quick Speech & Actions": "🗣️ 快速说话与动作",
-  "Silenced All": "全部静音",
   "🦾 Joint Monitor (Real-time)": "🦾 关节监视(实时)",
   "10 Servos": "10 个舵机",
   "🏠 Home": "🏠 回到初始姿势",
@@ -774,6 +769,12 @@
   "R 🤚 back up": "右 🤚 手背向上",
   "start": "开始",
   "start pose": "起始姿势",
-  "name this move": "给这个动作起名"
+  "name this move": "给这个动作起名",
+  "Mute all speech": "全部静音",
+  "guest name (optional)": "姓名，或留空",
+  "Check if this guest can win": "他们可以领取吗？",
+  "Start a new event and reset counts": "新活动（计数归零）",
+  "📋 Problem reports": "📋 反馈",
+  "Prize type": "种类"
  }
 }

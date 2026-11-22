@@ -358,7 +358,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
        details</b> for whoever helps you. Pages also load smaller (compressed) and are not
        downloaded again when nothing changed, which helps on a TV.</p>
     <p><b>Home</b> has one row of tabs: Home, Tools, Modules, Firmware, Network, Settings
-       and Complaints. <b>STOP</b>, <b>Report</b>, <b>Shortcuts</b> and <b>Help</b> sit in
+       and Problem reports. <b>STOP</b>, <b>Report</b>, <b>Shortcuts</b> and <b>Help</b> sit in
        the head, so they are there on every tab. The tools and the module list work with
        nobody signed in; there is one place to sign in, and a card that needs it points
        there instead of showing a second login box.</p>
@@ -397,7 +397,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
          · <a href="#nong">Nong module</a></p></div>
     <div class="f"><h3>Get things talking to each other</h3>
       <p>A board that will not appear, a cable versus WiFi, linking two PCs.</p>
-      <p><a href="#transports">Transports</a> ·
+      <p><a href="#transports">Connections</a> ·
          <a href="#modsite">Module website</a></p></div>
     <div class="f"><h3>Run the robot</h3>
       <p>Day to day: find the modules, drive them, flash new firmware.</p>
@@ -412,11 +412,11 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
     <div class="f"><h3>Teach it to move</h3>
       <p>Making poses and sequences, or typing commands at it directly.</p>
       <p><a href="#studio">Nong Studio</a> ·
-         <a href="#commands">Command language</a></p></div>
+         <a href="#commands">Robot commands</a></p></div>
     <div class="f"><h3>Something is wrong</h3>
       <p>Checking what broke, and what the files on the SD card should look
          like.</p>
-      <p><a href="#qc">QC suite</a> · <a href="#files">Files &amp; formats</a></p></div>
+      <p><a href="#qc">Check the system</a> · <a href="#files">Files &amp; formats</a></p></div>
   </div>
 </section>
 
@@ -1092,7 +1092,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
       <img loading="lazy" decoding="async" src="/docs/shots/tv-controls-box.png" alt="TV Controls Box" class="info-img">
       <div class="callout-pin" style="top: 30%; left: 50%;" title="1. ปุ่ม Restart selected / Stop / Home">1</div>
       <div class="callout-pin" style="top: 55%; left: 50%;" title="2. รายการเลือก Sequence">2</div>
-      <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่มสั่งพูดด่วน Quick Speech">3</div>
+      <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่มสั่งพูดด่วน Quick Speech และ Mute all speech">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
@@ -1101,7 +1101,8 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           • <b>Restart selected:</b> เริ่มคลิปที่เลือกล่าสุดใหม่จากต้น; ต้องเลือกคลิปก่อน<br>
           • <b>Stop:</b> หยุดโชว์ที่ Hub กำลังเล่น<br>
-          • <b>Home:</b> หยุดโชว์แล้วส่ง HOME ให้ Nong ที่เลือก ใช้ท่าที่บอร์ดบันทึกไว้ ไม่ตั้งทุกข้อเป็น 90°
+          • <b>Home:</b> หยุดโชว์แล้วส่ง HOME ให้ Nong ที่เลือก ใช้ท่าที่บอร์ดบันทึกไว้ ไม่ตั้งทุกข้อเป็น 90°<br>
+          • <b>Mute all speech:</b> ปุ่มเล็กในกล่องพูดด่วน หยุดเสียงพูดทั้งหมดที่กำลังเล่นอยู่ทันที
         </div>
       </div>
       <div class="action-card">
@@ -1495,7 +1496,8 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
       <li>ใน <b>Give a prize</b> เลือก <b>Kind</b> ให้ตรงกับของที่เตรียมไว้</li>
       <li>ระบุชื่อผู้รับ หรือเลือก <b>the person in front of the camera</b> เพื่อใช้คนที่ระบบใบหน้าเห็น</li>
       <li>เลือก <b>Machine</b> หรือให้ระบบเลือกเครื่องที่มีของชนิดนั้น</li>
-      <li>กด <b>Can they have one?</b> เพื่อตรวจสิทธิ์ก่อน จากนั้นกด <b>Give</b> เมื่อต้องการแจกจริง</li>
+      <li>กด <b>Check if this guest can win</b> เพื่อตรวจสิทธิ์ก่อน จากนั้นกด <b>Give</b> เมื่อต้องการแจกจริง</li>
+      <li>กด <b>Start a new event and reset counts</b> เพื่อเริ่มงานใหม่และล้างตัวนับของทุกตู้ (ระบบถามยืนยันก่อนเสมอ)</li>
     </ol>
     <p><b>Give one anyway (admin)</b> ข้ามข้อจำกัดสิทธิ์ของผู้รับและยังนับการแจก ใช้เมื่อตั้งใจให้เกินกติกา</p>
   </div>
@@ -2537,7 +2539,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
 <section id="qc">
   <div class="shead">
     <span class="where tech">code/qc · python qc/run_qc.py</span>
-    <h2>QC suite</h2>
+    <h2>Check the system</h2>
     <p>100 assertions that re-check the whole system after any change. Every one of them is
        a bug that actually shipped once. Stdlib plus the installed Edge — no installs.</p>
   </div>
@@ -2606,7 +2608,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
 <section id="transports">
   <div class="shead">
     <span class="where">reference</span>
-    <h2>Transports — the same features on every link</h2>
+    <h2>Connections — the same features on every link</h2>
     <p>Text commands and SD file transfer work identically on all three. The difference is
        reach and speed, never capability.</p>
   </div>
@@ -2630,7 +2632,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
 <section id="commands">
   <div class="shead">
     <span class="where tech">firmware/COMMANDS.md is the authoritative reference</span>
-    <h2>Command language</h2>
+    <h2>Robot commands</h2>
     <p>One text protocol on every channel. Everything the web UIs do, a script can do too.</p>
   </div>
 
