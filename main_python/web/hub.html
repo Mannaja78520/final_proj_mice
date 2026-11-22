@@ -3122,6 +3122,8 @@ function paintHome(){
   var errs = [];
   document.querySelectorAll('[data-tab] .banner.err').forEach(function(b){
     if (b.closest('[data-tab]').getAttribute('data-tab') === 'home') return;
+    // An empty or hidden banner (a placeholder another tab keeps) drew as an empty red bar here (seen 2026-11-22).
+    if (b.closest('[hidden]') || !b.textContent.trim()) return;
     errs.push(b.textContent);
   });
   var errKey = errs.join('\n');
