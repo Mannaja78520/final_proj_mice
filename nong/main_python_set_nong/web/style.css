@@ -10,6 +10,8 @@
    product — a tool you sit in front of for an hour, not a page you glance at —
    so every override below is deliberate: 14px body, 13px controls, 6px rows. */
 html,body{height:100%}
+/* the theme note is a hub sentence; in the head only the choice fits */
+#themePick .mini{display:none}
 body{font-size:14px;display:flex;flex-direction:column;overflow:hidden}
 h1{font-size:18px;margin-right:10px}
 h2{font-size:13px}

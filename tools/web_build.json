@@ -42,6 +42,7 @@
       "project_save_load.js",
       "save_state.js",
       "timeline_undo.js",
+      "theme_pick.js",
       "stl_meshes.js",
       "urdf_import.js",
       "robot_link.js",
