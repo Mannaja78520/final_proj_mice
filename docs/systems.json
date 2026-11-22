@@ -99,7 +99,7 @@
 
     {"id": "hub-web", "summary": "The pages the hub serves: Home/Modules, help, login, and their patch snapshots.",
      "files": ["main_python/web/", "main_python/web_gemini/", "main_python/web_ox/",
-               "main_python/save_hub_patch.py", "main_python/nong.ico"],
+               "main_python/save_hub_patch.py", "main_python/nong.ico", "tools/help_drift.py", "docs/help_map.json", "qc/data/help_drift_baseline.json"],
      "depends": ["shared-web"]},
 
     {"id": "shared-web", "summary": "One stylesheet and theme set for every page (mice.css, themes), and the page parts every hub page is built from (mice-ui.js; guide docs/web_style.md).",
