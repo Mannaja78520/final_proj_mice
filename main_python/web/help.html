@@ -661,6 +661,9 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
        tablets and large monitors, with bigger touch targets on a touchscreen. Studio
        stacks the 3D view above its panel below 860px instead of squeezing both, and on a
        phone its view buttons (Top, Front, 3D…) fold behind one <b>Views ▾</b> button.</p></div>
+  <div class="f"><h3>Stopping everything on any PC<span class="tag t-new">new</span></h3>
+    <p>Close the hub with stop_hub.bat, or press Ctrl+C, or just close its window: the voice helper, the face helper and the friends’ apps the hub started stop with it, so the next start on any PC begins clean with nothing left running in the background. The hub on another PC needs no setup: it finds the apps next to it and a free address by itself.</p>
+    <p class="tech">Technical: <code>MiceHub.exe --stop</code> (or <code>python main.py --stop</code>) asks the running hub to quit; <code>POST /api/quit</code> works only from the hub’s own PC. Keep helpers running across hub restarts with <code>"stopWithHub": false</code> in <code>config/children.json</code>.</p></div>
   <div class="f"><h3>Rebuilding or stopping MiceHub<span class="tag t-new">new</span></h3>
     <p>To rebuild the single-file executable from source:
        <code>python -m PyInstaller --clean MiceHub.spec</code></p>
@@ -1357,6 +1360,8 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
        listening runs on this PC too. Which languages it hears — and the words
        each language gets wrong often — live in <code>config/voice.json</code>;
        adding a language in <code>config/voice.json</code> (<code>tts.voices</code> / <code>stt.languages</code>) automatically adds its column and translation target in the Answers sheet and script detector. Use a plain code such as <code>ko</code>. The detector reads the alphabet, not the exact language: French, German, Spanish or Vietnamese questions land in the English column, and kanji with no kana lands in Chinese.</p></div>
+  <div class="f"><h3>One voice at a time<span class="tag t-new">new</span></h3>
+    <p>If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.</p></div>
   <div class="f"><h3>The rig speaks one thing at a time<span class="tag t-new">new</span></h3>
     <p>Everything the rig says goes through <b>one queue</b> on the hub: a
        greeting, an answer from this page spoken through a robot, a message

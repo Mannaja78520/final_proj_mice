@@ -1039,6 +1039,10 @@
   "Something wrong? Press the red STOP. Every robot stops where it is.": "おかしいときは赤い STOP を押します。すべてのロボットがその場で止まります。",
   "Wave at the camera board. The page shows what it sees, and finds a face when one is there.": "カメラボードに手を振ってみましょう。映像が表示され、人の顔があれば見つけます。",
   "The hard parts, in pictures": "難しいところを絵で見る",
-  "Eight steps people ask about most. Each picture shows one step.": "よく聞かれる八つの手順です。絵が一つの手順を表します。"
+  "Eight steps people ask about most. Each picture shows one step.": "よく聞かれる八つの手順です。絵が一つの手順を表します。",
+  "Stopping everything on any PC": "どのPCでもワンクリックで全部止められます",
+  "Close the hub with stop_hub.bat, or press Ctrl+C, or just close its window: the voice helper, the face helper and the friends’ apps the hub started stop with it, so the next start on any PC begins clean with nothing left running in the background. The hub on another PC needs no setup: it finds the apps next to it and a free address by itself.": "stop_hub.bat でハブを閉じるか、Ctrl+C を押すか、ウィンドウを閉じるだけです。ハブが起動した音声ヘルパー、顔認識ヘルパー、友人のアプリも一緒に止まるので、次にどのPCで起動してもきれいな状態で始まり、裏で動き続けるものは残りません。別のPCのハブも設定は不要で、隣にあるアプリと空いているアドレスを自分で見つけます。",
+  "One voice at a time": "声は一度にひとつだけ",
+  "If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.": "答えが再生されている途中で Try を押したり新しい質問をすると、古い答えが先に止まり、二つの声が重なりません。音声ヘルパーが1分以内に答えないときはページがそう伝え、ずっと待たずにもう一度試せます。ページを離れると声も止まります。"
  }
 }

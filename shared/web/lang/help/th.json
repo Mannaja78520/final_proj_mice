@@ -556,6 +556,10 @@
   "Something wrong? Press the red STOP. Every robot stops where it is.": "มีอะไรผิดปกติ? กด STOP สีแดง หุ่นทุกตัวจะหยุดอยู่กับที่",
   "Wave at the camera board. The page shows what it sees, and finds a face when one is there.": "โบกมือให้บอร์ดกล้อง หน้านี้จะแสดงสิ่งที่กล้องเห็น และหาใบหน้าเมื่อมีคนอยู่",
   "The hard parts, in pictures": "ส่วนที่ยาก แบบมีรูป",
-  "Eight steps people ask about most. Each picture shows one step.": "แปดขั้นตอนที่คนถามบ่อยที่สุด แต่ละรูปแสดงหนึ่งขั้นตอน"
+  "Eight steps people ask about most. Each picture shows one step.": "แปดขั้นตอนที่คนถามบ่อยที่สุด แต่ละรูปแสดงหนึ่งขั้นตอน",
+  "Stopping everything on any PC": "หยุดทุกอย่างได้บนทุกเครื่อง",
+  "Close the hub with stop_hub.bat, or press Ctrl+C, or just close its window: the voice helper, the face helper and the friends’ apps the hub started stop with it, so the next start on any PC begins clean with nothing left running in the background. The hub on another PC needs no setup: it finds the apps next to it and a free address by itself.": "ปิดฮับด้วยไฟล์ stop_hub.bat หรือกด Ctrl+C หรือปิดหน้าต่างของมันได้เลย ตัวช่วยเสียง ตัวช่วยจดจำใบหน้า และแอปของเพื่อนที่ฮับเปิดไว้จะหยุดไปด้วย ครั้งหน้าเริ่มบนเครื่องไหนก็สะอาด ไม่มีอะไรค้างอยู่เบื้องหลัง ฮับบนเครื่องอื่นไม่ต้องตั้งค่าอะไร มันหาแอปที่อยู่ข้างๆ และหาที่อยู่ว่างเองได้",
+  "One voice at a time": "พูดทีละเสียง",
+  "If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.": "ถ้ากด Try หรือถามคำถามใหม่ตอนที่คำตอบเก่ายังเล่นอยู่ คำตอบเก่าจะหยุดก่อน เสียงสองเสียงจึงไม่พูดทับกัน ถ้าตัวช่วยเสียงไม่ตอบภายในหนึ่งนาที หน้าจะบอก แล้วลองใหม่ได้แทนการรอไม่จบ ออกจากหน้านี้เสียงก็หยุดด้วย"
  }
 }

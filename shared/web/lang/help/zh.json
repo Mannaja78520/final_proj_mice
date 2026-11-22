@@ -1040,6 +1040,10 @@
   "Something wrong? Press the red STOP. Every robot stops where it is.": "出问题了？按红色的 STOP，所有机器人会马上停在原地。",
   "Wave at the camera board. The page shows what it sees, and finds a face when one is there.": "对着摄像头板挥挥手。页面会显示它看到的画面，有人脸时会找出来。",
   "The hard parts, in pictures": "难点配图",
-  "Eight steps people ask about most. Each picture shows one step.": "大家问得最多的八个步骤，每张图讲一步。"
+  "Eight steps people ask about most. Each picture shows one step.": "大家问得最多的八个步骤，每张图讲一步。",
+  "Stopping everything on any PC": "在任何电脑上都能一键全部停止",
+  "Close the hub with stop_hub.bat, or press Ctrl+C, or just close its window: the voice helper, the face helper and the friends’ apps the hub started stop with it, so the next start on any PC begins clean with nothing left running in the background. The hub on another PC needs no setup: it finds the apps next to it and a free address by itself.": "用 stop_hub.bat 关闭中心，或按 Ctrl+C，或直接关闭它的窗口：中心启动的语音助手、人脸助手和朋友的应用会一起停止，所以在任何电脑上下次启动都是干净的，后台不会留下任何东西。另一台电脑上的中心不需要设置：它会自己找到旁边的应用和空闲的地址。",
+  "One voice at a time": "一次只有一个声音",
+  "If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.": "如果在答案还在播放时按下 Try 或提出新问题，旧的答案会先停止，两个声音不会互相重叠。如果语音助手一分钟内没有回应，页面会告诉你，你可以再试一次，而不是一直等下去。离开页面时声音也会停止。"
  }
 }

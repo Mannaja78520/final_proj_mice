@@ -1,0 +1,11 @@
+{
+  "id": "1083863b96d4",
+  "time": "2026-11-22T07:31:31.669Z",
+  "text": "STUDIO FREEZE {\"gapMs\":2050,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":1,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":11,\"longTasks\":[{\"ms\":211,\"at\":1968},{\"ms\":153,\"at\":2198},{\"ms\":85,\"at\":2519},{\"ms\":89,\"at\":2663},{\"ms\":451,\"at\":3049},{\"ms\":2024,\"at\":3534}],\"slowCalls\":[{\"u\":\"/api/list?kind=projects\",\"ms\":324,\"at\":602},{\"u\":\"/api/list?kind=sequences\",\"ms\":323,\"at\":603},{\"u\":\"/api/shows\",\"ms\":323,\"at\":603},{\"u\":\"/api/ports\",\"ms\":301,\"at\":625},{\"u\":\"/api/list?kind=sequences\",\"ms\":323,\"at\":603},{\"u\":\"/api/list?kind=models\",\"ms\":323,\"at\":604},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=LIMIT%3F\",\"ms\":37,\"at\":1784},{\"u\":\"/api/gestures\",\"ms\":104,\"at\":1720},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=FILES%20%2Fmoves\",\"ms\":54,\"at\":1790},{\"u\":\"/api/gestures\",\"ms\":65,\"at\":1824},{\"u\":\"/api/gestures\",\"ms\":45,\"at\":1844},{\"u\":\"/api/gestures/fit\",\"ms\":43,\"at\":5555}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36"
+}

@@ -1,0 +1,9 @@
+{
+  // Programs the hub starts (voice helper, face watcher, the friends' apps)
+  // and what happens to them when the hub stops - by Stop, Ctrl+C, closing
+  // its window or logging off (user 2026-11-22: a second PC must start clean).
+  // stopWithHub: true = they end with the hub, so the next start on this PC
+  //   never meets a busy port or a second copy. Set false to keep them
+  //   running while you only restart the hub (they load models for a minute).
+  "stopWithHub": true
+}
