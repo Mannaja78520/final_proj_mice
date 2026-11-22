@@ -879,6 +879,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
     return;
   }
   this.$("down").hidden = true;
+  this.$("talkOff").hidden = true;
   this.$("ready").hidden = false;
   this.$("settings").hidden = false;        // settings exist only while helper runs
   if (this.cfg === null) this.loadStores();
@@ -1068,6 +1069,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
   down(why){
   this.say("the voice helper is off", "warn");
   this.$("down").hidden = false;
+  this.$("talkOff").hidden = false;     // the Talk tab was blank while the helper is off
   this.$("retry").hidden = false;
   if (!this.$("down").querySelector(".why")) {
     const w = document.createElement("p");
@@ -3770,6 +3772,7 @@ if (document.readyState === "loading") {
        Talk is a section like the settings, so no setting sits under it. -->
   <div class="tabbed"><nav id="setTabs"></nav><div>
   <div data-pane="talk">
+  <p class="card" id="talkOff" hidden>Talking starts as soon as the voice helper is running. Press “Start the voice helper” above.</p>
   <div class="card" id="ready" hidden>
     <!-- What is working, in words; the helper's own lines behind the switch. -->
     <div class="row between">
