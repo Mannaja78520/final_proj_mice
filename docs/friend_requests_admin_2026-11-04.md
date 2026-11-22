@@ -41,3 +41,5 @@ Not tested (needs a person or hardware): playing a game to the end and the prize
 
 **Language (all three apps, 2026-11-22)**
 The hub now has Thai / English / Chinese / Japanese and adds `?lang=th|en|zh|ja` to every link it opens into your app. If you can, read `lang` from the address (and remember it) and show that language; any app that ignores it keeps working as before.
+
+Photobooth: when English is selected the game description text stays Thai. Please translate it (or read `?lang=` as above).
