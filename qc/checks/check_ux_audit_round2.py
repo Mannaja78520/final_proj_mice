@@ -51,4 +51,4 @@ def run(t):
     voice = (root / "apps" / "voice" / "index.template.html").read_text(encoding="utf-8")
     t.ok('id="talkOff"' in voice, "Voice's Talk tab says what to do while the helper is off")
     mj = (root / "shared" / "web" / "mice.js").read_text(encoding="utf-8")
-    t.ok("mlfold" in mj and "mlOpen" in mj, "on a phone the login form folds to one button")
+    t.ok('classList.add("mlfold")' in mj and "mlOpen" in mj, "on a phone the login form folds to one button")
