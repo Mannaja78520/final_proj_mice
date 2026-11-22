@@ -8244,6 +8244,11 @@ window.addEventListener("keydown", (e) => {
   else return;
   e.preventDefault();
 });
+if (window.miceTheme) miceTheme.picker($("themePick"));
+if (window.miceTheme) miceTheme.onChange(() => {
+  scene.background = new THREE.Color(getComputedStyle(document.body).getPropertyValue("--bg").trim());
+  markDirty3d();
+});
 const stlLoader = new THREE.STLLoader();
 const stlCache = {};
 let meshGen = 0;

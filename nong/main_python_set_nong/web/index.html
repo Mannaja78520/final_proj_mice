@@ -34,6 +34,7 @@
          title="One name for both files: one you can keep editing (.json) and one the robot plays (.yaml).">
   <button class="primary" onclick="saveAll()" title="Saves your moves as two files under this one name: one you can keep editing (.json) and the one the robot plays (.yaml).">💾 Save</button>
   <select id="projList" aria-label="Open saved moves" onchange="loadProject(this.value)"><option value="">Load…</option></select>
+  <span id="themePick" title="Colours of this page. The same choice is used on every page of the hub."></span>
   <button id="projRetry" hidden onclick="refreshProjects()">Retry saved moves</button>
 </header>
 <dialog id="projectLibrary" class="askdlg project-library" aria-labelledby="projectLibraryTitle">
