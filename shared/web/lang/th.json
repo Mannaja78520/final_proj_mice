@@ -609,6 +609,10 @@
   "No prize machine is answering - check they are on and connected": "ไม่มีตู้ตอบกลับ ตรวจว่าเปิดและเชื่อมต่ออยู่",
   "shows": "ชุดการแสดง",
   "Talking starts as soon as the voice helper is running. Press “Start the voice helper” above.": "ระบบพูดคุยจะเริ่มได้ทันทีที่ตัวช่วยเสียงทำงาน กด “เริ่มตัวช่วยเสียง” ด้านบน",
-  "🔑 Log in to control": "🔑 เข้าสู่ระบบเพื่อควบคุม"
+  "🔑 Log in to control": "🔑 เข้าสู่ระบบเพื่อควบคุม",
+  "↶ Undo": "↶ ย้อนกลับ",
+  "↷ Redo": "↷ ทำซ้ำ",
+  "Take back the last change (Ctrl+Z)": "ย้อนการแก้ล่าสุด (Ctrl+Z)",
+  "Put the change back (Ctrl+Y)": "เอาการแก้กลับมา (Ctrl+Y)"
  }
 }

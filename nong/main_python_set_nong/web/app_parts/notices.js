@@ -77,6 +77,16 @@ function showTab(which) {
   if (typeof vidPage === "function") vidPage(which === "video");   // the Video page's stage
 }
 
+// On a phone the 3D view and the tab buttons fill the screen and the panel they
+// open sat below the fold: a tap seemed to do nothing (walk-through 2026-11-22).
+// A tap on a tab now scrolls its panel into view. Only a real tap does this,
+// never the boot-time showTab, so the page does not jump while it opens.
+document.addEventListener("click", (e) => {
+  const b = e.target.closest && e.target.closest("[id^=tabBtn]");
+  if (!b || window.innerWidth > 860 || !$("side")) return;
+  setTimeout(() => $("side").scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+});
+
 // THE TIMELINE HANDLE DRAGS TOO (user 2026-09-16: *timeline below has the
 // drag but cannot drag to make it smaller or bigger ... like the right side,
 // with a scroller*). #timeDrag had CSS and no code. Same rules as the side

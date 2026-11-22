@@ -122,6 +122,7 @@ async function applyProjectData(p, file, opts = {}) {
   if (typeof sequenceAudio !== "undefined") sequenceAudio.commit(preparedAudio, loaded);
   keys = loaded;
   bumpKeys();
+  timelineUndo.reset();                  // an opened file is a new start, not a step
   $("speedDps").value = p.speedDps || 120;
   $("maxDps").value = p.maxDps || 400;
   SEQ_MUSIC_DPS = Number.isFinite(p.musicDps) && p.musicDps >= 0 ? p.musicDps : null;

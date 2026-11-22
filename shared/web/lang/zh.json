@@ -809,6 +809,10 @@
   "No prize machine is answering - check they are on and connected": "没有奖品机响应,请检查是否已开机并连接",
   "shows": "个演出",
   "Talking starts as soon as the voice helper is running. Press “Start the voice helper” above.": "只要语音助手开始运行就可以对话。请点上方的“启动语音助手”。",
-  "🔑 Log in to control": "🔑 登录后控制"
+  "🔑 Log in to control": "🔑 登录后控制",
+  "↶ Undo": "↶ 撤销",
+  "↷ Redo": "↷ 重做",
+  "Take back the last change (Ctrl+Z)": "撤销最近一次修改 (Ctrl+Z)",
+  "Put the change back (Ctrl+Y)": "恢复修改 (Ctrl+Y)"
  }
 }
