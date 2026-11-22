@@ -1,0 +1,12 @@
+{
+  "id": "eb707877dfbf",
+  "time": "2026-11-22T07:31:29.711Z",
+  "text": "STUDIO FREEZE {\"gapMs\":1633,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":1,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":7,\"longTasks\":[{\"ms\":53,\"at\":957},{\"ms\":64,\"at\":1390},{\"ms\":204,\"at\":1473},{\"ms\":206,\"at\":1697},{\"ms\":156,\"at\":1904},{\"ms\":114,\"at\":2197},{\"ms\":95,\"at\":2421},{\"ms\":1617,\"at\":2824}],\"slowCalls\":[{\"u\":\"/api/whoami\",\"ms\":54,\"at\":1015},{\"u\":\"/api/list?kind=models&deep=1\",\"ms\":53,\"at\":1061},{\"u\":\"video_motion_policy.json\",\"ms\":49,\"at\":1065},{\"u\":\"/api/login\",\"ms\":238,\"at\":946},{\"u\":\"/api/gestures\",\"ms\":29,\"at\":1338},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=INFO\",\"ms\":331,\"at\":1142},{\"u\":\"/api/voice/config\",\"ms\":688,\"at\":1391},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=LIMIT%3F\",\"ms\":48,\"at\":2078},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=FILES%20%2Fmoves\",\"ms\":49,\"at\":2079},{\"u\":\"/api/gestures\",\"ms\":63,\"at\":2105},{\"u\":\"/api/gestures/fit\",\"ms\":24,\"at\":4437}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+  "text_en": "Sure! {\"label\": \"Point up high\", \"word\": \"ฟ้า\", \"keys\": [{\"R\": [0.2, 3, 0.4], \"palmR\": \"sideways\", \"t\": 99999, \"hold\": -5, \"x\": 1}]}"
+}

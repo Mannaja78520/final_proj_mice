@@ -117,6 +117,7 @@ except Exception as _e:            # a broken registry must not stop the hub
 import app_window                                          # noqa: E402
 import build_stamp                                         # noqa: E402
 import cam_relay                                           # noqa: E402
+import children                                            # noqa: E402
 import extensions                                          # noqa: E402
 import hub_auth                                            # noqa: E402
 import hub_pair                                            # noqa: E402
@@ -3067,6 +3068,76 @@ def open_target(argv):
     return app["path"], lambda url: app_window.open_window(url, cfg)
 
 
+SERVER = [None]          # the listening server, so /api/quit and signals can end it
+
+
+def children_stay():
+    """config/children.json stopWithHub=false keeps helpers alive (hub restart)."""
+    try:
+        got = registry.load(asset("config", "children.json")) if registry else {}
+    except Exception:                       # noqa: BLE001
+        got = {}
+    return got.get("stopWithHub", True) is False
+
+
+def stop_hub():
+    """Stop what the hub started, then the hub. -> names of the stopped programs.
+
+    Runs from /api/quit, Ctrl+C, SIGTERM, the console window closing and
+    interpreter exit; a second call finds nothing left to stop."""
+    names = [] if children_stay() else children.CHILDREN.stop_all()
+    srv = SERVER[0]
+    if srv is not None:
+        SERVER[0] = None
+        threading.Thread(target=srv.shutdown, daemon=True).start()
+    return names
+
+
+def install_stop_hooks():
+    """Closing the window or a kill from the Task Manager end the helpers too."""
+    import atexit
+    import signal
+    atexit.register(lambda: children_stay() or children.CHILDREN.stop_all())
+
+    def on_signal(_n, _f):
+        stop_hub()
+    for name in ("SIGTERM", "SIGBREAK", "SIGHUP"):
+        sig = getattr(signal, name, None)
+        if sig is not None:
+            try:
+                signal.signal(sig, on_signal)
+            except (ValueError, OSError):    # not the main thread / not allowed
+                pass
+    if os.name == "nt":
+        try:
+            import ctypes
+            handler_t = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_uint)
+            # CTRL_CLOSE/LOGOFF/SHUTDOWN (2, 5, 6) = the window's X button
+            def on_console(ev):
+                if ev in (2, 5, 6):
+                    children.CHILDREN.stop_all(1.0)
+                return 0
+            install_stop_hooks._h = handler_t(on_console)   # keep it alive
+            ctypes.windll.kernel32.SetConsoleCtrlHandler(install_stop_hooks._h, True)
+        except Exception:                    # noqa: BLE001
+            pass
+
+
+def stop_running_hub():
+    """`--stop`: ask the hub on this PC to quit by itself. -> message."""
+    try:
+        req = urllib.request.Request("http://127.0.0.1:%d/api/quit" % PORT, data=b"{}",
+                                     method="POST", headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            got = json.loads(r.read().decode("utf-8", "replace") or "{}")
+        names = got.get("stopped") or []
+        return "Mice hub stopped" + (" (also stopped: %s)" % ", ".join(names) if names else "") + "."
+    except urllib.error.URLError:
+        return "No Mice hub is running on this PC."
+    except Exception as e:                  # noqa: BLE001
+        return "Could not stop the hub (%s)." % e
+
+
 def main():
     if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
         print("Mice Control Hub")
@@ -3074,6 +3145,7 @@ def main():
         print("")
         print("Options:")
         print("  --open <app_id>    Open a specific app directly (e.g. --open voice)")
+        print("  --stop             Stop the running hub and everything it started")
         print("  --kill             Terminate running MiceHub process(es)")
         print("  -h, --help         Show this help message")
         print("")
@@ -3084,6 +3156,9 @@ def main():
         print("Rebuild command:")
         print("  python -m PyInstaller --clean MiceHub.spec")
         print("  (Running instances will be terminated automatically during build)")
+        return
+    if "--stop" in sys.argv[1:]:
+        print(stop_running_hub())
         return
     if "--kill" in sys.argv[1:]:
         if os.name == "nt":
@@ -3128,6 +3203,8 @@ def main():
     # and a few timed out - a venue of phones and TVs all opening the page.
     ThreadingHTTPServer.request_queue_size = 256
     srv = ThreadingHTTPServer((HOST, PORT), Handler)
+    SERVER[0] = srv
+    install_stop_hooks()
     local = "http://127.0.0.1:%d/" % PORT
     try:
         sys.stdout.reconfigure(line_buffering=True)
@@ -3190,6 +3267,12 @@ def main():
         srv.serve_forever()
     except KeyboardInterrupt:
         print("\nbye")
+    finally:
+        SERVER[0] = None
+        if not children_stay():
+            stopped = children.CHILDREN.stop_all()
+            if stopped:
+                print("stopped with the hub:", ", ".join(stopped))
 
 
 if __name__ == "__main__":
