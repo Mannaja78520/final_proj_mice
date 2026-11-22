@@ -10,24 +10,29 @@ Plan: none (user 2026-11-22: "test everything, every case, simulate everything")
 Test every case from docs/test_cases/*.md, find bugs, fix them with a QC check each (sabotage proven), Help in 4 languages. Friend repos are never edited. Do not merge.
 
 ## Doing now
-Round 2 step 1: firmware SIM cases on QEMU (`tools/sim_sweep.py`), pio builds of 4 envs.
-Order after: 2 Studio browser, 3 many boards, 4 voice/faces, 5 TV Chrome 75, full QC, push.
+Round 2 finished; waiting for coordinator merge. Nothing running.
 
 ## File status
 Baseline: 0b5870a
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| `handoff/tasks/test-everything-1122.md` | task file | in progress | n/a | this checkpoint |
+| `handoff/tasks/test-everything-1122.md` | task file | done | n/a | this checkpoint |
+| `firmware/src/core/CommandRouter.cpp`, `firmware/src/core/WebPortal.cpp`, `firmware/COMMANDS.md` | SET ID digits only; PEERS with WiFi off | done | QEMU check_qemu_firmware 37 ok, sabotaged | pushed |
+| `main_python/bus_ids.py`, `qc/checks/check_bus_scale.py` | stuck chip listed once | done | sabotage caught | pushed |
+| `apps/voice/service.py`, `qc/checks/check_voice_guard.py` | /ask odd body shapes | done | sabotage caught | pushed |
+| `tools/{sim_sweep,studio_sweep,many_boards_probe,helpers_probe,legacy_probe}.py`, `docs/systems.json` | sweep scripts | done | run, see results file | pushed |
+| `docs/test_cases/results_2026-11-22.md` | round 2 section | done | n/a | pushed |
 
 ## Facts found
 - pio is `python -m platformio`; QEMU installs with `python tools/qemu_esp32.py install` (.local/qemu).
 
 ## Done
 - Round 1 (PR #204): case lists, 4 fixes.
+- Round 2: 4 more bugs fixed (PEERS panic, SET ID 1.5, bus fix duplicates list, voice /ask body shape). Full QC 10019 pass, 3 fail (2 fixed after, 1 env-only).
 
 ## Next
-1. Run steps 1-5 from the brief; append sections to docs/test_cases/results_2026-11-22.md.
+1. Coordinator merges PR #204. Then TV VM restore by a person (see results file, section 5).
 
 ## Blocked
 - nothing

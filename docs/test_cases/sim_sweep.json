@@ -9,7 +9,7 @@
   "id": "FW-012",
   "ok": true,
   "label": "PERF? has loop/heap/stack/lock",
-  "seen": "PERF loop_avg_us=11853 loop_max_us=21469 work_max_us=19532 passes=3 frames=0 frame_max_ms=0 lock_max_us=10801 lock_by=status@loopTask slow_part=usb:19455 heap=2"
+  "seen": "PERF loop_avg_us=13961 loop_max_us=26249 work_max_us=24039 passes=3 frames=0 frame_max_ms=0 lock_max_us=11105 lock_by=status@loopTask slow_part=usb:23969 heap=2"
  },
  {
   "id": "FW-069",
@@ -201,7 +201,7 @@
   "id": "FW-009",
   "ok": true,
   "label": "reset reason after REBOOT",
-  "seen": "PERF loop_avg_us=34548 loop_max_us=34548 work_max_us=33528 passes=2 frames=0 frame_max_ms=0 lock_max_us=16372 lock_by=status@loopTask slow_part=usb:31784 heap=2"
+  "seen": "PERF loop_avg_us=37937 loop_max_us=37937 work_max_us=36666 passes=2 frames=0 frame_max_ms=0 lock_max_us=17483 lock_by=status@loopTask slow_part=usb:34022 heap=2"
  },
  {
   "id": "FW-008",
@@ -229,20 +229,80 @@
  },
  {
   "id": "FW-054",
-  "ok": false,
-  "label": "0xFF bytes in command",
-  "seen": "ERR unknown cmd: PI\ufffd\ufffdNG"
+  "ok": true,
+  "label": "0xFF bytes in command: ERR for it, then PING still answered",
+  "seen": "['PONG 7 keepme nong', 'PONG 7 keepme nong']"
  },
  {
   "id": "FW-067",
   "ok": true,
-  "label": "100 PINGs back to back, all answered (0.2s)",
+  "label": "100 PINGs back to back, all answered (0.3s)",
   "seen": "100"
  },
  {
   "id": "FW-171",
   "ok": true,
   "label": "stack high-water readable after fuzz",
-  "seen": "PERF loop_avg_us=2607 loop_max_us=29640 work_max_us=25794 passes=2632 frames=0 frame_max_ms=0 lock_max_us=3251 lock_by=NGPINGPINGPINGP@loopTask slow_part=usb:25"
+  "seen": "PERF loop_avg_us=2521 loop_max_us=33462 work_max_us=31054 passes=3519 frames=0 frame_max_ms=0 lock_max_us=4091 lock_by=NGPINGPINGPINGP@loopTask slow_part=usb:31"
+ },
+ {
+  "id": "FW-132a",
+  "ok": true,
+  "label": "stock 0",
+  "seen": ""
+ },
+ {
+  "id": "FW-132",
+  "ok": true,
+  "label": "GDISPENSE with stock 0 refused",
+  "seen": "ERR empty"
+ },
+ {
+  "id": "FW-133 -3",
+  "ok": true,
+  "label": "GSTOCK -3",
+  "seen": "ERR 0-9999"
+ },
+ {
+  "id": "FW-133 abc",
+  "ok": true,
+  "label": "GSTOCK abc",
+  "seen": "OK stock=0"
+ },
+ {
+  "id": "FW-133 99999999",
+  "ok": true,
+  "label": "GSTOCK 99999999",
+  "seen": "ERR 0-9999"
+ },
+ {
+  "id": "FW-133 1.5",
+  "ok": true,
+  "label": "GSTOCK 1.5",
+  "seen": "OK stock=1"
+ },
+ {
+  "id": "FW-136",
+  "ok": true,
+  "label": "second GDISPENSE while turning",
+  "seen": "('OK dispensing seq=1 stock=3', 'ERR busy')"
+ },
+ {
+  "id": "FW-137",
+  "ok": true,
+  "label": "STOP mid-dispense answered",
+  "seen": "OK stopped"
+ },
+ {
+  "id": "FW-137b",
+  "ok": true,
+  "label": "state idle after STOP",
+  "seen": "{\"state\":\"idle\",\"motion_result\":\"stopped\",\"at_hall\":true,\"hall_raw\":true,\"hits\":0,\"pos\":0,\"pos_known\":false,\"item\":\"\",\"event\":\"\",\"open\":true,\"stock\":3,\"empty\":f"
+ },
+ {
+  "id": "FW-134",
+  "ok": true,
+  "label": "stock after reboot",
+  "seen": "{\"state\":\"idle\",\"motion_result\":\"idle\",\"at_hall\":true,\"hall_raw\":true,\"hits\":0,\"pos\":0,\"pos_known\":false,\"item\":\"\",\"event\":\"\",\"open\":true,\"stock\":3,\"empty\":fals"
  }
 ]

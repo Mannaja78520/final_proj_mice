@@ -182,9 +182,9 @@ def lines_cases(b):
     r = b.cmd("PING")
     case("FW-052", has(r, "pong"), "2000 random bytes then PING", r)
     b.sock.sendall(b"PI\xff\xfeNG\n")
-    time.sleep(0.3)
-    r = b.cmd("PING")
-    case("FW-054", has(r, "pong"), "0xFF bytes in command", r)
+    drain(b, 2.0)
+    r = [b.cmd("PING"), b.cmd("PING")]          # the ERR for the bad line may land first; a PONG must follow
+    case("FW-054", any(has(x, "pong") for x in r), "0xFF bytes in command: ERR for it, then PING still answered", r)
     t0 = time.time()
     n = 0
     for i in range(100):

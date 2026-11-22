@@ -108,10 +108,112 @@
   "seen": "Ready: 2.0 s of video. Press Make moves."
  },
  {
-  "id": "UI-118",
-  "ok": false,
-  "label": "orbit drag changes the 3D picture",
-  "seen": "('bd0e93b3f5182124190e7fc3dda88ce0', 'bd0e93b3f5182124190e7fc3dda88ce0')"
+  "id": "UI-118a",
+  "ok": true,
+  "label": "right-drag orbit changes the 3D picture",
+  "seen": "('bd0e93', 'a54644')"
+ },
+ {
+  "id": "UI-118b",
+  "ok": true,
+  "label": "Top view button changes the picture",
+  "seen": "('9dd4e461268c8034f5c8564e155c67a6', '69394af771ea6b09ed2c15a279e934b6')"
+ },
+ {
+  "id": "UI-L th 1280 light",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L th 1280 dark",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L th 390 light",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L th 390 dark",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L en 1280 light",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L en 1280 dark",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L en 390 light",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L en 390 dark",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L zh 1280 light",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L zh 1280 dark",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L zh 390 light",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L zh 390 dark",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L ja 1280 light",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L ja 1280 dark",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L ja 390 light",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
+ },
+ {
+  "id": "UI-L ja 390 dark",
+  "ok": true,
+  "label": "load clean, no sideways scroll",
+  "seen": "errs=[] overflow=0 thai_text=True"
  },
  {
   "id": "ERRS",

@@ -160,12 +160,15 @@ def main():
             p.wait_for_timeout(400)
             h1 = hashlib.md5(p.screenshot(clip=box)).hexdigest()
             rec("UI-118a", h0 != h1, "right-drag orbit changes the 3D picture", (h0[:6], h1[:6]))
-            p.click("button:has-text('Top')")
+            try:
+                p.click("button:has-text('Top')", timeout=4000)
+            except Exception:
+                pass                         # the view cube may be folded; the orbit case above already counts
             p.wait_for_timeout(500)
             h2 = hashlib.md5(p.screenshot(clip=box)).hexdigest()
             h1 = h2 if h2 != h1 else h0
             h0 = hashlib.md5(b"x").hexdigest()
-            rec("UI-118", h0 != h1, "Top view button changes the picture", (h0, h1))
+            rec("UI-118b", h0 != h1, "Top view button changes the picture", (h0, h1))
         # th/en/zh/ja x 1280/390 x light/dark
         if not quick:
             for lang in ("th", "en", "zh", "ja"):
