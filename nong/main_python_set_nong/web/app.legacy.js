@@ -57,6 +57,11 @@ function showTab(which) {
   });
   if (typeof vidPage === "function") vidPage(which === "video");
 }
+document.addEventListener("click", (e) => {
+  const b = e.target.closest && e.target.closest("[id^=tabBtn]");
+  if (!b || window.innerWidth > 860 || !$("side")) return;
+  setTimeout(() => $("side").scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+});
 function initTimeDrag() {
   const tl = $("timeline"), handle = $("timeDrag");
   if (!tl || !handle) return;
@@ -4910,6 +4915,7 @@ function loopReturnMs() {
   return autoTime(K[K.length - 1].pose, K[0].pose, speedDps());
 }
 function renderTimeline() {
+  if (typeof timelineUndo !== "undefined") timelineUndo.seed();
   const box = $("keys");
   $("timelineEmpty").hidden = keys.length > 0;
   box.innerHTML = "";
@@ -5249,6 +5255,7 @@ function bumpKeys() {
   if (playing && safeTimelineCache) cancelSafeMotion("timeline edited", { previewOnly });
   _pkCache = null;
   saveDraft();
+  if (typeof timelineUndo !== "undefined") timelineUndo.changed();
 }
 const DRAFT_KEY = "nong_timeline_draft";
 let draftTimer = null;
@@ -5321,6 +5328,7 @@ function offerDraft() {
       selKey = 0;
       if (keys.length) pose = [...keys[0].pose];
       bumpKeys();
+      timelineUndo.reset();
       poseChanged(false, 0, { previewOnly: true });
       renderTimeline();
       renderSliders();
@@ -6845,6 +6853,7 @@ async function showOnTimeline(quiet, onlyIfSafe) {
     selKey = 0;
     playT = 0;
     bumpKeys();
+    timelineUndo.reset();
     clearBadMarks();
     renderTimeline();
     markSaved(workSig(), "", 0);
@@ -7266,6 +7275,7 @@ function loadParsedSeq(p, sourceLabel) {
   }
   keys = p.keys;
   bumpKeys();
+  timelineUndo.reset();
   if (p.speed >= 5) $("speedDps").value = Math.min(p.speed, slowestDps());
   for (let i = 0; i < keys.length; i++)
     if (!keys[i].t) keys[i].t = i ? autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i)) : 1e3;
@@ -7926,6 +7936,7 @@ async function applyProjectData(p, file, opts = {}) {
   if (typeof sequenceAudio !== "undefined") sequenceAudio.commit(preparedAudio, loaded);
   keys = loaded;
   bumpKeys();
+  timelineUndo.reset();
   $("speedDps").value = p.speedDps || 120;
   $("maxDps").value = p.maxDps || 400;
   SEQ_MUSIC_DPS = Number.isFinite(p.musicDps) && p.musicDps >= 0 ? p.musicDps : null;
@@ -8121,6 +8132,102 @@ function showSaveState() {
 }
 showSaveState();
 setInterval(showSaveState, 1e3);
+class TimelineUndo {
+  constructor() {
+    this.MAX = 60;
+    this.COALESCE_MS = 700;
+    this.past = [];
+    this.future = [];
+    this.last = null;
+    this.lastLen = 0;
+    this.lastAt = 0;
+    this.busy = false;
+  }
+  snap() {
+    return JSON.stringify(keys);
+  }
+  seed() {
+    if (this.last === null) {
+      this.last = this.snap();
+      this.lastLen = keys.length;
+    }
+  }
+  reset() {
+    this.past = [];
+    this.future = [];
+    this.last = this.snap();
+    this.lastLen = keys.length;
+    this.refresh();
+  }
+  changed() {
+    if (this.busy) return;
+    const now = this.snap();
+    if (this.last === null || now === this.last) {
+      this.last = now;
+      this.lastLen = keys.length;
+      return;
+    }
+    const t = Date.now();
+    const sameStep = this.past.length && keys.length === this.lastLen && t - this.lastAt < this.COALESCE_MS;
+    if (!sameStep) {
+      this.past.push(this.last);
+      if (this.past.length > this.MAX) this.past.shift();
+    }
+    this.future = [];
+    this.last = now;
+    this.lastLen = keys.length;
+    this.lastAt = t;
+    this.refresh();
+  }
+  undo() {
+    if (this.past.length) {
+      this.future.push(this.snap());
+      this.apply(this.past.pop());
+    }
+  }
+  redo() {
+    if (this.future.length) {
+      this.past.push(this.snap());
+      this.apply(this.future.pop());
+    }
+  }
+  apply(snapshot) {
+    const before = keys;
+    this.busy = true;
+    try {
+      keys = JSON.parse(snapshot);
+      this.last = snapshot;
+      this.lastLen = keys.length;
+      this.lastAt = 0;
+      let at = 0;
+      while (at < keys.length - 1 && before[at] && JSON.stringify(before[at]) === JSON.stringify(keys[at])) at++;
+      selKey = Math.max(0, Math.min(at, keys.length - 1));
+      clearBadMarks();
+      bumpKeys();
+      renderTimeline();
+      if (keys.length) selectKey(selKey);
+    } finally {
+      this.busy = false;
+    }
+    this.refresh();
+  }
+  refresh() {
+    const u = $("undoBtn"), r = $("redoBtn");
+    if (u) u.disabled = !this.past.length;
+    if (r) r.disabled = !this.future.length;
+  }
+}
+var timelineUndo = new TimelineUndo();
+window.addEventListener("keydown", (e) => {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+  const t = e.target, tag = t && t.tagName;
+  if (tag === "TEXTAREA" || tag === "SELECT" || tag === "INPUT" && !/^(range|checkbox|button)$/.test(t.type)) return;
+  const k = e.key.toLowerCase();
+  if (k === "z" && !e.shiftKey) timelineUndo.undo();
+  else if (k === "y" || k === "z" && e.shiftKey) timelineUndo.redo();
+  else return;
+  e.preventDefault();
+});
 const stlLoader = new THREE.STLLoader();
 const stlCache = {};
 let meshGen = 0;

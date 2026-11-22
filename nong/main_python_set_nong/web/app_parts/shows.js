@@ -306,6 +306,7 @@ async function showOnTimeline(quiet, onlyIfSafe) {
     selKey = 0;
     playT = 0;
     bumpKeys();
+    timelineUndo.reset();
     clearBadMarks();
     renderTimeline();
     // drawn from saved files, so nothing on the bar is unsaved work yet; it is

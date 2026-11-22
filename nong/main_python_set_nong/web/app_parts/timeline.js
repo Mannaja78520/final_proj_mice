@@ -172,6 +172,7 @@ function loopReturnMs() {
   return autoTime(K[K.length - 1].pose, K[0].pose, speedDps());
 }
 function renderTimeline() {
+  if (typeof timelineUndo !== 'undefined') timelineUndo.seed();   // the first look is the first thing Undo can return to
   const box = $("keys");
   $("timelineEmpty").hidden = keys.length > 0;
   box.innerHTML = "";
@@ -590,6 +591,7 @@ function bumpKeys() {
   if(playing && safeTimelineCache)cancelSafeMotion('timeline edited', { previewOnly });
   _pkCache = null;                          // kept for explicit invalidation
   saveDraft();                              // and it is no longer only in RAM
+  if (typeof timelineUndo !== 'undefined') timelineUndo.changed();
 }
 
 // ---- the timeline survives the tab closing -------------------------------
@@ -655,7 +657,7 @@ function offerDraft() {
       if ((d.name || d.seq) && $("projName")) $("projName").value = d.name || d.seq;
       selKey = 0;
       if (keys.length) pose = [...keys[0].pose];
-      bumpKeys(); poseChanged(false, 0, { previewOnly: true }); renderTimeline(); renderSliders();
+      bumpKeys(); timelineUndo.reset(); poseChanged(false, 0, { previewOnly: true }); renderTimeline(); renderSliders();
       if (typeof sequenceAudio !== "undefined") sequenceAudio.restore(d.sourceAudioAsset).then(() => saveDraft());
       st.textContent = "Restored the unsaved timeline. Save it to keep it.";
     };

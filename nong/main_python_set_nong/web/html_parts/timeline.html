@@ -9,6 +9,8 @@
     <button onclick="updateKey()">Update selected</button>
     <button onclick="dupKey()">Duplicate</button>
     <button onclick="delKey()">Delete</button>
+    <button id="undoBtn" onclick="timelineUndo.undo()" title="Take back the last change (Ctrl+Z)" disabled>↶ Undo</button>
+    <button id="redoBtn" onclick="timelineUndo.redo()" title="Put the change back (Ctrl+Y)" disabled>↷ Redo</button>
     <button onclick="moveKey(-1)" title="move the selected keyframe one place earlier" aria-label="move earlier">◀</button>
     <button onclick="moveKey(1)" title="move the selected keyframe one place later" aria-label="move later">▶</button>
     <span class="sep"></span>

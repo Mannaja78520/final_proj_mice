@@ -372,6 +372,7 @@ function loadParsedSeq(p, sourceLabel) {
   }
   keys = p.keys;
   bumpKeys();
+  timelineUndo.reset();
   // The file's own speed comes back with it. Set it BEFORE filling in any
   // missing times (autoTime reads it), and never re-time the keyframes that
   // already carry a T — the times in the file are what the show was built on.
