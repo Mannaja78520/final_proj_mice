@@ -59,7 +59,7 @@ datas = [
     # Voice/Spark also run in separate Python environments and cannot import
     # modules from this executable's PYZ. Ship these shared policy modules raw.
     *[(str(ROOT / "main_python" / name), "main_python") for name in
-      ("resource_policy.py", "resource_hardware.py", "resource_settings.py")],
+      ("resource_policy.py", "resource_hardware.py", "resource_settings.py", "api_index.json")],
     (str(ROOT / "main_python" / "web"), "main_python/web"),
     (str(ROOT / "docs" / "shots"), "docs/shots"),
     (str(ROOT / "shared" / "web"), "shared/web"),

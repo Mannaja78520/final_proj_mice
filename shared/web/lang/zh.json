@@ -747,6 +747,23 @@
   "โหลดเพลงนานเกินไป ลองเลือกไฟล์อีกครั้ง": "音乐加载时间过长。请重新选择文件。",
   "ไฟล์นี้ไม่มีเพลงที่เปิดได้ เลือกไฟล์ท่าและเพลง .nong.json อีกครั้ง": "此文件没有可播放的音乐。请重新选择动作与音乐的 .nong.json 文件。",
   "ไฟล์เพลงใหญ่เกิน 32 MB": "音乐文件超过 32 MB",
-  "❚❚ หยุดชั่วคราว": "❚❚ 暂停"
+  "❚❚ หยุดชั่วคราว": "❚❚ 暂停",
+  "the face app that knows who is here": "识别谁在这里的人脸应用",
+  "👁 Open it": "👁 打开",
+  "🔗 Is the rig following it?": "🔗 机器人在跟随吗?",
+  "💬 What the rig says": "💬 机器人说的话",
+  "Open it": "打开",
+  "Reconize runs beside Mice on this PC. It watches the cameras and knows who is who; the rig follows it.": "Reconize 与 Mice 在这台电脑上一起运行。它看摄像头并认出每个人,机器人会跟随。",
+  "Check it is running": "检查是否在运行",
+  "Reconize is not installed on this PC.": "这台电脑还没有安装 Reconize。",
+  "Mice cannot tell which version of Reconize is installed.": "Mice 无法得知已安装的 Reconize 版本。",
+  "📂 Saved Sequences": "📂 已保存的序列",
+  "🗣️ Quick Speech & Actions": "🗣️ 快速说话与动作",
+  "Silenced All": "全部静音",
+  "🦾 Joint Monitor (Real-time)": "🦾 关节监视(实时)",
+  "10 Servos": "10 个舵机",
+  "🏠 Home": "🏠 回到初始姿势",
+  "connecting…": "连接中…",
+  "Choose a joint, then drag its ring or use the sliders. Add a keyframe to keep a pose.": "选一个关节,拖动圆环或用滑块。添加关键帧来保存姿势。"
  }
 }
