@@ -629,8 +629,8 @@
   "＋ เพิ่มหมวดหมู่ (+ Topic)": "＋ 添加主题",
   "💾 บันทึกหมวดหมู่ (Save topics)": "💾 保存主题",
   "🔍 ค้นหาคำตอบ (Find an answer)…": "🔍 查找答案…",
-  "📱 รีโมทมือถือ (Mobile Controller)": "📱 手机遥控（Mobile Controller）",
-  "📺 จอแสดงเวที (Stage Display)": "📺 舞台显示",
+  "📱 รีโมทมือถือ": "📱 手机遥控",
+  "📺 จอแสดงเวที": "📺 舞台显示",
   "🛠️ มอนิเตอร์เซอร์โว (Tech Monitor)": "🛠️ 舵机监视（Tech Monitor）",
   "🙏 สวัสดีครับ": "🙏 你好",
   "👋 ยินดีต้อนรับ": "👋 欢迎",
@@ -764,6 +764,16 @@
   "10 Servos": "10 个舵机",
   "🏠 Home": "🏠 回到初始姿势",
   "connecting…": "连接中…",
-  "Choose a joint, then drag its ring or use the sliders. Add a keyframe to keep a pose.": "选一个关节,拖动圆环或用滑块。添加关键帧来保存姿势。"
+  "Choose a joint, then drag its ring or use the sliders. Add a keyframe to keep a pose.": "选一个关节,拖动圆环或用滑块。添加关键帧来保存姿势。",
+  "no prize kinds yet - add one under Machines and kinds": "还没有奖品种类,请在“机器和种类”里添加",
+  "L on edge": "左 侧立",
+  "R on edge": "右 侧立",
+  "L ✋ palm up": "左 ✋ 掌心向上",
+  "R ✋ palm up": "右 ✋ 掌心向上",
+  "L 🤚 back up": "左 🤚 手背向上",
+  "R 🤚 back up": "右 🤚 手背向上",
+  "start": "开始",
+  "start pose": "起始姿势",
+  "name this move": "给这个动作起名"
  }
 }
