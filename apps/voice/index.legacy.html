@@ -3772,7 +3772,8 @@ const _VoiceApp = class _VoiceApp extends (typeof Mice !== "undefined" && Mice.A
           e.returnValue = "";
         }
       });
-    window.addEventListener("pagehide", () => this.stopOwnVoice());
+    if (typeof window.addEventListener === "function")
+      window.addEventListener("pagehide", () => this.stopOwnVoice());
     document.addEventListener("visibilitychange", () => {
       if (!this.viewOn()) return;
       if (!document.hidden) return this.showView();

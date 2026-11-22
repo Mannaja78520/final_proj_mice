@@ -1,0 +1,11 @@
+{
+  "id": "93779db47ec2",
+  "time": "2026-11-22T07:34:14.133Z",
+  "text": "STUDIO FREEZE {\"gapMs\":2450,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":2,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":22,\"longTasks\":[{\"ms\":207,\"at\":7979},{\"ms\":384,\"at\":8187},{\"ms\":132,\"at\":8571},{\"ms\":122,\"at\":8887},{\"ms\":53,\"at\":9101},{\"ms\":292,\"at\":9164},{\"ms\":225,\"at\":9456},{\"ms\":163,\"at\":9720},{\"ms\":2285,\"at\":9925},{\"ms\":163,\"at\":12210}],\"slowCalls\":[{\"u\":\"/rig_default.js\",\"ms\":227,\"at\":9456},{\"u\":\"/api/play/stop\",\"ms\":175,\"at\":9711},{\"u\":\"/api/rigcad\",\"ms\":169,\"at\":9718},{\"u\":\"/rig_default.js\",\"ms\":168,\"at\":9719},{\"u\":\"/api/dev/cmd?dev=usb%3ACOM99&c=STOP\",\"ms\":20,\"at\":9886},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res8%3D%7B%22look%22%3A%22rig%22%2C%2\",\"ms\":2093,\"at\":10288},{\"u\":\"/api/rigcad\",\"ms\":2107,\"at\":10278},{\"u\":\"/api/rigcad\",\"ms\":2098,\"at\":10287},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res6%3D%7B%22btn%22%3Atrue%2C%22label\",\"ms\":465,\"at\":11922},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res9%3D%7B%22dots%22%3A%5B1%2C1%5D%2C\",\"ms\":465,\"at\":11921},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res7%3D%7B%22btn%22%3Atrue%2C%22label\",\"ms\":465,\"at\":11922},{\"u\":\"/api/list?kind=models&deep=1\",\"ms\":187,\"at\":12201},{\"u\":\"/api/list?kind=models&deep=1\",\"ms\":188,\"at\":12200},{\"u\":\"/models/qc_bot6/urdf/qc_bot6.urdf\",\"ms\":181,\"at\":12207},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res11%3D%7B%22cadY%22%3A-270%2C%22bas\",\"ms\":190,\"at\":12201}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36"
+}

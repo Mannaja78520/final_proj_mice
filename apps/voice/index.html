@@ -3655,7 +3655,8 @@ static SAMPLES = {
       });
 
     // A voice does not keep talking from a page that is gone.
-    window.addEventListener("pagehide", () => this.stopOwnVoice());
+    if (typeof window.addEventListener === "function")
+      window.addEventListener("pagehide", () => this.stopOwnVoice());
 
     // A shown camera stops with the tab hidden and comes back with it: a
     // board streaming to a tab nobody sees holds the hub's one relay open.

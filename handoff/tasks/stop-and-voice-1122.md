@@ -3,6 +3,7 @@
 Owner: claude:esrcx0
 Updated: 2026-11-22
 Branch: claude/project-thread-esrcx0
+Plan: none (user request)
 Last commit: this checkpoint
 
 ## Goal

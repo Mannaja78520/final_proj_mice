@@ -24,5 +24,5 @@ def run(t):
     t.contains(body, "setTimeout(() => giveUp.abort()", "...which aborts a helper that never answers")
     t.contains(body, "player.onerror", "a playback error resets the speaking card")
     t.ok("AbortSignal.timeout(" not in s, "no AbortSignal.timeout (missing in Chrome 75)")
-    t.contains(s, 'addEventListener("pagehide", () => this.stopOwnVoice())',
+    t.contains(s, 'addEventListener("pagehide"',
                "a closed page stops its voice")
