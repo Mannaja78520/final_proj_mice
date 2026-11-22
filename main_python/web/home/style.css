@@ -169,3 +169,12 @@
 /* the row stays ONE line on a phone (check_home_tabs, A41-3) but fades at the right edge, so a half-cut tab reads as 'slide for more' (UX audit 2026-11-22) */
 @media (max-width:700px){#tabs{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent)}}
 #tabs .tab:not(.on){background:transparent;border-color:transparent}
+/* Home on a phone: the tools are small two-up tiles so "Your modules" shows on the first screens
+   (UX audit 2026-11-22: six tall cards pushed the robots below the fold). The Tools tab keeps full cards. */
+@media (max-width:700px){
+  #homeTools.js-tools{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #homeTools .tool-tile .ip{display:none}
+  #homeTools .tool-tile{padding:var(--sp-3)}
+  #homeTools .tool-pic{width:40px;height:40px;border-radius:10px}
+  #homeTools .tool-tile .nm{font-size:15px}
+}

@@ -2746,7 +2746,7 @@ const HELP_GROUPS = [
   {id: "build", label: "Build and set up", topics: [
     ["firmware", "Board setup"], ["lift", "Lift module"], ["nong", "Nong module"]]},
   {id: "wrong", label: "When something is wrong", topics: [
-    ["qc", "QC suite"], ["transports", "Transports"], ["commands", "Command language"],
+    ["qc", "Check the system"], ["transports", "Connections"], ["commands", "Robot commands"],
     ["files", "Files &amp; formats"]]},
 ];
 
@@ -2754,7 +2754,13 @@ const HELP_GROUPS = [
   var nav = document.getElementById("helpNav");
   if (!nav) return;
   var closed = {};
-  try { closed = JSON.parse(localStorage.getItem("help_groups_closed") || "{}"); } catch (e) {}
+  var saved = null;
+  try { saved = localStorage.getItem("help_groups_closed"); closed = JSON.parse(saved || "{}"); } catch (e) {}
+  // First visit on a phone: only "Start here" is open, so the search box and the task cards show
+  // without scrolling past 18 links (UX audit 2026-11-22, GPT and Gemini both).
+  if (saved === null && window.innerWidth <= 860) {
+    HELP_GROUPS.forEach(function(g){ if (g.id !== "start") closed[g.id] = true; });
+  }
   function keep(){ try { localStorage.setItem("help_groups_closed", JSON.stringify(closed)); } catch (e) {} }
   nav.innerHTML = HELP_GROUPS.map(function(g){
     return '<div class="grp-box" data-grp="' + g.id + '"><button type="button" class="grp">' +

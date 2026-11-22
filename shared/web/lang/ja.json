@@ -806,6 +806,7 @@
   "⚡ Write over RS485": "⚡ RS485で書き込む",
   "(runs nong now)": "(現在 nong を実行中)",
   "No prize machines found - switch one on and connect it, then press Check again": "賞品マシンが見つかりません。電源を入れて接続し、「もう一度確認」を押してください",
-  "No prize machine is answering - check they are on and connected": "応答するマシンがありません。電源と接続を確認してください"
+  "No prize machine is answering - check they are on and connected": "応答するマシンがありません。電源と接続を確認してください",
+  "shows": "個のショー"
  }
 }

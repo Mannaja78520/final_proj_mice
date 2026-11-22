@@ -806,6 +806,7 @@
   "⚡ Write over RS485": "⚡ 通过 RS485 写入",
   "(runs nong now)": "(当前运行 nong)",
   "No prize machines found - switch one on and connect it, then press Check again": "没有找到奖品机,请打开并连接后点“再检查一次”",
-  "No prize machine is answering - check they are on and connected": "没有奖品机响应,请检查是否已开机并连接"
+  "No prize machine is answering - check they are on and connected": "没有奖品机响应,请检查是否已开机并连接",
+  "shows": "个演出"
  }
 }

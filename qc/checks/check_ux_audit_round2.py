@@ -37,3 +37,12 @@ def run(t):
     t.ok("No prize machines found" in gacha, "Prize machines with none says so, not a green '0 of 0'")
     home = (root / "main_python" / "web" / "home" / "style.css").read_text(encoding="utf-8")
     t.ok("mask-image" in home, "the phone tab row fades at the edge so it reads as slidable")
+
+    # round 5
+    topics = (root / "main_python" / "web" / "help" / "parts" / "topics.js").read_text(encoding="utf-8")
+    t.ok("saved === null && window.innerWidth <= 860" in topics, "Help on a first phone visit opens only 'Start here'")
+    t.ok('"Robot commands"' in topics and "QC suite" not in topics, "Help topic names are everyday words")
+    tv = (root / "apps" / "tv" / "index.html").read_text(encoding="utf-8")
+    t.ok('.replace(/_+/g, " ")' in tv, "TV shows are named without .yaml and underscores")
+    style = (root / "main_python" / "web" / "home" / "style.css").read_text(encoding="utf-8")
+    t.ok("#homeTools.js-tools{grid-template-columns:repeat(2" in style, "phone Home shows tools as small tiles so robots come sooner")
