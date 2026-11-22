@@ -100,6 +100,8 @@
        listening runs on this PC too. Which languages it hears — and the words
        each language gets wrong often — live in <code>config/voice.json</code>;
        adding a language in <code>config/voice.json</code> (<code>tts.voices</code> / <code>stt.languages</code>) automatically adds its column and translation target in the Answers sheet and script detector. Use a plain code such as <code>ko</code>. The detector reads the alphabet, not the exact language: French, German, Spanish or Vietnamese questions land in the English column, and kanji with no kana lands in Chinese.</p></div>
+  <div class="f"><h3>One voice at a time<span class="tag t-new">new</span></h3>
+    <p>If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.</p></div>
   <div class="f"><h3>The rig speaks one thing at a time<span class="tag t-new">new</span></h3>
     <p>Everything the rig says goes through <b>one queue</b> on the hub: a
        greeting, an answer from this page spoken through a robot, a message

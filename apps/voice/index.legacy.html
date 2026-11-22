@@ -1539,15 +1539,23 @@ const _VoiceApp = class _VoiceApp extends (typeof Mice !== "undefined" && Mice.A
   // one-voice-for-everything and the voice for a two-language line. Only Try
   // sends `try_` = {voice, speed, pitch}: a choice heard before it is saved.
   async speak(text, lang, try_ = null) {
+    this.stopOwnVoice();
+    const own = {};
+    this.sayNow = own;
     this.$("wait").textContent = "saying…";
     this.$("speakingText").textContent = text;
     this.$("speakingNow").hidden = false;
+    const giveUp = new AbortController();
+    const giveUpTimer = setTimeout(() => giveUp.abort(), 6e4);
     try {
       const r = await fetch("/api/voice/say", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(Object.assign({ text, lang: lang || "" }, try_ || {}))
+        body: JSON.stringify(Object.assign({ text, lang: lang || "" }, try_ || {})),
+        signal: giveUp.signal
       });
+      clearTimeout(giveUpTimer);
+      if (this.sayNow !== own) return;
       if (!r.ok) {
         this.$("wait").textContent = (await r.json()).error;
         this.$("speakingNow").hidden = true;
@@ -1556,8 +1564,15 @@ const _VoiceApp = class _VoiceApp extends (typeof Mice !== "undefined" && Mice.A
       const kind = r.headers && r.headers.get && r.headers.get("Content-Type") || "";
       if (kind.includes("mpeg")) this.showVoice({ natural: true });
       else if (kind.includes("wav")) this.checkVoice();
-      const url = URL.createObjectURL(await r.blob());
+      const blob = await r.blob();
+      if (this.sayNow !== own) return;
+      const url = URL.createObjectURL(blob);
       const player = new Audio(url);
+      own.player = player;
+      player.onerror = () => {
+        this.$("wait").textContent = "The sound could not play.";
+        this.$("speakingNow").hidden = true;
+      };
       player.onplaying = () => this.spoke(text, player.duration);
       player.onended = () => {
         this.$("wait").textContent = "";
@@ -1587,8 +1602,22 @@ const _VoiceApp = class _VoiceApp extends (typeof Mice !== "undefined" && Mice.A
         this.$("wait").appendChild(again);
       }
     } catch (e) {
-      this.$("wait").textContent = "The sound could not play.";
+      clearTimeout(giveUpTimer);
+      if (this.sayNow !== own) return;
+      this.$("wait").textContent = giveUp.signal.aborted ? "The voice helper did not answer. Try again in a moment." : "The sound could not play.";
       this.$("speakingNow").hidden = true;
+    }
+  }
+  // Stops the answer this page is playing, if any (the next line, Stop, leaving).
+  stopOwnVoice() {
+    const old = this.sayNow;
+    this.sayNow = null;
+    if (old && old.player) {
+      try {
+        old.player.pause();
+      } catch (e) {
+      }
+      old.player.dispatchEvent(new Event("ended"));
     }
   }
   // What the rig's ONE speaking queue is doing (hub_speak.py, A4-4): a greeting
@@ -3743,6 +3772,7 @@ const _VoiceApp = class _VoiceApp extends (typeof Mice !== "undefined" && Mice.A
           e.returnValue = "";
         }
       });
+    window.addEventListener("pagehide", () => this.stopOwnVoice());
     document.addEventListener("visibilitychange", () => {
       if (!this.viewOn()) return;
       if (!document.hidden) return this.showView();

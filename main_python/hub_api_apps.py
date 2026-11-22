@@ -113,6 +113,17 @@ class AppRoutes:
             return self.send_json({"ok": True, "up": _hub.partner_launch.answers(url, 1.0),
                                    "checked": url})
 
+        if path == "/api/quit":
+            # ONE-CLICK STOP (user 2026-11-22). Only from this PC itself and
+            # never by a link on a website (POST + our own origin): a phone on
+            # the WiFi must not be able to shut the venue's hub down.
+            if method != "POST" or not (_hub.is_self(self.client_address[0])
+                                        and self.origin_is_hub()):
+                self.drain()
+                return self.send_err("stopping the hub is only possible from the hub's own PC", 403)
+            names = _hub.stop_hub()
+            return self.send_json({"ok": True, "stopped": names})
+
         if path == "/api/partners/start":
             # Starts a configured outside program on THIS PC. No hub login
             # from this PC itself (user 2026-09-17: Reconize and Jao have

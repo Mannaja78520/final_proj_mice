@@ -106,7 +106,9 @@ def start_watcher(wait=15.0):
         with open(log, "ab") as out:
             proc = subprocess.Popen([py, str(script), "--port", port], cwd=str(root),
                                     stdout=out, stderr=subprocess.STDOUT,
-                                    creationflags=_hub.NO_WINDOW)
+                                    creationflags=_hub.NO_WINDOW,
+                                    **_hub.children.session_flags())
+        _hub.children.CHILDREN.adopt("face watcher", proc)
         _started.update(proc=proc, log=str(log))
         spawned = True
     until = time.time() + wait

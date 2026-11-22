@@ -546,6 +546,10 @@
   "exclusive": "เอ็กซ์คลูซีฟ",
   "port — a second open fails exactly like Windows, which is what proves the hub shares a handle. It can also play dead to reproduce a replugged board, and records every command with the time it arrived.": "พอร์ต — การเปิดครั้งที่สองล้มเหลวเหมือน Windows ทุกประการ ซึ่งเป็นสิ่งที่พิสูจน์ว่า Hub แชร์พอร์ตเดียวกัน มันยังแกล้งตายเพื่อจำลองบอร์ดที่ถูกเสียบใหม่ได้ และบันทึกทุกคำสั่งพร้อมเวลาที่มาถึง",
   "The rule that makes a check worth writing:": "กฎที่ทำให้การตรวจคุ้มค่าที่จะเขียน:",
-  "break the fix and watch the check fail. A check that passes both before and after guards nothing.": "ทำลายการแก้ไขแล้วดูการตรวจล้มเหลว การตรวจที่ผ่านทั้งก่อนและหลังไม่ได้เฝ้าอะไรเลย"
+  "break the fix and watch the check fail. A check that passes both before and after guards nothing.": "ทำลายการแก้ไขแล้วดูการตรวจล้มเหลว การตรวจที่ผ่านทั้งก่อนและหลังไม่ได้เฝ้าอะไรเลย",
+  "Stopping everything on any PC": "หยุดทุกอย่างได้บนทุกเครื่อง",
+  "Close the hub with stop_hub.bat, or press Ctrl+C, or just close its window: the voice helper, the face helper and the friends’ apps the hub started stop with it, so the next start on any PC begins clean with nothing left running in the background. The hub on another PC needs no setup: it finds the apps next to it and a free address by itself.": "ปิดฮับด้วยไฟล์ stop_hub.bat หรือกด Ctrl+C หรือปิดหน้าต่างของมันได้เลย ตัวช่วยเสียง ตัวช่วยจดจำใบหน้า และแอปของเพื่อนที่ฮับเปิดไว้จะหยุดไปด้วย ครั้งหน้าเริ่มบนเครื่องไหนก็สะอาด ไม่มีอะไรค้างอยู่เบื้องหลัง ฮับบนเครื่องอื่นไม่ต้องตั้งค่าอะไร มันหาแอปที่อยู่ข้างๆ และหาที่อยู่ว่างเองได้",
+  "One voice at a time": "พูดทีละเสียง",
+  "If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.": "ถ้ากด Try หรือถามคำถามใหม่ตอนที่คำตอบเก่ายังเล่นอยู่ คำตอบเก่าจะหยุดก่อน เสียงสองเสียงจึงไม่พูดทับกัน ถ้าตัวช่วยเสียงไม่ตอบภายในหนึ่งนาที หน้าจะบอก แล้วลองใหม่ได้แทนการรอไม่จบ ออกจากหน้านี้เสียงก็หยุดด้วย"
  }
 }

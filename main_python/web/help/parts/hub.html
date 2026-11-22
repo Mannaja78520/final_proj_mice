@@ -239,6 +239,9 @@
        tablets and large monitors, with bigger touch targets on a touchscreen. Studio
        stacks the 3D view above its panel below 860px instead of squeezing both, and on a
        phone its view buttons (Top, Front, 3D…) fold behind one <b>Views ▾</b> button.</p></div>
+  <div class="f"><h3>Stopping everything on any PC<span class="tag t-new">new</span></h3>
+    <p>Close the hub with stop_hub.bat, or press Ctrl+C, or just close its window: the voice helper, the face helper and the friends’ apps the hub started stop with it, so the next start on any PC begins clean with nothing left running in the background. The hub on another PC needs no setup: it finds the apps next to it and a free address by itself.</p>
+    <p class="tech">Technical: <code>MiceHub.exe --stop</code> (or <code>python main.py --stop</code>) asks the running hub to quit; <code>POST /api/quit</code> works only from the hub’s own PC. Keep helpers running across hub restarts with <code>"stopWithHub": false</code> in <code>config/children.json</code>.</p></div>
   <div class="f"><h3>Rebuilding or stopping MiceHub<span class="tag t-new">new</span></h3>
     <p>To rebuild the single-file executable from source:
        <code>python -m PyInstaller --clean MiceHub.spec</code></p>
