@@ -15,6 +15,8 @@ function showTab(name){
   });
   document.querySelectorAll('#tabs .tab').forEach(function(b){
     b.classList.toggle('on', b.getAttribute('data-go')===name);
+    // a phone slides the row: bring the chosen tab into view (it was half cut at the edge)
+    if(b.classList.contains('on') && b.scrollIntoView) try{ b.scrollIntoView({inline:'center', block:'nearest'}); }catch(e){}
   });
   try{ localStorage.setItem('hubTab', name); }catch(e){}
   helpFor(name);

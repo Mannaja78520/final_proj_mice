@@ -403,7 +403,10 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
     this.drawMachines(); this.drawItems(); this.drawMsgs();
     this.$("lowN").value = this.S.low_stock || 0;
     const live = this.S.machines.filter(m => !m.live.error).length;
-    this.stat.ready(live + " of " + this.S.machines.length + " machines answering", "GET /api/gacha");
+    // green "0 of 0" looked fine while nothing could give a prize (UX audit 2026-11-22)
+    if (!this.S.machines.length) this.stat.warn("No prize machines found - switch one on and connect it, then press Check again", "GET /api/gacha");
+    else if (!live) this.stat.warn("No prize machine is answering - check they are on and connected", "GET /api/gacha");
+    else this.stat.ready(live + " of " + this.S.machines.length + " machines answering", "GET /api/gacha");
     this.gmDraw(); this.poDraw(); this.bxDraw(); this.stockLoad();
     this.loadAdmin();
     return true;

@@ -178,6 +178,8 @@
 /* ONE line of tabs (A41-3). Seven fit at 1280 px; a phone slides the row
    sideways rather than stacking it four lines deep above the content. */
 #tabs .tab{flex:0 0 auto}
+/* the row stays ONE line on a phone (check_home_tabs, A41-3) but fades at the right edge, so a half-cut tab reads as 'slide for more' (UX audit 2026-11-22) */
+@media (max-width:700px){#tabs{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent)}}
 #tabs .tab:not(.on){background:transparent;border-color:transparent}
 </style>
 </head>
@@ -438,7 +440,7 @@
 
     <div id="fwReady" hidden>
       <div class="mini">Pick the firmware, then the board to write it to.
-        <b>Overwriting firmware cannot be undone</b> — the board keeps its id,
+        Overwriting firmware cannot be undone — the board keeps its id,
         name, WiFi and pins, but the program is replaced.</div>
       <div id="fwList"></div>
     </div>
@@ -567,11 +569,10 @@
     <h2>🎨 Colour</h2>
     <div class="row" id="themePick"></div>
     <div class="mini">Dark stays the default: a bright screen spills light into
-      the show area. Adding another theme is one block in
-      <code>shared/web/themes.css</code> — it appears here by itself.</div>
+      the show area.</div>
 
     <h2 style="margin-top:var(--sp-6)">🔧 How much to show</h2>
-    <div class="mini">The <b>Show technical details</b> switch at the top of the
+    <div class="mini">The Show technical details switch at the top of the
       page: addresses, cable ports and signal strengths — what you need
       the moment something is wrong, and noise the rest of the time. Names, types
       and module numbers are always shown.</div>
@@ -621,7 +622,7 @@
       </span>
     </h2>
     <div id="usbmods" class="mini" aria-live="polite">…</div>
-    <div class="mini">each port shows its result the moment IT answers — real
+    <div class="mini tech">each port shows its result the moment IT answers — real
       USB-UART ports take ~2 s; Bluetooth phantom ports are recognized by their
       device type and skipped without opening them. A probed module shows who it
       is + every RS485 module behind it. “auto-check” re-probes every 12 s while
@@ -759,7 +760,7 @@
     <h2>🤝 Which modules work together
       <button onclick="loadNet()" style="float:right">⟳ Refresh</button>
     </h2>
-    <div class="mini">Modules only link to modules in the <b>same group</b>. A group is
+    <div class="mini">Modules only link to modules in the same group. A group is
       your installation — put your modules in one and they find each other by
       themselves, even with no venue WiFi. Another company's modules standing in
       the same room cannot join yours, and yours cannot join theirs, because a
@@ -801,7 +802,7 @@
        Fixed / Not-a-problem to close. Closed stays in list (not deleted). -->
   <div class="card" data-tab="complaints">
     <h2>📋 Problem reports</h2>
-    <div class="mini">Reports from anyone who pressed <b>Report</b>. Newest first. Click a row to see the full text. <b>Fixed</b> or <b>Not a problem</b> closes it — it stays in the list so the next person finds it.</div>
+    <div class="mini">Reports from anyone who pressed Report. Newest first. Click a row to see the full text. Fixed or Not a problem closes it — it stays in the list so the next person finds it.</div>
     <div id="complaintsList" class="mini">loading…</div>
   </div>
 
@@ -825,6 +826,8 @@ function showTab(name){
   });
   document.querySelectorAll('#tabs .tab').forEach(function(b){
     b.classList.toggle('on', b.getAttribute('data-go')===name);
+    // a phone slides the row: bring the chosen tab into view (it was half cut at the edge)
+    if(b.classList.contains('on') && b.scrollIntoView) try{ b.scrollIntoView({inline:'center', block:'nearest'}); }catch(e){}
   });
   try{ localStorage.setItem('hubTab', name); }catch(e){}
   helpFor(name);
@@ -2002,9 +2005,9 @@ function viaHtml(r, me){
   const where = (!r.host || r.host === me || r.mine) ? 'this PC' : r.host;
   const tech = function(s){ return '<span class="tech">' + esc(s) + '</span>'; };
   if(r.kind === 'wifi')  return 'over WiFi' + tech(' · ' + (r.ip || '?'));
-  if(r.kind === 'usb')   return 'cable ' + esc(r.port || '?') + ' · ' + esc(where);
-  if(r.kind === 'rs485') return 'RS485 #' + esc(r.bus != null ? r.bus : '?')
-                              + ' behind ' + esc(r.port || '?') + ' · ' + esc(where);
+  if(r.kind === 'usb')   return 'by cable · ' + esc(where) + tech(' · ' + (r.port || '?'));
+  if(r.kind === 'rs485') return 'by cable · ' + esc(where)
+                              + tech(' · RS485 #' + (r.bus != null ? r.bus : '?') + ' behind ' + (r.port || '?'));
   if(r.kind === 'hub'){
     const tail = String(r.dev || '').split('/').slice(1).join('/');
     return 'through ' + esc(r.host || 'another PC')
