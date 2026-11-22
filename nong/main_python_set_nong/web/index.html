@@ -844,8 +844,6 @@
     <button onclick="updateKey()">Update selected</button>
     <button onclick="dupKey()">Duplicate</button>
     <button onclick="delKey()">Delete</button>
-    <button id="undoBtn" onclick="timelineUndo.undo()" title="Take back the last change (Ctrl+Z)" disabled>↶ Undo</button>
-    <button id="redoBtn" onclick="timelineUndo.redo()" title="Put the change back (Ctrl+Y)" disabled>↷ Redo</button>
     <button onclick="moveKey(-1)" title="move the selected keyframe one place earlier" aria-label="move earlier">◀</button>
     <button onclick="moveKey(1)" title="move the selected keyframe one place later" aria-label="move later">▶</button>
     <span class="sep"></span>
@@ -866,6 +864,8 @@
               title="Jump the whole show back to the very beginning.">⏹ Back to start</button>
       <button class="tb-btn" onclick="zoomTimeline(0.5)" title="Zoom out timeline">🔍 -</button>
       <button class="tb-btn" onclick="zoomTimeline(2)" title="Zoom in timeline">🔍 +</button>
+      <button class="tb-btn" id="undoBtn" onclick="timelineUndo.undo()" title="Take back the last change (Ctrl+Z)" disabled>↶ Undo</button>
+      <button class="tb-btn" id="redoBtn" onclick="timelineUndo.redo()" title="Put the change back (Ctrl+Y)" disabled>↷ Redo</button>
       <span id="tlTime" class="tb-clock">0.0s / 0.0s</span>
     </div>
     <div class="tb-scroll" style="overflow-x: auto; padding-bottom: 8px;">
