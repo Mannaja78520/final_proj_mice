@@ -9,7 +9,7 @@
   "id": "FW-012",
   "ok": true,
   "label": "PERF? has loop/heap/stack/lock",
-  "seen": "PERF loop_avg_us=12679 loop_max_us=23020 work_max_us=21807 passes=3 frames=0 frame_max_ms=0 lock_max_us=11830 lock_by=status@loopTask slow_part=usb:21709 heap=2"
+  "seen": "PERF loop_avg_us=11853 loop_max_us=21469 work_max_us=19532 passes=3 frames=0 frame_max_ms=0 lock_max_us=10801 lock_by=status@loopTask slow_part=usb:19455 heap=2"
  },
  {
   "id": "FW-069",
@@ -61,9 +61,9 @@
  },
  {
   "id": "FW-075",
-  "ok": false,
+  "ok": true,
   "label": "SET ID bad values refused",
-  "seen": "[('1.5', 'OK id=1')]"
+  "seen": "[]"
  },
  {
   "id": "FW-076",
@@ -102,135 +102,147 @@
   "seen": "ERR usage: REACH <ip|name|id> <command>"
  },
  {
+  "id": "FW-078 PEERS",
+  "ok": true,
+  "label": "PEERS answers a JSON array and does not panic",
+  "seen": "\n["
+ },
+ {
+  "id": "FW-078 FILES",
+  "ok": true,
+  "label": "FILES answers a JSON array and does not panic",
+  "seen": "]\n\n["
+ },
+ {
   "id": "FW-078",
-  "ok": false,
-  "label": "53 verbs with no args each answer",
-  "seen": "['FILES', 'RATE', 'REACH']"
+  "ok": true,
+  "label": "51 verbs with no args each answer",
+  "seen": "['AMP', 'AMP?', 'ATTACH', 'CAL', 'CFG', 'FREAD', 'FWSTAT', 'GEAR', 'HELP', 'HOME', 'INFO', 'JCFG']"
  },
  {
   "id": "FW-079",
-  "ok": false,
-  "label": "fuzz args: every reply, board alive",
-  "seen": "[('PIN?', '99999999999'), ('PIN?', '-5'), ('PIN?', 'inf'), ('PING', 'nan'), ('PING', '99999999999'), ('PING', '-5')]"
+  "ok": true,
+  "label": "fuzz args (nan, huge, negative, inf) on every verb: no panic, board alive",
+  "seen": "unanswered=[] | PONG 7 a\"b nong"
  },
  {
   "id": "FW-082",
-  "ok": false,
+  "ok": true,
   "label": "FWBEGIN without md5",
-  "seen": ""
+  "seen": "ERR usage: FWBEGIN <bytes> <md5hex>"
  },
  {
   "id": "FW-083",
-  "ok": false,
+  "ok": true,
   "label": "FWBEGIN bad md5",
-  "seen": ""
+  "seen": "ERR FWBEGIN needs the image md5 (32 hex characters). Without it nothing can tell a good image from a damaged one, and this board would boot whatever arrived"
  },
  {
   "id": "FW-084a",
-  "ok": false,
+  "ok": true,
   "label": "FWBEGIN size 0",
-  "seen": ""
+  "seen": "ERR FWBEGIN needs the size in bytes"
  },
  {
   "id": "FW-084b",
-  "ok": false,
+  "ok": true,
   "label": "FWBEGIN size 0xFFFFFFFF",
-  "seen": ""
+  "seen": "ERR no room for 2147483647 bytes: Bad Size Given"
  },
  {
   "id": "FW-099",
-  "ok": false,
+  "ok": true,
   "label": "FWBEGIN over slot size",
-  "seen": ""
+  "seen": "ERR no room for 99999999 bytes: Bad Size Given"
  },
  {
   "id": "FW-086a",
-  "ok": false,
+  "ok": true,
   "label": "FWDATA without FWBEGIN",
-  "seen": ""
+  "seen": "ERR no update started - send FWBEGIN first"
  },
  {
   "id": "FW-086b",
-  "ok": false,
+  "ok": true,
   "label": "FWEND without FWBEGIN",
-  "seen": ""
+  "seen": "ERR no update started"
  },
  {
   "id": "FW-087",
-  "ok": false,
+  "ok": true,
   "label": "FWEND short of promised",
-  "seen": ""
+  "seen": "ERR only 0 of 300 bytes arrived"
  },
  {
   "id": "FW-091",
-  "ok": false,
+  "ok": true,
   "label": "second FWBEGIN restarts cleanly",
-  "seen": ""
+  "seen": "OK FWBEGIN 300"
  },
  {
   "id": "FW-091b",
-  "ok": false,
+  "ok": true,
   "label": "alive after aborted updates",
-  "seen": ""
+  "seen": "PONG 7 a\"b nong"
  },
  {
   "id": "FW-157",
-  "ok": false,
+  "ok": true,
   "label": "300 SET NAME writes, all answered",
-  "seen": ""
+  "seen": "OK name=n299"
  },
  {
   "id": "FW-153",
-  "ok": false,
+  "ok": true,
   "label": "name survives reboot",
-  "seen": ""
+  "seen": "{\"id\":7,\"chip\":\"000000000000\",\"name\":\"keepme\",\"type\":\"nong\",\"group\":\"\",\"fw\":\"1.0.0\",\"sd\":false,\"types\":[\"nong\",\"blank\"],\"caps\":[\"pins\",\"sequences\",\"users\",\"rs48"
  },
  {
   "id": "FW-009",
-  "ok": false,
+  "ok": true,
   "label": "reset reason after REBOOT",
-  "seen": ""
+  "seen": "PERF loop_avg_us=34548 loop_max_us=34548 work_max_us=33528 passes=2 frames=0 frame_max_ms=0 lock_max_us=16372 lock_by=status@loopTask slow_part=usb:31784 heap=2"
  },
  {
   "id": "FW-008",
-  "ok": false,
+  "ok": true,
   "label": "SET TYPE blank persists",
-  "seen": ""
+  "seen": "{\"id\":7,\"chip\":\"000000000000\",\"name\":\"keepme\",\"type\":\"blank\",\"group\":\"\",\"fw\":\"1.0.0\",\"sd\":false,\"types\":[\"nong\",\"blank\"],\"caps\":[\"pins\",\"sequences\",\"users\",\"rs4"
  },
  {
   "id": "FW-172",
-  "ok": false,
+  "ok": true,
   "label": "6000 bytes without newline, then PING",
-  "seen": ""
+  "seen": "PONG 7 keepme nong"
  },
  {
   "id": "FW-053",
-  "ok": false,
+  "ok": true,
   "label": "CR / CRLF / empty lines",
-  "seen": ""
+  "seen": "PONG 7 keepme nong"
  },
  {
   "id": "FW-052",
-  "ok": false,
+  "ok": true,
   "label": "2000 random bytes then PING",
-  "seen": ""
+  "seen": "PONG 7 keepme nong"
  },
  {
   "id": "FW-054",
   "ok": false,
   "label": "0xFF bytes in command",
-  "seen": ""
+  "seen": "ERR unknown cmd: PI\ufffd\ufffdNG"
  },
  {
   "id": "FW-067",
-  "ok": false,
-  "label": "100 PINGs back to back, all answered (300.8s)",
-  "seen": "0"
+  "ok": true,
+  "label": "100 PINGs back to back, all answered (0.2s)",
+  "seen": "100"
  },
  {
   "id": "FW-171",
-  "ok": false,
+  "ok": true,
   "label": "stack high-water readable after fuzz",
-  "seen": ""
+  "seen": "PERF loop_avg_us=2607 loop_max_us=29640 work_max_us=25794 passes=2632 frames=0 frame_max_ms=0 lock_max_us=3251 lock_by=NGPINGPINGPINGP@loopTask slow_part=usb:25"
  }
 ]

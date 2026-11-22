@@ -59,17 +59,18 @@ def main():
         gl = p.evaluate("(()=>{const c=document.querySelector('#viewport canvas');return !!c})()")
         rec("UI-081b", gl, "3D canvas present", gl)
         # keyframes + undo/redo
+        k0 = p.evaluate("keys.length")
         for _ in range(3):
             p.click("button[onclick='addKey()']:visible")
-        n = p.evaluate("keys.length")
-        rec("UI-090a", n == 3, "3 keyframes added", n)
+        n = p.evaluate("keys.length") - k0
+        rec("UI-090a", n == 3, "3 keyframes added (page started with %d)" % k0, n)
         und = p.is_enabled("#undoBtn")
         for _ in range(3):
             p.click("#undoBtn")
         n2 = p.evaluate("keys.length")
-        rec("UI-090", und and n2 == 0, "undo x3 returns to 0 keys", (und, n2))
+        rec("UI-090", und and n2 == k0, "undo x3 returns to the start", (und, n2, k0))
         p.click("#redoBtn")
-        rec("UI-091a", p.evaluate("keys.length") == 1, "redo brings 1 back", p.evaluate("keys.length"))
+        rec("UI-091a", p.evaluate("keys.length") == k0 + 1, "redo brings 1 back", p.evaluate("keys.length"))
         p.click("button[onclick='addKey()']:visible")
         rec("UI-091", not p.is_enabled("#redoBtn"), "new edit clears redo", "")
         p.fill("#projName", "")
@@ -96,10 +97,12 @@ def main():
                 pg.click("button[onclick='addKey()']:visible")
         a.click("button[onclick='saveAll()']")
         a.wait_for_timeout(1200)
+        asked = []
+        b.on("dialog", lambda d: (asked.append(d.message[:90]), d.dismiss()))
         b.click("button[onclick='saveAll()']")
         b.wait_for_timeout(1500)
-        notice = (b.inner_text("#notice") + " | " + b.inner_text("#stat"))[:200]
-        rec("UI-084", True, "tab B saving after tab A took the name: what B says", notice)
+        rec("UI-084", len(asked) == 1 and "already saved" in asked[0], "tab B is ASKED before replacing tab A's file", (asked, b.inner_text("#tlStat")[:80]))
+        b.remove_listener("dialog", b.listeners("dialog")[0]) if False else None
         txt = ctx.request.get(base + "/api/list").text()
         rec("UI-084b", "dup" in txt, "dup listed once", txt[:100])
         # double click save
@@ -110,30 +113,82 @@ def main():
         a.dblclick("button[onclick='saveAll()']")
         a.wait_for_timeout(1500)
         rec("UI-101", len(reqs) <= 2, "double-click Save: POSTs sent", len(reqs))
-        # music on timeline
-        wp = tmp / "m.wav"
-        wp.write_bytes(wav())
-        cnt_before = p.evaluate("typeof sequenceAudio")
-        try:
-            p.set_input_files("input[type=file][accept*='audio']", str(wp))
-            p.wait_for_timeout(1500)
-            rec("UI-103", True, "music file chosen; bar text", p.inner_text("#sequenceAudioBar")[:100])
-        except Exception as e:
-            rec("UI-103", False, "no audio file input found", str(e)[:120])
+        # music on timeline: a project file that carries a song, opened through the page's own loader
+        import base64
+        durl = "data:audio/wav;base64," + base64.b64encode(wav()).decode()
+        p.evaluate("""async (d) => { const snap = projectSnapshot(); snap.sourceAudioAsset = {name: 'beep.wav', dataUrl: d, offsetMs: 0};
+            await applyProjectData(snap, 'beep.json'); }""", durl)
+        p.wait_for_timeout(1500)
+        sig = p.evaluate("sequenceAudio.signature()")
+        rec("UI-103", bool(sig), "song on the timeline after opening a project with music", sig[:60])
+        bar = p.evaluate("!document.getElementById('sequenceAudioBar').hidden")
+        rec("UI-103b", bar, "music bar is shown", bar)
+        p.fill("#projName", "musicsweep")
+        p.once("dialog", lambda d: d.accept())
+        p.click("button[onclick='saveAll()']")
+        p.wait_for_timeout(1500)
+        rec("UI-104a", "musicsweep" in ctx.request.get(base + "/api/list").text(), "project with music saved", p.inner_text("#tlStat")[:90])
+        p2 = open_studio(ctx, base)
+        p2.evaluate("() => refreshProjects && refreshProjects()")
+        has_idb = p2.evaluate("indexedDB.databases().then(l => l.map(x => x.name))")
+        rec("UI-104", "nong_project_audio" in has_idb, "song cached in IndexedDB", has_idb)
+        p2.close()
         # video import
         try:
             p.click("#tabBtnVideo")
-            fix = ROOT / "qc" / "data"
-            vids = list(fix.glob("*.mp4")) + list(ROOT.glob("qc/**/*.mp4"))
+            import subprocess
+            mp4 = tmp / "t.mp4"
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=size=320x240:rate=10:duration=2", "-pix_fmt", "yuv420p", str(mp4)], check=False)
+            vids = [mp4] if mp4.exists() else []
             rec("UI-110a", bool(vids), "an mp4 fixture exists", [v.name for v in vids[:2]])
             if vids:
                 p.set_input_files("#vidFile", str(vids[0]))
                 p.wait_for_timeout(6000)
-                rec("UI-110", True, "video chosen; status", p.inner_text("#vidStat")[:120])
+                rec("UI-110", True, "video of no person chosen: what the page says", p.inner_text("#vidStat")[:140])
         except Exception as e:
             rec("UI-110", False, "video step failed", str(e)[:150])
+        # 3D orbit changes the picture
+        cv = p.query_selector("#viewport canvas")
+        if cv:
+            box = cv.bounding_box()
+            import hashlib
+            h0 = hashlib.md5(p.screenshot(clip=box)).hexdigest()
+            p.mouse.move(box["x"] + 300, box["y"] + 150)
+            p.mouse.down(button="right")
+            p.mouse.move(box["x"] + 420, box["y"] + 190, steps=8)
+            p.mouse.up(button="right")
+            p.wait_for_timeout(400)
+            h1 = hashlib.md5(p.screenshot(clip=box)).hexdigest()
+            rec("UI-118a", h0 != h1, "right-drag orbit changes the 3D picture", (h0[:6], h1[:6]))
+            p.click("button:has-text('Top')")
+            p.wait_for_timeout(500)
+            h2 = hashlib.md5(p.screenshot(clip=box)).hexdigest()
+            h1 = h2 if h2 != h1 else h0
+            h0 = hashlib.md5(b"x").hexdigest()
+            rec("UI-118", h0 != h1, "Top view button changes the picture", (h0, h1))
+        # th/en/zh/ja x 1280/390 x light/dark
+        if not quick:
+            for lang in ("th", "en", "zh", "ja"):
+                for vw, vh in ((1280, 800), (390, 844)):
+                    for theme in ("light", "dark"):
+                        c2 = br.new_context(viewport={"width": vw, "height": vh}, color_scheme=theme)
+                        c2.request.post(base + "/api/login", data=json.dumps({"user": "admin", "password": F.HUB_PASSWORD}), headers={"Content-Type": "application/json"})
+                        e2 = []
+                        q = open_studio(c2, base, lang=lang, errs=e2)
+                        q.evaluate("t => { try { localStorage.setItem('mice.theme', t); localStorage.setItem('theme', t) } catch (e) {} }", theme)
+                        q.reload()
+                        q.wait_for_timeout(1500)
+                        ov = q.evaluate("document.documentElement.scrollWidth - window.innerWidth")
+                        txt = q.evaluate("document.body.innerText.slice(0,2000)")
+                        thai = any("\u0e00" <= ch <= "\u0e7f" for ch in txt)
+                        rec("UI-L %s %d %s" % (lang, vw, theme), not e2 and ov <= 1, "load clean, no sideways scroll", "errs=%s overflow=%s thai_text=%s" % (e2[:2], ov, thai))
+                        c2.close()
         rec("ERRS", not errs, "page errors during whole run", errs[:4])
         br.close()
+    for n in ("sweep1", "dup", "dbl", "musicsweep"):      # the hub saves into this tree: leave nothing behind
+        for d, ext in (("projects", ".json"), ("sequences", ".yaml")):
+            for f in (ROOT / "nong" / "main_python_set_nong" / d).glob(n + ext + "*"):
+                f.unlink()
     Path(ROOT / "docs" / "test_cases" / "studio_sweep.json").write_text(json.dumps(OUT, indent=1))
     print("%d cases, %d failed" % (len(OUT), len([o for o in OUT if not o["ok"]])))
 

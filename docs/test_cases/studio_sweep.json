@@ -1,0 +1,122 @@
+[
+ {
+  "id": "UI-081",
+  "ok": true,
+  "label": "Studio loads, no page errors",
+  "seen": "[]"
+ },
+ {
+  "id": "UI-081b",
+  "ok": true,
+  "label": "3D canvas present",
+  "seen": "True"
+ },
+ {
+  "id": "UI-090a",
+  "ok": true,
+  "label": "3 keyframes added (page started with 1)",
+  "seen": "3"
+ },
+ {
+  "id": "UI-090",
+  "ok": true,
+  "label": "undo x3 returns to the start",
+  "seen": "(True, 1, 1)"
+ },
+ {
+  "id": "UI-091a",
+  "ok": true,
+  "label": "redo brings 1 back",
+  "seen": "2"
+ },
+ {
+  "id": "UI-091",
+  "ok": true,
+  "label": "new edit clears redo",
+  "seen": ""
+ },
+ {
+  "id": "UI-092",
+  "ok": true,
+  "label": "Ctrl+Z in a text field does not undo the timeline",
+  "seen": "(3, 3)"
+ },
+ {
+  "id": "UI-082",
+  "ok": true,
+  "label": "Save writes sweep1",
+  "seen": "saved"
+ },
+ {
+  "id": "UI-083",
+  "ok": true,
+  "label": "second save status text",
+  "seen": "saved"
+ },
+ {
+  "id": "UI-084",
+  "ok": true,
+  "label": "tab B is ASKED before replacing tab A's file",
+  "seen": "(['dup.yaml is already saved. Replace it?\\n\\nCancel, then type a new name to keep both.'], 'not saved \u2014 dup.yaml was left as it was')"
+ },
+ {
+  "id": "UI-084b",
+  "ok": true,
+  "label": "dup listed once",
+  "seen": "{\"ok\": true, \"files\": [\"Kooo.json\", \"LhongMaePing.json\", \"Looooooooooooooooooooong.json\", \"NONO.json"
+ },
+ {
+  "id": "UI-101",
+  "ok": true,
+  "label": "double-click Save: POSTs sent",
+  "seen": "2"
+ },
+ {
+  "id": "UI-103",
+  "ok": true,
+  "label": "song on the timeline after opening a project with music",
+  "seen": "05eb8f199cde447ca0c7dfec862206ffea7226f37138c68556b9022f8f1a"
+ },
+ {
+  "id": "UI-103b",
+  "ok": true,
+  "label": "music bar is shown",
+  "seen": "True"
+ },
+ {
+  "id": "UI-104a",
+  "ok": true,
+  "label": "project with music saved",
+  "seen": "saved musicsweep \u2014 musicsweep.json (to edit later) and musicsweep.yaml (what the robot pla"
+ },
+ {
+  "id": "UI-104",
+  "ok": true,
+  "label": "song cached in IndexedDB",
+  "seen": "['nong_project_audio']"
+ },
+ {
+  "id": "UI-110a",
+  "ok": true,
+  "label": "an mp4 fixture exists",
+  "seen": "['t.mp4']"
+ },
+ {
+  "id": "UI-110",
+  "ok": true,
+  "label": "video of no person chosen: what the page says",
+  "seen": "Ready: 2.0 s of video. Press Make moves."
+ },
+ {
+  "id": "UI-118",
+  "ok": false,
+  "label": "orbit drag changes the 3D picture",
+  "seen": "('bd0e93b3f5182124190e7fc3dda88ce0', 'bd0e93b3f5182124190e7fc3dda88ce0')"
+ },
+ {
+  "id": "ERRS",
+  "ok": true,
+  "label": "page errors during whole run",
+  "seen": "[]"
+ }
+]

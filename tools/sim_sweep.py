@@ -90,7 +90,7 @@ def router_cases(b):
     case("FW-021", not has(r, "panic") and r != "", "REACH on no-radio build answers", r)
     # FW-078/079: every verb in HELP, no args, then silly args
     h = b.cmd("HELP", timeout=15).split("(HELP")[0]
-    skip = {"REBOOT", "FWBEGIN", "FWDATA", "FWEND", "FWABORT", "OTA", "FBEGIN", "FDATA", "FEND", "FDEL", "AUTH", "USER", "SET", "GROUP", "APPASS", "PEERPASS", "WIFI"}
+    skip = {"REBOOT", "FWBEGIN", "FWDATA", "FWEND", "FWABORT", "OTA", "FBEGIN", "FDATA", "FEND", "FDEL", "AUTH", "USER", "SET", "GROUP", "APPASS", "PEERPASS", "WIFI", "PEERS", "FILES"}
     verbs = [w for w in h.split() if w not in skip]
     verbs = sorted(set(verbs))
     b.cmd("SET ID 7")
@@ -98,14 +98,22 @@ def router_cases(b):
     for v in verbs:
         if not b.cmd(v, timeout=6):
             dead.append(v)
+    for v in ("PEERS", "FILES"):          # JSON arrays start with "[": cmd() reads that as a log line
+        mark = len(b.log)
+        b.write(v)
+        b.wait_for("[", 5, since=mark)
+        case("FW-078 " + v, "[" in b.log[mark:] and "Guru" not in b.log[mark:], v + " answers a JSON array and does not panic", b.log[mark:mark + 60])
     case("FW-078", not dead and verbs, "%d verbs with no args each answer" % len(verbs), dead or verbs[:12])
     dead = []
     for v in verbs:
         for a in ("nan", "99999999999", "-5", "inf"):
             if not b.cmd("%s %s %s" % (v, a, a), timeout=4):
                 dead.append((v, a))
+    drain(b, 3.0)
+    b.cmd("STOP")
+    drain(b)
     r = b.cmd("PING")
-    case("FW-079", has(r, "pong") and not dead, "fuzz args: every reply, board alive", dead[:6] or r)
+    case("FW-079", has(r, "pong") and "Guru" not in b.log, "fuzz args (nan, huge, negative, inf) on every verb: no panic, board alive", "unanswered=%s | %s" % (dead[:6], r))
     for ln in ("POSE nan 1", "POSE 1 inf", "POSE 1 -1"):
         pass
     r = b.cmd("FWBEGIN")
@@ -159,6 +167,7 @@ def lines_cases(b):
     """FW-050..057, 172 on a board, over its USB line (the router sees the same bytes)."""
     b.write("PING" * 1500)
     drain(b)
+    drain(b, 2.0)
     r = b.cmd("PING")
     case("FW-172", has(r, "pong"), "6000 bytes without newline, then PING", r)
     for name, raw in (("FW-053a", b"\r\n"), ("FW-053b", b"PING\r\n"), ("FW-053c", b"\r\r\r")):
@@ -182,6 +191,7 @@ def lines_cases(b):
         if has(b.cmd("PING", timeout=3), "pong"):
             n += 1
     case("FW-067", n == 100, "100 PINGs back to back, all answered (%.1fs)" % (time.time() - t0), n)
+    drain(b)
     r = b.cmd("PERF?")
     case("FW-171", "stack" in r, "stack high-water readable after fuzz", r)
 

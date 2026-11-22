@@ -108,6 +108,15 @@ def run(t):
         def maybe_reload(self):
             pass
 
+        def presence_gate(self):
+            return True, ""
+
+        def get_detected_person(self):
+            return ""
+
+        def main_language(self):
+            return "en"
+
         def health(self):
             return {"ok": True}
 
@@ -147,6 +156,17 @@ def run(t):
              "the hub's proxy - a program - still saves settings", (code, body[:120]))
         code, _, body = _ask(base + "/health", headers={"Host": "[::1]:8767"})
         t.eq(code, 200, "an IP literal Host is fine (IPv6 too)")
+
+        # ---- /ask with a body of the wrong SHAPE: answered, not dropped ------
+        # A list body or a numeric "text" raised inside the handler and the connection
+        # closed with no reply (found 2026-11-22 by tools/helpers_probe.py).
+        for why, body in (("a list", b"[1, 2]"), ("a number for the question", b'{"text": 5}'),
+                          ("a list for the language", b'{"text": "", "lang": [1]}'), ("null", b"null")):
+            try:
+                code, _, said = _ask(base + "/ask", body)
+            except Exception as e:                              # a dropped connection
+                code, said = 0, str(e).encode()
+            t.ok(code in (400, 409), "/ask with %s gets a plain refusal, not a dropped connection" % why, (code, said[:80]))
 
         # ---- plain sound for a robot ------------------------------------------
         say = lambda fmt: _ask(base + "/say", json.dumps(dict({"text": "hello", "rate": 22050},
