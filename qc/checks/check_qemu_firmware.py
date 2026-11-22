@@ -121,6 +121,9 @@ def run(t):
 
         # ---- settings survive a power cycle --------------------------
         t.contains(b.cmd("SET NAME bench-one"), "name=bench-one", "SET NAME answers")
+        long_r = b.cmd("SET NAME " + "A" * 200)
+        t.ok(long_r.count("A") <= 31, "a 200-letter name is cut short, not stored whole", long_r[:120])
+        b.cmd("SET NAME bench-one")
         t.ok(b.reboot(), "REBOOT comes back to ready", b.log[-400:])
         t.eq(b.cmd("PING"), "PONG 7 bench-one nong", "the name saved to NVS survives the reboot")
 

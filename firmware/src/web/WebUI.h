@@ -559,7 +559,7 @@ a.peer:hover{border-color:var(--acc)}
   <div class="card setupCard" data-tab="setup" style="display:none">
     <h2>Name, ID &amp; WiFi</h2>
     <div class="row"><span class="lbl">ID</span><input type="number" id="setId" min="1" max="247" style="width:90px"></div>
-    <div class="row"><span class="lbl">Name</span><input id="setName" style="flex:1"></div>
+    <div class="row"><span class="lbl">Name</span><input id="setName" maxlength="31" style="flex:1"></div>
     <div class="row"><span class="lbl">Type</span><select id="setType" style="flex:1"></select></div>
     <div class="row"><span class="lbl">WiFi SSID</span><input id="setSsid"
       placeholder="the network name, spaces are fine"
@@ -611,7 +611,7 @@ a.peer:hover{border-color:var(--acc)}
     <h2>Console (for experts)</h2>
     <div id="log"></div>
     <div class="row">
-      <input id="cli" placeholder="e.g. GOTO 2 / PING / #3 PING (RS485 bridge) / #* RGB 255 0 0" style="flex:1"
+      <input id="cli" placeholder="e.g. PING / #3 PING (a board on the RS485 bus) / #* RGB 255 0 0" style="flex:1"
              onkeydown="if(event.key==='Enter'){cmd(this.value);this.value=''}">
     </div>
   </div>

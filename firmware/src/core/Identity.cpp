@@ -106,7 +106,9 @@ void Identity::setId(uint8_t id) {
 }
 
 void Identity::setName(const String& n) {
-    name_ = n.length() ? n : defaultName();
+    // A 200-letter name overflowed the page header and the peer list (QEMU fuzz
+    // 2026-11-22): keep it short enough to read.
+    name_ = n.length() ? n.substring(0, 31) : defaultName();
     prefs_.putString("name", name_);
 }
 
