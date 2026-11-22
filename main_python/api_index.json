@@ -567,6 +567,13 @@
    "file": "hub_api_gacha.py"
   },
   {
+   "path": "/api/quit",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_apps.py"
+  },
+  {
    "path": "/api/report",
    "method": "POST",
    "what": "",
