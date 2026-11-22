@@ -1540,7 +1540,8 @@ class MiceToolsManager {
     const name = document.createElement('span');
     name.className = 'nm';
     // A drawn icon when the app has one (app.json "image"), the emoji otherwise.
-    if (app.image) {
+    // Only a path on this hub: never another address or a script URL.
+    if (typeof app.image === 'string' && /^\/[A-Za-z0-9_\/.-]+$/.test(app.image)) {
       const pic = document.createElement('img');
       pic.className = 'tool-pic';
       pic.src = app.image; pic.alt = ''; pic.width = 56; pic.height = 56;

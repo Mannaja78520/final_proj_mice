@@ -68,7 +68,8 @@ def run(t):
     nxt = card.find('class="card"')
     if nxt > 0:
         card = card[:nxt]
-    names = re.findall(r'class="nm">([^<]*)<', card)
+    # A tool's drawn icon (<img>) sits inside the name span since 2026-11-22: keep the words only.
+    names = [re.sub(r"<[^>]*>", "", n) for n in re.findall(r'class="nm">(.*?)</span>', card)]
     t.eq(len(names), len(apps),
          "every tool the hub reports has a row on the page")
     # The DOM carries escaped text - an app called "Features & help" appears as

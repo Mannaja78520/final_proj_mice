@@ -18,10 +18,10 @@ window.addEventListener('load', async () => {
     const nativeLink = d.querySelector('#tools .tool-open');
     nativeLink.focus();
     await mark('native_keyboard_link', d.activeElement === nativeLink && nativeLink.tagName === 'A' && nativeLink.target === '_blank' && nativeLink.rel.includes('noopener') && nativeLink.getAttribute('aria-label').includes('แท็บใหม่'));
-    const odd = {id: 'brand-new', name: '<img src=x onerror=alert(1)>', icon: '<svg/onload=alert(2)>', blurb: '<script>bad()</script>', path: '/app/brand-new/'};
+    const odd = {id: 'brand-new', name: '<img src=x onerror=alert(1)>', icon: '<svg/onload=alert(2)>', image: 'javascript:alert(3)', blurb: '<script>bad()</script>', path: '/app/brand-new/'};
     w.miceTools.boxes().forEach(box => w.miceTools.render(box, [...actual.apps, odd]));
     await mark('unknown_app_visible', d.querySelectorAll('#tools .tool-open').length === actual.apps.length + 1);
-    await mark('registry_text_safe', !d.querySelector('#tools img, #tools svg, #tools script') && d.getElementById('tools').textContent.includes(odd.name));
+    await mark('registry_text_safe', !d.querySelector('#tools img:not(.tool-pic), #tools svg, #tools script') && d.getElementById('tools').textContent.includes(odd.name));
     const realFetch = w.fetch;
     const answer = (data, status = 200) => { w.fetch = (url, opts) => url === '/api/apps' ? Promise.resolve(new w.Response(JSON.stringify(data), {status})) : realFetch.call(w, url, opts); };
     answer({ok: true, apps: []}); await w.loadApps();
