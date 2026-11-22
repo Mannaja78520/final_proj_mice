@@ -96,6 +96,12 @@ def run(t):
         rec["dups_%d" % n] = {"duplicate_ids": len(truth), "moved": len(res["moved"]),
                               "virtual_s": round(b.clock, 1)}
 
+    # 3a. a full bus plus one duplicate cannot be repaired: say so ONCE per chip (the
+    # old fix() listed the same chip once per retry round, 12 times)
+    full = bus_sim.Bus(_boards(0, 247, rnd) + [bus_sim.Board("AB00000000CD", 10)])
+    res = bus_ids.BusIds(full.exchange).fix()
+    t.ok(res["failed"] == ["AB00000000CD"], "full bus + 1 duplicate: the stuck chip is named once", str(res["failed"])[:120])
+
     # 3b. mass power-on: everything plugged in at once, default ids. Time until
     # the hub knows every board uniquely = census + chips + repair (virtual s).
     boot = {}

@@ -390,16 +390,26 @@ SAFE_NAME = re.compile(r"^[A-Za-z0-9._ -]{1,80}$")
 PC_NAME = re.compile(r"^[\w\u0e00-\u0e7f. -]{1,80}$")
 
 
+# Windows opens CON.json / NUL.txt as the device, not a file: a save under such
+# a name hangs or fails on the PC (found by the 2026-11-22 case sweep).
+WIN_DEVICES = re.compile(r"^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\.|$)", re.I)
+
+
+def _device_name(name: str) -> bool:
+    return bool(WIN_DEVICES.match(name)) or name.endswith((".", " "))
+
+
 def pc_name(name: str) -> str:
     name = name.strip()
-    if not PC_NAME.match(name) or name.startswith(".") or ".." in name:
+    if not PC_NAME.match(name) or name.startswith(".") or ".." in name \
+            or _device_name(name):
         raise ValueError(f"bad name: {name!r}")
     return name
 
 
 def safe_name(name: str) -> str:
     name = name.strip()
-    if not SAFE_NAME.match(name) or name.startswith("."):
+    if not SAFE_NAME.match(name) or name.startswith(".") or _device_name(name):
         raise ValueError(f"bad name: {name!r}")
     return name
 

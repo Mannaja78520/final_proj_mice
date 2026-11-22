@@ -1,0 +1,88 @@
+[
+ {
+  "path": "/",
+  "errors": [],
+  "legacy_files": [],
+  "modern_app_js": []
+ },
+ {
+  "path": "/studio/",
+  "errors": [],
+  "legacy_files": [],
+  "modern_app_js": [
+   "app.js"
+  ]
+ },
+ {
+  "path": "/app/voice/",
+  "errors": [],
+  "legacy_files": [],
+  "modern_app_js": []
+ },
+ {
+  "path": "/app/gacha/",
+  "errors": [],
+  "legacy_files": [],
+  "modern_app_js": []
+ },
+ {
+  "path": "/app/tv/",
+  "errors": [],
+  "legacy_files": [],
+  "modern_app_js": []
+ },
+ {
+  "path": "/app/camera/",
+  "errors": [],
+  "legacy_files": [],
+  "modern_app_js": []
+ },
+ {
+  "path": "/help",
+  "errors": [],
+  "legacy_files": [],
+  "modern_app_js": []
+ },
+ {
+  "path": "/studio/app.js",
+  "differs_from_modern": true,
+  "optional_chaining_or_nullish_old_ua": 0,
+  "same_in_modern": 103
+ },
+ {
+  "path": "/studio/",
+  "differs_from_modern": false,
+  "optional_chaining_or_nullish_old_ua": 0,
+  "same_in_modern": 0
+ },
+ {
+  "path": "/app/voice/app.js",
+  "differs_from_modern": false,
+  "optional_chaining_or_nullish_old_ua": 67,
+  "same_in_modern": 67
+ },
+ {
+  "path": "/app/voice/",
+  "differs_from_modern": true,
+  "optional_chaining_or_nullish_old_ua": 0,
+  "same_in_modern": 67
+ },
+ {
+  "path": "/app/tv/",
+  "differs_from_modern": false,
+  "optional_chaining_or_nullish_old_ua": 0,
+  "same_in_modern": 0
+ },
+ {
+  "path": "/app/gacha/",
+  "differs_from_modern": false,
+  "optional_chaining_or_nullish_old_ua": 0,
+  "same_in_modern": 0
+ },
+ {
+  "path": "/app/camera/",
+  "differs_from_modern": false,
+  "optional_chaining_or_nullish_old_ua": 0,
+  "same_in_modern": 0
+ }
+]

@@ -740,10 +740,16 @@ class VoiceHandler(BaseHTTPRequestHandler):
         take, why = self.brain.presence_gate()
         if not take:
             return self._json({"ok": False, "nobodyHere": True, "error": why}, 409)
-        text = (req.get("text") or "").strip()
-        history = req.get("history") or []
-        req_lang = (req.get("lang") or "").strip()
-        person = (req.get("person") or req.get("name") or "").strip()
+        # A body that is a list, or a "text" that is a number, used to raise inside the
+        # handler and drop the connection with no answer (found 2026-11-22, helpers_probe).
+        if not isinstance(req, dict):
+            return self._json({"ok": False, "error": "that request was not readable"}, 400)
+        def _str(v):
+            return v.strip() if isinstance(v, str) else ""
+        text = _str(req.get("text"))
+        history = req.get("history") if isinstance(req.get("history"), list) else []
+        req_lang = _str(req.get("lang"))
+        person = _str(req.get("person")) or _str(req.get("name"))
         if not person:
             person = self.brain.get_detected_person()
         auto_detect = req.get("autoDetect", True)

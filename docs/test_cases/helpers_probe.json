@@ -1,0 +1,200 @@
+[
+ {
+  "id": "VOICE-up",
+  "ok": true,
+  "label": "voice helper answers /health",
+  "seen": "{\"ok\": true, \"service\": \"voice\", \"resources\": {\"requestedRevision\": \"default\", \"requested\": {\"mode\":"
+ },
+ {
+  "id": "FACES-up",
+  "ok": true,
+  "label": "faces watcher answers /health",
+  "seen": "{\"ok\": true, \"watching\": true, \"partner\": \"reconize\", \"partnerKnown\": true, \"seenPeople\": 0, \"polls\""
+ },
+ {
+  "id": "VOICE GET /config",
+  "ok": true,
+  "label": "GET /config",
+  "seen": "200 0.01s {\"ok\": true, \"config\": {\"service\": \"http://127.0.0"
+ },
+ {
+  "id": "VOICE GET /faq",
+  "ok": true,
+  "label": "GET /faq",
+  "seen": "200 0.00s {\"ok\": true, \"faqs\": [{\"questions\": [\"\u0e17\u0e48\u0e2d\u0e07\u0e01\u0e25\u0e2d\u0e19\u0e43\u0e2b\u0e49\u0e1f"
+ },
+ {
+  "id": "VOICE GET /profiles",
+  "ok": true,
+  "label": "GET /profiles",
+  "seen": "200 0.06s {\"ok\": true, \"active\": \"current\", \"names\": [\"curre"
+ },
+ {
+  "id": "VOICE GET /voices",
+  "ok": true,
+  "label": "GET /voices",
+  "seen": "200 0.35s {\"ok\": true, \"voices\": [{\"name\": \"en-AU-WilliamMul"
+ },
+ {
+  "id": "VOICE GET /styles",
+  "ok": true,
+  "label": "GET /styles",
+  "seen": "200 0.02s {\"ok\": true, \"styles\": {\"polite\": {\"says\": \"\u0e2a\u0e38\u0e20\u0e32\u0e1e "
+ },
+ {
+  "id": "VOICE GET /services",
+  "ok": true,
+  "label": "GET /services",
+  "seen": "200 0.01s {\"ok\": true, \"jobs\": {\"hear\": {\"says\": \"Hearing\", "
+ },
+ {
+  "id": "VOICE GET /face",
+  "ok": true,
+  "label": "GET /face",
+  "seen": "200 0.03s {\"ok\": true, \"person\": \"\", \"off\": false, \"watcher\""
+ },
+ {
+  "id": "VOICE GET /camera",
+  "ok": true,
+  "label": "GET /camera",
+  "seen": "200 0.26s {\"ok\": true, \"on\": true, \"label\": \"\", \"from\": \"\", "
+ },
+ {
+  "id": "VOICE GET /nope",
+  "ok": true,
+  "label": "GET /nope",
+  "seen": "404 0.02s {\"ok\": false, \"error\": \"unknown address\"}"
+ },
+ {
+  "id": "UI-137",
+  "ok": true,
+  "label": "FAQ question answered without the model",
+  "seen": "200 0.06s {\"ok\": true, \"answer\": \"\u0e41\u0e25\u0e49\u0e27\u0e2a\u0e2d\u0e19\u0e27\u0e48\u0e32\u0e2d\u0e22\u0e48\u0e32\u0e44\u0e27\u0e49\u0e43\u0e08\u0e21\u0e19\u0e38\u0e29\u0e22\u0e4c\\n\u0e21\u0e31\u0e19\u0e41\u0e2a\u0e19\u0e2a\u0e38\u0e14\u0e25\u0e36\u0e01\u0e25\u0e49\u0e33\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\\n\u0e16\u0e36"
+ },
+ {
+  "id": "UI-138 empty",
+  "ok": true,
+  "label": "ask with empty: plain error, no crash",
+  "seen": "400 {\"ok\": false, \"error\": \"there was no question in that - say it again\"}"
+ },
+ {
+  "id": "UI-138 spaces",
+  "ok": true,
+  "label": "ask with spaces: plain error, no crash",
+  "seen": "400 {\"ok\": false, \"error\": \"there was no question in that - say it again\"}"
+ },
+ {
+  "id": "UI-138 no body",
+  "ok": true,
+  "label": "ask with no body: plain error, no crash",
+  "seen": "400 {\"ok\": false, \"error\": \"there was no question in that - say it again\"}"
+ },
+ {
+  "id": "UI-138 list body",
+  "ok": false,
+  "label": "ask with list body: plain error, no crash",
+  "seen": "0 RemoteDisconnected: Remote end closed connection without response"
+ },
+ {
+  "id": "UI-138 text is a number",
+  "ok": false,
+  "label": "ask with text is a number: plain error, no crash",
+  "seen": "0 RemoteDisconnected: Remote end closed connection without response"
+ },
+ {
+  "id": "UI-138 text is null",
+  "ok": true,
+  "label": "ask with text is null: plain error, no crash",
+  "seen": "400 {\"ok\": false, \"error\": \"there was no question in that - say it again\"}"
+ },
+ {
+  "id": "UI-138 bad json",
+  "ok": true,
+  "label": "ask with broken JSON -> 400",
+  "seen": "400 {\"ok\": false, \"error\": \"that request was not readable\"}"
+ },
+ {
+  "id": "UI-138 2MB",
+  "ok": true,
+  "label": "ask with 2 MB body refused",
+  "seen": "400 {\"ok\": false, \"error\": \"that question is too long to ask\"}"
+ },
+ {
+  "id": "VOICE-40",
+  "ok": true,
+  "label": "40 asks at once, all answered (1.4s)",
+  "seen": "40 of 40, slowest 1.4s"
+ },
+ {
+  "id": "UI-142",
+  "ok": true,
+  "label": "POST /faq with its own content keeps the helper alive",
+  "seen": ""
+ },
+ {
+  "id": "FACES GET /health",
+  "ok": true,
+  "label": "GET /health",
+  "seen": "200 0.01s {\"ok\": true, \"watching\": true, \"partner\": \"reconize\", \"partnerKnown\": "
+ },
+ {
+  "id": "FACES GET /state",
+  "ok": true,
+  "label": "GET /state",
+  "seen": "200 0.01s {\"ok\": true, \"watching\": true, \"partner\": \"reconize\", \"name\": \"Reconiz"
+ },
+ {
+  "id": "FACES GET /rules",
+  "ok": true,
+  "label": "GET /rules",
+  "seen": "200 0.01s {\"ok\": true, \"rules\": {\"_why\": \"What the rig says when the face app se"
+ },
+ {
+  "id": "FACES GET /presence",
+  "ok": true,
+  "label": "GET /presence",
+  "seen": "200 0.01s {\"ok\": true, \"known\": true, \"present\": false, \"why\": \"nobody was seen "
+ },
+ {
+  "id": "FACES GET /count",
+  "ok": true,
+  "label": "GET /count",
+  "seen": "404 0.00s {\"ok\": false, \"error\": \"no such address: /count\", \"try\": [\"/health\", \""
+ },
+ {
+  "id": "FACES GET /nope",
+  "ok": true,
+  "label": "GET /nope",
+  "seen": "404 0.01s {\"ok\": false, \"error\": \"no such address: /nope\", \"try\": [\"/health\", \"/"
+ },
+ {
+  "id": "FACES POST rules empty rules",
+  "ok": true,
+  "label": "POST /rules empty rules: refused or saved, no crash",
+  "seen": "400 {\"ok\": false, \"error\": \"send the rules as {\\\"rules\\\": {...}}\"}"
+ },
+ {
+  "id": "FACES POST rules rules not a dict",
+  "ok": true,
+  "label": "POST /rules rules not a dict: refused or saved, no crash",
+  "seen": "400 {\"ok\": false, \"error\": \"send the rules as {\\\"rules\\\": {...}}\"}"
+ },
+ {
+  "id": "FACES POST rules huge name",
+  "ok": true,
+  "label": "POST /rules huge name: refused or saved, no crash",
+  "seen": "200 {\"ok\": true, \"rules\": {\"words\": [\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+ },
+ {
+  "id": "FACES present",
+  "ok": true,
+  "label": "POST /present",
+  "seen": "404 {\"ok\": false, \"error\": \"no such address: /present\", \"try\": [\"/count\", \"/act\", \"/"
+ },
+ {
+  "id": "FACES present bin",
+  "ok": true,
+  "label": "POST /present binary",
+  "seen": "400 {\"ok\": false, \"error\": \"that request was not readable\"}"
+ }
+]

@@ -259,7 +259,12 @@ String CommandRouter::handleLocked(const String& line) {
         String what = argv[1];
         what.toUpperCase();
         if (what == "ID") {
-            int v = argv[2].toInt();
+            // toInt() reads "1.5" as 1 and "12abc" as 12 (found in the QEMU sweep
+            // 2026-11-22): a typo would silently pick another id. Digits only.
+            bool digits = argv[2].length() > 0 && argv[2].length() <= 3;
+            for (unsigned i = 0; i < argv[2].length(); i++)
+                if (argv[2][i] < '0' || argv[2][i] > '9') digits = false;
+            int v = digits ? argv[2].toInt() : 0;
             if (v < 1 || v > 247) return "ERR id must be 1-247";
             id_->setId((uint8_t)v);
             return "OK id=" + String(id_->id());
