@@ -267,18 +267,18 @@ a.peer:hover{border-color:var(--acc)}
     <div class="row">
       <span class="lbl">Mode</span>
       <select id="nmode" onchange="nongModeChanged()">
-        <option value="slider">drag by slider</option>
-        <option value="seq">follow sequence (SD card)</option>
+        <option value="slider">drag the sliders</option>
+        <option value="seq">play a saved show</option>
         <option value="studio">follow Nong Studio</option>
       </select>
-      <span class="statline">sliders send only in "drag by slider" mode; the <b>now</b> value is the real position</span>
+      <span class="statline">the sliders only move the arms in "drag the sliders" mode. <b>now</b> is where the arm really is</span>
     </div>
     <div id="jointRows"></div>
-    <div class="statline" id="jxyz" style="white-space:pre-wrap"></div>
+    <div class="statline tech" id="jxyz" style="white-space:pre-wrap"></div>
     <div class="row">
       <button onclick="cmd('HOME')">Go home</button>
-      <button onclick="cmd('ATTACH')">Attach (power on)</button>
-      <button class="danger" onclick="cmd('RELAX')" title="cut servo power (detach) - the arms go limp">&#9211; Stop (power off)</button>
+      <button onclick="cmd('ATTACH')">Switch motors on</button>
+      <button class="danger" onclick="cmd('RELAX')" title="cut servo power - the arms go limp">&#9211; Switch motors off</button>
       <span class="lbl">Speed &deg;/s</span>
       <input type="number" id="ndps" min="5" max="600" style="width:80px" onchange="cmd('SPEED '+this.value)">
       <span class="statline" id="nongStat"></span>
@@ -545,7 +545,8 @@ a.peer:hover{border-color:var(--acc)}
 <!--#end-->
 
   <div class="card" data-tab="files">
-    <h2>Play a saved show <span class="statline">(last.yaml = the last one run)</span></h2>
+    <h2>Play a saved show</h2>
+    <div class="statline tech">last.yaml is the last show that was run.</div>
     <div class="row">
       <select id="moveSel" style="flex:1"></select>
       <button class="primary" onclick="runSel()">Run</button>
@@ -597,7 +598,7 @@ a.peer:hover{border-color:var(--acc)}
            what it takes (CamModule.cpp), and leaving it out meant no picture
            the robot took could be reached from this page at all. -->
       <select id="dirSel" onchange="loadFiles()">
-        <option>/music</option><option>/moves</option><option>/data</option><option>/photos</option>
+        <option value="/music">Songs</option><option value="/moves">Saved shows</option><option value="/data">Data</option><option value="/photos">Photos</option>
       </select>
       <input type="file" id="upFile">
       <button onclick="upload()">Upload</button>
@@ -606,8 +607,8 @@ a.peer:hover{border-color:var(--acc)}
     <table id="fileTbl"><tbody></tbody></table>
   </div>
 
-  <div class="card" data-tab="files">
-    <h2>Console</h2>
+  <div class="card tech" data-tab="files">
+    <h2>Console (for experts)</h2>
     <div id="log"></div>
     <div class="row">
       <input id="cli" placeholder="e.g. GOTO 2 / PING / #3 PING (RS485 bridge) / #* RGB 255 0 0" style="flex:1"
@@ -1780,14 +1781,15 @@ async function loadFiles(){
   try{
     const r=await fetch('/api/files?dir='+dir);const fs=await r.json();
     const tb=$('fileTbl').tBodies[0];tb.innerHTML='';
+    if(!fs.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=3;td.className='statline';td.textContent='Nothing here yet. Choose a file above and press Upload.';tr.appendChild(td);tb.appendChild(tr);}
     fs.forEach(f=>{
       const tr=document.createElement('tr');
       const p=dir+'/'+f.n;
       const td1=document.createElement('td');td1.textContent=f.n;
       const td2=document.createElement('td');td2.textContent=(f.s/1024).toFixed(1)+' kB';
       const td3=document.createElement('td');
-      const g=document.createElement('a');g.href='/api/download?path='+encodeURIComponent(p);g.textContent='get';
-      const d=document.createElement('button');d.textContent='del';d.className='linky';
+      const g=document.createElement('a');g.href='/api/download?path='+encodeURIComponent(p);g.textContent='Download';
+      const d=document.createElement('button');d.textContent='Delete';d.className='linky';
       d.title='delete '+f.n+' from the SD card';
       d.onclick=async()=>{
         // Name the exact file. "Delete?" on its own tells the reader nothing,

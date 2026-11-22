@@ -55,3 +55,15 @@
   the whole installation. The nong pose/sequence editor lives in
   `code/nong/main_python_set_nong` — its YAML export format must stay in sync
   with the `pose` sequence step and the `POSE` command here.
+
+## Simulate first, lab last (user 2026-11-22, all AIs)
+
+Every firmware change (code, the board's web page, commands) is built and run
+in the ESP32 simulator BEFORE it goes on the lab list: `pio run -e <env>` for
+each module type the change touches, then `python qc/run_qc.py --quiet
+check_qemu_firmware check_qemu_peripherals check_qemu_bus`. Cloud works:
+`pip install platformio`, `pio pkg install -g -p
+https://github.com/platformio/platform-espressif32.git#v6.5.0`,
+`python tools/qemu_esp32.py install`. Only what QEMU cannot do (WiFi radio, OTA
+over HTTP, servos, hall pulses, SD, audio) is left for the lab, and the task
+says which.

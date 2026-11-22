@@ -86,7 +86,7 @@ def run(t):
                "the pairing card says what the board actually answered")
 
     # ---- the pictures the robot takes are reachable ---------------------
-    t.contains(page, "<option>/photos</option>",
+    t.contains(page, "<option value=\"/photos\">Photos</option>",
                "the Files card offers the folder the camera saves into")
     t.ok(re.search(r"/photos", (F.FIRMWARE / "src/modules/cam/CamModule.cpp")
                    .read_text(encoding="utf-8", errors="replace")),
