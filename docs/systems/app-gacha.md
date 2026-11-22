@@ -50,11 +50,12 @@ Prize machines (gachapon): several gacha boards, kinds, hand-over when one is em
 
 - nothing
 
-## Checks that test it (17)
+## Checks that test it (18)
 
 - `check_gacha`
 - `check_gacha_config_concurrency`
 - `check_gacha_event_order`
+- `check_gacha_logged_out`
 - `check_gacha_motion`
 - `check_gacha_routes`
 - `check_gacha_sheet`
@@ -70,4 +71,4 @@ Prize machines (gachapon): several gacha boards, kinds, hand-over when one is em
 - `check_studio_wifi_after_cable`
 - `check_zero_lock`
 
-Run them: `python qc/run_qc.py --no-build check_gacha check_gacha_config_concurrency check_gacha_event_order check_gacha_motion check_gacha_routes check_gacha_sheet check_gacha_stock check_gacha_ui check_game_friend_contract check_game_prize check_monitor_link check_old_browser check_play_proxy check_remote_scripts check_rig_presets check_studio_wifi_after_cable check_zero_lock`
+Run them: `python qc/run_qc.py --no-build check_gacha check_gacha_config_concurrency check_gacha_event_order check_gacha_logged_out check_gacha_motion check_gacha_routes check_gacha_sheet check_gacha_stock check_gacha_ui check_game_friend_contract check_game_prize check_monitor_link check_old_browser check_play_proxy check_remote_scripts check_rig_presets check_studio_wifi_after_cable check_zero_lock`

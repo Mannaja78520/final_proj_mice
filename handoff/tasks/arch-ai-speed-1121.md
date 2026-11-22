@@ -46,3 +46,7 @@ docs/architecture/scorecard-2026-11-21.md, docs/experiments/experiment-records.m
 ## Update 2026-11-21 (branch claude/brain-split-speaker)
 - Brain now Brain(FaceLink, Translator, Listener, Speaker). Speaker (voices, cache, manner, Edge/Windows engines, scenarios) in apps/voice/speaker.py; speaker uses self._m().CODE / .subprocess = the Brain's own module globals, so checks that swap mod.CODE keep working. service.py 3913 -> ~2000 lines.
 - Next: FAQ/answer prompt (_think_prompt, generate, faq_*) out of Brain; main.py (3050 lines).
+
+## Update 2026-11-21 (branch claude/brain-split-answer)
+- Brain(FaceLink, Translator, Listener, Speaker, Faq, LocalLlm, Answerer): faq.py (saved answers), local_llm.py (load/preload/warm/unload/_complete), answerer.py (prompt, think chain, guards, answers_in & co). service.py 3913 -> 1125 lines; what is left is Brain core (config/services/chain/run_job/keys), health and the HTTP handler.
+- Next: hub main_python/main.py (3050 lines); Handler already mixes in hub_api_* route files.
