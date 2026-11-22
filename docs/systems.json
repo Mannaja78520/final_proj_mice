@@ -199,7 +199,7 @@
      "depends": []},
 
     {"id": "qc", "summary": "The QC suite, its gate and the promotion tool.",
-     "files": ["qc/", "promote.py", "tools/sabotage.py",
+     "files": ["qc/", "promote.py", "tools/sabotage.py", "tools/sim_sweep.py", "tools/studio_sweep.py", "tools/many_boards_probe.py", "tools/helpers_probe.py", "tools/legacy_probe.py",
       "tools/qemu_esp32.py", "tools/land.py", "tools/snapshot.py",
                "tools/save_code_patch.py", "tools/watch_main.py"],
      "depends": []},
