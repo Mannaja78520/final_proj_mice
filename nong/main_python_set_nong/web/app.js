@@ -8252,6 +8252,12 @@ function setWorkName(v) {
 }
 // Save = the project (.json) AND the robot's file (.yaml), under one name.
 // True only when everything that should be on disk is.
+// The names the hub holds right now ([] when it does not answer: the save then
+// goes on as before and reports its own failure).
+async function savedNamesNow(kind) {
+  const a = await Mice.Api.get("/api/list?kind=" + kind);
+  return a.ok && a.data && Array.isArray(a.data.files) ? a.data.files : [];
+}
 async function saveAll() {
   if (typeof sequenceAudio !== "undefined" && !sequenceAudio.readyForSave()) return false;
   const name = cleanName($("projName").value || "my_move");
@@ -8260,11 +8266,20 @@ async function saveAll() {
   const writeYaml = playKeys().length > 0;
   // Every question comes BEFORE the first write, so Cancel leaves both files
   // exactly as they were.
+  // Ask the hub NOW, not the list this page drew at load: a second tab (or a
+  // second person) may have saved this name since, and a stale list let one tab
+  // silently replace the other's work (walk-through 2026-11-22).
   const have = [...$("seqList").options].map(o => o.value);
-  if (writeYaml && name !== savedName && have.includes(name + ".yaml") &&
-      !confirm(name + ".yaml is already saved. Replace it?\n\n" +
+  let clash = "";
+  if (name !== savedName) {
+    const [ys, ps] = await Promise.all([savedNamesNow("sequences"), savedNamesNow("projects")]);
+    if (writeYaml && (have.includes(name + ".yaml") || ys.includes(name + ".yaml"))) clash = name + ".yaml";
+    else if (ps.includes(name + ".json")) clash = name + ".json";
+  }
+  if (clash &&
+      !confirm(clash + " is already saved. Replace it?\n\n" +
                "Cancel, then type a new name to keep both.")) {
-    $("tlStat").textContent = "not saved — " + name + ".yaml was left as it was";
+    $("tlStat").textContent = "not saved — " + clash + " was left as it was";
     return false;
   }
   if (writeYaml && name === savedName && loadedSkipped > 0 &&
@@ -11047,8 +11062,11 @@ async function vidLoadLib(mode = "single") {
   return vidLib;
 }
 
-function vidSay(text, bad) {
+// `tech` is the part a designer does not need (counts, reversals): it sits in a
+// span the "Show technical details" switch reveals, so the line reads plainly.
+function vidSay(text, bad, tech) {
   $("vidStat").textContent = text;
+  $("vidStatTech").textContent = tech ? " " + tech : "";
   if (bad) notice(text);
 }
 function vidOpts() {
@@ -11556,7 +11574,7 @@ function vidChooseRoutine() {
   const video = $("vidPlayer"); vidCheckedPlayback.reset(video);
   if (video?.pause) video.pause();
   if (video?.src && Number.isFinite(video.duration)) video.currentTime = +$("vidFrom").value || 0;
-  vidSay(vidSummary());
+  vidSay(vidSummary(), false, vidSummaryTech());
 }
 async function vidSaveRoutines() {
   if (vidBusy) return;
@@ -11586,15 +11604,21 @@ async function vidSaveRoutines() {
 function vidSummary() {
   const m = vidMade, opts = vidOpts();
   return m.keys.length + " moves from " + (m.videoMs / 1000).toFixed(1) + " s of video."
-    + (vidRoutines.length ? " " + vidRoutines.length + " routine groups / scene sections found automatically. Uncertain camera links are split rather than stitched into another dance." : "")
-    + (m.quality?.smoothing ? " Short reversals: " + m.quality.smoothing.before.reversals + " → " + m.quality.smoothing.afterRepair.reversals + "." : "")
     + (m.safe && safeSay(m.safe) ? " " + safeSay(m.safe) : "")
-    + (m.quality?.uncertain ? " " + m.quality.uncertain + " uncertain observations hold the last trustworthy pose." : "")
     + (opts.music && m.partial
       ? " To stay with the music, " + m.partial + " of them go only part of the way: "
         + "the person moved faster than the robot can."
       : "")
     + vidHandNote(m) + " Choose what to keep below, then put them on the time bar:";
+}
+// The counts behind the summary, for the technical switch.
+function vidSummaryTech() {
+  const m = vidMade;
+  return [
+    vidRoutines.length ? vidRoutines.length + " routine groups / scene sections found automatically. Uncertain camera links are split rather than stitched into another dance." : "",
+    m.quality?.smoothing ? "Short reversals: " + m.quality.smoothing.before.reversals + " → " + m.quality.smoothing.afterRepair.reversals + "." : "",
+    m.quality?.uncertain ? m.quality.uncertain + " uncertain observations hold the last trustworthy pose." : "",
+  ].filter(Boolean).join(" ");
 }
 // One row per made move: its moment (click to see it), what it becomes, and
 // what could not be done for it.
@@ -11684,8 +11708,13 @@ async function vidMake() {
       return;
     }
     const seen = frames.filter(f => f.w).length;
-    vidSay("The person was found in " + Math.round(100 * seen / frames.length)
-           + "% of the video. " + vidSummary());
+    const pct = Math.round(100 * seen / frames.length);
+    // a person seen in a sliver of the clip means the moves are mostly guesses:
+    // say that first, in words, before the numbers (walk-through 2026-11-22)
+    if (pct < 25) vidSay("I could hardly see a person in this video (only " + pct
+      + "% of it), so these moves are probably not useful. Try a video where the whole "
+      + "person, arms included, is in the picture. " + vidSummary(), true, vidSummaryTech());
+    else vidSay("The person was found in " + pct + "% of the video. " + vidSummary(), false, vidSummaryTech());
     return true;
   } finally {
     vidBusy = false;
@@ -11707,7 +11736,7 @@ function vidRebuild() {
   vidMade = vidBuild(vidFit, vidPicks, vidOpts());
   vidList();
   $("vidUseBox").hidden = !(vidMade && vidMade.keys.length >= 2);
-  vidSay(vidSummary());
+  vidSay(vidSummary(), false, vidSummaryTech());
 }
 async function vidUse(how, options = {}) {
   const generation = vidGeneration;
