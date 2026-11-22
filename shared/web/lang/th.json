@@ -24,7 +24,6 @@
   "Firmware": "เฟิร์มแวร์",
   "Network": "เครือข่าย",
   "Settings": "ตั้งค่า",
-  "📋 Complaints": "📋 รายงานปัญหา",
   "Your modules": "โมดูลของคุณ",
   "Looking for modules — over WiFi, on the cables, and on any other PC running this hub…": "กำลังค้นหาโมดูล — ผ่าน WiFi สายเคเบิล และเครื่องอื่นที่เปิดฮับนี้…",
   "📡 Every module — one row each": "📡 โมดูลทั้งหมด — แถวละหนึ่งตัว",
@@ -128,7 +127,6 @@
   "Give a prize": "แจกรางวัล",
   "🎁 Give": "🎁 แจก",
   "Give one anyway (admin)": "แจกให้เลย (แอดมิน)",
-  "Can they have one?": "เขาได้รางวัลไหม?",
   "Kind": "ชนิด",
   "Machine": "ตู้",
   "Event": "งาน",
@@ -139,7 +137,6 @@
   "Save on every machine": "บันทึกลงทุกตู้",
   "Start the event": "เริ่มงาน",
   "Close the event": "ปิดงาน",
-  "New event (counts to zero)": "งานใหม่ (นับจากศูนย์)",
   "Save rules": "บันทึกกติกา",
   "Save machines": "บันทึกตู้",
   "Save kinds": "บันทึกชนิดรางวัล",
@@ -546,7 +543,6 @@
   "What": "อะไร",
   "From": "จาก",
   "Admin": "แอดมิน",
-  "name, or empty": "ชื่อ หรือเว้นว่าง",
   "whoever the face app sees nearest": "ใครก็ตามที่แอปใบหน้าเห็นใกล้ที่สุด",
   "the face app that knows who is here": "แอปที่จำหน้าคนได้ว่าใครอยู่ตรงนี้",
   "👁 Open it": "👁 เปิดใช้งาน",
@@ -559,7 +555,6 @@
   "Mice cannot tell which version of Reconize is installed.": "Mice ดูไม่ออกว่า Reconize ที่ติดตั้งอยู่เป็นเวอร์ชันไหน",
   "📂 Saved Sequences": "📂 ลำดับการแสดงที่บันทึกไว้",
   "🗣️ Quick Speech & Actions": "🗣️ พูดและขยับแบบเร็ว",
-  "Silenced All": "ปิดเสียงทั้งหมด",
   "🦾 Joint Monitor (Real-time)": "🦾 ดูข้อต่อสด ๆ",
   "10 Servos": "เซอร์โว 10 ตัว",
   "🏠 Home": "🏠 กลับท่าเริ่มต้น",
@@ -574,6 +569,12 @@
   "R 🤚 back up": "ขวา 🤚 คว่ำมือ",
   "start": "เริ่ม",
   "start pose": "ท่าเริ่มต้น",
-  "name this move": "ตั้งชื่อท่านี้"
+  "name this move": "ตั้งชื่อท่านี้",
+  "Mute all speech": "ปิดเสียงทั้งหมด",
+  "guest name (optional)": "ชื่อ หรือเว้นว่าง",
+  "Check if this guest can win": "เขาได้รางวัลไหม?",
+  "Start a new event and reset counts": "งานใหม่ (นับจากศูนย์)",
+  "📋 Problem reports": "📋 รายงานปัญหา",
+  "Prize type": "ชนิด"
  }
 }

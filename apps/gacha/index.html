@@ -46,15 +46,15 @@
 
 <div class="card" data-tab="give">
   <h2>Give a prize</h2>
-  <div class="row"><span class="lbl">Kind</span><select id="gItem"></select>
+  <div class="row"><span class="lbl">Prize type</span><select id="gItem"></select>
     <span class="lbl" style="min-width:0">for</span>
-    <input id="gPerson" placeholder="name, or empty" style="flex:1">
+    <input id="gPerson" placeholder="guest name (optional)" style="flex:1">
     <button onclick="document.getElementById('gPerson').value='@face'" title="whoever the face app sees nearest">the person in front of the camera</button></div>
   <div class="row"><span class="lbl">Machine</span><select id="gMachine"><option value="">any machine with that kind</option></select></div>
   <div class="row">
     <button class="primary" onclick="give(false)">🎁 Give</button>
     <button onclick="give(true)" title="for the admin: works past the limits and when the event is closed, and is still counted">Give one anyway (admin)</button>
-    <button onclick="can()">Can they have one?</button>
+    <button onclick="can()">Check if this guest can win</button>
   </div>
   <div class="statline" id="gStat" aria-live="polite"></div>
 </div>
@@ -66,7 +66,7 @@
   <div class="row"><span class="lbl">Now</span><b id="evOpen">-</b>
     <button onclick="event_({open: true})">Start the event</button>
     <button onclick="event_({open: false})">Close the event</button>
-    <button onclick="if(confirm('Start this event\'s counts on every machine from zero?'))event_({reset: true})">New event (counts to zero)</button></div>
+    <button onclick="if(confirm('Start this event\'s counts on every machine from zero?'))event_({reset: true})">Start a new event and reset counts</button></div>
   <div class="statline" id="evStat"></div>
 </div>
 
