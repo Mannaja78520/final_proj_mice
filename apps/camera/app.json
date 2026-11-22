@@ -12,6 +12,7 @@
   "name": "ESP32 camera",
   "blurb": "ดูภาพจากกล้อง ESP32 ที่เชื่อมต่อกับระบบ",
   "icon": "📷",
+  "image": "/img/apps/camera.webp",
   "order": 15,
   "help": "camera"
 }

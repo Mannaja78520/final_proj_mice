@@ -2,6 +2,7 @@
   "name": "TV Remote",
   "blurb": "ควบคุมการแสดงและดูภาพบนทีวีหรือมือถือ",
   "icon": "📺",
+  "image": "/img/apps/tv.webp",
   "order": 12,
   "help": "tv"
 }

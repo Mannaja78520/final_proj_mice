@@ -182,7 +182,7 @@ class Extensions:
                 continue
             cfg = got["manifest"]
             out.append({"id": app_id, "name": cfg.get("name") or app_id,
-                        "blurb": cfg.get("blurb") or "", "icon": cfg.get("icon") or "",
+                        "blurb": cfg.get("blurb") or "", "icon": cfg.get("icon") or "", "image": cfg.get("image") or "",
                         "order": cfg.get("order", 100), "help": cfg.get("help") or "",
                         "needs": cfg.get("needs") or "", "entry": cfg.get("entry") or "index.html",
                         "dir": Path(got["folder"]) / (cfg.get("root") or ""),

@@ -8,6 +8,7 @@
   "name": "Prize machines",
   "blurb": "จัดการเครื่องจ่ายรางวัลและกติกาของแต่ละงาน",
   "icon": "🎁",
+  "image": "/img/apps/gacha.webp",
   "order": 40,
   "help": "gacha"
 }
