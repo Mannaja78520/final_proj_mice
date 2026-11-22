@@ -48,3 +48,26 @@ def run(t):
     t.ok(sum(1 for k in en["strings"] if any("฀" <= c <= "๿" for c in k)) > 40,
          "English has entries for the Thai text the pages carry")
     t.ok(codes.count("en") == 1, "English is listed once", str(codes))
+    # A new language is one file (docs/LANGUAGES.md, tools/lang.py): started empty it
+    # is listed, valid, and changes nothing on the page until entries are filled.
+    import shutil
+    import subprocess
+    import sys
+    from pathlib import Path
+    tool = Path(F.CODE) / "tools" / "lang.py"
+    pack = Path(F.CODE) / "shared" / "web" / "lang" / "zz.json"
+    try:
+        r = subprocess.run([sys.executable, str(tool), "new", "zz", "Test language"],
+                           capture_output=True, text=True, timeout=30)
+        t.ok(r.returncode == 0 and pack.is_file(), "tools/lang.py new starts a pack", r.stdout + r.stderr)
+        listed = [l["code"] for l in json.loads(F.get(base + "/lang/index.json")[1])["languages"]]
+        t.ok("zz" in listed, "a new pack file is in the picker with no other change", str(listed))
+        r = subprocess.run([sys.executable, str(tool), "check"], capture_output=True, text=True, timeout=30)
+        t.ok(r.returncode == 0, "an all-empty pack is valid", r.stdout)
+        r = subprocess.run([sys.executable, str(tool), "missing", "zz"], capture_output=True, text=True, timeout=30)
+        t.ok(len(r.stdout.splitlines()) > 100, "missing lists what is still to translate")
+        js = (Path(F.CODE) / "shared/web/mice-lang.js").read_text(encoding="utf-8")
+        t.ok("if (!dict[t]) return null" in js, "an empty entry keeps the page's own text")
+    finally:
+        if pack.exists():
+            pack.unlink()

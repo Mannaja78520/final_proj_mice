@@ -20,6 +20,7 @@
   function lookup(text) {
     var t = text.replace(/\s+/g, " ").trim();
     if (!t || !dict || !Object.prototype.hasOwnProperty.call(dict, t)) return null;
+    if (!dict[t]) return null;      // an empty entry = not translated yet: keep the page's own text
     return {from: t, to: dict[t]};
   }
   function node(n) {
