@@ -1,37 +1,33 @@
-# Test and simulate every case across all apps
+# Test and simulate every case across all apps (round 2, PC)
 
-Owner:
-Updated: 2026-11-22 13:57 +0000
-Branch: <branch, or main>
-Last commit: <sha>
-Plan: <plan ids, e.g. A45-11>
+Owner: claude
+Updated: 2026-11-22 15:00 +0000
+Branch: claude/project-thread-4fv5bo
+Last commit: see git log
+Plan: none (user 2026-11-22: "test everything, every case, simulate everything")
 
 ## Goal
-<the user's ask, in their words if possible>
+Test every case from docs/test_cases/*.md, find bugs, fix them with a QC check each (sabotage proven), Help in 4 languages. Friend repos are never edited. Do not merge.
 
 ## Doing now
-<written and pushed BEFORE each step: what you are about to do, the files, the approach>
+Round 2 step 1: firmware SIM cases on QEMU (`tools/sim_sweep.py`), pio builds of 4 envs.
+Order after: 2 Studio browser, 3 many boards, 4 voice/faces, 5 TV Chrome 75, full QC, push.
 
 ## File status
-Baseline: <starting SHA; reconcile owned commits, working diff and untracked files>
+Baseline: 0b5870a
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| `<repo/relative/path>` | <short change> | pending | not run | uncommitted |
-
-<One latest row per owned source/generated/test/config/doc file, including additions,
-deletions and renames. Use exact paths; link evidence and label quick/full or
-simulated/hardware. Do not attribute other owners' edits. No edits: say so.
-For this handoff file itself, Commit may be `this checkpoint`.>
+| `handoff/tasks/test-everything-1122.md` | task file | in progress | n/a | this checkpoint |
 
 ## Facts found
-- <file:line - what it does / why it matters; so the next AI does not read it again>
+- pio is `python -m platformio`; QEMU installs with `python tools/qemu_esp32.py install` (.local/qemu).
 
 ## Done
-- <what landed, with PR or commit and how it was verified>
+- Round 1 (PR #204): case lists, 4 fixes.
 
 ## Next
-1. <the next concrete step, with the command if there is one>
+1. Run steps 1-5 from the brief; append sections to docs/test_cases/results_2026-11-22.md.
 
 ## Blocked
-- <what it waits on: robot, user account, a person, a decision; or "nothing">
+- nothing
