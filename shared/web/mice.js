@@ -351,7 +351,8 @@ window.miceTheme = new MiceThemeManager();
     el.classList.add("mlogin");
     el.innerHTML =
       '<div class="mlIn row" hidden>' +
-      '  <span class="lbl">Log in</span>' +
+      '  <button class="mlOpen" type="button">🔑 Log in to control</button>' +
+      '  <span class="lbl mlLbl">Log in</span>' +
       '  <input class="mlUser" placeholder="username" autocomplete="off">' +
       '  <input class="mlPass" type="password" placeholder="password" autocomplete="new-password">' +
       '  <button class="primary mlGo" type="button">Log in</button>' +
@@ -371,6 +372,12 @@ window.miceTheme = new MiceThemeManager();
       '  <button class="mlSetName" type="button">Change username</button>' +
       '</div>' +
       '<div class="statline mlStat" role="status" aria-live="polite"></div>';
+    // On a phone the form folds to ONE button until it is wanted: tools can be looked at with no
+    // login, and the form took the first screen (UX audit 2026-11-22, GPT and Gemini).
+    if (window.innerWidth <= 700) el.classList.add("mlfold");
+    el.querySelector(".mlOpen").onclick = function () {
+      el.classList.remove("mlfold"); var u = el.querySelector(".mlUser"); if (u) u.focus();
+    };
     el.querySelector(".mlGo").onclick = function () { login(el); };
     el.querySelector(".mlOff").onclick = function () { logout(el); };
     el.querySelector(".mlMine").onclick = function () {

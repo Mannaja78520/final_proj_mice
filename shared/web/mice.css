@@ -394,3 +394,7 @@ select{color-scheme:inherit}
 .mlogin .row { margin: 0; }
 .mlogin button { padding: 4px 10px; font-size: 13px; }
 .mlogin .row { gap: 8px; }
+/* folded login on a phone: one button, the form opens when pressed */
+.mlogin .mlOpen{display:none}
+.mlogin.mlfold .mlOpen{display:inline-block;min-height:44px}
+.mlogin.mlfold .mlLbl,.mlogin.mlfold .mlUser,.mlogin.mlfold .mlPass,.mlogin.mlfold .mlGo{display:none}

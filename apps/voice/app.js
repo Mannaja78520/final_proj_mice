@@ -624,6 +624,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
     return;
   }
   this.$("down").hidden = true;
+  this.$("talkOff").hidden = true;
   this.$("ready").hidden = false;
   this.$("settings").hidden = false;        // settings exist only while helper runs
   if (this.cfg === null) this.loadStores();
@@ -813,6 +814,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
   down(why){
   this.say("the voice helper is off", "warn");
   this.$("down").hidden = false;
+  this.$("talkOff").hidden = false;     // the Talk tab was blank while the helper is off
   this.$("retry").hidden = false;
   if (!this.$("down").querySelector(".why")) {
     const w = document.createElement("p");
