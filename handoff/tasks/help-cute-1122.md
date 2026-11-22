@@ -1,5 +1,13 @@
 # help-cute-1122 — Hub header, language switch, cute pictures, Help in the Tri-U look
-Owner: claude (project thread)   Updated: 2026-11-22
+Owner: claude:help-cute
+Updated: 2026-11-22 15:00
+Branch: claude/help-cute-1122
+Last commit: bf3232e
+Plan: none (user ask 2026-11-22)
+
+## Goal
+Language switch recognisable and top-right in every app; cute pictures (Codex) in Help and app icons; Help in the Tri-U look.
+
 
 User asks: (1) language switch recognisable + same place in every app, Home layout less odd;
 (2) pictures for hard parts in Help; (3) Help looks like the Tri-U project, cute GPT-made drawings;

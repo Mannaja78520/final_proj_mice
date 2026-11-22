@@ -292,3 +292,4 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
 .pics figure.pic{flex-direction:column;align-items:stretch;margin:0}
 .pics figure.pic img{width:100%}
 .pics figure.pic figcaption{flex:0 0 auto}
+#inPictures h4{margin:0 0 var(--sp-2);font-size:1.1em}
