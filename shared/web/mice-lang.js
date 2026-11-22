@@ -12,6 +12,7 @@
   var ATTRS = ["placeholder", "title", "aria-label"];
   var SKIP = {SCRIPT: 1, STYLE: 1, TEXTAREA: 1, CODE: 1, PRE: 1};
   var dict = null;
+  var loaded = null;        // the language this page was translated into
 
   var fallback = DEFAULT;   // the hub's own default (index.json), until a person picks
   function current() {
@@ -96,6 +97,7 @@
       if (idx && idx.default) fallback = idx.default;
       picker(langs);
       var code = current();
+      loaded = code;
       if (code === "off") return;     // QC: the page exactly as written
       // English is the source language, but a page may carry Thai text of its own
       // (lang/en.json, optional) that English must turn back into English.
@@ -107,6 +109,43 @@
       });
     });
   }
+  // One setting for every page of every app on this hub (same origin, same storage). A page that
+  // is already open when the language is changed in another tab offers a reload instead of
+  // reloading by itself: Studio may hold unsaved work.
+  var NOTE = {
+    th: ["เปลี่ยนภาษาแล้ว", "โหลดหน้านี้ใหม่"], en: ["Language changed", "Reload this page"],
+    zh: ["语言已更改", "重新加载此页面"], ja: ["言語が変更されました", "このページを再読み込み"]
+  };
+  function changedElsewhere(code) {
+    if (document.getElementById("miceLangNote") || !document.body) return;
+    var n = NOTE[code] || NOTE.en, d = document.createElement("div");
+    d.id = "miceLangNote";
+    d.style.cssText = "position:fixed;right:12px;bottom:12px;z-index:99999;background:#222;color:#fff;" +
+      "padding:8px 12px;border-radius:8px;font:14px sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.4)";
+    d.appendChild(document.createTextNode(n[0] + " "));
+    var b = document.createElement("button");
+    b.textContent = n[1];
+    b.onclick = function () { location.reload(); };
+    d.appendChild(b);
+    document.body.appendChild(d);
+  }
+  window.addEventListener("storage", function (e) {
+    if (e.key === KEY && e.newValue && e.newValue !== loaded) changedElsewhere(e.newValue);
+  });
+  // A link to another program (a partner app on its own address) carries the language, so an app
+  // that reads ?lang= can follow the hub. Harmless to one that does not.
+  document.addEventListener("click", function (e) {
+    var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+    if (!a || current() === "off") return;
+    try {
+      var u = new URL(a.href, location.href);
+      if ((u.protocol === "http:" || u.protocol === "https:") && u.origin !== location.origin &&
+          !u.searchParams.get("lang")) {
+        u.searchParams.set("lang", current());
+        a.href = u.href;
+      }
+    } catch (err) { /* a link the browser cannot parse is left as it is */ }
+  }, true);
   window.MiceLang = {current: current, source: SOURCE};
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
   else start();

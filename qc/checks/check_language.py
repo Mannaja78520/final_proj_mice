@@ -69,6 +69,7 @@ def run(t):
         js = (Path(F.CODE) / "shared/web/mice-lang.js").read_text(encoding="utf-8")
         t.ok("if (!dict[t]) return null" in js, "an empty entry keeps the page's own text")
         t.ok("if (dict[t] === t) return null" in js, "a text that translates to itself is not written back (observer loop)")
+        t.ok("e.key === KEY" in js and "searchParams.set(\"lang\"" in js, "other tabs are told of a language change and partner links carry ?lang=")
     finally:
         if pack.exists():
             pack.unlink()

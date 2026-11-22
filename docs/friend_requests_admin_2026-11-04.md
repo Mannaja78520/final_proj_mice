@@ -38,3 +38,6 @@ Someone who knows nothing about the project opened each friend app. For the frie
 4. Chrome 75: same `?.` / `??` / `replaceAll` problem as Face_Regonize.
 
 Not tested (needs a person or hardware): playing a game to the end and the prize, phone over the LAN, photo capture and QR.
+
+**Language (all three apps, 2026-11-22)**
+The hub now has Thai / English / Chinese / Japanese and adds `?lang=th|en|zh|ja` to every link it opens into your app. If you can, read `lang` from the address (and remember it) and show that language; any app that ignores it keeps working as before.
