@@ -28,6 +28,8 @@ import urllib.request
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import children
+
 _lock = threading.Lock()
 _procs = {}          # (partner id, command) -> Popen
 TMP = Path(tempfile.gettempdir())
@@ -212,7 +214,9 @@ def start(pid, entry):
                     "cmd /c " + cmd if sys.platform == "win32" else cmd,
                     shell=sys.platform != "win32", cwd=str(folder / cwd),
                     stdout=out, stderr=subprocess.STDOUT,
-                    stdin=subprocess.DEVNULL, creationflags=flags)
+                    stdin=subprocess.DEVNULL, creationflags=flags,
+                    **children.session_flags())
+                children.CHILDREN.adopt("%s %s" % (pid, label), _procs[key])
             except Exception as e:                           # noqa: BLE001
                 return {"ok": False, "up": up,
                         "error": "could not start the %s part of %s (%s)" % (label, name, e)}

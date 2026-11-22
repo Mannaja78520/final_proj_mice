@@ -1304,23 +1304,40 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
 // one-voice-for-everything and the voice for a two-language line. Only Try
 // sends `try_` = {voice, speed, pitch}: a choice heard before it is saved.
   async speak(text, lang, try_ = null){
+  // ONE VOICE AT A TIME (user 2026-11-22: sound bugs). Pressing Try twice, or
+  // an answer arriving while one still plays, used to layer two voices; the
+  // older one is stopped first. A helper that never answers used to leave
+  // "saying…" for ever, so the request gives up after 60 s. AbortController,
+  // not the newer timeout helper: the TV's Chrome 75 has no such thing.
+  this.stopOwnVoice();
+  const own = {};
+  this.sayNow = own;
   this.$("wait").textContent = "saying…";
   this.$("speakingText").textContent = text;
   this.$("speakingNow").hidden = false;
+  const giveUp = new AbortController();
+  const giveUpTimer = setTimeout(() => giveUp.abort(), 60000);
   try {
     const r = await fetch("/api/voice/say", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(Object.assign({text: text, lang: lang || ""}, try_ || {})),
+      signal: giveUp.signal,
     });
+    clearTimeout(giveUpTimer);
+    if (this.sayNow !== own) return;           // a newer line took over
     if (!r.ok) { this.$("wait").textContent = (await r.json()).error; this.$("speakingNow").hidden = true; return; }
     // MP3 = the natural voice spoke; a WAV = the PC's flat stand-in, and
     // the helper says why (A42-2).
     const kind = (r.headers && r.headers.get && r.headers.get("Content-Type")) || "";
     if (kind.includes("mpeg")) this.showVoice({natural: true});
     else if (kind.includes("wav")) this.checkVoice();
-    const url = URL.createObjectURL(await r.blob());
+    const blob = await r.blob();
+    if (this.sayNow !== own) return;
+    const url = URL.createObjectURL(blob);
     const player = new Audio(url);
+    own.player = player;
+    player.onerror = () => { this.$("wait").textContent = "The sound could not play."; this.$("speakingNow").hidden = true; };
     player.onplaying = () => this.spoke(text, player.duration);   // A46-1: gestures start now
     player.onended = () => { this.$("wait").textContent = ""; this.$("speakingNow").hidden = true; };
     // Revoked by listeners, not by onended: the blocked-sound path below
@@ -1345,9 +1362,19 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
       this.$("wait").appendChild(again);
     }
   } catch(e) {
-    this.$("wait").textContent = "The sound could not play.";
+    clearTimeout(giveUpTimer);
+    if (this.sayNow !== own) return;
+    this.$("wait").textContent = giveUp.signal.aborted
+      ? "The voice helper did not answer. Try again in a moment." : "The sound could not play.";
     this.$("speakingNow").hidden = true;
   }
+}
+
+// Stops the answer this page is playing, if any (the next line, Stop, leaving).
+  stopOwnVoice(){
+  const old = this.sayNow;
+  this.sayNow = null;
+  if (old && old.player) { try { old.player.pause(); } catch(e) {} old.player.dispatchEvent(new Event("ended")); }
 }
 
 // What the rig's ONE speaking queue is doing (hub_speak.py, A4-4): a greeting
@@ -3371,6 +3398,10 @@ static SAMPLES = {
       window.addEventListener("beforeunload", e => {
         if (this.sheet.some(r => r.dirty) || this.removedRows) { e.preventDefault(); e.returnValue = ""; }
       });
+
+    // A voice does not keep talking from a page that is gone.
+    if (typeof window.addEventListener === "function")
+      window.addEventListener("pagehide", () => this.stopOwnVoice());
 
     // A shown camera stops with the tab hidden and comes back with it: a
     // board streaming to a tab nobody sees holds the hub's one relay open.

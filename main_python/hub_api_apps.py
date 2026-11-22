@@ -60,7 +60,7 @@ class AppRoutes:
             try:
                 # this PC's list (A51-2): removed ones and ones whose
                 # partner is not installed here are left out
-                out = [{k: a.get(k) for k in ("id", "name", "blurb", "icon",
+                out = [{k: a.get(k) for k in ("id", "name", "blurb", "icon", "image",
                                               "path", "order", "help")}
                        for a in _hub.hub_apps() if a.get("show", True)]
                 out.sort(key=lambda a: (a["order"], (a["name"] or "").lower()))
@@ -112,6 +112,17 @@ class AppRoutes:
             url = (entry.get("api") or entry.get("open") or "").rstrip("/") + (entry.get("health") or "/")
             return self.send_json({"ok": True, "up": _hub.partner_launch.answers(url, 1.0),
                                    "checked": url})
+
+        if path == "/api/quit":
+            # ONE-CLICK STOP (user 2026-11-22). Only from this PC itself and
+            # never by a link on a website (POST + our own origin): a phone on
+            # the WiFi must not be able to shut the venue's hub down.
+            if method != "POST" or not (_hub.is_self(self.client_address[0])
+                                        and self.origin_is_hub()):
+                self.drain()
+                return self.send_err("stopping the hub is only possible from the hub's own PC", 403)
+            names = _hub.stop_hub()
+            return self.send_json({"ok": True, "stopped": names})
 
         if path == "/api/partners/start":
             # Starts a configured outside program on THIS PC. No hub login

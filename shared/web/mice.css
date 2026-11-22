@@ -243,6 +243,12 @@ body.page{max-width:980px;margin:0 auto;padding:var(--sp-6) var(--sp-4)}
              background:var(--btn);color:var(--txt);text-decoration:none;font-size:14px}
 .topbar-home:hover{border-color:var(--acc);background:var(--acc-soft)}
 .topbar-adv{display:inline-flex;gap:var(--sp-2);align-items:center;margin-left:auto}
+/* The corner: language + technical switch, always last on the head's first line. */
+.topbar-end{display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--sp-3);margin-left:auto;order:2}
+.topbar-end .topbar-adv{margin-left:0}
+.lang-pick{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--line);
+           border-radius:var(--r-pill);background:var(--btn);color:var(--txt);cursor:pointer;flex:0 0 auto}
+.lang-pick:hover{border-color:var(--acc)}
 /* A row for something that missed its last check. Dimmed and edged in the
    warning colour, never hidden: it was really there a moment ago, and on a
    venue WiFi that drops it usually still is. The row keeps its controls -

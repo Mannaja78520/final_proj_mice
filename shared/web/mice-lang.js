@@ -67,14 +67,16 @@
   // The picker goes where the "Show technical details" switch is: every page has it.
   function picker(langs) {
     if (!langs || langs.length < 2 || document.getElementById("miceLang")) return;
-    var host = document.querySelector(".topbar-adv, header.topbar");
+    var corner = document.querySelector("header.topbar .topbar-end");
+    var host = corner || document.querySelector(".topbar-adv, header.topbar");
     if (!host) return;
     var sel = document.createElement("select");
     sel.id = "miceLang";
     sel.className = "mini";
     // Natural width: inside a flex or grid header a bare select stretched across
     // the screen (Chrome 75 on the TV VM, 2026-11-21).
-    sel.style.cssText = "width:auto;max-width:11em;flex:0 0 auto;align-self:center";
+    sel.style.cssText = "width:auto;max-width:11em;flex:0 0 auto;align-self:center;border:0;background:transparent;" +
+      "font-weight:600;color:inherit;min-height:0;padding:2px 0";
     sel.setAttribute("aria-label", "Language");
     sel.title = "Language";
     var cur = current();
@@ -89,7 +91,18 @@
       try { localStorage.setItem(KEY, sel.value); } catch (e) { /* private mode */ }
       location.reload();
     };
-    host.parentNode.insertBefore(sel, host.nextSibling);
+    // A globe beside the language's own name, in a bordered pill: the sign everybody knows for
+    // "language" (user 2026-11-22: a bare drop-down was not recognised as the language switch).
+    // Inline SVG, not an emoji: the TV browser has no emoji font for it.
+    var pill = document.createElement("label");
+    pill.className = "lang-pick";
+    pill.title = "Language";
+    pill.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/>' +
+      '<path d="M2.5 12h19M12 2.5c3 3 3 16 0 19M12 2.5c-3 3-3 16 0 19"/></svg>';
+    pill.appendChild(sel);
+    if (corner) corner.insertBefore(pill, corner.firstChild);     // top-right, before the technical switch
+    else host.parentNode.insertBefore(pill, host.nextSibling);
   }
   function start() {
     get("/lang/index.json", function (idx) {

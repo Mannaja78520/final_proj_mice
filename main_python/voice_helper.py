@@ -23,6 +23,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+import children
+
 STORE_STUB = "windowsapps"     # %LOCALAPPDATA%\Microsoft\WindowsApps\python.exe opens the Store
 
 
@@ -159,7 +161,8 @@ class VoiceHelper:
                     self._proc = self.popen(py + ["-u", str(script)], cwd=str(self.root),
                                             env=self.env(), stdin=subprocess.DEVNULL,
                                             stdout=log, stderr=subprocess.STDOUT,
-                                            creationflags=flags)
+                                            creationflags=flags, **children.session_flags())
+                    children.CHILDREN.adopt("voice helper", self._proc)
                 finally:
                     log.close()              # the child holds its own handle
             except OSError as e:

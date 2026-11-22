@@ -276,6 +276,33 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 .action-impact b {
   color: var(--acc);
 }
+
+/* ---- THE HELP LOOK (user 2026-11-22): the warm, friendly look of the Tri-U project -----------
+   Ivory paper, burgundy accent, teal second colour, round cards, a drawn mouse. Only the default
+   light theme gets it; the dark and daylight themes the person picked stay as they were.
+   Contrast measured on #fff8ee: text 11.5:1, muted 5.3:1, accent 7.4:1. */
+:root:not([data-theme]), :root[data-theme="indigo"]{
+  --bg:#fff8ee; --card:#fffdf9; --sunk:#fbefdc; --line:#efdcc0;
+  --txt:#3b2a2a; --mut:#76604f;
+  --acc:#9b2c4a; --on-acc:#ffffff; --btn:#fffdf9;
+  --r-md:18px; --r-lg:22px; --r-sm:12px;
+}
+.brand-mouse{width:40px;height:40px;object-fit:contain;vertical-align:middle;margin-right:var(--sp-2)}
+.topbar h1{display:flex;align-items:center}
+header.top{position:relative;padding-right:170px;min-height:150px}
+.hero-mouse{position:absolute;right:0;top:-6px;width:150px;height:150px;object-fit:contain}
+@media (max-width:640px){ header.top{padding-right:0} .hero-mouse{position:static;float:right;width:84px;height:84px;margin:0 0 var(--sp-2) var(--sp-3)} }
+/* A drawing that shows the hard step; text stays beside it, never inside it (Help text is
+   translated, a picture is not). */
+figure.pic{margin:var(--sp-4) 0;display:flex;gap:var(--sp-4);align-items:center;flex-wrap:wrap;
+           background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-3)}
+figure.pic img{width:min(100%,320px);height:auto;border-radius:var(--r-md);display:block}
+figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
+.pics{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--sp-3)}
+.pics figure.pic{flex-direction:column;align-items:stretch;margin:0}
+.pics figure.pic img{width:100%}
+.pics figure.pic figcaption{flex:0 0 auto}
+#inPictures h4{margin:0 0 var(--sp-2);font-size:1.1em}
 </style>
 </head><body>
 
@@ -283,7 +310,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
      technical switch last. Help used to keep both inside its sidebar, where a
      phone scrolled them away with the rest of the list. -->
 <header class="topbar">
-  <h1>📖 Help</h1>
+  <h1><img class="brand-mouse" src="/img/mascot.webp" alt="" width="40" height="40">Help</h1>
   <span class="sub">A friendly guide to your robot rig</span>
 </header>
 
@@ -296,6 +323,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 
 <main>
 <header class="top">
+  <img class="hero-mouse" src="/img/mascot.webp" alt="" width="150" height="150">
   <h2>A little help with your rig</h2>
   <p>Start with what you want to do. Find your modules, shape a movement,
      or bring a show to life. The complete reference is here when you need it.</p>
@@ -344,6 +372,19 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <p>The app pages (Cameras, Voice, Reconize, Photobooth, All-Jao) ask the hub whether
        their program is running, so they say the right thing on a phone too.</p>
     <p>Mice opens in the Reconize look. For a dark hall, choose Midnight in the hub’s Settings.</p>
+  </div>
+  <div class="f" id="inPictures"><h4>The hard parts, in pictures</h4>
+    <p>Eight steps people ask about most. Each picture shows one step.</p>
+    <div class="pics">
+    <figure class="pic"><img class="pic-img" src="/img/help/usb.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Plug the board in with a USB cable. The hub finds it by itself in a few seconds.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" src="/img/help/wifi.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Phone, laptop and robot must be on the same WiFi. If one is on another network, the hub cannot see it.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" src="/img/help/flash.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Flashing puts new software on the board. Do not unplug the cable until the bar is full.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" src="/img/help/pose.webp" alt="" width="320" height="240" loading="lazy"><figcaption>In Studio, drag a slider and the robot moves the same way. Go slowly the first time.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" src="/img/help/timeline.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Put poses in a row on the timeline, add music, then press play. That is a show.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" src="/img/help/qr.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Scan the QR code with your phone to open the same page there. No typing needed.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" src="/img/help/stop.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Something wrong? Press the red STOP. Every robot stops where it is.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" src="/img/help/camera.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Wave at the camera board. The page shows what it sees, and finds a face when one is there.</figcaption></figure>
+    </div>
   </div>
   <div class="shead">
     <span class="where">start here</span>
@@ -620,6 +661,9 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        tablets and large monitors, with bigger touch targets on a touchscreen. Studio
        stacks the 3D view above its panel below 860px instead of squeezing both, and on a
        phone its view buttons (Top, Front, 3D…) fold behind one <b>Views ▾</b> button.</p></div>
+  <div class="f"><h3>Stopping everything on any PC<span class="tag t-new">new</span></h3>
+    <p>Close the hub with stop_hub.bat, or press Ctrl+C, or just close its window: the voice helper, the face helper and the friends’ apps the hub started stop with it, so the next start on any PC begins clean with nothing left running in the background. The hub on another PC needs no setup: it finds the apps next to it and a free address by itself.</p>
+    <p class="tech">Technical: <code>MiceHub.exe --stop</code> (or <code>python main.py --stop</code>) asks the running hub to quit; <code>POST /api/quit</code> works only from the hub’s own PC. Keep helpers running across hub restarts with <code>"stopWithHub": false</code> in <code>config/children.json</code>.</p></div>
   <div class="f"><h3>Rebuilding or stopping MiceHub<span class="tag t-new">new</span></h3>
     <p>To rebuild the single-file executable from source:
        <code>python -m PyInstaller --clean MiceHub.spec</code></p>
@@ -1316,6 +1360,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        listening runs on this PC too. Which languages it hears — and the words
        each language gets wrong often — live in <code>config/voice.json</code>;
        adding a language in <code>config/voice.json</code> (<code>tts.voices</code> / <code>stt.languages</code>) automatically adds its column and translation target in the Answers sheet and script detector. Use a plain code such as <code>ko</code>. The detector reads the alphabet, not the exact language: French, German, Spanish or Vietnamese questions land in the English column, and kanji with no kana lands in Chinese.</p></div>
+  <div class="f"><h3>One voice at a time<span class="tag t-new">new</span></h3>
+    <p>If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.</p></div>
   <div class="f"><h3>The rig speaks one thing at a time<span class="tag t-new">new</span></h3>
     <p>Everything the rig says goes through <b>one queue</b> on the hub: a
        greeting, an answer from this page spoken through a robot, a message
