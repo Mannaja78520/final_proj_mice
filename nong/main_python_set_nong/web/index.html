@@ -879,6 +879,8 @@
   <div id="timelineEmpty" class="empty-state" hidden><b>Your first pose starts here.</b>Shape the robot, then press + Add keyframe. Add another pose to make a movement.</div>
   <div class="statline" id="tlStat">keyframe 0 is the <b>start pose</b> — select it any time to re-edit, then press “Update selected”.</div>
 </div>
+<!-- phones: the Stop button of the timeline is far below the 3D view, so one is always on screen (UX audit 2026-11-22) -->
+<button id="fabStop" type="button" onclick="robotCmd('MOVE STOP')" title="Stop the robot now">⏹ Stop</button>
 
 <script src="vendor/three.min.js"></script>
 <script src="vendor/OrbitControls.js"></script>

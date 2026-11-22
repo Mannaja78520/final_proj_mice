@@ -166,4 +166,6 @@
 /* ONE line of tabs (A41-3). Seven fit at 1280 px; a phone slides the row
    sideways rather than stacking it four lines deep above the content. */
 #tabs .tab{flex:0 0 auto}
+/* the row stays ONE line on a phone (check_home_tabs, A41-3) but fades at the right edge, so a half-cut tab reads as 'slide for more' (UX audit 2026-11-22) */
+@media (max-width:700px){#tabs{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent)}}
 #tabs .tab:not(.on){background:transparent;border-color:transparent}

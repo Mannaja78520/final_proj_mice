@@ -209,9 +209,9 @@ function viaHtml(r, me){
   const where = (!r.host || r.host === me || r.mine) ? 'this PC' : r.host;
   const tech = function(s){ return '<span class="tech">' + esc(s) + '</span>'; };
   if(r.kind === 'wifi')  return 'over WiFi' + tech(' · ' + (r.ip || '?'));
-  if(r.kind === 'usb')   return 'cable ' + esc(r.port || '?') + ' · ' + esc(where);
-  if(r.kind === 'rs485') return 'RS485 #' + esc(r.bus != null ? r.bus : '?')
-                              + ' behind ' + esc(r.port || '?') + ' · ' + esc(where);
+  if(r.kind === 'usb')   return 'by cable · ' + esc(where) + tech(' · ' + (r.port || '?'));
+  if(r.kind === 'rs485') return 'by cable · ' + esc(where)
+                              + tech(' · RS485 #' + (r.bus != null ? r.bus : '?') + ' behind ' + (r.port || '?'));
   if(r.kind === 'hub'){
     const tail = String(r.dev || '').split('/').slice(1).join('/');
     return 'through ' + esc(r.host || 'another PC')
