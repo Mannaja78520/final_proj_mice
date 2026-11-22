@@ -547,6 +547,23 @@
   "From": "จาก",
   "Admin": "แอดมิน",
   "name, or empty": "ชื่อ หรือเว้นว่าง",
-  "whoever the face app sees nearest": "ใครก็ตามที่แอปใบหน้าเห็นใกล้ที่สุด"
+  "whoever the face app sees nearest": "ใครก็ตามที่แอปใบหน้าเห็นใกล้ที่สุด",
+  "the face app that knows who is here": "แอปที่จำหน้าคนได้ว่าใครอยู่ตรงนี้",
+  "👁 Open it": "👁 เปิดใช้งาน",
+  "🔗 Is the rig following it?": "🔗 หุ่นทำตามหรือยัง?",
+  "💬 What the rig says": "💬 สิ่งที่หุ่นพูด",
+  "Open it": "เปิดใช้งาน",
+  "Reconize runs beside Mice on this PC. It watches the cameras and knows who is who; the rig follows it.": "Reconize ทำงานคู่กับ Mice บนเครื่องนี้ มันดูภาพจากกล้องแล้วรู้ว่าใครเป็นใคร หุ่นจะหันตามคนนั้น",
+  "Check it is running": "เช็กว่าเปิดอยู่ไหม",
+  "Reconize is not installed on this PC.": "เครื่องนี้ยังไม่ได้ติดตั้ง Reconize",
+  "Mice cannot tell which version of Reconize is installed.": "Mice ดูไม่ออกว่า Reconize ที่ติดตั้งอยู่เป็นเวอร์ชันไหน",
+  "📂 Saved Sequences": "📂 ลำดับการแสดงที่บันทึกไว้",
+  "🗣️ Quick Speech & Actions": "🗣️ พูดและขยับแบบเร็ว",
+  "Silenced All": "ปิดเสียงทั้งหมด",
+  "🦾 Joint Monitor (Real-time)": "🦾 ดูข้อต่อสด ๆ",
+  "10 Servos": "เซอร์โว 10 ตัว",
+  "🏠 Home": "🏠 กลับท่าเริ่มต้น",
+  "connecting…": "กำลังเชื่อมต่อ…",
+  "Choose a joint, then drag its ring or use the sliders. Add a keyframe to keep a pose.": "เลือกข้อต่อ แล้วลากวงแหวนหรือใช้แถบเลื่อน กด “เพิ่มคีย์เฟรม” เพื่อเก็บท่า"
  }
 }

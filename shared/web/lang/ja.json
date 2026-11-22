@@ -747,6 +747,23 @@
   "โหลดเพลงนานเกินไป ลองเลือกไฟล์อีกครั้ง": "音楽の読み込みに時間がかかりすぎました。もう一度ファイルを選んでください。",
   "ไฟล์นี้ไม่มีเพลงที่เปิดได้ เลือกไฟล์ท่าและเพลง .nong.json อีกครั้ง": "このファイルには再生できる音楽がありません。動きと音楽の .nong.json ファイルを選び直してください。",
   "ไฟล์เพลงใหญ่เกิน 32 MB": "音楽ファイルが 32 MB を超えています",
-  "❚❚ หยุดชั่วคราว": "❚❚ 一時停止"
+  "❚❚ หยุดชั่วคราว": "❚❚ 一時停止",
+  "the face app that knows who is here": "ここにいる人を見分ける顔認識アプリ",
+  "👁 Open it": "👁 開く",
+  "🔗 Is the rig following it?": "🔗 ロボットは追従している?",
+  "💬 What the rig says": "💬 ロボットが言うこと",
+  "Open it": "開く",
+  "Reconize runs beside Mice on this PC. It watches the cameras and knows who is who; the rig follows it.": "Reconize はこのPCでMiceと一緒に動きます。カメラで誰かを見分け、ロボットがそれを追います。",
+  "Check it is running": "動いているか確認",
+  "Reconize is not installed on this PC.": "このPCにはReconizeが入っていません。",
+  "Mice cannot tell which version of Reconize is installed.": "インストール済みReconizeのバージョンがMiceからは分かりません。",
+  "📂 Saved Sequences": "📂 保存したシーケンス",
+  "🗣️ Quick Speech & Actions": "🗣️ すぐに話す・動く",
+  "Silenced All": "すべて消音",
+  "🦾 Joint Monitor (Real-time)": "🦾 関節モニター(リアルタイム)",
+  "10 Servos": "サーボ10個",
+  "🏠 Home": "🏠 ホームポーズへ",
+  "connecting…": "接続中…",
+  "Choose a joint, then drag its ring or use the sliders. Add a keyframe to keep a pose.": "関節を選び、リングをドラッグするかスライダーを使います。キーフレームを追加すると姿勢が残ります。"
  }
 }

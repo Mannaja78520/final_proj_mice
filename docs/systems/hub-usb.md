@@ -30,10 +30,11 @@ The hub's USB serial manager (one owner of every cable) and the port probe that 
 - [hub-flash](hub-flash.md)
 - [hub-modules](hub-modules.md)
 
-## Checks that test it (34)
+## Checks that test it (35)
 
 - `check_adapter_fast_fail`
 - `check_adapter_reopen_fast`
+- `check_api_index`
 - `check_board_frame`
 - `check_boot_noise`
 - `check_bus_dongle`
@@ -67,4 +68,4 @@ The hub's USB serial manager (one owner of every cable) and the port probe that 
 - `check_transports`
 - `check_wifi_live`
 
-Run them: `python qc/run_qc.py --no-build check_adapter_fast_fail check_adapter_reopen_fast check_board_frame check_boot_noise check_bus_dongle check_bus_flash check_bus_group check_bus_path_cmd check_bus_scale check_bus_topology check_bus_wifi_path check_busmap_screen check_chatty_board check_connection check_flash_confirm check_hub_auth check_login_anywhere check_modsite_tabs check_network_tab check_one_cable check_one_call_path check_one_hub check_one_module_list check_other_pc check_race_guards check_route_latency check_rs485_census check_scale_robust check_shared_modules check_show_misses check_speak check_studio_auto_route check_transports check_wifi_live`
+Run them: `python qc/run_qc.py --no-build check_adapter_fast_fail check_adapter_reopen_fast check_api_index check_board_frame check_boot_noise check_bus_dongle check_bus_flash check_bus_group check_bus_path_cmd check_bus_scale check_bus_topology check_bus_wifi_path check_busmap_screen check_chatty_board check_connection check_flash_confirm check_hub_auth check_login_anywhere check_modsite_tabs check_network_tab check_one_cable check_one_call_path check_one_hub check_one_module_list check_other_pc check_race_guards check_route_latency check_rs485_census check_scale_robust check_shared_modules check_show_misses check_speak check_studio_auto_route check_transports check_wifi_live`

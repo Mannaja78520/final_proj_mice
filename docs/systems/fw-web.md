@@ -24,11 +24,12 @@ The board's own website (WebUI.h).
 
 - nothing
 
-## Checks that test it (31)
+## Checks that test it (32)
 
 - `check_accounts_firmware`
 - `check_board_auth`
 - `check_board_frame`
+- `check_board_page_motors_first`
 - `check_board_password`
 - `check_build_split`
 - `check_cam_panel`
@@ -58,4 +59,4 @@ The board's own website (WebUI.h).
 - `check_ui_states`
 - `check_wifi_ssid`
 
-Run them: `python qc/run_qc.py --no-build check_accounts_firmware check_board_auth check_board_frame check_board_password check_build_split check_cam_panel check_cam_viewers check_camera check_cast_mix check_css_tokens check_design_system check_designer_first check_dev_tools check_gacha_ui check_help_links check_home_pose_board check_keep_run check_latency check_link_states check_modsite_answers check_modsite_errors check_modsite_joints check_modsite_refused check_modsite_tabs check_no_rainbow check_registries check_responsive check_stale_pose check_stream_audio check_ui_states check_wifi_ssid`
+Run them: `python qc/run_qc.py --no-build check_accounts_firmware check_board_auth check_board_frame check_board_page_motors_first check_board_password check_build_split check_cam_panel check_cam_viewers check_camera check_cast_mix check_css_tokens check_design_system check_designer_first check_dev_tools check_gacha_ui check_help_links check_home_pose_board check_keep_run check_latency check_link_states check_modsite_answers check_modsite_errors check_modsite_joints check_modsite_refused check_modsite_tabs check_no_rainbow check_registries check_responsive check_stale_pose check_stream_audio check_ui_states check_wifi_ssid`

@@ -1,0 +1,951 @@
+{
+ "ok": true,
+ "about": "Mice hub API. Docs: docs/HUB_API.md. Errors are {ok:false, error}. Moving things needs POST /api/login first.",
+ "endpoints": [
+  {
+   "path": "/api/access",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_apps.py"
+  },
+  {
+   "path": "/api/all-jao/start",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_apps.py"
+  },
+  {
+   "path": "/api/allmods",
+   "method": "GET",
+   "what": "every module on every PC, this one included scan_hubs() already finds the other hubs on this subnet (it is wha",
+   "params": [
+    "force"
+   ],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/app",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_support.py"
+  },
+  {
+   "path": "/api/app/version",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_support.py"
+  },
+  {
+   "path": "/api/apps",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_apps.py"
+  },
+  {
+   "path": "/api/diag",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_support.py"
+  },
+  {
+   "path": "/api/export",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/extensions",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_extensions.py"
+  },
+  {
+   "path": "/api/extensions/add",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_extensions.py"
+  },
+  {
+   "path": "/api/extensions/check",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_extensions.py"
+  },
+  {
+   "path": "/api/extensions/pick",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_extensions.py"
+  },
+  {
+   "path": "/api/extensions/remove",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_extensions.py"
+  },
+  {
+   "path": "/api/extensions/restore",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_extensions.py"
+  },
+  {
+   "path": "/api/extensions/update",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_extensions.py"
+  },
+  {
+   "path": "/api/faces/start",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "only"
+   ],
+   "file": "hub_api_faces.py"
+  },
+  {
+   "path": "/api/faces/state",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_faces.py"
+  },
+  {
+   "path": "/api/flash",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_flash.py"
+  },
+  {
+   "path": "/api/flash",
+   "method": "POST",
+   "what": "",
+   "params": [
+    "port",
+    "type"
+   ],
+   "file": "hub_api_flash.py"
+  },
+  {
+   "path": "/api/flash/at",
+   "method": "GET",
+   "what": "flashing a board over its own cable (see Flasher) GET  /api/flash/images   what this PC could flash, and what ",
+   "params": [
+    "ip"
+   ],
+   "file": "hub_api_flash.py"
+  },
+  {
+   "path": "/api/flash/bus",
+   "method": "POST",
+   "what": "and the same job again over the COMMAND channel, which is the only one an RS485 board has — see Flash.start_bu",
+   "params": [
+    "dev",
+    "type"
+   ],
+   "file": "hub_api_flash.py"
+  },
+  {
+   "path": "/api/flash/images",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_flash.py"
+  },
+  {
+   "path": "/api/flash/remote",
+   "method": "POST",
+   "what": "flashing from ANOTHER PC (see remote_payload) The image arrives over the network and esptool runs HERE, becaus",
+   "params": [],
+   "file": "hub_api_flash.py"
+  },
+  {
+   "path": "/api/flash/send",
+   "method": "POST",
+   "what": "...and the other half:",
+   "params": [],
+   "file": "hub_api_flash.py"
+  },
+  {
+   "path": "/api/gacha",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/can",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/config",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/event",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/game",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/keys",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/load",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/log",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "csv",
+    "limit"
+   ],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/machine",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/rules",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/rules/pull",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/rules/push",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/sheet",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/sheet/read",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "tab"
+   ],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/sheet/script",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/sheet/write",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/stats",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/stock",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "game",
+    "source"
+   ],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gacha/voice",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/gestures",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/hubs",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "force"
+   ],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/list",
+   "method": "GET",
+   "what": "studio:",
+   "params": [
+    "deep",
+    "kind"
+   ],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/load",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "name"
+   ],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/loadseq",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "name"
+   ],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/logout",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/mine",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/model/upload",
+   "method": "POST",
+   "what": "",
+   "params": [
+    "name"
+   ],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/modules",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "force"
+   ],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/modules/all",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "force"
+   ],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/ota",
+   "method": "POST",
+   "what": "the same job, over WiFi:",
+   "params": [
+    "ip",
+    "password",
+    "type",
+    "user"
+   ],
+   "file": "hub_api_flash.py"
+  },
+  {
+   "path": "/api/pair/claim",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/pair/link",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/pair/start",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/pair/status",
+   "method": "GET",
+   "what": "pairing:",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/pair/stop",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/partners",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_apps.py"
+  },
+  {
+   "path": "/api/partners/health",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "id"
+   ],
+   "file": "hub_api_apps.py"
+  },
+  {
+   "path": "/api/partners/start",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "id"
+   ],
+   "file": "hub_api_apps.py"
+  },
+  {
+   "path": "/api/partners/version",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "id"
+   ],
+   "file": "hub_api_apps.py"
+  },
+  {
+   "path": "/api/pinout",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "dev"
+   ],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/play",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/play",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/play/beat",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/play/home",
+   "method": "GET",
+   "what": "the hub as the show clock (see ShowPlayer) POST /api/play   {dev, steps:[{pose[10], t, hold}], loop, name, fro",
+   "params": [],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/play/stop",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/ports",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/qr",
+   "method": "GET",
+   "what": "the way a phone gets here Printed addresses do not survive a venue:",
+   "params": [
+    "text"
+   ],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/questions",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "csv",
+    "day"
+   ],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/questions/topics",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_gacha.py"
+  },
+  {
+   "path": "/api/quit",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_apps.py"
+  },
+  {
+   "path": "/api/report",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_support.py"
+  },
+  {
+   "path": "/api/reports",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_support.py"
+  },
+  {
+   "path": "/api/reports",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_support.py"
+  },
+  {
+   "path": "/api/rigcad",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/rigdefault",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/rigpresets",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/robot/upload",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/save",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/scan",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "force"
+   ],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/scanusb",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "force",
+    "full",
+    "port"
+   ],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/selfupdate",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_support.py"
+  },
+  {
+   "path": "/api/seqdelete",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/seqsteps",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "name"
+   ],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/servos",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/settings",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/settings",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/settings/peer",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "host"
+   ],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/show",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "name"
+   ],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/show/delete",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/show/save",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/show/steps",
+   "method": "GET",
+   "what": "GET is \"the saved show called X\"; POST (below) is the draft being edited.",
+   "params": [
+    "name"
+   ],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/show/yaml",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/shows",
+   "method": "GET",
+   "what": "shows:",
+   "params": [],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/speak",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_speak.py"
+  },
+  {
+   "path": "/api/speak/stop",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_speak.py"
+  },
+  {
+   "path": "/api/speakers",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_speak.py"
+  },
+  {
+   "path": "/api/stopall",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/stream",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/stream/feed",
+   "method": "POST",
+   "what": "",
+   "params": [
+    "session"
+   ],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/stream/start",
+   "method": "POST",
+   "what": "live audio to a module's speaker (A24-32) POST /api/stream/start  {dev|ip, port, rate, file} -> {session, ...}",
+   "params": [],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/stream/stop",
+   "method": "POST",
+   "what": "",
+   "params": [
+    "session"
+   ],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/stream/voice",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_play.py"
+  },
+  {
+   "path": "/api/upload/cancel",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/upload/progress",
+   "method": "GET",
+   "what": "the background upload:",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/usb/close",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "port"
+   ],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/usb/cmd",
+   "method": "GET",
+   "what": "USB command proxy:",
+   "params": [
+    "c",
+    "id",
+    "port"
+   ],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/users",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/version",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/video/fetch",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "id"
+   ],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/video/fetch",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/video/file",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "id",
+    "kind"
+   ],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/video/put",
+   "method": "POST",
+   "what": "",
+   "params": [
+    "name"
+   ],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/video/sound",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_studio.py"
+  },
+  {
+   "path": "/api/voice",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_apps.py"
+  },
+  {
+   "path": "/api/voice/ask",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/voice/helper",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_apps.py"
+  },
+  {
+   "path": "/api/voice/start",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_apps.py"
+  },
+  {
+   "path": "/api/voice/stop",
+   "method": "POST",
+   "what": "",
+   "params": [],
+   "file": "hub_api_apps.py"
+  },
+  {
+   "path": "/api/whoami",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  }
+ ]
+}
