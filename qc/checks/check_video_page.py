@@ -197,6 +197,7 @@ def run(t):
     import hub_video
     cfg_path = F.CODE / "config" / "video_links.json"
     links = hub_video.Links(cfg_path, tmp / "cache")
+    links.allow_local = True
     hub_api_studio.LINKS = links
     try:
         _hub_half(t, base, local, links, clip, cfg_path, tmp)
@@ -254,6 +255,7 @@ def _hub_half(t, base, local, links, clip, cfg_path, tmp):
     else:
         print("   (no yt-dlp on this PC: its real run is not tried)")
     none = hub_video.Links(cfg_path, tmp / "cache")
+    none.allow_local = True
     none.cfg["ytdlp"]["run"] = [["no-such-yt-dlp-qc"]]
     st = _wait(none, none.start(local + "page.html")[0])
     t.ok(st["state"] == "failed" and "yt-dlp is not installed" in st["error"]
@@ -270,6 +272,13 @@ def _hub_half(t, base, local, links, clip, cfg_path, tmp):
     t.ok(m and m.expand(shares["dropbox"]["direct"]).endswith("rlkey=k&dl=1"),
          "a Dropbox share link becomes its download address", m and m.expand(shares["dropbox"]["direct"]))
     fake = hub_video.Links(cfg_path, tmp / "cache")
+    fake.allow_local = True
+    # a link into this PC or its network is refused in words (2026-11-22 sweep)
+    strict = hub_video.Links(cfg_path, tmp / "cache")
+    for bad in ("http://127.0.0.1:9/a.mp4", "http://localhost/a.mp4", "http://192.168.1.1/a.mp4",
+                "http://169.254.169.254/latest/", "http://[::1]/a.mp4", "http://printer.local/a.mp4"):
+        j, why = strict.start(bad)
+        t.ok(j is None and "internet" in why, "link %s is refused" % bad, why)
     fake.cfg["shares"] = [{"id": "qc", "label": "QC share", "match": re.escape(local) + r"share/([\w.]+)",
                            "direct": local + r"\1", "html": "SHARE IT WITH ANYONE"}]
     fake.run_ytdlp = lambda j: fake._fail(fake.jobs[j], "went to yt-dlp")

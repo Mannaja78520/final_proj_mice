@@ -214,7 +214,10 @@ class StudioRoutes:
             return self.send_json({"ok": True, "file": name, **got})
 
         if path == "/api/save" and method == "POST":
-            data = json.loads(self.body().decode())
+            # 20 MB: a project is pose data (the biggest on disk is ~0.2 MB);
+            # music lives in the browser. Open to the WiFi, so a ceiling of
+            # its own (2026-11-22 sweep: 60 MB went in under the 100 MB one).
+            data = json.loads(self.body(limit=20 * 1048576).decode())
             name = _hub.pc_name(data["name"])
             if not name.endswith(".json"):
                 name += ".json"

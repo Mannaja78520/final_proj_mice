@@ -46,6 +46,30 @@ def _sniff(head):
     return ""
 
 
+def _is_local_host(host):
+    """True for localhost and for addresses on this PC or a private network.
+
+    A pasted link makes the hub fetch it. Without this, a logged-in page could
+    be pointed at 127.0.0.1, the router, or a cloud metadata address
+    (2026-11-22 sweep). Names are resolved, so a name that points inside counts.
+    """
+    import ipaddress
+    import socket
+    if not host:
+        return True
+    try:
+        addrs = {ipaddress.ip_address(host)}
+    except ValueError:
+        if host.lower() == "localhost" or host.lower().endswith(".local"):
+            return True
+        try:
+            addrs = {ipaddress.ip_address(i[4][0]) for i in socket.getaddrinfo(host, None)}
+        except OSError:
+            return False        # no DNS: the fetch itself will say so
+    return any(a.is_loopback or a.is_private or a.is_link_local or a.is_reserved
+               or a.is_unspecified or a.is_multicast for a in addrs)
+
+
 class Links:
     def __init__(self, cfg_path, folder=None):
         self.cfg = json.loads(Path(cfg_path).read_text(encoding="utf-8"))
@@ -55,6 +79,8 @@ class Links:
         self._ytdlp = None          # the command that answered, once found
         # QC swaps this: the yt-dlp step without the internet
         self.run_ytdlp = self._run_ytdlp
+        # QC only: its stand-in web server lives on 127.0.0.1
+        self.allow_local = False
 
     # ---- words ---------------------------------------------------------
     def say(self, tech):
@@ -74,6 +100,8 @@ class Links:
         p = urllib.parse.urlparse(url)
         if p.scheme not in ("http", "https") or not p.netloc:
             return None, "That is not a web link. Paste one that starts with https://"
+        if not self.allow_local and _is_local_host(p.hostname):
+            return None, "That link points at this PC or your own network. Paste a link from the internet."
         with self.lock:
             for jid, j in self.jobs.items():
                 if j["url"] == url and j["state"] in ("working", "done") and \

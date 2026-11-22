@@ -39,6 +39,14 @@ def run(t):
         body = json.dumps({"name": dev, "project": {"x": 1}}).encode()
         code, text = F.post(base + "/api/save", body)
         t.ok(code == 400, "device name %r is refused" % dev, "%s %s" % (code, text[:80]))
+    # a save has its own 20 MB ceiling (2026-11-22 sweep: 60 MB was accepted)
+    big = json.dumps({"name": "toobig", "project": "A" * (21 * 1048576)}).encode()
+    try:
+        code, text = F.post(base + "/api/save", big)
+    except OSError as e:     # the hub may close the line on an oversize body
+        code, text = 400, str(e)
+    t.ok(code == 400, "a 21 MB save is refused", "%s %s" % (code, text[:80]))
+    t.ok(not (main.PROJECTS / "toobig.json").exists(), "and nothing was written")
     t.ok(main.safe_name("track one.yaml") == "track one.yaml", "robot names still pass when plain")
     try:
         main.safe_name(name)
