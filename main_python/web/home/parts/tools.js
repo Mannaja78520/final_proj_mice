@@ -18,7 +18,17 @@ class MiceToolsManager {
     row.className = 'mod tool-tile';
     const name = document.createElement('span');
     name.className = 'nm';
-    name.textContent = (app.icon ? app.icon + ' ' : '') + (app.name || app.id || 'เครื่องมือ');
+    // A drawn icon when the app has one (app.json "image"), the emoji otherwise.
+    if (app.image) {
+      const pic = document.createElement('img');
+      pic.className = 'tool-pic';
+      pic.src = app.image; pic.alt = ''; pic.width = 56; pic.height = 56;
+      pic.setAttribute('loading', 'lazy');
+      name.appendChild(pic);
+      name.appendChild(document.createTextNode(app.name || app.id || 'เครื่องมือ'));
+    } else {
+      name.textContent = (app.icon ? app.icon + ' ' : '') + (app.name || app.id || 'เครื่องมือ');
+    }
     const description = document.createElement('span');
     description.className = 'ip';
     description.textContent = app.blurb || '';

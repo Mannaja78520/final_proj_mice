@@ -2235,6 +2235,15 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 source = hub_api_resources.browser_bootstrap() + source
             return self.send_bytes(source, "text/javascript; charset=utf-8")
 
+        # Pictures (shared/web/img/): the mascot, the app icons, the Help drawings. Small PNG/WebP
+        # only (low-spec TV browser); a new picture is a new file there, no code here.
+        if path.startswith("/img/") and re.fullmatch(r"/img/[A-Za-z0-9_/-]+\.(png|webp|svg)", path):
+            f = (SHARED_WEB / path[1:]).resolve()
+            if SHARED_WEB.resolve() in f.parents and f.is_file():
+                ctype = {"png": "image/png", "webp": "image/webp", "svg": "image/svg+xml"}[f.suffix[1:]]
+                return self.send_bytes(f.read_bytes(), ctype,
+                                       headers=[("Cache-Control", "public, max-age=86400")])
+
         if path.startswith("/lang/") and path.endswith(".json"):
             # Languages (shared/web/mice-lang.js): one file per language in
             # shared/web/lang/. index.json lists the folder, so a new language

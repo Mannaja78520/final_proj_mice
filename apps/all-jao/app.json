@@ -2,6 +2,7 @@
   "name": "All-Jao Games",
   "blurb": "เปิดเกมคีบจับคู่ ตอบคำถาม และวงล้อรางวัล",
   "icon": "🎮",
+  "image": "/img/apps/alljao.webp",
   "order": 30,
   "help": "all-jao",
   // listed only on a PC where this partner is installed (A51-2)

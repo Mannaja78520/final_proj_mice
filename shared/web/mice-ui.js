@@ -219,10 +219,16 @@
       }
       // One switch per page: a page that already carries its own keeps it.
       if (!document.getElementById("advOn")) {
+        // The right-hand corner of every page: language picker (added by mice-lang.js) and the
+        // technical switch together, so the language is in the same place on every app
+        // (user 2026-11-22: it sat after the buttons and looked lost).
+        const end = document.createElement("span");
+        end.className = "topbar-end";
         const lab = document.createElement("label");
         lab.className = "topbar-adv mini";
         lab.innerHTML = '<input type="checkbox" id="advOn"> Show technical details';
-        el.appendChild(lab);
+        end.appendChild(lab);
+        el.appendChild(end);
         const box = lab.firstChild;
         box.checked = !!(window.miceAdv && window.miceAdv.on());
         box.onchange = () => window.miceAdv && window.miceAdv.set(box.checked);

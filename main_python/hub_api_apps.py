@@ -60,7 +60,7 @@ class AppRoutes:
             try:
                 # this PC's list (A51-2): removed ones and ones whose
                 # partner is not installed here are left out
-                out = [{k: a.get(k) for k in ("id", "name", "blurb", "icon",
+                out = [{k: a.get(k) for k in ("id", "name", "blurb", "icon", "image",
                                               "path", "order", "help")}
                        for a in _hub.hub_apps() if a.get("show", True)]
                 out.sort(key=lambda a: (a["order"], (a["name"] or "").lower()))

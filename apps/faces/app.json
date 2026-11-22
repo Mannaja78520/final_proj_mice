@@ -5,6 +5,7 @@
   "name": "Reconize",
   "blurb": "ดูผลการรู้จำใบหน้าและตั้งค่าการตอบสนองของหุ่นยนต์",
   "icon": "👋",
+  "image": "/img/apps/faces.webp",
   "order": 45,
   "help": "faces",
   // listed only on a PC where this partner is installed (A51-2)

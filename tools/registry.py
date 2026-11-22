@@ -71,7 +71,7 @@ def load(path, default=None):
 APPS_DIR = CODE / "apps"
 
 APP_DEFAULTS = {
-    "name": "", "blurb": "", "icon": "", "entry": "index.html",
+    "name": "", "blurb": "", "icon": "", "image": "", "entry": "index.html",
     "root": "", "url": "", "order": 100, "show": True,
     # Which part of the help page is about this tool. Empty means the tool has
     # no section, and then no help link is offered rather than one pointing at
