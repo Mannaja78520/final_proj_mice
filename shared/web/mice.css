@@ -249,6 +249,12 @@ body.page{max-width:980px;margin:0 auto;padding:var(--sp-6) var(--sp-4)}
 .lang-pick{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--line);
            border-radius:var(--r-pill);background:var(--btn);color:var(--txt);cursor:pointer;flex:0 0 auto}
 .lang-pick:hover{border-color:var(--acc)}
+/* The open list of ANY drop-down takes the theme's own colours. A select with a see-through
+   background (the language pill) opened a near-white list with near-white text in the dark
+   themes: only the chosen row could be read (user 2026-11-22). Explicit, because Chrome 75
+   paints the list from the option, not from the select. */
+select option,select optgroup{background-color:var(--card);color:var(--txt)}
+select{color-scheme:inherit}
 /* A row for something that missed its last check. Dimmed and edged in the
    warning colour, never hidden: it was really there a moment ago, and on a
    venue WiFi that drops it usually still is. The row keeps its controls -
