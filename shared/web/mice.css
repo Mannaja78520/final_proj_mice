@@ -388,3 +388,9 @@ select{color-scheme:inherit}
    that card the moment somebody logged in. */
 .mg-off{display:none !important}
 @media (pointer:coarse){.disclosure>summary{min-height:44px}}
+
+/* the login strip is one slim line once you are in (UX audit 2026-11-22: it took a third of a phone screen) */
+.card.mlogin, .mlogin { padding: 8px 14px; margin-bottom: 12px; }
+.mlogin .row { margin: 0; }
+.mlogin button { padding: 4px 10px; font-size: 13px; }
+.mlogin .row { gap: 8px; }

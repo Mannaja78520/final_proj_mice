@@ -273,8 +273,6 @@ a.peer:hover{border-color:var(--acc)}
       </select>
       <span class="statline">the sliders only move the arms in "drag the sliders" mode. <b>now</b> is where the arm really is</span>
     </div>
-    <div id="jointRows"></div>
-    <div class="statline tech" id="jxyz" style="white-space:pre-wrap"></div>
     <div class="row">
       <button onclick="cmd('HOME')">Go home</button>
       <button onclick="cmd('ATTACH')">Switch motors on</button>
@@ -283,6 +281,8 @@ a.peer:hover{border-color:var(--acc)}
       <input type="number" id="ndps" min="5" max="600" style="width:80px" onchange="cmd('SPEED '+this.value)">
       <span class="statline" id="nongStat"></span>
     </div>
+    <div id="jointRows"></div>
+    <div class="statline tech" id="jxyz" style="white-space:pre-wrap"></div>
     <div id="homeCard" style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px">
       <h2>Start pose (robot home)</h2>
       <div class="statline">where the arm goes when it powers on and when you press

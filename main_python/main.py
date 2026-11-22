@@ -2327,6 +2327,8 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
             return self.send_bytes(trial, MIME[".html"])
         if path in ("/tv", "/tv/", "/monitor", "/monitor/"):
             return self.send_redirect("/app/tv/")
+        if path == "/api":              # people type it without the slash
+            return self.send_redirect("/api/")
         if path in ("/help", "/help.html"):
             # Every feature of the whole system, offline. Served from the PC so
             # it works with no internet and no account — see the "docs" QC
@@ -2671,6 +2673,14 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
         # and cache-backed: probe_usb_all(False) reuses the 8 s cache. Forcing
         # a fresh probe here would let two PCs watching each other keep every
         # cable permanently busy and starve their own users of the port.
+        # What a script can call. Built by tools/api_index.py (newcomer developers
+        # had to read this file to find a URL); a missing file just says so.
+        if path in ("/api", "/api/"):
+            f = asset("main_python", "api_index.json")
+            if not f.is_file():
+                return self.send_err("the API list is not built yet: run python tools/api_index.py", 404)
+            return self.send_bytes(f.read_bytes())
+
         if path == "/api/modules":
             # ONE list, merged on the chip. See modules_here.
             force = (q.get("force") or ["0"])[0] == "1"
@@ -2931,7 +2941,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 return self.send_json({"ok": resp.status == 200,
                                        "reply": resp.read().decode(errors="replace")})
 
-        return self.send_err("unknown endpoint " + path, 404)
+        return self.send_err("unknown endpoint " + path + " - GET /api lists every endpoint", 404)
 
     @staticmethod
     def robot_get(ip: str, path: str, timeout=None) -> bytes:
