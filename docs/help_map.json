@@ -1,0 +1,8 @@
+{
+  "_note": "Page (served by the hub) -> the Help part that describes it. A new page or app adds one line. tools/help_drift.py / check_help_drift use this.",
+  "apps/voice/index.html": "main_python/web/help/parts/voice.html",
+  "apps/gacha/index.html": "main_python/web/help/parts/gacha.html",
+  "apps/tv/index.html": "main_python/web/help/parts/tv.html",
+  "apps/camera/index.html": "main_python/web/help/parts/camera.html",
+  "apps/faces/index.html": "main_python/web/help/parts/faces.html"
+}
