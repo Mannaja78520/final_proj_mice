@@ -564,6 +564,16 @@
   "10 Servos": "เซอร์โว 10 ตัว",
   "🏠 Home": "🏠 กลับท่าเริ่มต้น",
   "connecting…": "กำลังเชื่อมต่อ…",
-  "Choose a joint, then drag its ring or use the sliders. Add a keyframe to keep a pose.": "เลือกข้อต่อ แล้วลากวงแหวนหรือใช้แถบเลื่อน กด “เพิ่มคีย์เฟรม” เพื่อเก็บท่า"
+  "Choose a joint, then drag its ring or use the sliders. Add a keyframe to keep a pose.": "เลือกข้อต่อ แล้วลากวงแหวนหรือใช้แถบเลื่อน กด “เพิ่มคีย์เฟรม” เพื่อเก็บท่า",
+  "no prize kinds yet - add one under Machines and kinds": "ยังไม่มีชนิดรางวัล เพิ่มได้ในแท็บ “ตู้และชนิดรางวัล”",
+  "L on edge": "ซ้าย ตะแคงมือ",
+  "R on edge": "ขวา ตะแคงมือ",
+  "L ✋ palm up": "ซ้าย ✋ หงายมือ",
+  "R ✋ palm up": "ขวา ✋ หงายมือ",
+  "L 🤚 back up": "ซ้าย 🤚 คว่ำมือ",
+  "R 🤚 back up": "ขวา 🤚 คว่ำมือ",
+  "start": "เริ่ม",
+  "start pose": "ท่าเริ่มต้น",
+  "name this move": "ตั้งชื่อท่านี้"
  }
 }

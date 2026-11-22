@@ -69,7 +69,7 @@
                "main_python/gestures.py", "config/gestures.json", "config/gesture_makers.json"],
      "names": ["/api/list", "/api/load", "/api/save", "/api/seq", "/api/settings", "/api/hubs",
                "/api/model/upload", "/api/rigdefault", "/api/video/", "/api/gestures"],
-     "checks": ["check_studio*", "check_gesture*", "check_voice_gestures"],
+     "checks": ["check_ux_audit_round2", "check_studio*", "check_gesture*", "check_voice_gestures"],
      "depends": []},
 
     {"id": "hub-auth", "summary": "Hub logins, sessions, which pages need a login, pairing two hubs.",

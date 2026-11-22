@@ -629,8 +629,8 @@
   "＋ เพิ่มหมวดหมู่ (+ Topic)": "＋ テーマを追加",
   "💾 บันทึกหมวดหมู่ (Save topics)": "💾 テーマを保存",
   "🔍 ค้นหาคำตอบ (Find an answer)…": "🔍 答えを探す…",
-  "📱 รีโมทมือถือ (Mobile Controller)": "📱 スマホリモコン（Mobile Controller）",
-  "📺 จอแสดงเวที (Stage Display)": "📺 ステージ表示",
+  "📱 รีโมทมือถือ": "📱 スマホリモコン",
+  "📺 จอแสดงเวที": "📺 ステージ表示",
   "🛠️ มอนิเตอร์เซอร์โว (Tech Monitor)": "🛠️ サーボモニター（Tech Monitor）",
   "🙏 สวัสดีครับ": "🙏 こんにちは",
   "👋 ยินดีต้อนรับ": "👋 ようこそ",
@@ -764,6 +764,16 @@
   "10 Servos": "サーボ10個",
   "🏠 Home": "🏠 ホームポーズへ",
   "connecting…": "接続中…",
-  "Choose a joint, then drag its ring or use the sliders. Add a keyframe to keep a pose.": "関節を選び、リングをドラッグするかスライダーを使います。キーフレームを追加すると姿勢が残ります。"
+  "Choose a joint, then drag its ring or use the sliders. Add a keyframe to keep a pose.": "関節を選び、リングをドラッグするかスライダーを使います。キーフレームを追加すると姿勢が残ります。",
+  "no prize kinds yet - add one under Machines and kinds": "賞品の種類がまだありません。「マシンと種類」で追加してください",
+  "L on edge": "左 手の側面",
+  "R on edge": "右 手の側面",
+  "L ✋ palm up": "左 ✋ 手のひらを上",
+  "R ✋ palm up": "右 ✋ 手のひらを上",
+  "L 🤚 back up": "左 🤚 手の甲を上",
+  "R 🤚 back up": "右 🤚 手の甲を上",
+  "start": "開始",
+  "start pose": "開始ポーズ",
+  "name this move": "この動きに名前を付ける"
  }
 }

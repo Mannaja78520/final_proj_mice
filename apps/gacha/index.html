@@ -394,7 +394,8 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
     this.S = a.data;
     window.S = this.S;
     const items = Object.keys(this.S.items || {});
-    this.$("gItem").innerHTML = items.map(k => '<option value="' + this.esc(k) + '">' + this.esc(this.S.items[k].label || k) + '</option>').join("");
+    // an empty box looked broken (UX audit 2026-11-22): say what is missing and where to add it
+    this.$("gItem").innerHTML = !items.length ? '<option value="">no prize kinds yet - add one under Machines and kinds</option>' : items.map(k => '<option value="' + this.esc(k) + '">' + this.esc(this.S.items[k].label || k) + '</option>').join("");
     this.$("gMachine").innerHTML = '<option value="">any machine with that kind</option>' +
       this.S.machines.map(m => '<option value="' + this.esc(m.id) + '">' + this.esc(m.label || m.id) + '</option>').join("");
     this.$("evName").value = this.S.event.name || "";
