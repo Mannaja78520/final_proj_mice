@@ -53,6 +53,7 @@ body{padding:14px;max-width:1100px;margin:0 auto}
 .stage{font-size:52px;font-weight:700;text-align:center;line-height:1.1}
 .stage small{display:block;font-size:13px;color:var(--mut);font-weight:400}
 table{width:100%;border-collapse:collapse;font-size:14px}
+label.pair{display:inline-flex;align-items:center;gap:var(--sp-2)}
 td,th{padding:6px var(--sp-2);border-bottom:1px solid var(--line);text-align:left}
 td a,td .linky{color:var(--acc);text-decoration:none;margin-right:var(--sp-2);cursor:pointer}
 /* Deleting a file is an action, not a place, so it is a real button drawn to
@@ -148,14 +149,14 @@ a.peer:hover{border-color:var(--acc)}
     <h2>Setup login &#128274;</h2>
 
     <div id="loginForm">
-      <div class="statline">log in to configure this module — <b>identity, WiFi mode,
-        Hardware pins, users, zero calibration</b>. Same over WiFi / USB / RS485.</div>
+      <div class="statline">log in to change this module's <b>name, WiFi, wiring, accounts</b>
+        and calibration. Moving it and playing shows needs no login.</div>
       <!-- The password used to be printed right here, on a page anyone on the
            WiFi can open. A board that has never had its password changed says
            so after logging in, and Setup stays locked until it is. -->
       <div class="row">
-        <span class="lbl">User</span><input id="liUser" autocomplete="username" style="width:150px">
-        <span class="lbl">Pass</span><input id="liPass" type="password" autocomplete="current-password" style="width:150px">
+        <label class="pair"><span class="lbl">User</span><input id="liUser" autocomplete="username" style="width:150px"></label>
+        <label class="pair"><span class="lbl">Password</span><input id="liPass" type="password" autocomplete="current-password" style="width:150px"></label>
         <button class="primary" onclick="doLogin()">Log in</button>
         <span class="statline" id="liStat"></span>
       </div>
@@ -217,9 +218,9 @@ a.peer:hover{border-color:var(--acc)}
   <div class="card" data-tab="control" id="liftCard">
     <h2>Lift</h2>
     <div id="liftFault" class="banner err" role="alert" hidden>
-      ลิฟต์หยุดเพราะพบปัญหา ตรวจกลไกและสวิตช์ก่อนล้างข้อผิดพลาด
+      The lift stopped because it found a problem. Check the mechanism and the switches, then clear the fault.
       <span id="liftFaultDetail" class="tech"></span>
-      <button onclick="liftCmd('FAULT CLEAR')">ล้างข้อผิดพลาด</button>
+      <button onclick="liftCmd('FAULT CLEAR')">Clear the fault</button>
     </div>
     <div class="stage"><span id="stg">-</span><small id="stgState">state: -</small></div>
     <div class="row" id="gotoBtns" style="justify-content:center"></div>
@@ -296,14 +297,16 @@ a.peer:hover{border-color:var(--acc)}
         <span class="statline" id="homeStat">reading the start pose…</span>
       </div>
     </div>
-    <div class="row">
-      <span class="lbl">2-ESP pair</span>
-      <label><input type="checkbox" id="nlink"> this board is the leader</label>
-      <span class="lbl" style="min-width:0">partner id</span>
-      <input type="number" id="npeer" min="0" max="247" style="width:70px" title="module id of the other half (0 = broadcast to every module on the bus)">
-      <button onclick="savePair()">Save &amp; reboot</button>
+    <div class="setupCard" style="display:none;border-top:1px solid var(--line);margin-top:12px;padding-top:10px">
+      <h2>Two-board humanoid</h2>
+      <div class="statline">only needed when the humanoid is split over two boards: the leader repeats every move to its partner so both halves move together.</div>
+      <div class="row">
+        <label><input type="checkbox" id="nlink"> this board is the leader</label>
+        <span class="lbl" style="min-width:0">partner's ID</span>
+        <input type="number" id="npeer" min="0" max="247" style="width:70px" title="ID of the other half (0 = every module on the bus)">
+        <button onclick="savePair()">Save &amp; reboot</button>
+      </div>
     </div>
-    <div class="statline">only needed when the humanoid is split over two boards: the leader repeats every pose to its partner over RS485 so both move together</div>
 
     <div class="setupCard" style="display:none;border-top:1px solid var(--line);margin-top:12px;padding-top:10px">
       <h2>Zero position</h2>
@@ -449,10 +452,13 @@ a.peer:hover{border-color:var(--acc)}
     <div class="statline" id="gaNow" aria-live="polite">waiting for the board</div>
     <div class="row">
       <button class="primary" onclick="gaCmd('GDISPENSE')">&#127873; Give one prize</button>
-      <button onclick="gaCmd('GDISPENSE FORCE admin')" style="background:#fee2e2;border-color:#ef4444;color:#991b1b;font-weight:600" title="Force dispense immediately, works when closed/empty for testing">&#9889; Force Drop (Admin)</button>
-      <button onclick="gaCmd('GDRAIN')" style="background:#fef9c3;border-color:#eab308;font-weight:600" title="Continuously dispense prizes until empty or STOP">&#127744; Drain Machine</button>
       <button class="danger" onclick="gaCmd('STOP')">&#9632; Stop</button>
     </div>
+    <details class="row" style="display:block"><summary class="mini">Rarely needed: give a prize anyway, empty the machine</summary>
+    <div class="row">
+      <button onclick="gaCmd('GDISPENSE FORCE admin')" style="background:#fee2e2;border-color:#ef4444;color:#991b1b;font-weight:600" title="Force dispense immediately, works when closed/empty for testing">&#9889; Force Drop (Admin)</button>
+      <button onclick="if(confirm('Give out every prize until the machine is empty?'))gaCmd('GDRAIN')" style="background:#fef9c3;border-color:#eab308;font-weight:600" title="Continuously dispense prizes until empty or STOP">&#127744; Drain Machine</button>
+    </div></details>
     <div class="row">
       <span class="lbl">Turn</span>
       <button onclick="gaCmd('GSPIN 1')">1 pocket</button>
@@ -549,11 +555,32 @@ a.peer:hover{border-color:var(--acc)}
     <div class="statline" id="seqStat">idle</div>
   </div>
 
+  <div class="card setupCard" data-tab="setup" style="display:none">
+    <h2>Name, ID &amp; WiFi</h2>
+    <div class="row"><span class="lbl">ID</span><input type="number" id="setId" min="1" max="247" style="width:90px"></div>
+    <div class="row"><span class="lbl">Name</span><input id="setName" style="flex:1"></div>
+    <div class="row"><span class="lbl">Type</span><select id="setType" style="flex:1"></select></div>
+    <div class="row"><span class="lbl">WiFi SSID</span><input id="setSsid"
+      placeholder="the network name, spaces are fine"
+      title="The exact network name. Spaces are fine — &quot;MSI 3058&quot; works."
+      style="flex:1"></div>
+    <div class="row"><span class="lbl">WiFi pass</span><input id="setPass" style="flex:1"></div>
+    <div class="row"><span class="lbl">WiFi mode</span>
+      <select id="setRadio" style="flex:1">
+        <option value="">keep current</option>
+        <option value="ON">ON &mdash; join the WiFi above (AP fallback)</option>
+        <option value="AP">AP &mdash; host its own hotspot only</option>
+        <option value="OFF">OFF &mdash; USB / RS485 only (fastest boot)</option>
+      </select>
+    </div>
+    <div class="statline">now: <b id="wifiNow">-</b></div>
+    <div class="row"><button class="primary" onclick="saveSettings()">Save &amp; Reboot</button></div>
+  </div>
+
   <div class="card setupCard" data-tab="setup" style="grid-column:1/-1;display:none">
     <h2>Hardware pins <span class="statline">(stored on this board — reboot to apply)</span></h2>
-    <div class="statline">pick which module type's pins to configure, then wire each
-      function to a GPIO (same select boxes as before). The tabs are dynamic —
-      the module types THIS firmware was built with show up here.</div>
+    <div class="statline">choose which part of the module to wire, then pick the pin each
+      function is connected to. Only change this if you rewired the board.</div>
     <div id="pinTabs" style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0"></div>
     <div id="pinGroups"></div>
     <div class="row">
@@ -577,28 +604,6 @@ a.peer:hover{border-color:var(--acc)}
       <span class="statline" id="upStat"></span>
     </div>
     <table id="fileTbl"><tbody></tbody></table>
-  </div>
-
-  <div class="card setupCard" data-tab="setup" style="display:none">
-    <h2>Settings</h2>
-    <div class="row"><span class="lbl">ID</span><input type="number" id="setId" min="1" max="247" style="width:90px"></div>
-    <div class="row"><span class="lbl">Name</span><input id="setName" style="flex:1"></div>
-    <div class="row"><span class="lbl">Type</span><select id="setType" style="flex:1"></select></div>
-    <div class="row"><span class="lbl">WiFi SSID</span><input id="setSsid"
-      placeholder="the network name, spaces are fine"
-      title="The exact network name. Spaces are fine — &quot;MSI 3058&quot; works."
-      style="flex:1"></div>
-    <div class="row"><span class="lbl">WiFi pass</span><input id="setPass" style="flex:1"></div>
-    <div class="row"><span class="lbl">WiFi mode</span>
-      <select id="setRadio" style="flex:1">
-        <option value="">keep current</option>
-        <option value="ON">ON &mdash; join the WiFi above (AP fallback)</option>
-        <option value="AP">AP &mdash; host its own hotspot only</option>
-        <option value="OFF">OFF &mdash; USB / RS485 only (fastest boot)</option>
-      </select>
-    </div>
-    <div class="statline">now: <b id="wifiNow">-</b></div>
-    <div class="row"><button class="primary" onclick="saveSettings()">Save &amp; Reboot</button></div>
   </div>
 
   <div class="card" data-tab="files">
