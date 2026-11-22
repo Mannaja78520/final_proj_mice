@@ -74,4 +74,9 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    # Windows pipes default to cp1252, which cannot print Thai or an arrow (QC crashed there, 2026-11-22).
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
     main(sys.argv)

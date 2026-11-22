@@ -7,6 +7,7 @@
   "name": "Nong Studio",
   "blurb": "จัดท่าทางและลำดับการแสดง พร้อมดูตัวอย่าง 3D",
   "icon": "🤖",
+  "image": "/img/apps/studio.webp",
   "root": "nong/main_python_set_nong/web",
   "url": "/studio/",
   "entry": "index.html",

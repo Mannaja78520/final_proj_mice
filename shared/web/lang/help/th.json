@@ -546,6 +546,16 @@
   "exclusive": "เอ็กซ์คลูซีฟ",
   "port — a second open fails exactly like Windows, which is what proves the hub shares a handle. It can also play dead to reproduce a replugged board, and records every command with the time it arrived.": "พอร์ต — การเปิดครั้งที่สองล้มเหลวเหมือน Windows ทุกประการ ซึ่งเป็นสิ่งที่พิสูจน์ว่า Hub แชร์พอร์ตเดียวกัน มันยังแกล้งตายเพื่อจำลองบอร์ดที่ถูกเสียบใหม่ได้ และบันทึกทุกคำสั่งพร้อมเวลาที่มาถึง",
   "The rule that makes a check worth writing:": "กฎที่ทำให้การตรวจคุ้มค่าที่จะเขียน:",
-  "break the fix and watch the check fail. A check that passes both before and after guards nothing.": "ทำลายการแก้ไขแล้วดูการตรวจล้มเหลว การตรวจที่ผ่านทั้งก่อนและหลังไม่ได้เฝ้าอะไรเลย"
+  "break the fix and watch the check fail. A check that passes both before and after guards nothing.": "ทำลายการแก้ไขแล้วดูการตรวจล้มเหลว การตรวจที่ผ่านทั้งก่อนและหลังไม่ได้เฝ้าอะไรเลย",
+  "Plug the board in with a USB cable. The hub finds it by itself in a few seconds.": "เสียบบอร์ดด้วยสาย USB ฮับจะหาเจอเองในไม่กี่วินาที",
+  "Phone, laptop and robot must be on the same WiFi. If one is on another network, the hub cannot see it.": "มือถือ แล็ปท็อป และหุ่นต้องอยู่ใน WiFi เดียวกัน ถ้าเครื่องไหนอยู่เครือข่ายอื่น ฮับจะมองไม่เห็น",
+  "Flashing puts new software on the board. Do not unplug the cable until the bar is full.": "การแฟลชคือการใส่โปรแกรมใหม่ลงบอร์ด อย่าถอดสายจนกว่าแถบจะเต็ม",
+  "In Studio, drag a slider and the robot moves the same way. Go slowly the first time.": "ใน Studio ลากแถบเลื่อน หุ่นจะขยับตามทันที ครั้งแรกให้ค่อยๆ ลาก",
+  "Put poses in a row on the timeline, add music, then press play. That is a show.": "วางท่าเรียงกันบนไทม์ไลน์ ใส่เพลง แล้วกดเล่น นั่นคือโชว์หนึ่งชุด",
+  "Scan the QR code with your phone to open the same page there. No typing needed.": "สแกน QR code ด้วยมือถือเพื่อเปิดหน้าเดียวกันบนมือถือ ไม่ต้องพิมพ์อะไร",
+  "Something wrong? Press the red STOP. Every robot stops where it is.": "มีอะไรผิดปกติ? กด STOP สีแดง หุ่นทุกตัวจะหยุดอยู่กับที่",
+  "Wave at the camera board. The page shows what it sees, and finds a face when one is there.": "โบกมือให้บอร์ดกล้อง หน้านี้จะแสดงสิ่งที่กล้องเห็น และหาใบหน้าเมื่อมีคนอยู่",
+  "The hard parts, in pictures": "ส่วนที่ยาก แบบมีรูป",
+  "Eight steps people ask about most. Each picture shows one step.": "แปดขั้นตอนที่คนถามบ่อยที่สุด แต่ละรูปแสดงหนึ่งขั้นตอน"
  }
 }

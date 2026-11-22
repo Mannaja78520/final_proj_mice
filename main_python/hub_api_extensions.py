@@ -26,7 +26,7 @@ def listing():
     ext = _hub.EXT
     partners = _hub.read_partners().get("partners") or {}
     shown = {a.get("id") for a in _hub.hub_apps()}
-    apps = [{"id": a.get("id"), "name": a.get("name"), "icon": a.get("icon"),
+    apps = [{"id": a.get("id"), "name": a.get("name"), "icon": a.get("icon"), "image": a.get("image"),
              "blurb": a.get("blurb"), "needs": a.get("needs") or "",
              "shown": a.get("id") in shown, "added": bool(a.get("added"))}
             for a in _hub.hub_apps(everything=True)]

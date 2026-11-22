@@ -103,7 +103,7 @@
      "depends": ["shared-web"]},
 
     {"id": "shared-web", "summary": "One stylesheet and theme set for every page (mice.css, themes), and the page parts every hub page is built from (mice-ui.js; guide docs/web_style.md).",
-     "files": ["shared/", "tools/lang.py", "tools/help_texts.py", "docs/LANGUAGES.md"],
+     "files": ["shared/", "tools/lang.py", "tools/pack_images.py", "tools/help_texts.py", "docs/LANGUAGES.md"],
      "depends": []},
 
     {"id": "studio", "summary": "Nong Studio: pose editor, timeline, 3D monitor.",
