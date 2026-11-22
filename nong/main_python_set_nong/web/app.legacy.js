@@ -10,12 +10,23 @@ const STAB_BTN = {
 };
 let sideTab = "pose";
 let noticeSaid = null;
-function notice(text) {
+function notice(text, ask) {
   const box = $("notice"), t = $("noticeText");
   if (!box || !t || !text) return;
   if (text === noticeSaid && box.hidden) return;
   noticeSaid = text;
   t.textContent = text;
+  box.className = ask ? "banner warn" : "banner err";
+  if (ask) (ask.actions || []).forEach((a) => {
+    const b = document.createElement("button");
+    b.textContent = a.label;
+    if (a.id) b.id = a.id;
+    b.onclick = () => {
+      a.run();
+      clearNotice();
+    };
+    t.append(document.createTextNode(" "), b);
+  });
   box.hidden = false;
 }
 function clearNotice() {
@@ -5345,6 +5356,11 @@ function offerDraft() {
       st.textContent = "";
     };
     st.append(msg, yes, document.createTextNode(" "), no);
+    noticeSaid = null;
+    notice(msg.textContent, { actions: [
+      { label: yes.textContent, id: "draftRestoreBtn", run: () => yes.onclick() },
+      { label: no.textContent, run: () => no.onclick() }
+    ] });
   }
 }
 window.addEventListener("beforeunload", (e) => {
@@ -7848,7 +7864,7 @@ async function saveProject(opts) {
   const project = projectSnapshot();
   const a = await Mice.Api.post("/api/save", { name, project });
   if (!a.ok) {
-    $("tlStat").textContent = a.status ? "could not save: " + a.says + ". Your work is still here." : "could not save — the hub is not answering. Your work is still here, and is kept in this browser.";
+    $("tlStat").textContent = a.status ? "could not save: " + String(a.says).replace(/[.\s]+$/, "") + ". Your work is still here." : "could not save — the hub is not answering. Your work is still here, and is kept in this browser.";
     notice($("tlStat").textContent);
     return false;
   }
@@ -7865,7 +7881,7 @@ async function loadProject(file) {
   const a = await Mice.Api.get("/api/load?name=" + encodeURIComponent(file));
   if (generation !== projectLoadGeneration) return;
   if (!a.ok) {
-    $("tlStat").textContent = "could not load " + file + " — " + a.says + ". Nothing on screen was changed.";
+    $("tlStat").textContent = "could not load " + file + " — " + String(a.says).replace(/[.\s]+$/, "") + ". Nothing on screen was changed.";
     notice($("tlStat").textContent);
     return;
   }

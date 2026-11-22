@@ -18,12 +18,20 @@
 // and a warning you cannot get rid of is one you learn to ignore. A DIFFERENT
 // message always shows, dismissed or not: that is something new going wrong.
 let noticeSaid = null;
-function notice(text) {
+// `ask` turns it into a question with buttons: { actions: [{ label, id, run }] }.
+function notice(text, ask) {
   const box = $("notice"), t = $("noticeText");
   if (!box || !t || !text) return;
   if (text === noticeSaid && box.hidden) return;   // dismissed, and unchanged
   noticeSaid = text;
   t.textContent = text;
+  box.className = ask ? "banner warn" : "banner err";   // a question is not a failure
+  if (ask) (ask.actions || []).forEach(a => {
+    const b = document.createElement("button");
+    b.textContent = a.label; if (a.id) b.id = a.id;
+    b.onclick = () => { a.run(); clearNotice(); };
+    t.append(document.createTextNode(" "), b);
+  });
   box.hidden = false;
 }
 

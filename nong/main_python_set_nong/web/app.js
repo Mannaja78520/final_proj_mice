@@ -43,12 +43,20 @@ let sideTab = "pose";
 // and a warning you cannot get rid of is one you learn to ignore. A DIFFERENT
 // message always shows, dismissed or not: that is something new going wrong.
 let noticeSaid = null;
-function notice(text) {
+// `ask` turns it into a question with buttons: { actions: [{ label, id, run }] }.
+function notice(text, ask) {
   const box = $("notice"), t = $("noticeText");
   if (!box || !t || !text) return;
   if (text === noticeSaid && box.hidden) return;   // dismissed, and unchanged
   noticeSaid = text;
   t.textContent = text;
+  box.className = ask ? "banner warn" : "banner err";   // a question is not a failure
+  if (ask) (ask.actions || []).forEach(a => {
+    const b = document.createElement("button");
+    b.textContent = a.label; if (a.id) b.id = a.id;
+    b.onclick = () => { a.run(); clearNotice(); };
+    t.append(document.createTextNode(" "), b);
+  });
   box.hidden = false;
 }
 
@@ -5576,6 +5584,14 @@ function offerDraft() {
       st.textContent = "";
     };
     st.append(msg, yes, document.createTextNode(" "), no);
+    // The status line above sits at the bottom of the timeline, off screen on most
+    // laptops and every phone, so the one moment a person needs this question
+    // (the tab was lost) they never saw it (walk-through 2026-11-22). The same
+    // question goes to the notice line under the tab strip, which every tab shows.
+    noticeSaid = null;
+    notice(msg.textContent, { actions: [
+      { label: yes.textContent, id: "draftRestoreBtn", run: () => yes.onclick() },
+      { label: no.textContent, run: () => no.onclick() }] });
   }
 }
 // Closing with unsaved keyframes asks first. The browser shows its own wording;
@@ -8041,7 +8057,7 @@ async function saveProject(opts) {
   const a = await Mice.Api.post("/api/save", { name, project });
   if (!a.ok) {
     $("tlStat").textContent = (a.status
-      ? "could not save: " + a.says + ". Your work is still here."
+      ? "could not save: " + String(a.says).replace(/[.\s]+$/, "") + ". Your work is still here."
       : "could not save — the hub is not answering. Your work is still here, "
         + "and is kept in this browser.");
     notice($("tlStat").textContent);
@@ -8063,7 +8079,7 @@ async function loadProject(file) {
   const generation = ++projectLoadGeneration;
   const a = await Mice.Api.get("/api/load?name=" + encodeURIComponent(file));
   if (generation !== projectLoadGeneration) return;
-  if (!a.ok) { $("tlStat").textContent = "could not load " + file + " — " + a.says + ". Nothing on screen was changed."; notice($("tlStat").textContent); return; }
+  if (!a.ok) { $("tlStat").textContent = "could not load " + file + " — " + String(a.says).replace(/[.\s]+$/, "") + ". Nothing on screen was changed."; notice($("tlStat").textContent); return; }
   try { return await applyProjectData(a.data, file, { generation }); }
   catch (e) { if (generation === projectLoadGeneration) notice("เปิดโปรเจกต์ไม่ได้: " + e.message + " งานเดิมยังอยู่"); }
 }

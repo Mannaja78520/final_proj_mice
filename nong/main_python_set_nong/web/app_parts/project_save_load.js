@@ -31,7 +31,7 @@ async function saveProject(opts) {
   const a = await Mice.Api.post("/api/save", { name, project });
   if (!a.ok) {
     $("tlStat").textContent = (a.status
-      ? "could not save: " + a.says + ". Your work is still here."
+      ? "could not save: " + String(a.says).replace(/[.\s]+$/, "") + ". Your work is still here."
       : "could not save — the hub is not answering. Your work is still here, "
         + "and is kept in this browser.");
     notice($("tlStat").textContent);
@@ -53,7 +53,7 @@ async function loadProject(file) {
   const generation = ++projectLoadGeneration;
   const a = await Mice.Api.get("/api/load?name=" + encodeURIComponent(file));
   if (generation !== projectLoadGeneration) return;
-  if (!a.ok) { $("tlStat").textContent = "could not load " + file + " — " + a.says + ". Nothing on screen was changed."; notice($("tlStat").textContent); return; }
+  if (!a.ok) { $("tlStat").textContent = "could not load " + file + " — " + String(a.says).replace(/[.\s]+$/, "") + ". Nothing on screen was changed."; notice($("tlStat").textContent); return; }
   try { return await applyProjectData(a.data, file, { generation }); }
   catch (e) { if (generation === projectLoadGeneration) notice("เปิดโปรเจกต์ไม่ได้: " + e.message + " งานเดิมยังอยู่"); }
 }

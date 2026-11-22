@@ -668,6 +668,14 @@ function offerDraft() {
       st.textContent = "";
     };
     st.append(msg, yes, document.createTextNode(" "), no);
+    // The status line above sits at the bottom of the timeline, off screen on most
+    // laptops and every phone, so the one moment a person needs this question
+    // (the tab was lost) they never saw it (walk-through 2026-11-22). The same
+    // question goes to the notice line under the tab strip, which every tab shows.
+    noticeSaid = null;
+    notice(msg.textContent, { actions: [
+      { label: yes.textContent, id: "draftRestoreBtn", run: () => yes.onclick() },
+      { label: no.textContent, run: () => no.onclick() }] });
   }
 }
 // Closing with unsaved keyframes asks first. The browser shows its own wording;
