@@ -606,6 +606,7 @@
   "⚡ Write over RS485": "⚡ เขียนผ่านสาย RS485",
   "(runs nong now)": "(ตอนนี้ใช้ nong อยู่)",
   "No prize machines found - switch one on and connect it, then press Check again": "ไม่พบตู้จ่ายรางวัล เปิดเครื่องและเชื่อมต่อ แล้วกด “ตรวจอีกครั้ง”",
-  "No prize machine is answering - check they are on and connected": "ไม่มีตู้ตอบกลับ ตรวจว่าเปิดและเชื่อมต่ออยู่"
+  "No prize machine is answering - check they are on and connected": "ไม่มีตู้ตอบกลับ ตรวจว่าเปิดและเชื่อมต่ออยู่",
+  "shows": "ชุดการแสดง"
  }
 }

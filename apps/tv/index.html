@@ -283,7 +283,7 @@ body.mode-tech .tv-grid {
   <div class="tv-card" id="cardSeqs">
     <h2>
       <span>📂 Saved Sequences</span>
-      <span class="mini" id="seqCount" style="color:var(--mut); font-weight:normal;">0 items</span>
+      <span class="mini" style="color:var(--mut); font-weight:normal;"><span id="seqCount">0</span> shows</span>
     </h2>
     <div class="seq-list" id="seqList">
       <div class="mini" style="color:var(--mut); padding:8px;">Loading sequences…</div>
@@ -441,7 +441,7 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
   renderSequences() {
     const box = this.$("seqList");
     box.innerHTML = "";
-    this.$("seqCount").textContent = this.sequences.length + " files";
+    this.$("seqCount").textContent = this.sequences.length;
     if (!this.sequences.length) {
       box.innerHTML = '<div class="mini" style="color:var(--mut);">No sequences found</div>';
       return;
@@ -449,7 +449,8 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
     this.sequences.forEach(name => {
       const btn = document.createElement("button");
       btn.className = "seq-pill";
-      btn.textContent = name.replace(/\.yaml$/, "");
+      // a show is named like a person would say it: no .yaml, spaces for underscores (UX audit 2026-11-22)
+      btn.textContent = name.replace(/\.(yaml|yml|json)$/i, "").replace(/_+/g, " ");
       btn.title = name;
       btn.disabled = !this.activeDev;
       btn.onclick = () => this.playSequence(name);

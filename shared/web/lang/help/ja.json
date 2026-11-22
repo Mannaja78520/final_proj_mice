@@ -1045,6 +1045,9 @@
   "One voice at a time": "声は一度にひとつだけ",
   "If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.": "答えが再生されている途中で Try を押したり新しい質問をすると、古い答えが先に止まり、二つの声が重なりません。音声ヘルパーが1分以内に答えないときはページがそう伝え、ずっと待たずにもう一度試せます。ページを離れると声も止まります。",
   "กด <b>Start a new event and reset counts</b> เพื่อเริ่มงานใหม่และล้างตัวนับของทุกตู้ (ระบบถามยืนยันก่อนเสมอ)": "<b>Start a new event and reset counts</b> を押すと新しいイベントを始め、全マシンのカウントをゼロに戻します(必ず先に確認が出ます)",
-  "• <b>Mute all speech:</b> ปุ่มเล็กในกล่องพูดด่วน หยุดเสียงพูดทั้งหมดที่กำลังเล่นอยู่ทันที": "• <b>Mute all speech:</b> すぐに話すボックスの小さなボタン。再生中の音声をすべて止めます"
+  "• <b>Mute all speech:</b> ปุ่มเล็กในกล่องพูดด่วน หยุดเสียงพูดทั้งหมดที่กำลังเล่นอยู่ทันที": "• <b>Mute all speech:</b> すぐに話すボックスの小さなボタン。再生中の音声をすべて止めます",
+  "Check the system": "システムの確認",
+  "Connections": "接続方法",
+  "Robot commands": "ロボットのコマンド"
  }
 }
