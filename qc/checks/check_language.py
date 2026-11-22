@@ -68,6 +68,7 @@ def run(t):
         t.ok(len(r.stdout.splitlines()) > 100, "missing lists what is still to translate")
         js = (Path(F.CODE) / "shared/web/mice-lang.js").read_text(encoding="utf-8")
         t.ok("if (!dict[t]) return null" in js, "an empty entry keeps the page's own text")
+        t.ok("if (dict[t] === t) return null" in js, "a text that translates to itself is not written back (observer loop)")
     finally:
         if pack.exists():
             pack.unlink()

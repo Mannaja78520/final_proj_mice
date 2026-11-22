@@ -21,6 +21,10 @@
     var t = text.replace(/\s+/g, " ").trim();
     if (!t || !dict || !Object.prototype.hasOwnProperty.call(dict, t)) return null;
     if (!dict[t]) return null;      // an empty entry = not translated yet: keep the page's own text
+    // A text that translates to itself (e.g. "Nong Studio") must not be written back: the write is
+    // itself a mutation, so the observer in watch() would see it again, forever (zh/ja hub page froze
+    // with hubTab=tools, found 2026-11-22).
+    if (dict[t] === t) return null;
     return {from: t, to: dict[t]};
   }
   function node(n) {
