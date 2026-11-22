@@ -28,10 +28,11 @@
 
     {"id": "hub-extensions", "summary": "This PC's apps as extensions (A51-2): which apps are installed here and where, add by folder (mice-app.json, app.json or a partner template), remove/restore, update; apps whose partner is missing are hidden.",
      "files": ["main_python/extensions.py", "main_python/hub_api_extensions.py",
+               "tools/api_index.py", "main_python/api_index.json", "docs/HUB_API.md",
                "docs/extensions.md", "docs/INSTALL.md", "main_python/web/home/parts/apps_manage.*",
                "tools/add_app.py"],
      "names": ["/api/extensions", "Extensions", "mice-app.json", "MICE_EXTENSIONS"],
-     "checks": ["check_extensions"], "depends": ["hub-apps"]},
+     "checks": ["check_extensions", "check_api_index"], "depends": ["hub-apps"]},
 
     {"id": "hub-usb", "summary": "The hub's USB serial manager (one owner of every cable) and the port probe that finds which module is on which cable.",
      "files": ["main_python/hub_usb.py", "main_python/hub_probe.py", "main_python/bus_ids.py", "main_python/bus_net.py", "main_python/hub_busmap.py", "qc/lib/bus_sim.py", "docs/architecture/scaling-ids.md"],
@@ -168,7 +169,7 @@
 
     {"id": "fw-web", "summary": "The board's own website (WebUI.h).",
      "files": ["firmware/src/web/"],
-     "checks": ["check_gacha_ui"],
+     "checks": ["check_gacha_ui", "check_board_page_motors_first"],
      "depends": ["fw-core"]},
 
     {"id": "fw-nong", "summary": "The nong (humanoid) module: servos, joints, poses.",
