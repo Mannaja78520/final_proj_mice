@@ -32,6 +32,13 @@ def run(t):
     for bad in ("../x", "a/b", "a\\b", "..", ".hidden", "x" * 90, "a:b", ""):
         code, _ = F.post(base + "/api/save", json.dumps({"name": bad}).encode())
         t.ok(code == 400, "name %r is refused" % bad[:20], str(code))
+    # Windows device names (found by the 2026-11-22 sweep). A full body is
+    # sent: without "project" the save fails for another reason and the
+    # name check is never reached, so a body of just a name proves nothing.
+    for dev in ("con", "NUL.json", "com1", "lpt9.txt", "name."):
+        body = json.dumps({"name": dev, "project": {"x": 1}}).encode()
+        code, text = F.post(base + "/api/save", body)
+        t.ok(code == 400, "device name %r is refused" % dev, "%s %s" % (code, text[:80]))
     t.ok(main.safe_name("track one.yaml") == "track one.yaml", "robot names still pass when plain")
     try:
         main.safe_name(name)
