@@ -69,6 +69,9 @@ def run(t):
     if nxt > 0:
         card = card[:nxt]
     # A tool's drawn icon (<img>) sits inside the name span since 2026-11-22: keep the words only.
+    # Home copies the other tabs' error banners; an empty placeholder drew as a bare red bar (2026-11-22).
+    t.ok('<div class="banner err"></div>' not in dom, "Home draws no empty red bar",
+         dom.count('<div class="banner err"></div>'))
     names = [re.sub(r"<[^>]*>", "", n) for n in re.findall(r'class="nm">(.*?)</span>', card)]
     t.eq(len(names), len(apps),
          "every tool the hub reports has a row on the page")
