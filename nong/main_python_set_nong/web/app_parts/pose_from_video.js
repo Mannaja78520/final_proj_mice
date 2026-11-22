@@ -66,8 +66,11 @@ async function vidLoadLib(mode = "single") {
   return vidLib;
 }
 
-function vidSay(text, bad) {
+// `tech` is the part a designer does not need (counts, reversals): it sits in a
+// span the "Show technical details" switch reveals, so the line reads plainly.
+function vidSay(text, bad, tech) {
   $("vidStat").textContent = text;
+  $("vidStatTech").textContent = tech ? " " + tech : "";
   if (bad) notice(text);
 }
 function vidOpts() {
@@ -575,7 +578,7 @@ function vidChooseRoutine() {
   const video = $("vidPlayer"); vidCheckedPlayback.reset(video);
   if (video?.pause) video.pause();
   if (video?.src && Number.isFinite(video.duration)) video.currentTime = +$("vidFrom").value || 0;
-  vidSay(vidSummary());
+  vidSay(vidSummary(), false, vidSummaryTech());
 }
 async function vidSaveRoutines() {
   if (vidBusy) return;
@@ -605,15 +608,21 @@ async function vidSaveRoutines() {
 function vidSummary() {
   const m = vidMade, opts = vidOpts();
   return m.keys.length + " moves from " + (m.videoMs / 1000).toFixed(1) + " s of video."
-    + (vidRoutines.length ? " " + vidRoutines.length + " routine groups / scene sections found automatically. Uncertain camera links are split rather than stitched into another dance." : "")
-    + (m.quality?.smoothing ? " Short reversals: " + m.quality.smoothing.before.reversals + " → " + m.quality.smoothing.afterRepair.reversals + "." : "")
     + (m.safe && safeSay(m.safe) ? " " + safeSay(m.safe) : "")
-    + (m.quality?.uncertain ? " " + m.quality.uncertain + " uncertain observations hold the last trustworthy pose." : "")
     + (opts.music && m.partial
       ? " To stay with the music, " + m.partial + " of them go only part of the way: "
         + "the person moved faster than the robot can."
       : "")
     + vidHandNote(m) + " Choose what to keep below, then put them on the time bar:";
+}
+// The counts behind the summary, for the technical switch.
+function vidSummaryTech() {
+  const m = vidMade;
+  return [
+    vidRoutines.length ? vidRoutines.length + " routine groups / scene sections found automatically. Uncertain camera links are split rather than stitched into another dance." : "",
+    m.quality?.smoothing ? "Short reversals: " + m.quality.smoothing.before.reversals + " → " + m.quality.smoothing.afterRepair.reversals + "." : "",
+    m.quality?.uncertain ? m.quality.uncertain + " uncertain observations hold the last trustworthy pose." : "",
+  ].filter(Boolean).join(" ");
 }
 // One row per made move: its moment (click to see it), what it becomes, and
 // what could not be done for it.
@@ -703,8 +712,13 @@ async function vidMake() {
       return;
     }
     const seen = frames.filter(f => f.w).length;
-    vidSay("The person was found in " + Math.round(100 * seen / frames.length)
-           + "% of the video. " + vidSummary());
+    const pct = Math.round(100 * seen / frames.length);
+    // a person seen in a sliver of the clip means the moves are mostly guesses:
+    // say that first, in words, before the numbers (walk-through 2026-11-22)
+    if (pct < 25) vidSay("I could hardly see a person in this video (only " + pct
+      + "% of it), so these moves are probably not useful. Try a video where the whole "
+      + "person, arms included, is in the picture. " + vidSummary(), true, vidSummaryTech());
+    else vidSay("The person was found in " + pct + "% of the video. " + vidSummary(), false, vidSummaryTech());
     return true;
   } finally {
     vidBusy = false;
@@ -726,7 +740,7 @@ function vidRebuild() {
   vidMade = vidBuild(vidFit, vidPicks, vidOpts());
   vidList();
   $("vidUseBox").hidden = !(vidMade && vidMade.keys.length >= 2);
-  vidSay(vidSummary());
+  vidSay(vidSummary(), false, vidSummaryTech());
 }
 async function vidUse(how, options = {}) {
   const generation = vidGeneration;
