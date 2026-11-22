@@ -104,6 +104,14 @@
       get("/lang/" + encodeURIComponent(code) + ".json", function (f) {
         if (!f || !f.strings) return;
         dict = f.strings;
+        // Help is written in Thai: its texts come from a second file, only on the Help page.
+        if (location.pathname.indexOf("/help") === 0) {
+          return get("/lang/help/" + encodeURIComponent(code) + ".json", function (h) {
+            if (h && h.strings) for (var k in h.strings) if (Object.prototype.hasOwnProperty.call(h.strings, k)) dict[k] = h.strings[k];
+            node(document.body);
+            watch();
+          });
+        }
         node(document.body);
         watch();
       });
