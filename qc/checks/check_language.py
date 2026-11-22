@@ -69,6 +69,10 @@ def run(t):
         js = (Path(F.CODE) / "shared/web/mice-lang.js").read_text(encoding="utf-8")
         t.ok("if (!dict[t]) return null" in js, "an empty entry keeps the page's own text")
         t.ok("if (dict[t] === t) return null" in js, "a text that translates to itself is not written back (observer loop)")
+        code, hz = F.get(base + "/lang/help/zh.json")
+        hz = json.loads(hz) if code == 200 else {}
+        t.ok(code == 200 and len(hz.get("strings", {})) > 300, "the Help texts are served in Chinese", str(code))
+        t.ok("/lang/help/" in js, "the Help page loads its own texts")
         t.ok("e.key === KEY" in js and "searchParams.set(\"lang\"" in js, "other tabs are told of a language change and partner links carry ?lang=")
     finally:
         if pack.exists():
