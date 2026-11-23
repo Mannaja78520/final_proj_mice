@@ -9,5 +9,7 @@
   "url": "/help",
   "entry": "help.html",
   "show": false,
-  "order": 20
+  "order": 20,
+  "alonePort": 8656,
+  "caps": []
 }

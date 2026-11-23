@@ -285,6 +285,8 @@ class PcCamRelay(CamRelay):
     """This PC's webcam, read by one program (`run`, ffmpeg on the PC) that
     writes JPEG after JPEG. Viewers are handled exactly as for a board."""
 
+    GONE = PC_CAMERA_BUSY          # what a viewer is told when it gives nothing
+
     def __init__(self, addr, run=None):
         super().__init__(addr)
         self.run = list(run or [])
@@ -307,7 +309,7 @@ class PcCamRelay(CamRelay):
 
     def why(self):
         """The reader's last failure in plain words, without the class name."""
-        return self.error.split(": ", 1)[-1] if self.error else PC_CAMERA_BUSY
+        return self.error.split(": ", 1)[-1] if self.error else self.GONE
 
     def _read_stream(self):
         # A page that keeps coming back must not relaunch it faster either.
@@ -341,7 +343,7 @@ class PcCamRelay(CamRelay):
                         return                 # nobody watching: let the webcam go
                 chunk = proc.stdout.read1(65536)
                 if not chunk:
-                    raise RuntimeError(PC_CAMERA_BUSY)
+                    raise RuntimeError(self.GONE)
                 buf += chunk
                 buf = self._take_jpegs(buf)
                 if len(buf) > 4 * 1024 * 1024:

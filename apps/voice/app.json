@@ -16,5 +16,8 @@
   "icon": "🎤",
   "image": "/img/apps/voice.webp",
   "order": 25,
-  "help": "voice"
+  "help": "voice",
+  // Alone (no hub): MiceHub.exe --alone voice . What it can do for its neighbours: caps.
+  "alonePort": 8652,
+  "caps": ["speak", "hear", "think"]
 }

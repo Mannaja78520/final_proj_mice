@@ -1,0 +1,52 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Camera — Mice</title>
+<link rel="stylesheet" href="/mice.css">
+<!--
+  ONE CAMERA IN ITS OWN WINDOW (user 2026-11-23: *show it separately, for other
+  people to see*). Open /app/camera/watch.html?dev=<camera>&name=<name> on any
+  screen: a second monitor, a TV, a phone. It only watches: it changes nothing,
+  and any number of windows cost the camera nothing (the hub reads it once).
+  Plain script, nothing newer than Chrome 70, so an old Android TV can show it.
+-->
+<style>
+html,body{height:100%;margin:0;background:#000;color:#fff}
+#wrap{height:100%;display:flex;flex-direction:column}
+#bar{display:flex;gap:12px;align-items:center;padding:6px 12px;font:14px system-ui,sans-serif;background:#111}
+#bar b{flex:1}
+#bar button{font:inherit}
+#v{flex:1;min-height:0;width:100%;object-fit:contain;background:#000}
+#say{position:fixed;left:0;right:0;bottom:12px;text-align:center;font:16px system-ui,sans-serif}
+</style>
+<div id="wrap">
+  <div id="bar"><b id="name">Camera</b><button id="full">⛶ Full screen</button></div>
+  <img id="v" alt="live camera view">
+</div>
+<div id="say" aria-live="polite">connecting…</div>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var dev = q.get('dev') || '', say = document.getElementById('say');
+  var img = document.getElementById('v'), tries = 0;
+  document.getElementById('name').textContent = q.get('name') || dev || 'Camera';
+  document.title = (q.get('name') || 'Camera') + ' — Mice';
+  document.getElementById('full').onclick = function () {
+    var el = document.documentElement;
+    (el.requestFullscreen || el.webkitRequestFullscreen || function () {}).call(el);
+  };
+  function start() {
+    say.textContent = tries ? 'reconnecting…' : 'connecting…';
+    img.src = '/api/dev/cam.stream?dev=' + encodeURIComponent(dev) + '&t=' + Date.now();
+  }
+  img.onload = function () { say.textContent = ''; tries = 0; };
+  // A stream ends when the camera goes quiet or the hub restarts: ask again,
+  // a little slower each time, instead of leaving a frozen picture on a screen.
+  img.onerror = function () {
+    tries++;
+    say.textContent = 'the camera is not answering — trying again…';
+    setTimeout(start, Math.min(15000, 1000 * tries * 2));
+  };
+  if (!dev) say.textContent = 'No camera chosen: open this from the Cameras page.'; else start();
+})();
+</script>

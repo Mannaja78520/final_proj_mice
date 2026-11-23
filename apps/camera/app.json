@@ -1,18 +1,24 @@
 {
-  // The camera view on its own.
+  // ALL CAMERAS, ONE PAGE.
   //
   // Asked for 2026-08-21: *how to go to camera view while not go to the
-  // module*. Opening a camera meant opening that module's whole website and
-  // finding the Camera card on it — fine when you are configuring a board,
-  // wrong when you just want to see what it sees.
+  // module*. Grown 2026-11-23: *ESP32-CAM and other cameras (USB, network)
+  // used at the same time by recording, the face app and, later, a window or
+  // stream for other people* - so this is not "the ESP32 camera" any more but
+  // every camera the rig can use, with the kind inside each card.
   //
   // It is an APP, which in this project means one entry here and nothing else
   // to edit: the hub lists it, serves it and links it from the Tools list
-  // because it is in this folder, not because anything was told about it.
-  "name": "ESP32 camera",
-  "blurb": "ดูภาพจากกล้อง ESP32 ที่เชื่อมต่อกับระบบ",
+  // because it is in this folder. The list itself is main_python/cam_sources.py
+  // (GET /api/cameras), and what kinds of camera can be added is
+  // config/cameras.json.
+  "name": "Cameras",
+  "blurb": "ดูกล้องทุกตัวในที่เดียว ทั้งกล้องบนบอร์ด กล้อง USB และกล้องเครือข่าย แชร์ให้หลายหน้าจอพร้อมกัน",
   "icon": "📷",
   "image": "/img/apps/camera.webp",
   "order": 15,
-  "help": "camera"
+  "help": "camera",
+  // Alone (no hub): MiceHub.exe --alone camera . What it can do for its neighbours: caps.
+  "alonePort": 8653,
+  "caps": ["camera"]
 }

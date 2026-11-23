@@ -1,0 +1,38 @@
+{
+  // THE KINDS OF CAMERA A PERSON CAN ADD (user 2026-11-23: one camera system,
+  // ESP32-CAM and any other camera usable at the same time by recording, face
+  // recognition, a watch window and later a live stream). One entry per kind,
+  // no code: a new kind is a new entry here plus its label in the language packs.
+  //
+  // Every kind is read by ONE ffmpeg that writes JPEG after JPEG, held by the
+  // hub, so any number of pages and programs watch the hub and the camera sees
+  // one watcher (main_python/cam_relay.py). ESP32-CAM boards and this PC's
+  // webcams are found by themselves and are not listed here.
+  //
+  // {input} becomes: the extra arguments for the link's scheme, then -i and the
+  // link. Only the schemes listed may be used: a file path or a local socket
+  // handed to ffmpeg would read this PC, and ffmpeg runs with the hub's rights.
+  "kinds": {
+    "link": {
+      "label": "Network camera or video link",
+      "hint": "The address of an IP camera, a phone camera app or a stream: http://... or rtsp://...",
+      "needs": "value",
+      "schemes": ["http", "https", "rtsp", "rtsps", "rtmp"],
+      "extra": { "rtsp": ["-rtsp_transport", "tcp"], "rtsps": ["-rtsp_transport", "tcp"] },
+      "run": ["ffmpeg", "-hide_banner", "-loglevel", "error",
+              "-protocol_whitelist", "http,https,tcp,tls,rtp,udp,rtsp,rtmp,crypto",
+              "{input}",
+              "-vf", "scale=640:-2,fps=10",
+              "-f", "image2pipe", "-vcodec", "mjpeg", "-q:v", "6", "-"]
+    },
+    "demo": {
+      "label": "Demo camera (a test picture, no camera needed)",
+      "hint": "Try the cameras page, the watch window and the face app without any hardware.",
+      "needs": "",
+      "run": ["ffmpeg", "-hide_banner", "-loglevel", "error", "-re",
+              "-f", "lavfi", "-i", "testsrc2=size=640x480:rate=10",
+              "-f", "image2pipe", "-vcodec", "mjpeg", "-q:v", "6", "-"]
+    }
+  },
+  "maxSources": 32
+}

@@ -47,6 +47,36 @@
    "file": "hub_api_apps.py"
   },
   {
+   "path": "/api/cameras",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "face"
+   ],
+   "file": "hub_api_cameras.py"
+  },
+  {
+   "path": "/api/cameras/add",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_cameras.py"
+  },
+  {
+   "path": "/api/cameras/kinds",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_cameras.py"
+  },
+  {
+   "path": "/api/cameras/remove",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_cameras.py"
+  },
+  {
    "path": "/api/diag",
    "method": "GET",
    "what": "",
@@ -488,6 +518,16 @@
     "id"
    ],
    "file": "hub_api_apps.py"
+  },
+  {
+   "path": "/api/peers",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "app",
+    "cap"
+   ],
+   "file": "hub_api_peers.py"
   },
   {
    "path": "/api/pinout",

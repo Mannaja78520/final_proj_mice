@@ -1,5 +1,9 @@
 "use strict";
 
+// Every camera on one page (user 2026-11-23). The list comes from the hub
+// (GET /api/cameras: boards, this PC's webcams, cameras people added); a camera
+// is watched through /api/dev/cam.stream?dev=<dev>, the same URL for all of
+// them, so the face app and the watch window read exactly what this page reads.
 class CameraApp extends (window.Mice && window.Mice.App ? window.Mice.App : Object) {
   constructor() {
     super("camera");
@@ -9,112 +13,180 @@ class CameraApp extends (window.Mice && window.Mice.App ? window.Mice.App : Obje
       d.textContent = s == null ? '' : String(s);
       return d.innerHTML;
     };
-    this.foundCams = new Map();
+    this.cams = [];
+    this.kinds = [];
+    this.KIND_WORDS = {esp32: 'Camera board', usb: 'USB camera on this PC',
+                       link: 'Network camera', demo: 'Demo camera'};
   }
 
   init() {
     this.load(false);
+    this.loadKinds();
     if (window.miceLogin) {
       window.miceLogin.mount(this.$('loginHere'));
     }
+    this.$('addKind').onchange = () => this.showKind();
+  }
+
+  // Which kinds can be added comes from config/cameras.json, through the hub.
+  async loadKinds() {
+    try {
+      const data = await (await fetch('/api/cameras/kinds')).json();
+      this.kinds = data.kinds || [];
+    } catch (_) { this.kinds = []; }
+    const sel = this.$('addKind');
+    sel.innerHTML = this.kinds.map(k =>
+      `<option value="${this.esc(k.kind)}">${this.esc(k.label)}</option>`).join('');
+    this.showKind();
+  }
+
+  showKind() {
+    const k = this.kinds.find(x => x.kind === this.$('addKind').value) || {};
+    this.$('addLinkRow').hidden = k.needs !== 'value';
+    this.$('addHint').textContent = k.hint || '';
+  }
+
+  toggleAdd() {
+    const box = this.$('addBox');
+    box.hidden = !box.hidden;
+  }
+
+  async add() {
+    const say = this.$('addSay');
+    const body = {kind: this.$('addKind').value, name: this.$('addName').value,
+                  value: this.$('addLink').value};
+    say.textContent = 'adding…';
+    try {
+      const r = await fetch('/api/cameras/add', {method: 'POST', body: JSON.stringify(body)});
+      const d = await r.json().catch(() => ({}));
+      if (r.status === 401) { say.textContent = 'Log in first (the box at the top), then add the camera'; return; }
+      if (!r.ok || d.ok === false) { say.textContent = d.error || 'the camera could not be added'; return; }
+      say.textContent = 'added';
+      this.$('addName').value = '';
+      this.$('addLink').value = '';
+      this.load(false);
+    } catch (_) { say.textContent = 'the hub did not answer'; }
   }
 
   async load(force) {
     const generation = this.loadGeneration = (this.loadGeneration || 0) + 1;
-    this.$('stat').textContent = 'กำลังค้นหากล้อง…';
-    const found = new Map();
-    let failed = 0;
-    for (const url of ['/api/mine', '/api/scan' + (force ? '?force=1' : '')]) {
-      try {
-        const response = await fetch(url), data = await response.json();
-        if (!response.ok || data.ok === false || !Array.isArray(data.modules)) throw Error('scan failed');
-        data.modules.filter(m => m.type === 'cam').forEach(m => {
-          const wireless = url.startsWith('/api/scan');
-          found.set(String(m.chip || m.id), {id:m.id, name:m.name,
-            dev:wireless ? 'wifi:' + m.ip : m.dev, ip:wireless ? m.ip : undefined});
-        });
-      } catch (_) { failed++; }
-    }
+    this.$('stat').textContent = 'looking…';
+    let data = null;
+    try {
+      if (force) await fetch('/api/scan?force=1');
+      const r = await fetch('/api/cameras');
+      data = await r.json();
+      if (!r.ok || data.ok === false || !Array.isArray(data.cameras)) data = null;
+    } catch (_) { data = null; }
     if (generation !== this.loadGeneration) return;
-    if (failed < 2) this.foundCams = found;
-    this.render();
-    if (failed) {
+    if (data) {
+      this.cams = data.cameras;
+      this.render();
+    } else {
       this.$('none').hidden = true;
-      this.$('stat').textContent = failed === 2
-        ? 'ค้นหากล้องไม่ได้ ข้อมูลที่แสดงอาจเก่า กด Look again เพื่อลองอีกครั้ง'
-        : 'ค้นหาได้บางส่วน อาจมีกล้องที่ยังไม่แสดง กด Look again เพื่อลองอีกครั้ง';
+      this.$('stat').textContent = 'Could not look for cameras. What is shown may be old. Press Look again to try again.';
     }
   }
 
   render() {
     const box = this.$('cams');
+    // A camera that is being watched keeps its card: redrawing it would cut its picture.
+    const live = new Set();
+    box.querySelectorAll('input[type=checkbox][data-live]:checked').forEach(c => live.add(c.dataset.dev));
     box.innerHTML = '';
-    this.$('none').hidden = this.foundCams.size > 0;
-    this.$('stat').textContent = this.foundCams.size ? (this.foundCams.size + ' found') : '';
-    
-    this.foundCams.forEach(c => {
-      box.appendChild(this.createCard(c));
-    });
+    this.$('none').hidden = this.cams.length > 0;
+    this.$('stat').innerHTML = this.cams.length ? ('<span>Cameras found:</span> ' + this.cams.length) : '';
+    this.cams.forEach(c => box.appendChild(this.createCard(c, live.has(c.dev))));
   }
 
-  createCard(c) {
+  createCard(c, wasLive) {
     const d = document.createElement('div');
     d.className = 'card cam';
-    const live = c.dev.indexOf('wifi:') === 0;
-    
-    const displayName = c.name || ('camera ' + c.id);
-    const techSpan = live ? '' : ' · ' + this.esc(c.dev);
-    
-    const cableWarning = live ? '' : 
-      `<div class="mini">Reachable only on a cable. Pictures need WiFi — a JPEG does not fit down a command line. Put this camera on the network to see it here; its settings still work over the cable.</div>`;
-
+    const live = c.live !== false;
+    const dev = c.dev, enc = encodeURIComponent(dev);
+    const kind = this.KIND_WORDS[c.kind] || c.kind;
+    const streamUrl = location.origin + '/api/dev/cam.stream?dev=' + enc;
+    const watching = c.viewers ? c.viewers + ' watching' : '';
     d.innerHTML =
-      `<h2>${this.esc(displayName)} <span class="mini tech">#${this.esc(c.id)}${techSpan}</span></h2>` +
-      `<img class="shot" id="img_${this.esc(c.id)}" alt="the view from ${this.esc(displayName)}">` +
+      `<h2>${this.esc(c.name)} <span class="kind">${this.esc(kind)}</span></h2>` +
+      `<div class="shotbox"><img class="shot" hidden alt="the view from ${this.esc(c.name)}">` +
+      `<div class="ph shot">No picture yet. Tick “live view” or press “Take a picture”.</div></div>` +
       `<div class="row" style="margin-top:var(--sp-2)">` +
-        `<label><input type="checkbox" id="live_${this.esc(c.id)}"> live view</label>` +
-        `<button id="shot_${this.esc(c.id)}">📷 Take a picture</button>` +
-        `<a href="/mod?dev=${encodeURIComponent(c.dev)}">settings</a>` +
-        `<span class="mini" id="say_${this.esc(c.id)}"></span>` +
+        `<label><input type="checkbox" data-live="1" data-dev="${this.esc(dev)}"> live view</label>` +
+        `<button class="shotbtn">📷 Take a picture</button>` +
+        `<a href="watch.html?dev=${enc}&name=${encodeURIComponent(c.name)}" target="_blank" rel="noopener">🪟 Open in its own window</a>` +
       `</div>` +
-      cableWarning;
-    
-    this.bindCardEvents(d, c, live);
+      `<div class="row">` +
+        `<label><input type="checkbox" class="face"> Recognise faces with this camera</label>` +
+        `<span class="mini">In use right now:</span> <b>${c.viewers || 0}</b>` +
+        (c.kind === 'esp32' ? `<a href="/mod?dev=${enc}">settings</a>` : '') +
+        (c.removable ? `<button class="secondary rm">Remove</button>` : '') +
+      `</div>` +
+      `<div class="mini say"></div>` +
+      (c.kind === 'usb' || c.kind === 'esp32' ? `<div class="mini">Use this camera for faces only through the switch above. Do not also pick the same camera inside Face_Regonize: a USB camera can be held by one program only, and a camera board allows one connection.</div>` : '') +
+      (live ? '' : `<div class="mini">Reachable only on a cable. Pictures need WiFi — a JPEG does not fit down a command line. Put this camera on the network to see it here; its settings still work over the cable.</div>`) +
+      `<div class="mini tech">${this.esc(dev)} · ${this.esc(c.where || '')}${watching ? ' · ' + this.esc(watching) : ''}<br>Link for other programs: <code>${this.esc(streamUrl)}</code></div>`;
+    this.bind(d, c, live, wasLive);
     return d;
   }
 
-  bindCardEvents(cardEl, c, live) {
-    const img = cardEl.querySelector('#img_' + c.id);
-    const say = cardEl.querySelector('#say_' + c.id);
+  bind(card, c, live, wasLive) {
+    const img = card.querySelector('img.shot'), ph = card.querySelector('.ph'), say = card.querySelector('.say');
     const url = p => '/api/dev/' + p + '?dev=' + encodeURIComponent(c.dev);
+    const shot = card.querySelector('.shotbtn'), box = card.querySelector('[data-live]');
+    shot.disabled = box.disabled = !live;
+    if (!live) shot.title = 'this camera is only on a cable — pictures need WiFi';
 
-    const shot = cardEl.querySelector('#shot_' + c.id);
-    shot.disabled = !live;
-    if (!live) {
-      shot.title = 'this camera is only on a cable — pictures need WiFi';
-    }
-    
     shot.onclick = () => {
       say.textContent = 'taking…';
-      img.onerror = () => { say.textContent = 'no picture — is the camera plugged in?'; };
-      img.onload = () => { say.textContent = ''; };
+      img.onerror = () => { say.textContent = 'no picture — is the camera plugged in?'; img.hidden = true; ph.hidden = false; };
+      img.onload = () => { say.textContent = ''; img.hidden = false; ph.hidden = true; };
       img.src = url('cam.jpg') + '&t=' + Date.now();
     };
-    
-    const box = cardEl.querySelector('#live_' + c.id);
-    box.disabled = !live;
+
+    const start = () => {
+      say.textContent = 'live';
+      img.onload = () => { img.hidden = false; ph.hidden = true; };
+      img.onerror = () => {
+        say.textContent = 'the live view stopped — the camera stopped answering';
+        box.checked = false;
+        img.hidden = true; ph.hidden = false;
+      };
+      img.src = url('cam.stream') + '&t=' + Date.now();
+    };
     box.onchange = () => {
-      if (box.checked) {
-        say.textContent = 'live';
-        img.onerror = () => {
-          say.textContent = 'the live view stopped — the camera stopped answering';
-          box.checked = false;
-        };
-        img.src = url('cam.stream') + '&t=' + Date.now();
-      } else {
-        img.removeAttribute('src'); // dropping the src closes the connection
+      if (box.checked) start();
+      else {
+        img.removeAttribute('src');      // dropping the src closes the connection
+        img.hidden = true; ph.hidden = false;
         say.textContent = '';
       }
+    };
+    if (wasLive && live) { box.checked = true; start(); }
+
+    const face = card.querySelector('.face');
+    face.checked = !!c.face;
+    face.onchange = async () => {
+      try {
+        const r = await fetch('/api/cameras/face',
+          {method: 'POST', body: JSON.stringify({dev: c.dev, on: face.checked})});
+        if (r.status === 401) {
+          face.checked = !face.checked;
+          say.textContent = 'Log in first (the box at the top)';
+        } else {
+          say.textContent = face.checked
+            ? 'The face app now looks through this camera (within a few seconds).'
+            : 'The face app no longer uses this camera.';
+        }
+      } catch (_) { face.checked = !face.checked; say.textContent = 'the hub did not answer'; }
+    };
+
+    const rm = card.querySelector('.rm');
+    if (rm) rm.onclick = async () => {
+      img.removeAttribute('src');
+      const r = await fetch('/api/cameras/remove', {method: 'POST', body: JSON.stringify({id: c.id})});
+      if (r.status === 401) { say.textContent = 'Log in first (the box at the top)'; return; }
+      this.load(false);
     };
   }
 }
@@ -128,4 +200,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Expose legacy global functions for inline HTML event handlers
 window.load = (force) => window.cameraApp.load(force);
-

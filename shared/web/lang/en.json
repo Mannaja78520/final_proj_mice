@@ -201,6 +201,8 @@
   "ไฟล์นี้ไม่มีเพลงที่เปิดได้ เลือกไฟล์ท่าและเพลง .nong.json อีกครั้ง": "This file has no playable music. Choose a moves-and-music .nong.json file again.",
   "ไฟล์เพลงใหญ่เกิน 32 MB": "The music file is over 32 MB",
   "❚❚ หยุดชั่วคราว": "❚❚ Pause",
+  "ดูกล้องทุกตัวในที่เดียว ทั้งกล้องบนบอร์ด กล้อง USB และกล้องเครือข่าย แชร์ให้หลายหน้าจอพร้อมกัน": "See every camera in one place: camera boards, USB and network cameras, shared to many screens at once",
+  "เปิด Cameras (แท็บใหม่)": "Open Cameras (new tab)",
   "เธรด": "threads",
   "สมดุล": "Balanced",
   "ประหยัด": "Economy",

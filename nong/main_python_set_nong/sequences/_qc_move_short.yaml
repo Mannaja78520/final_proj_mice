@@ -1,0 +1,3 @@
+name: qc_short
+steps:
+  - pose: "90 90 90 90 90 90 90 90 T 500"

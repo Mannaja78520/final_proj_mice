@@ -674,6 +674,19 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
   <p>เมื่อค้นหาอุปกรณ์ไม่สำเร็จ หน้าแรกจะแจ้งให้ลองใหม่ รายการเดิมใน Modules ยังใช้ปุ่มได้แต่ระบุว่าอาจเก่า Network แยกบอร์ดชื่อซ้ำตามตัวอุปกรณ์ และเก็บผลคำสั่งจัดกลุ่มไว้หลังรีเฟรช</p>
   <p class="tech">Show API: <code>GET /api/play</code> includes <code>epoch</code>. A participating caller supplies <code>expected_epoch</code> with its next play request; Stop changes the epoch and rejects older stamped requests, including ones arriving later. Legacy unstamped requests that have not entered the player when Stop finishes remain outside this transport-order guarantee. <code>POST /api/play/home</code> requires login and an integer <code>expected_epoch</code>, and shares the cancellation fence. Ambiguous HOME dispatch retains device ownership until acknowledged Stop; confirmed historical devices are released. Stop responses expose <code>stop_dev</code> plus fresh <code>stop_ok</code> and <code>stop_reply</code>; an unresolved worker or refused/missing STOP prevents confirmed success.</p>
   <p>ภาพประกอบคู่มือรวมมากับ Hub ใช้ได้โดยไม่ต้องเชื่อมต่ออินเทอร์เน็ตหรือคัดลอกโฟลเดอร์ภาพแยก เมื่อภาพต้นฉบับเปลี่ยน ระบบตรวจรุ่นจะแจ้งให้สร้างโปรแกรมใหม่ด้วย</p>
+
+  <!-- EACH APP ALONE, AND TOGETHER (user 2026-11-23) -->
+  <div class="f" id="alone"><h3>เปิดแอพทีละตัว ไม่ต้องเปิด Hub<span class="tag t-new">new</span></h3>
+    <p>ทุกแอพเปิดใช้เดี่ยว ๆ ได้ ไม่ต้องรอ Hub และมีความสามารถเกือบเท่ากับเปิดผ่าน Hub ถ้ามีแอพอื่นเปิดอยู่บนเครื่องเดียวกัน แอพจะเจอกันเองและทำงานร่วมกันทันที ไม่ต้องตั้งค่า</p>
+    <ul>
+      <li>เปิดเดี่ยว: ดับเบิลคลิกไฟล์ที่ชื่อเหมือนแอพในโฟลเดอร์ launchers เช่น Voice, Cameras, Prize machines, Nong Studio, TV Remote หรือ Features &amp; help หน้าของแอพจะเปิดขึ้นเอง ปิดหน้าต่างสีดำเพื่อหยุด</li>
+      <li>เสียงกับการจดจำใบหน้า: แอพเสียงรู้ว่าใครยืนอยู่หน้ากล้องจาก Reconize และทักทายได้เอง ไม่ต้องผ่าน Hub</li>
+      <li>เกมกับตู้รางวัล: เมื่อเปิดเกมผ่านแอพตู้รางวัลหรือ Hub คนชนะจะได้รางวัลจากตู้เอง</li>
+      <li>กล้องหนึ่งตัวเปิดได้โดยโปรแกรมเดียว: โปรแกรมที่ขอก่อนเป็นเจ้าของ โปรแกรมอื่นดูภาพผ่านเจ้าของ ภาพจึงไม่ดำและกล้องไม่ถูกเปิดซ้ำ</li>
+      <li>แอพของเพื่อน (Reconize, Photobooth, All-Jao Games) เปิดจากโฟลเดอร์ของมันเองได้เสมอ Hub แค่เชื่อมให้</li>
+    </ul>
+    <p>ถ้าเปิดหน้าของแอพอื่นในหน้าต่างของแอพเดี่ยว จะเห็นหน้าสั้น ๆ บอกว่าแอพนั้นยังไม่ได้เปิดที่นี่ หรือมีปุ่ม เปิด พาไปหน้าต่างที่แอพนั้นเปิดอยู่</p>
+    <p class="tech">Technical: starters are made by <code>python tools/make_launchers.py</code> into <code>main_python/launchers</code>. <code>MiceHub.exe --alone voice</code> (also <code>camera</code>, <code>gacha</code>, <code>studio</code>, <code>tv</code>, <code>help</code>; <code>--port N</code> moves it; ports are <code>alonePort</code> in each <code>app.json</code>). Each running program writes <code>&lt;app&gt;-&lt;port&gt;.json</code> into <code>%TEMP%\mice-peers</code>; <code>GET /api/peers?cap=prize</code> lists them. A webcam claim is <code>cam-&lt;name&gt;.json</code> in the same folder.</p></div>
 </section>
 
 <!-- ===================== MODULE SITE ===================== -->
@@ -1208,10 +1221,10 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
 
 <section id="camera">
   <div class="shead">
-    <span class="where tech">code/apps/camera · served at /app/camera/</span>
-    <h2>📷 ESP32 camera — ดูกล้องและปรับแต่งภาพแบบแยกจอ</h2>
-    <p>รวมภาพจากบอร์ดโมดูลกล้อง (ESP32-CAM) ทุกตัวที่เชื่อมต่ออยู่มาแสดงในหน้าเดียว
-       โดยไม่ต้องเปิดหน้าเว็บของแต่ละบอร์ด พร้อมระบบ Relay สตรีมมิ่งภาพให้ดูได้พร้อมกันหลายอุปกรณ์</p>
+    <span class="where tech">code/apps/camera · served at /app/camera/ · list: GET /api/cameras</span>
+    <h2>📷 Cameras — กล้องทุกตัวในที่เดียว ใช้พร้อมกันได้หลายหน้าจอและหลายโปรแกรม</h2>
+    <p>หน้านี้รวมกล้องทุกชนิดไว้ด้วยกัน ได้แก่ บอร์ดกล้อง ESP32-CAM กล้อง USB ของเครื่องนี้ และกล้องเครือข่ายที่คุณเพิ่มเอง
+       ระบบดึงภาพจากกล้องแต่ละตัวเพียงครั้งเดียว แล้วแจกต่อให้หลายคนและหลายโปรแกรมดูพร้อมกัน ทั้งหน้านี้ หน้าต่างดูแยก และแอปจำใบหน้า</p>
   </div>
 
   <!-- SECTION 1: STREAM PREVIEW -->
@@ -1293,6 +1306,23 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
      to each camera and feeds every viewer from it. Open this page on as many
      screens as you like.</p>
   <p>เมื่อการค้นหาล้มเหลว จะแจ้งให้กด Look again แทนการบอกว่าไม่มีกล้อง ข้อมูลที่เก็บไว้จะระบุว่าอาจเก่า; หากค้นหาได้บางส่วน อาจมีกล้องที่ยังไม่แสดง</p>
+
+  <h3>เพิ่มกล้องที่ไม่ใช่บอร์ด ESP32</h3>
+  <p>กด “เพิ่มกล้อง” แล้วเลือกชนิด: กล้องเครือข่ายหรือลิงก์วิดีโอ (ที่อยู่ที่ขึ้นต้นด้วย http หรือ rtsp จากกล้อง IP หรือแอปกล้องในมือถือ) หรือกล้องตัวอย่างที่ไม่ต้องมีอุปกรณ์จริง ต้องเข้าสู่ระบบก่อน กล้อง USB ของเครื่องนี้ไม่ต้องเพิ่ม มันขึ้นมาเอง</p>
+  <p>ลิงก์ที่มีรหัสผ่านของกล้องจะถูกเก็บไว้บนเครื่องนี้เท่านั้น และไม่แสดงบนหน้าเว็บ ที่อยู่ของเครื่องนี้เอง (127.0.0.1) และไฟล์ในเครื่องใช้เป็นลิงก์ไม่ได้</p>
+
+  <p>ช่องในหน้าเพิ่มกล้อง: Add a camera = เพิ่มกล้อง, Kind = ชนิดของกล้อง, Link = ลิงก์ของกล้อง</p>
+
+  <h3>เปิดดูในหน้าต่างแยก</h3>
+  <p>กด “เปิดในหน้าต่างแยก” ที่การ์ดกล้อง จะได้หน้าเต็มจอที่มีแต่ภาพสดของกล้องตัวนั้น เหมาะกับจอที่สอง ทีวี หรือมือถือของคนอื่น เปิดกี่หน้าต่างก็ได้ กล้องไม่รู้สึกอะไร และถ้าภาพหลุดหน้านี้จะต่อใหม่เอง</p>
+
+  <h3>ใช้กับการจำใบหน้า</h3>
+  <p>ติ๊ก “จำใบหน้าด้วยกล้องตัวนี้” แอปจำใบหน้าจะเริ่มใช้กล้องตัวนั้นภายในไม่กี่วินาที โดยไม่ต้องรีสตาร์ต และเลิกใช้เมื่อเอาติ๊กออก กล้อง ESP32-CAM ใช้ได้เหมือนกล้องปกติ และใช้พร้อมกับการดูสดหรือการอัดวิดีโอได้</p>
+
+  <p>ใช้กล้องแต่ละตัวผ่านทางเดียวเท่านั้น กล้อง USB เปิดได้ทีละโปรแกรม และบอร์ด ESP32-CAM รับได้แค่หนึ่งการเชื่อมต่อ ถ้า hub เปิดกล้องอยู่แล้วแล้ว Face_Regonize พยายามเปิดกล้องตัวเดียวกันเอง จะขึ้นว่ากล้องถูกใช้อยู่ หรือภาพดำ ให้ใช้กล้องผ่านสวิตช์ในหน้านี้ แล้วให้ Face_Regonize รับภาพจากลิงก์ของ hub แทน (รอฝั่งเพื่อนทำ)</p>
+
+  <h3>ลิงก์สำหรับโปรแกรมอื่น</h3>
+  <p>เปิดสวิตช์รายละเอียดทางเทคนิคเพื่อดูลิงก์ภาพสดของกล้องแต่ละตัว โปรแกรมอื่นในเครือข่าย เช่น โปรแกรมอัดวิดีโอหรือแอปของเพื่อน ใช้ลิงก์นี้ได้เหมือนกล้องเว็บแคมทั่วไป (MJPEG) ระบบยังคงอ่านกล้องจริงครั้งเดียว</p>
 </section>
 
 <section id="voice">
@@ -1623,7 +1653,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
   <div class="shead">
     <span class="where tech">code/apps/all-jao · served at /app/all-jao/</span>
     <h2>🎮 All-Jao Games — มินิเกมและระบบแจกของรางวัลอัตโนมัติ</h2>
-    <p>ชุดมินิเกมสำหรับจัดกิจกรรมงานอีเวนต์ (ตู้คีบ, จับคู่การ์ด, ตอบคำถาม, วงล้อเสี่ยงโชค)
+    <p>ชุดมินิเกมสำหรับจัดกิจกรรมงานอีเวนต์ จำนวนและชนิดของเกมเปลี่ยนได้ตามที่เพื่อนเพิ่มในอนาคต (ตอนนี้เช่น ตู้คีบ จับคู่การ์ด ตอบคำถาม วงล้อเสี่ยงโชค)
        เชื่อมโยงกับเซิร์ฟเวอร์ Mice Hub และผูกเข้ากับตู้กาชาปองแจกของรางวัลอัตโนมัติ</p>
   </div>
 

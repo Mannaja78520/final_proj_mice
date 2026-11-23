@@ -1,0 +1,9 @@
+# written by QC - timing computed from speed
+name: qc_wave
+loop: true
+next: qc_old.yaml
+steps:
+  - speed: 45
+  - pose: "90 90 90 90 90 90 90 90 90 90"
+  - wait: 250
+  - pose: "90 130 90 90 90 90 90 90 90 90"
