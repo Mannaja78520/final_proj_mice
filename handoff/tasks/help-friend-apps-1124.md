@@ -1,5 +1,5 @@
 # help-friend-apps-1124 — Detailed in-app Help (real screenshots) for All-Jao, Reconize, Photobooth
-Owner: gpt-codex (Claude reviews). Branch: claude/help-friend-apps (from main after PR #233)
+Owner: gpt-codex (Claude reviews). Branch: claude/project-thread-181856 (fast-forwarded to main + this task)
 Updated: 2026-11-23 23:40
 Last commit: (none)
 
