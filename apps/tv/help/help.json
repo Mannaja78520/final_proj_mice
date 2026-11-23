@@ -1,0 +1,16 @@
+{
+  "title": {
+    "th": "รีโมตทีวี",
+    "en": "TV Remote",
+    "zh": "电视遥控",
+    "ja": "テレビリモコン"
+  },
+  "summary": {
+    "th": "ควบคุมและดูสถานะบนทีวี",
+    "en": "Control and monitor from a TV",
+    "zh": "在电视上控制和查看状态",
+    "ja": "テレビから操作して状態を見る"
+  },
+  "group": "use",
+  "order": 20
+}

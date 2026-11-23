@@ -318,8 +318,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
 <div class="wrap">
 <!-- GROUPED BY WHAT YOU ARE DOING (A41-6), not by where the code runs: the
      day-to-day screens first, building a board second, reference last.
-     A new section is a part file, one line below and one [id, words] line
-     in parts/topics.js (HELP_GROUPS), which draws this list. -->
+     Hub topics are parts. The browser loads installed app guides into the same groups. -->
 <nav id="helpNav" aria-label="Help topics"></nav>
 
 <main>
@@ -405,24 +404,23 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
          <a href="#modsite">Module website</a></p></div>
     <div class="f"><h3>Run the robot</h3>
       <p>Day to day: find the modules, drive them, flash new firmware.</p>
-      <p><a href="#hub">Mice Hub</a> · <a href="#tv">TV Remote &amp; Monitor</a></p></div>
+      <p><a href="#hub">Mice Hub</a></p></div>
     <div class="f"><h3>See what a camera sees</h3>
       <p>Watching a camera on any screen, setting up how it looks, and knowing
          who it recognises.</p>
-      <p><a href="#camera">ESP32 camera</a> · <a href="#faces">Reconize</a> · <a href="#gacha">Prize machines</a> · <a href="#all-jao">All-Jao Games</a> · <a href="#accounts">Accounts and passwords</a></p></div>
-    <div class="f"><h3>Ask it a question</h3>
-      <p>Talking to the rig: a question in, an answer out.</p>
-      <p><a href="#voice">Voice</a></p></div>
+      <p><a href="#accounts">Accounts and passwords</a></p></div>
     <div class="f"><h3>Teach it to move</h3>
       <p>Making poses and sequences, or typing commands at it directly.</p>
-      <p><a href="#studio">Nong Studio</a> ·
-         <a href="#commands">Robot commands</a></p></div>
+      <p><a href="#commands">Robot commands</a></p></div>
+    <div class="f" id="installedHelpTasks" hidden><h3>Use an installed app</h3>
+      <ul id="installedHelpLinks"></ul></div>
     <div class="f"><h3>Something is wrong</h3>
       <p>Checking what broke, and what the files on the SD card should look
          like.</p>
       <p><a href="#qc">Check the system</a> · <a href="#files">Files &amp; formats</a></p></div>
   </div>
 </section>
+<span data-help-group="start" hidden></span>
 
 <!-- ===================== HUB ===================== -->
 <section id="hub">
@@ -736,845 +734,11 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
   <p>เมื่อกด Run เพื่อเล่นไฟล์ที่บันทึกไว้ จะเห็นผลคำขอหรือเหตุที่ปฏิเสธใต้รายการไฟล์ แม้ข้อความสถานะการเล่นสดจะเปลี่ยนไปแล้ว</p>
 </section>
 
-<!-- ===================== STUDIO ===================== -->
-<section id="studio">
-<h3>เปิดผลงานล่าสุดพร้อมท่าและเพลง</h3>
-<p>หน้าแรก Hub มีแอป <b>ผลงานล่าสุด</b> สำหรับชุดงานที่ติดตั้งไว้ เครื่องที่ยังไม่มีรายการสามารถนำเข้าไฟล์ได้โดยตรง ใน Nong Studio กด <b>เปิดผลงานพร้อมเพลง</b> แล้วเลือกคลิป หรือเลือกไฟล์ <code>.nong.json</code> ซึ่งเก็บท่า rig และเพลงในไฟล์เดียว ระบบอ่านและตรวจไฟล์ก่อนเปลี่ยนงาน ถ้ามีงานที่ยังไม่เก็บจะถามให้ Save หรือยกเลิกก่อน พร้อมตัวเลือกว่าจะใช้ rig ของชุดงานหรือเก็บการตั้งค่าปัจจุบัน การใช้ rig ต่างจากชุดเดิมอาจเปลี่ยนท่าหรือเวลาตามขีดจำกัดใหม่</p>
-<p>กด <b>ทดลองพร้อมเพลง</b> เพื่อดูท่าในหน้าจอพร้อมเพลงเดิม หยุด กลับต้น หรือเลื่อนแถบเวลาได้ เพลงเป็นนาฬิกาของพรีวิว จึงไม่วิ่งแยกจากท่าเมื่อแท็บช้า หากเพลงจบก่อนท่า ช่วงที่เหลือเงียบ และการวนซ้ำเริ่มเพลงใหม่เมื่อท่าจบ การเปิดชุดงานหรือใช้พรีวิวนี้ไม่ส่งคำสั่งไปหุ่นจริง ปุ่ม Run on robot เป็นขั้นตอนแยก</p>
-<p><b>Save</b> เก็บเพลงไว้ในโปรเจกต์ด้วย เปิดใหม่ยังมีเพลงเดิม หรือกด <b>ดาวน์โหลดท่า+เพลง</b> เพื่อย้ายไฟล์เดียวไปเครื่องอื่น เพลงของ draft เก็บแยกในเบราว์เซอร์ หากพื้นที่ถูกปิดหรือเคลียร์แล้ว อาจต้องเลือกไฟล์เดิมอีกครั้งโดยท่าที่กู้คืนยังอยู่ สำหรับหุ่นจริง ให้ใช้ไฟล์ YAML และ MP3 ชื่อเดียวกับคำสั่ง play: บน SD ตามวิธีอัปโหลดเดิม ระบบไม่อัปโหลดหรือสั่งเล่นหุ่นให้อัตโนมัติ</p>
-<p>ชื่อโปรเจกต์ใช้ตัวอักษรไทยและอังกฤษ ตัวเลข เว้นวรรค _ - และ . ได้ แต่ใช้อีโมจิ / \ : หรือชื่อที่ Windows สงวนไว้ (เช่น con, nul, com1) ไม่ได้ ระบบจะบอกด้วยข้อความธรรมดาและไม่บันทึกทับงานเดิม</p>
 
-<p><b>เครื่องที่วาด 3D ไม่ได้ (ทีวี/คอมเก่า/เบราว์เซอร์ที่ปิดการ์ดจอ):</b> Studio ยังเปิดและใช้ได้ สไลเดอร์ ไทม์ไลน์ และการเล่นบนหุ่นทำงานตามปกติ ส่วนภาพหุ่น 3D จะแสดงข้อความบอกว่าเครื่องนี้วาดไม่ได้ ถ้าต้องการเห็นหุ่นให้เปิดด้วยเบราว์เซอร์ใหม่หรือคอมเครื่องอื่น</p>
-<p><b>แยกชุดเต้นอัตโนมัติ:</b> ค่าเริ่มต้น Automatic ตรวจคนหลายคนและการเปลี่ยนมุมกล้องในคลิปใหม่เอง เมื่อใช้ Automatic หรือ Group dance ระบบเปรียบเทียบการเคลื่อนไหวตลอดคลิปใหม่ทุกครั้ง ไม่กำหนดตำแหน่งชาย/หญิงไว้ล่วงหน้า คนที่แขนเหมือนกันแต่บิดเอวหรือเอียงไหล่ต่างกันอาจอยู่คนละชุดท่า เลือก Dance routine เพื่อดูแต่ละชุด หรือ Save separate routines เพื่อบันทึกชุดที่มีหลักฐานแตกต่างต่อเนื่องและมีภาพเชื่อถือได้ผ่านสัดส่วนภาพที่กำหนดในค่าตั้งต้นเป็นโครงการแยก ส่วน Fragment คือช่วงที่ยังยืนยันว่าเป็นชุดท่าใหม่ไม่ได้ เก็บไว้ดูและบันทึกทีละชุดได้ ไม่ถือว่าเป็นชุดเต้นใหม่ทุกครั้งที่กล้องตัด หากมุมใหม่จับคู่ชุดเดิมไม่ได้ชัดเจน ระบบใช้ข้อมูลภาพของผู้เต้นร่วมกับการจับคู่ทุกกลุ่มพร้อมกัน และทำเครื่องหมาย check cut เมื่อการจับคู่ยังคลุมเครือ การจับคู่มุมใหม่ที่ยังคลุมเครือจะคงท่า ไม่เปลี่ยนเป็นเชื่อถือได้เพียงเพราะรอครบเวลา หากหลายคนที่เห็นในภาพนั้นทำท่าเดียวกันจริงจึงใช้ท่าร่วมที่ยืนยันได้ รายงาน % reliable คือสัดส่วนภาพที่ใช้ได้ ไม่ใช่การรับรองว่าเป็นบุคคลเดิมแน่นอน ผู้ใช้เลือกคนเองได้เป็นทางเลือก</p>
-<p><b>ภาพตัดที่จับคู่คนเดิมไม่ได้:</b> ระบบแยกเป็น Scene segment อัตโนมัติ เลือกผู้เต้นหลักที่เห็นต่อเนื่องในชุดท่านั้น ไม่สลับตามค่าความมั่นใจทุกภาพ ช่วงวิดีโอและเวลาท่าของแต่ละส่วนเริ่มตรงกัน เมื่อแก้ช่วงวิดีโอจะยกเลิกการอ่านเดิมและให้วิเคราะห์ช่วงใหม่ โดยไม่เติมการยืนนิ่งยาวก่อนช่วงที่มองเห็น Make and save จะบันทึกชุดหรือช่วงที่ผ่านเกณฑ์แยกกัน ไม่สร้างโชว์ที่เดาว่าคนละท่าเป็นคนเดียวกัน การจับคู่ข้ามกล้องที่คลุมเครือยังไม่ใช่การรับรองเพศหรือบุคคลเดิม</p>
-<p><b>เต้นต่อเนื่อง:</b> ค่าเริ่มต้นรักษารูปท่าและเพิ่มเวลาตามขีดจำกัดหุ่น หากต้องการจังหวะเพลงเดิมให้เลือก Stay with the music ซึ่งอาจลดระยะเคลื่อนไหว  ระบบกรองการสั่นตามเวลา ลดการกลับทิศสั้นและการเปลี่ยนมุมข้อต่อฉับพลัน เมื่อคนหยุดนิ่งหลังเปลี่ยนท่า หุ่นยังเคลื่อนให้ถึงท่าที่รับไว้ก่อนค้าง ไม่หยุดกลางทางจากตัวกรอง ยังคงท่าเปิดและช่วงยืนนิ่ง ไม่ดึงท่าจากอนาคตมาเติมภาพที่มองไม่เห็น หลังกรองจะตรวจการชนและเวลาใหม่และแสดงจำนวนการกลับทิศก่อน/หลัง ภาพต้นฉบับและรายงานความคลาดยังใช้ตรวจว่าการกรองกินรายละเอียดท่าเกินไปหรือไม่ ริกและขอบเขตมอเตอร์อาจทำให้บางท่ายังต่างจากคน</p>
 
-  <div class="card"><h3>ตามวิดีโอคนเดียวหรือเต้นหมู่</h3>
-    <p>ช่วงอ้อมที่ช้ากว่าความเร็วต่ำสุดของตัวเล่นวิดีโอจะเลื่อนภาพตามนาฬิกาหุ่นทีละภาพ โดยเสียงหยุดชั่วคราว ใช้ Play both เพื่อหยุดหรือเล่นต่อ การเปลี่ยนวิดีโอหรือโหมดจะคืนความเร็วปกติและยกเลิกการอ่านเดิมทันที เพลงต้นฉบับจะไม่ถูกส่งไปผูกกับชุดท่าที่ถูกยืดเวลา เพราะจะคลาดจังหวะ ต้องใช้ไฟล์เพลงที่ปรับเวลาแล้ว สำหรับชุดเชียร์ที่จัดให้มีไฟล์เพลงปรับเวลามาคู่กัน</p>
-    <p>หน้า Video เลือก Performers เป็น One performer หรือ Group dance และเลือก Camera เป็น One camera view หรือ Changing shots / viewpoints แยกกันได้ หลังอ่านคลิปจะมีเลขผู้เต้นให้เลือกที่ Follow ชุดท่าที่ต่างกัน เช่นท่าของผู้เต้นชายและหญิง จะไม่ถูกเฉลี่ยรวมกัน ตรวจและบันทึกแต่ละคนหรือแต่ละชุดแยกชื่อ</p>
-    <p>Turn the waist ใช้มุมลำตัวสัมพันธ์กับสะโพก ส่วน Follow shoulder tilt ใช้มุมไหล่สัมพันธ์กับลำตัว ผ่านการเทียบกับกลไกจริงในริก คนที่ยืนนิ่งจะไม่ดึงท่าอนาคตมาเติม และไม่เกลี่ยข้ามภาพตัด กล้องด้านข้างหรือมุมสูงจะตรวจในกรอบลำตัวก่อนรับท่าใหม่</p>
-    <p>Learned camera checks ใช้นโยบาย Q-learning ที่ฝึกในตัวจำลองช่วยตัดสินใจรับท่า เก็บท่าเดิม หรือชดเชยมุมมอง เปรียบเทียบกับวิธีเรขาคณิตก่อนเปิดใช้ ถ้าถูกบัง ไม่แน่ใจว่าเป็นคนเดิม หรือแยกการหมุนคนกับกล้องไม่ได้ จะเก็บท่าที่เชื่อถือได้ล่าสุด ผลตัวจำลองไม่ได้ยืนยันความแม่นยำบนคลิปจริง</p>
-    <p>ตรวจแผ่นมือ ลูกบอลข้อต่อ ก้านแขน ลำตัว และศีรษะตามท่าจริง รวมการยกไหล่ ทุกชิ้นต้องห่างกันอย่างน้อย 10 มม. (เผื่อระยะคลอนของเฟืองเซอร์โว ตั้งได้ใน safe_path.json ค่า clearMm บวกระยะเผื่อของ rig) ท่าปลายทางที่ชนจะหาท่าใกล้เคียงที่ว่างก่อน แล้วใช้ RRT* หาเส้นทางอ้อม ตรวจหลังปัดมุมและปรับเวลาอีกครั้ง พรีวิว โปรเจกต์ และชุดคำสั่งส่งออกใช้ชุดท่าที่ตรวจแล้วเดียวกัน Stay with the music อาจลดระยะขยับเมื่อหุ่นตามไม่ทัน หากปิดจะรักษาท่าและเพิ่มเวลาให้ขยับหรืออ้อม โดยวิดีโอพรีวิวช้าลงตามจังหวะหุ่น การเกิดท่าซ้ำไม่ยุบหรือย้อนเวลาเพลง</p>
-  </div>
-  <p class="mini">คุณภาพภาพ 3D เลือกอัตโนมัติจากอุปกรณ์ที่เปิดเว็บ เปลี่ยนได้ที่ Hub → Settings → ภาพ 3D โหมดประหยัดลดจำนวนภาพและความละเอียด โดยยังคงจังหวะการเล่นและการตรวจชนเดิม ขอบภาพใช้ค่าใหม่หลังโหลดหน้าใหม่</p>
-  <div class="shead">
-    <span class="where tech">code/nong/main_python_set_nong · served at /studio/</span>
-    <h2>Nong Studio — คู่มือการใช้งานและจุดปรับแต่งอย่างละเอียดทุกส่วน</h2>
-    <p>โปรแกรมจำลอง 3D และออกแบบท่าทางแอนิเมชันสำหรับหุ่นยนต์ฮิวแมนนอยด์ Nong (10 ข้อต่อเซอร์โว)
-       ประมวลผลบนเครื่องคอมพิวเตอร์ PC พร้อมระบบ On-Demand 3D Rendering ที่ช่วยประหยัดพลังงาน ไม่กินสเปก และไม่ค้าง</p>
-  </div>
 
-  <!-- OVERALL SCREENSHOT -->
-  <div class="info-box">
-    <div class="info-header">
-      <b>ภาพรวมหน้าจอ Nong Studio ในปัจจุบัน (Current Real UI)</b>
-      <span class="info-badge">Overview</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-current.png" alt="Nong Studio Current Real UI" class="info-img">
-      <div class="callout-pin" style="top: 45%; left: 30%;" title="1. พื้นที่ 3D Model Viewport">1</div>
-      <div class="callout-pin" style="top: 45%; left: 78%;" title="2. แผงควบคุมสไลเดอร์ 10 ข้อต่อ">2</div>
-      <div class="callout-pin" style="top: 90%; left: 50%;" title="3. แถบไทม์ไลน์และเครื่องเล่นท่าทาง">3</div>
-    </div>
-  </div>
 
-  <!-- SUB-SECTION 1: JOINT SLIDERS -->
-  <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 1: แผงปรับแต่งองศาข้อต่อเซอร์โว 10 จุด (Joint Sliders &amp; Inspector)</b>
-      <span class="info-badge">Joint Controls</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-sliders.png" alt="Joint Sliders Panel" class="info-img">
-      <div class="callout-pin" style="top: 25%; left: 25%;" title="1. ข้อต่อแขนซ้าย L_SH / L_EL">1</div>
-      <div class="callout-pin" style="top: 55%; left: 25%;" title="2. ข้อต่อแขนขวา R_SH / R_EL">2</div>
-      <div class="callout-pin" style="top: 80%; left: 25%;" title="3. เอวและยักไหล่ WAIST / SHRUG">3</div>
-      <div class="callout-pin" style="top: 92%; left: 50%;" title="4. ปุ่ม Quick Actions (Home / Relax)">4</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> สไลเดอร์แขนซ้าย (L_SH_P, L_SH_R, L_EL_P, L_EL_R)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือพิมพ์องศา (ช่วงที่ตั้งไว้สำหรับข้อนั้น; HOME และจุดศูนย์อาจต่างกัน)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>L_SH_P / L_SH_R:</b> ไหล่ซ้ายก้ม-เงย (Pitch) และกางออก-หุบเข้า (Roll)<br>
-          • <b>L_EL_P / L_EL_R:</b> ข้อศอกซ้ายงอพับและหมุนบิดท่อนแขน<br>
-          เซอร์โวหมุนตามองศาจริงทันที พร้อมระบบจำกัดขอบเขตไม่ให้ชนโครงหุ่น
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> สไลเดอร์แขนขวา (R_SH_P, R_SH_R, R_EL_P, R_EL_R)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือกดปุ่ม <b>Mirror</b> เพื่อคัดลอกท่าจากแขนซ้าย</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          คุมแขนขวา 4 แกนอิสระ หากกด Mirror แขนขวาจะกางทำท่าสมมาตรกับแขนซ้ายทันที เหมาะสำหรับทำท่าไหว้ ท่ากอดอก หรือท่ายกมือพร้อมกัน
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> สไลเดอร์เอวและยักไหล่ (WAIST &amp; SHRUG)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> WAIST ปรับหมุนซ้าย-ขวา / SHRUG ปรับโครงสร้าง 4-Bar Linkage</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>WAIST:</b> เอวเอี้ยวตัวมองไปด้านข้างได้ ±30°<br>
-          • <b>SHRUG:</b> คานไหล่เอียงยกข้างหนึ่งขึ้น อีกข้างหนึ่งลง รวม 26° เลียนแบบการยักไหล่ของมนุษย์
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> ปุ่มลัดความปลอดภัย (Home / Relax / Zero Lock)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกปุ่ม Home, Relax หรือ Zero Lock ด้านล่าง</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>Home:</b> กลับท่า HOME ที่ตั้งไว้ องศาแต่ละข้ออาจไม่ใช่ 90°; ตรวจท่าจริงและค่าที่บันทึกไว้<br>
-          • <b>Relax:</b> หยุดส่งพัลส์ควบคุมเซอร์โว; ไม่ได้ตัดไฟเลี้ยง และการคลายแรงยึดขึ้นกับเซอร์โว<br>
-          • <b>Zero Lock:</b> ล็อคพิกัดจุดศูนย์ ป้องกันคนกดเลื่อนตำแหน่งโดยไม่ตั้งใจ
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- SUB-SECTION 2: TIMELINE & KEYFRAMES -->
-  <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 2: แถบไทม์ไลน์และลำดับท่าทาง (Timeline &amp; Keyframe Sequencer)</b>
-      <span class="info-badge">Timeline</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-timeline-bar.png" alt="Timeline Controls" class="info-img">
-      <div class="callout-pin" style="top: 50%; left: 8%;" title="1. ปุ่ม Play / Run on robot">1</div>
-      <div class="callout-pin" style="top: 50%; left: 25%;" title="2. ปุ่ม + Add keyframe">2</div>
-      <div class="callout-pin" style="top: 50%; left: 60%;" title="3. แถบเลื่อนเวลา Scrub Bar">3</div>
-      <div class="callout-pin" style="top: 50%; left: 90%;" title="4. เช็คบ็อกซ์ Loop &amp; ซูม">4</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> สั่งเล่นท่าทาง (Play / Run on robot)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>▶ Play</b> เพื่อพรีวิวในจอ หรือ <b>▶ Run on robot</b> เพื่อสั่งหุ่นจริง</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          โมเดล 3D และตัวหุ่นจริงจะเคลื่อนที่ต่อเนื่องตามคีย์เฟรม ด้วยความนุ่มนวลตามเส้นโค้งความเร็วที่คำนวณไว้
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> การบันทึกท่า (+ Add Keyframe &amp; Duration)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ดัดท่าที่ต้องการแล้วกด <b>+ Add keyframe</b> พร้อมกำหนดเวลา (เช่น 800ms)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          เพิ่มท่าใหม่เข้าไปในเส้นเวลา หากกำหนดเวลาน้อยเกินกว่าที่เซอร์โวหมุนทัน ระบบจะยืดเวลาออกให้อัตโนมัติเพื่อป้องกันมอเตอร์กระชาก
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> สครับบาร์ (Scrub Bar &amp; Live Tracking)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> แดรกเลื่อนตัวชี้เวลาไปข้างหน้าหรือข้างหลัง</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          หุ่นยนต์จะเคลื่อนตามจุดเวลาที่ลากแบบ Real-time ช่วยให้ตรวจสอบจุดที่มีการกระทบกันของโครงสร้างได้อย่างแม่นยำ
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> เล่นวนซ้ำและซูม (Loop Checkbox)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ติ๊กถูกที่ช่อง <b>Loop</b></div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          เมื่อเล่นถึงท่าสุดท้าย หุ่นยนต์จะเคลื่อนที่ย้อนกลับสู่ท่าแรกอย่างนุ่มนวลและเริ่มเล่นซ้ำต่อเนื่อง ไม่มีการกระตุกหรือสะบัดแขน
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SUB-SECTION 3: 3D MODEL & IK INTERACTION -->
-  <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 3: โมเดล 3D และการควบคุมด้วย Inverse Kinematics (3D Canvas)</b>
-      <span class="info-badge">3D &amp; IK</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-3d-model.png" alt="3D Model Canvas" class="info-img">
-      <div class="callout-pin" style="top: 35%; left: 35%;" title="1. วงแหวนควบคุมแกนเซอร์โว">1</div>
-      <div class="callout-pin" style="top: 60%; left: 30%;" title="2. จุดจับลากแขน IK (Wrist &amp; Elbow)">2</div>
-      <div class="callout-pin" style="top: 15%; left: 50%;" title="3. ปุ่มมุมมองระนาบ Orthographic">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> วงแหวนควบคุมแกน (Gizmo Rings)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกที่ข้อต่อ จะปรากฏวงแหวนสี แดง (Pitch), เขียว (Roll), น้ำเงิน (Yaw) ให้คลิกลาก</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          หมุนข้อต่อจุดนั้นโดยตรงตามแนวแกน ช่วยให้กะองศาเชิงมุมได้ง่ายกว่าการเลื่อนสไลเดอร์
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> ลากมือแบบผกผัน (Shift+Drag IK Solver)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Shift ค้างไว้</b> แล้วคลิกลากลูกบอลข้อมือ (🟢 Wrist)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ระบบจะคำนวณหามุมของไหล่และข้อศอกพร้อมกัน 4 แกนอัตโนมัติ ทำให้สามารถจับมือหุ่นยนต์ชี้ไปยังเป้าหมายในอวกาศ 3D ได้ทันที
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> สลับมุมมองแท้จริง (Orthographic Plane Views)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Front</b>, <b>Top</b> หรือ <b>Side</b></div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          สลับมุมมองกล้องเป็นแบบฉายระนาบขนาน (ไม่มี Perspective เพี้ยน) ช่วยให้จัดแขนทั้งสองข้างให้ตรงได้ระดับเท่ากันเป๊ะ
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SUB-SECTION 4: CALIBRATION & SERVO OFFSET -->
-  <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 4: การตั้งค่าชดเชยและแคลิเบรตเซอร์โว (Setup &amp; Servo Offset)</b>
-      <span class="info-badge">Calibration</span>
-    </div>
-    <p class="mini">ต้องล็อกอินก่อนสำหรับการ์ดที่สั่งหรือเปลี่ยนค่าหุ่นจริง (Robot, Rig setup, Servo offset, Movement safety, This robot).
-      การ์ดที่ไม่ถึงหุ่นจริง (Model รูปร่าง 3D, Saving) เปิดได้เลยโดยไม่ต้องใส่รหัส.
-      <span class="where">รายการอยู่ใน nong/main_python_set_nong/web/settings_open.json</span></p>
-    <p class="mini">การ์ดไหนอยากเปิดค้างไว้ กด <b>⧉</b> ที่หัวการ์ด มันจะลอยออกมาเป็นหน้าต่างของตัวเอง ลากหัวการ์ดไปวางตรงไหนก็ได้
-      ลากมุมขวาล่างเพื่อปรับขนาด และยังเห็นอยู่ทุก tab. กด <b>⇲</b> เพื่อเก็บกลับเข้าที่. เบราว์เซอร์จำตำแหน่งไว้ให้ (บนมือถือไม่มีปุ่มนี้).</p>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-tuning-card.png" alt="Tuning &amp; Calibration Card" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. ปุ่ม Nudge ชดเชย ±0.5 องศา">1</div>
-      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. กำหนดช่วงลิมิต Min / Max">2</div>
-      <div class="callout-pin" style="top: 75%; left: 30%;" title="3. อัตราทดเฟืองและ Shrug Curve">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ชดเชยฟันเฟือง (Servo Offset Nudge)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>-</b> หรือ <b>+</b> ปรับทีละ 0.5° หรือกด 0 เพื่อรีเซ็ต</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          แก้ปัญหาเขาสวมเซอร์โวขบฟันเฟืองไม่ตรงตำแหน่ง ช่วยให้แขนตรงสนิทโดยค่าที่ชดเชยจะถูกบันทึกลงหน่วยความจำ NVS บนตัวหุ่นยนต์ ไม่สูญหายเมื่อปิดสวิตช์
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> ลิมิตความปลอดภัย (Joint Safety Limits)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ระบุค่า Min (เช่น 15°) และ Max (เช่น 165°) ของแต่ละข้อต่อ</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ตัวหุ่นจริงและ Studio จะไม่ยอมหมุนเกินพิกัดนี้เด็ดขาด ป้องกันแขนพับชนลำตัวหรือเซอร์โวติดขัดจนไฟตก (Brownout Guard)
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> ตารางแคลิเบรตยักไหล่ (4-Bar Shrug Curve)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ป้อนระยะยกจริง (mm) เทียบกับองศาเซอร์โวยักไหล่</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          คานยักไหล่จะขยับตามกลศาสตร์คณิตศาสตร์ของ 4-Bar Linkage จริง หัวไหล่ยกขึ้นได้อย่างสมจริงเป็นธรรมชาติ
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SUB-SECTION 5: SEQUENCE CHAIN -->
-  <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 5: การร้อยเรียงชุดท่าทาง (Sequence Chains &amp; Speeds)</b>
-      <span class="info-badge">Sequences</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-sequence-card.png" alt="Sequence Manager Card" class="info-img">
-      <div class="callout-pin" style="top: 20%; left: 40%;" title="1. กล่องเลือกไฟล์ YAML">1</div>
-      <div class="callout-pin" style="top: 45%; left: 40%;" title="2. ตัวคูณความเร็วประจำไฟล์">2</div>
-      <div class="callout-pin" style="top: 70%; left: 40%;" title="3. ช่อง Chain ต่อไฟล์ถัดไป">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ไฟล์ท่าทาง (YAML Sequence Files)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกไฟล์จากดรอปดาวน์ <b>Open saved YAML…</b> หรือกด <b>Save</b></div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          โหลดชุดท่าทางที่เคยออกแบบไว้กลับเข้าสู่เส้นเวลาเพื่อแก้ไข หรือส่งไฟล์ขึ้นการ์ด SD ของหุ่นยนต์
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> ตัวคูณความเร็ว (Sequence Speed Multiplier)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ปรับสปีด 0.5x, 1.0x, หรือ 1.5x</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          เร่งหรือหน่วงการเคลื่อนไหวทั้งชุดท่าทางให้เร็วขึ้นหรือช้าลงตามต้องการ โดยคงอัตราส่วนจังหวะเดิมไว้ครบถ้วน
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> การร้อยท่าทางอัตโนมัติ (Sequence Chain)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ใส่ชื่อไฟล์ถัดไปในช่อง <b>Chain</b> เช่น <code>wave.yaml</code></div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          เมื่อหุ่นเล่นท่าปัจจุบันจบ จะเริ่มเล่นท่าต่อไปทันทีโดยไม่ต้องส่งคำสั่งใหม่ ทำให้จัดโชว์ยาวๆ ได้อย่างต่อเนื่อง
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> ความเร็วตอนเต้นตามเพลง (Speed limit with music)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ในการ์ด <b>Timing</b> ช่อง <b>Speed limit with music</b> (ขึ้นเฉพาะชุดท่าที่มีเพลง) ใส่ °/วินาที ปล่อยว่าง = ใช้ค่าของหุ่น, 0 = เร็วสุดเท่าที่เซอร์โวไหว ใต้ช่องจะบอกว่าท่าไหนตามเพลงไม่ทันและช้ากว่าเพลงกี่วินาที กดชื่อท่าเพื่อไปแก้ ตัด หรือเปลี่ยนท่านั้น</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ใช้เฉพาะชุดท่านี้ตอนเพลงเล่นเท่านั้น (ไฟล์เขียน <code>pace: music N</code> หุ่นรับเป็น <code>PACE MUSIC N</code>) จบเพลง กด STOP หรือเปิดเครื่องใหม่ หุ่นกลับไปใช้ Peak speed limit เดิม (60 °/วินาที) ทุกครั้ง ตรวจการชน ขอบเขตข้อต่อ และระยะห่างมือยังทำงานที่ความเร็วใหม่ ลองกับหุ่นจริงให้เริ่มจากค่าต่ำแล้วค่อยเพิ่ม
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">5</span> ดูว่าเซอร์โวจริงตามทันไหม (Play like the real servos)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ติ๊ก <b>Play like the real servos</b> ในการ์ด Timing แล้วกด Play หุ่นในภาพจะขยับช้ากว่าแผนแบบเซอร์โวจริง ท่าที่เซอร์โวตามไม่ทันมีขอบเส้นประบนแถบเวลา (เหลือง = ช้าเล็กน้อย, แดง = ช้ามาก) ค่าความหน่วงและการเร่งของแต่ละข้อปรับได้ใน Setup &gt; rig (delay ms, speed-up °/s²)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ไม่เปลี่ยนหุ่น เป็นภาพตรวจในจอเท่านั้น ค่าความหน่วงยังเป็นค่าประมาณจนกว่าจะวัดกับหุ่นจริง ตัวจำลองฟิสิกส์ (tools/nong_sim) ใช้ค่าชุดเดียวกัน
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">6</span> ท่าลื่นไม่กระตุก (ผ่านคีย์เฟรมโดยไม่หยุด)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ไม่ต้องกดอะไร ทำงานเองกับทุกท่า: ชุดท่าใน Studio, ท่าจากวิดีโอ, ทางอ้อมที่ Studio หาให้, ท่าพูด, ท่าจาก RL และ Shows ถ้าข้อต่อยังไปทางเดิม แขนจะวิ่งผ่านคีย์เฟรมต่อเลยแทนที่จะหยุดทุกคีย์ ตรงที่ข้อต่อกลับทิศ (ท่าสะบัด) ตรงที่มีพัก (hold) และต้น/ท้ายยังหยุดตรงคีย์พอดี เวลาของทุกท่าไม่เปลี่ยน จึงยังตรงเพลง ปิด/เปิดแยกตามที่มาของท่าได้ในไฟล์ <code>motion_smooth.json</code> (sources) ไฟล์ท่าที่ทำนอก Studio (เช่น RL) ใช้ <code>python tools/smooth_sequence.py ไฟล์.yaml</code> ตัวลื่นไม่มีทางทำให้ท่ากระตุกกว่าแบบเดิม: คีย์ไหนที่เส้นโค้งกระตุกกว่าแบบหยุดทุกคีย์ จะถูกลดความเร็วลงเอง (<code>jerkGuard</code>) ท่าจาก RL ที่ย่อจากท่าละเอียด 50 ครั้งต่อวินาที แขนจะผ่านแต่ละคีย์ด้วยความเร็วของท่าเดิม และเกาะเส้นทางเดิมที่ตรวจการชนแล้ว (<code>followDensePath</code>)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ไฟล์ที่ export จะมีบรรทัด <code>pass:</code> ก่อนท่า (ความเร็วตอนเริ่มและตอนจบของท่านั้น) หุ่นที่ลงเฟิร์มแวร์ใหม่รับเป็นคำสั่ง <code>PASS</code> หุ่นรุ่นเก่าข้ามบรรทัดนี้แล้วเล่นแบบเดิม (หยุดทุกคีย์) Studio ตรวจการชนบนเส้นทางที่ลื่นแล้วด้วยระยะห่างเท่าเดิม ท่าไหนเส้นโค้งไปชน ท่านั้นจะกลับไปหยุดตรงคีย์ตามเส้นตรงที่ตรวจแล้ว หุ่นเช็คเองอีกชั้น ถ้าเร็วเกินเซอร์โวหรือถูกยืดเวลา จะเล่นแบบเดิม ท่าเชียร์ 4 ชุด: จุดที่หยุดกลางท่าลดจาก 226–429 เหลือ 35–101 ครั้ง (ยังไม่ได้ลองบนหุ่นจริง)
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">7</span> ย้อนกลับ / ทำซ้ำ (กดผิดก็ไม่เสียงาน)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม ↶ Undo ในแถบเวลา (ข้างปุ่มซูม) หรือกด Ctrl+Z เพื่อย้อนกลับการแก้ล่าสุด เช่น ลบคีย์เฟรมผิด กด ↷ Redo หรือ Ctrl+Y เพื่อเอากลับมา ย้อนได้หลายขั้น การลากหรือพิมพ์ค่าติดกันนับเป็นขั้นเดียว เปิดไฟล์หรือโชว์ใหม่จะเริ่มประวัติใหม่</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ไม่เปลี่ยนหุ่น ย้อนเฉพาะท่าบนไทม์ไลน์ในจอ ถ้าเคยกดบันทึกลงหุ่นไปแล้ว ต้องบันทึกลงหุ่นใหม่อีกครั้ง
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">8</span> เปลี่ยนสีหน้าจอ (โหมดมืด)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกชุดสีจากกล่องสีที่แถบบนสุดของ Studio เช่น Midnight เป็นโหมดมืด ถนอมสายตาเวลาใช้นานๆ ภาพ 3D เปลี่ยนสีพื้นหลังตามด้วย ใช้ชุดสีเดียวกับหน้าอื่นของ Hub จึงเลือกที่ไหนก็ได้ผลทุกหน้า</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ไม่เปลี่ยนหุ่นและไม่เปลี่ยนไฟล์ท่า เปลี่ยนแค่สีของหน้าจอบนเครื่องนี้
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">9</span> Save ถามก่อนทับชื่อเดิม (ใช้สองแท็บก็ไม่ทับงานกัน)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ตอนกด Save Studio จะถามฮับว่าชื่อนี้มีไฟล์อยู่แล้วหรือยัง ถ้าอีกแท็บหรืออีกคนเพิ่งบันทึกชื่อนี้ไว้ จะมีหน้าต่างถามว่าจะทับไหม กดยกเลิกแล้วตั้งชื่อใหม่เพื่อเก็บทั้งสองไฟล์</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ไม่เปลี่ยนหุ่น ไฟล์เดิมจะไม่ถูกทับถ้าคุณกดยกเลิก
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">10</span> วิดีโอที่แทบไม่เห็นคน (บอกเป็นคำพูด)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> หลังกด Make moves ถ้า Studio เห็นคนในวิดีโอน้อยกว่าหนึ่งในสี่ จะบอกก่อนว่า "แทบไม่เห็นคนในวิดีโอนี้" และแนะให้ใช้วิดีโอที่เห็นทั้งตัวรวมแขน ตัวเลขละเอียด (ย้อนกลับสั้นๆ, จุดที่ไม่แน่ใจ) จะอยู่หลังสวิตช์ Show technical details</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ไม่เปลี่ยนหุ่น เป็นแค่ข้อความช่วยตัดสินใจก่อนวางท่าบนแถบเวลา
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">11</span> ลิงก์วิดีโอในวงแลน (เช่น NAS)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ลิงก์จากอินเทอร์เน็ตและไฟล์ที่เลือกใช้ได้ตามปกติ ลิงก์ที่ชี้ไปอุปกรณ์ในเครือข่ายของคุณ (เช่น NAS หรือพีซีเครื่องอื่น) จะถูกปฏิเสธก่อนเพื่อความปลอดภัย 1) ล็อกอินที่แท็บหุ่นยนต์ 2) วางลิงก์วิดีโอของอุปกรณ์นั้นในช่อง “หรือลิงก์” แล้วกด ดึงมา 3) เมื่อขึ้นว่าเป็นอุปกรณ์ในเครือข่าย กดปุ่ม “อนุญาตอุปกรณ์นี้” 4) กด ดึงมา อีกครั้ง อยากดูรายการหรือยกเลิก เปิด “อุปกรณ์ในเครือข่ายของฉันที่ให้วิดีโอได้” ใต้ช่องลิงก์ จะพิมพ์ชื่อหรือเลขที่อยู่เพิ่มเอง (เช่น nas.local หรือ 192.168.1.50) หรือกด ลบ ก็ได้ เครื่อง PC นี้เองและที่อยู่ระบบคลาวด์ถูกปฏิเสธเสมอ ไม่มีทางอนุญาต</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ไม่เปลี่ยนหุ่น เป็นแค่การเลือกว่าอุปกรณ์ไหนฮับยอมดึงวิดีโอมาให้ รายการนี้เก็บในเครื่อง PC นี้เท่านั้น
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SUB-SECTION 6: SHOWS & MUSIC -->
-  <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 6: การจัดโชว์และซิงก์ดนตรี (Shows &amp; Music Synchronization)</b>
-      <span class="info-badge">Shows &amp; Music</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-shows-card.png" alt="Shows &amp; Music Card" class="info-img">
-      <div class="callout-pin" style="top: 25%; left: 40%;" title="1. เลือกไฟล์เพลง MP3 จากการ์ด SD">1</div>
-      <div class="callout-pin" style="top: 50%; left: 40%;" title="2. กำหนดจุดหยุดพัก Pause">2</div>
-      <div class="callout-pin" style="top: 75%; left: 40%;" title="3. ปุ่ม Save to robot สำหรับรันเดี่ยว">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ผูกเพลงประกอบ (Show Music Sync)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกไฟล์เพลงจาก <code>/music/song.mp3</code> ในการ์ด SD</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          เสียงเพลงและท่าทางของหุ่นยนต์จะเริ่มเล่นพร้อมกันอย่างตรงจังหวะ และระบบจะปิดเสียงอัตโนมัติเมื่อกด Stop
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> จุดพักหยุดรอ (Pause Intervals)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กำหนดเวลาหยุดพักระหว่างท่า เช่น <code>pause: 2.0s</code></div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          หุ่นยนต์จะหยุดค้างท่าทางสวยงามตามเวลาที่กำหนด ก่อนจะเริ่มเล่นท่าถัดไป
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> ส่งโชว์เข้าบอร์ด (Save to robot)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>💾 Save to robot</b></div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          โชว์จะถูกบันทึกลงในการ์ด SD ของตัวหุ่น ทำให้หุ่นยนต์สามารถเปิดเครื่องและแสดงโชว์ได้ด้วยตนเองโดยไม่ต้องต่อคอมพิวเตอร์
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SUB-SECTION 7: MOVES WHILE TALKING (A46-1, A46-4) -->
-  <div class="info-box" id="studio-talk">
-    <div class="info-header">
-      <b>จุดที่ 7: แขนขยับตอนพูด (Moves while talking)</b>
-      <span class="info-badge">Sequence</span>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ลองประโยค (▶ Show)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์ประโยคที่หุ่นจะพูด เลือกสไตล์การพูด (friendly, polite, …) แล้วกด <b>▶ Show</b></div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          หน้านี้พูดประโยคด้วยเสียงเดียวกับหน้า Voice และแขนในภาพ 3D ขยับพร้อมเสียง เป็นการดูตัวอย่างเท่านั้น ตัวหุ่นจริงไม่ขยับ
-          ท่าจะอยู่บน time bar ต่อ กด Play ดูซ้ำได้ (ไม่มีเสียง) ถ้ายังไม่ได้ล็อกอิน จะเห็นแค่ท่าโดยไม่มีเสียง
-          ประโยคสั้นแค่ไหนก็ได้ท่าอย่างน้อยหนึ่งท่า
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> ท่าใหม่สำหรับคำที่ยังไม่มีท่า</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์คำบอกทิศหรือส่วนของร่างกาย เช่น "ด้านขวาครับ", "ข้างบน", "หัวใจ" แล้วกด Show
-          ติ๊ก <b>Ask the AI for new moves</b> ถ้าอยากให้ AI ตัวเดียวกับหน้า Voice คิดท่าให้ เมื่อไม่มีกฎไหนเข้า (ต้องล็อกอิน)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ท่าที่สร้างขึ้นจะถูกปรับตามขนาดหุ่น ลิมิตข้อต่อ และเช็กไม่ให้ชนตัวเอง (หาทางอ้อมถ้าจำเป็น) ท่าที่ทำให้ปลอดภัยไม่ได้จะบอกเหตุผลและไม่ถูกใช้
-          กด <b>＋ Keep</b> เพื่อเก็บเป็นท่าถาวร แล้วหน้า Voice จะใช้ท่านี้กับคำนั้น คำและกฎทั้งหมดอยู่ใน <code>config/gesture_makers.json</code>
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> ท่าพักแขน (Hands between gestures)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือก <b>Hands ready</b> (ศอกงอ มืออยู่หน้าตัว) หรือ <b>Standing straight (Home)</b> (ยืนตรงแขนลง)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ระหว่างท่าตอนพูด แขนจะกลับมาพักที่ท่านี้ แบบพร้อมขยับได้ไวกว่า แบบยืนตรงดูนิ่งกว่า
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> รายการท่าและ Events</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> แก้คำที่เรียกแต่ละท่า กด ▶ ดูท่าเดียว หรือจัดท่าเองบน time bar แล้วกด <b>＋ Keep as a gesture</b> ติ๊ก Events ออกเพื่อปิดท่าใน event นั้น</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          หน้า Voice เลือกท่าตามคำที่พูด และเติมท่าเล็ก ๆ แบบสุ่มในช่องว่าง
-        </div>
-      </div>
-    </div>
-  </div>
-<p class="mini">ภาพ 3D หยุดวาดเมื่ออยู่นิ่ง และวาดใหม่เมื่อท่าจากตัวแก้ไขหรือ Monitor เปลี่ยน เมื่อเปิด/ปิดกริดหรือเครื่องหมายมือ โหลดโมเดลเพิ่ม หรือปรับขนาดหน้าจอ</p>
-  <p>ถ้าอ่านรายการโปรเจกต์ที่บันทึกไว้ไม่ได้ Studio จะเก็บตัวเลือกเดิมและแจ้งข้อผิดพลาดทั้งแถบสถานะและแถบแจ้งเตือนกลาง จึงเห็นได้จากทุกแท็บ กด Retry saved moves เพื่อลองอ่านอีกครั้ง งานในหน้ายังคงอยู่</p>
-<details><summary>Robot pose training pictures (PC experiment)</summary><p>Generate pose views with <code>python -m tools.robot_pose synth --n 20000 --no-images --out ABSOLUTE_PRIVATE_PATH</code>, then render <code>python -m tools.robot_pose.render_mujoco ABSOLUTE_PRIVATE_PATH/views.jsonl --out ABSOLUTE_PRIVATE_PATH</code>. MuJoCo uses the Studio rig and the saved camera, random light, colour, textures, blur and noise. Labels mark keypoints hidden by another part using depth. Joint centres inside their own housing use a rig-sized tolerance. Keep all pictures, labels and reports in the PC private <code>.local/robot_pose</code> folder using absolute paths. These are simulated images; real video labels still need independent hold observations and visual review. CAD appearance is optional when the private meshes exist; it follows the shared rig, with source attachment offsets checked. Landmarks absent from the CAD, including its virtual base point, stay unlabelled. Training views need at least three visible joints; fully hidden views are dropped. An unlabelled base point can still bound the robot post. No training, camera capture or robot commands run from this tool.</p><p>For recorded still frames, <code>python -m tools.robot_pose.lab_labels ABSOLUTE_MANIFEST.json --out ABSOLUTE_PRIVATE_DATASET</code> fits a camera from independently measured joint centres and known holds. The private manifest selects settled windows, validated landmarks, robot bounds, video-level train/validation splits and observed pose acceptance. A command acknowledgement alone does not prove the robot reached the pose: moving or visibly wrong frames are dropped. Only validated landmarks receive labels. Review at least 50 frame overlays before training; a single planar pose does not establish metric camera calibration.</p></details>
-</section>
-
-<p>เมื่อกู้คืนงานค้าง Studio จะรอเพลงให้พร้อมก่อนเล่นหรือบันทึก หากเพลงกู้คืนไม่ได้ ให้เปิดไฟล์ .nong.json ที่ดาวน์โหลดเก็บไว้อีกครั้ง งานท่ายังคงอยู่ในหน้าจอ</p>
-
-<p>ไฟล์ผลงานที่เลือกใช้รวมอยู่ในโฟลเดอร์ results ภายใน mice_system เปิด results/index.html หรือหน้าแรก Hub → ผลงานล่าสุด ไฟล์ท่าพร้อมเพลงอยู่ใน results/bundles ไม่มีการสร้างไอคอน Desktop ให้อัตโนมัติ</p>
-
-<!-- ===================== TV REMOTE ===================== -->
-<section id="tv">
-<p><b>ทีวี/เบราว์เซอร์รุ่นเก่า:</b> หน้า Home, Studio, Voice และหน้าอื่นถูกสร้างให้รันบน Chrome/Android WebView รุ่นเก่าได้ (ประมาณ Chrome 75 ขึ้นไป) ฮับส่งสคริปต์รุ่นเก่า (แปลงไว้แล้วตอน build) ให้เบราว์เซอร์ที่เก่ากว่า Chrome 80 เอง ฝั่งทีวีไม่ต้องทำงานเพิ่ม ฟีเจอร์ที่เบราว์เซอร์เก่าไม่มีจะถูกเติมให้เอง ถ้ายังเปิดไม่ขึ้นจะมีแถบสีแดงบอกเป็นภาษาธรรมดาว่าเบราว์เซอร์เก่าเกินไป ให้อัปเดต Chrome หรือ Android System WebView หรือเปิดบนคอมพิวเตอร์หรือมือถือรุ่นใหม่กว่า ถ้าหน้า 3D ไม่ทำงานบนเครื่องที่การ์ดจอไม่รองรับ Studio ยังใช้สไลเดอร์และไทม์ไลน์ได้</p>
-  <div class="shead">
-    <span class="where tech">code/apps/tv · served at /tv, /monitor, and /app/tv/</span>
-    <h2>📺 TV Remote &amp; Monitor — หน้าจอควบคุมสำหรับ Smart TV และมือถือ</h2>
-    <p>หน้าเว็บควบคุมและตรวจสอบสถานะแบบบางเฉียบ (Thin Client) ออกแบบตามสถาปัตยกรรม Centralized Server
-       หน้านี้ไม่มีตัวแสดงผล 3D ความเร็วในการแสดงสถานะขึ้นกับเครือข่ายและอุปกรณ์ที่ใช้</p>
-  </div>
-  <p class="mini">เมื่อซ่อนแท็บ หน้านี้พักการถามสถานะและกลับมาตรวจเมื่อเปิดแท็บอีกครั้ง หากเบราว์เซอร์ไม่อนุญาตให้จำโหมด ระบบยังเปิดหน้าได้โดยเลือกโหมดตามขนาดจอ</p>
-
-  <!-- SECTION 1: REMOTE CONTROLS -->
-  <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 1: แผงปุ่มควบคุมหลักและเครื่องเล่นท่าทาง (Remote &amp; Sequence Launcher)</b>
-      <span class="info-badge">Remote Buttons</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/tv-controls-box.png" alt="TV Controls Box" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 50%;" title="1. ปุ่ม Restart selected / Stop / Home">1</div>
-      <div class="callout-pin" style="top: 55%; left: 50%;" title="2. รายการเลือก Sequence">2</div>
-      <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่มสั่งพูดด่วน Quick Speech และ Mute all speech">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมหลัก (Restart selected, Stop, Home)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่มสัมผัสขนาดใหญ่บนหน้าจอ หรือกดผ่านรีโมททีวี</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>Restart selected:</b> เริ่มคลิปที่เลือกล่าสุดใหม่จากต้น; ต้องเลือกคลิปก่อน<br>
-          • <b>Stop:</b> หยุดโชว์ที่ Hub กำลังเล่น<br>
-          • <b>Home:</b> หยุดโชว์แล้วส่ง HOME ให้ Nong ที่เลือก ใช้ท่าที่บอร์ดบันทึกไว้ ไม่ตั้งทุกข้อเป็น 90°<br>
-          • <b>Mute all speech:</b> ปุ่มเล็กในกล่องพูดด่วน หยุดเสียงพูดทั้งหมดที่กำลังเล่นอยู่ทันที
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> รายการท่าทาง (Sequence Launcher)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือก Nong จากรายการ Robot แล้วกดปุ่มชื่อคลิป; ถ้ามีหลายเครื่องต้องเลือกเป้าหมายก่อน</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ระบบจะดึงไฟล์ท่าทางจาก Hub กลาง (<code>/api/list?kind=sequences</code>) และสั่งให้หุ่นรันชุดท่าทางนั้นทันที เจ้าหน้าที่หลังเวทีสามารถใช้มือถือกดเลือกโชว์ได้สะดวก
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECTION 2: JOINT GAUGES -->
-  <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 2: แถบมอนิเตอร์ระดับองศาข้อต่อเซอร์โว 10 จุด (10-Joint Monitor Gauges)</b>
-      <span class="info-badge">Joint Gauges</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/tv-gauges-box.png" alt="TV Gauges Box" class="info-img">
-      <div class="callout-pin" style="top: 50%; left: 25%;" title="1. เกจวัดระดับองศาแขนซ้าย">1</div>
-      <div class="callout-pin" style="top: 50%; left: 75%;" title="2. เกจวัดระดับองศาแขนขวาและเอว">2</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> แถบวัดองศา CSS Light Gauges</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> สังเกตแถบระดับสีฟ้า-เขียวที่ขยับตามมุมจริงของเซอร์โว</div>
-        <div class="action-impact"><b>ระบบทำงานอย่างไร:</b>
-          แสดงตำแหน่งจริงของเซอร์โวทั้ง 10 จุด ด้วย CSS Gauge เบาๆ แสดงผลอัปเดตแบบ 200ms โดยไม่ดึงภาระ GPU หรือ CPU ของทีวี
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="f"><h3>Decoupled Architecture: ป้องกันทีวีค้างได้อย่างไร?</h3>
-    <p>ในสถาปัตยกรรมแบบเดิม หากเปิดหน้า 3D (Three.js) บน Web Browser ของ Smart TV หรือมือถือรุ่นเก่า
-       เบราว์เซอร์จะต้องคอมไพล์ WebGL Shaders และรันลูปคำนวณ 60 รอบต่อวินาที ซึ่งชิปประมวลผลของสมาร์ททีวีไม่ได้ออกแบบมาเพื่อรองรับ
-       ส่งผลให้เบราว์เซอร์ทีวีปิดตัวเองหรือเครื่องค้าง</p></div>
-  <!-- SECTION 3: DUAL-MODE CONTROLLER -->
-  <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 3: สลับโหมดการใช้งาน Dual-Mode (Mobile Remote vs Stage Display)</b>
-      <span class="info-badge">Dual-Mode</span>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> โหมด 📱 รีโมทมือถือ (Mobile Controller)</div>
-        <div class="action-step"><b>การใช้งาน:</b> เหมาะสำหรับเจ้าหน้าที่หรือผู้บังคับหุ่นถือใช้งานผ่านสมาร์ทโฟน</div>
-        <div class="action-impact"><b>ความสามารถ:</b>
-          ปุ่มสัมผัสขนาดใหญ่พิเศษ กดง่ายด้วยนิ้วโป้ง มีปุ่มหยุดฉุกเฉิน ⏹ STOP, ท่าเริ่มต้น 🏠 HOME, แผ่นป้ายเลือกท่าทางสัมผัสขนาดใหญ่ และปุ่มสั่งพูดทักทายด่วน พร้อมซ่อนข้อมูลเซอร์โวเชิงเทคนิคเพื่อประหยัดพื้นที่หน้าจอ
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> โหมด 📺 จอแสดงเวที (10-Foot Stage Display)</div>
-        <div class="action-step"><b>การใช้งาน:</b> เปิดแสดงบนจอทีวีขนาดใหญ่บนเวทีสำหรับผู้ชมและผู้จัดงาน</div>
-        <div class="action-impact"><b>ความสามารถ:</b>
-          แสดงชื่อการแสดงปัจจุบัน (Now Playing) และหลอดความคืบหน้าด้วยตัวหนังสือขนาดใหญ่พิเศษ มองเห็นได้ชัดเจนจากระยะ 3-5 เมตร พร้อมสถานะ 🟢 กำลังแสดง (PLAYING) โดยซ่อนเมนูตั้งค่าและเซอร์โวไม่ให้รกสายตา
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <p>หากเล่น หยุด หรือพูดไม่สำเร็จ จะเห็นข้อความใต้แถบด้านบน HOME จะส่งต่อเมื่อได้รับคำตอบหยุดสำเร็จและหุ่นยนต์ตอบรับ STOP โดยไม่มีข้อผิดพลาดแล้วเท่านั้น หากการหยุดงานเดิมล้มเหลว ระบบยังจะพยายามส่ง STOP ไปยังหุ่นยนต์ที่เลือก และแจ้งผลรวม กด Stop หรือเปลี่ยนหุ่นยนต์ระหว่างโหลดรายการ จะยกเลิกการเริ่มเล่นที่ยังรออยู่ รวมคำขอเล่นหรือ HOME ที่ส่งไปแล้วแต่มาถึง Hub ช้า ข้อความที่พิมพ์ไว้จะคงอยู่เมื่อส่งเสียงพูดไม่สำเร็จ</p>
-  <p>ปุ่ม Refresh แสดง "Refreshing…" ระหว่างโหลด แล้วบอกเวลาที่อัปเดตล่าสุด หรือบอกว่าติดต่อ Hub ไม่ได้</p>
-
-</section>
-
-<section id="camera">
-  <div class="shead">
-    <span class="where tech">code/apps/camera · served at /app/camera/ · list: GET /api/cameras</span>
-    <h2>📷 Cameras — กล้องทุกตัวในที่เดียว ใช้พร้อมกันได้หลายหน้าจอและหลายโปรแกรม</h2>
-    <p>หน้านี้รวมกล้องทุกชนิดไว้ด้วยกัน ได้แก่ บอร์ดกล้อง ESP32-CAM กล้อง USB ของเครื่องนี้ และกล้องเครือข่ายที่คุณเพิ่มเอง
-       ระบบดึงภาพจากกล้องแต่ละตัวเพียงครั้งเดียว แล้วแจกต่อให้หลายคนและหลายโปรแกรมดูพร้อมกัน ทั้งหน้านี้ หน้าต่างดูแยก และแอปจำใบหน้า</p>
-  </div>
-
-  <!-- SECTION 1: STREAM PREVIEW -->
-  <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 1: กล่องแสดงภาพสดจากกล้อง ESP32-CAM (Live Stream &amp; Relay)</b>
-      <span class="info-badge">Live Stream</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/camera-preview-box.png" alt="Camera Live Stream Box" class="info-img">
-      <div class="callout-pin" style="top: 40%; left: 50%;" title="1. กล่องแสดงภาพสด">1</div>
-      <div class="callout-pin" style="top: 85%; left: 50%;" title="2. สถานะการเชื่อมต่อ WiFi">2</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> กล่องภาพสดและการกระจายสัญญาณ (Multi-Client Relay)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เปิดดูผ่าน <code>/app/camera</code> จากเบราว์เซอร์กี่เครื่องก็ได้พร้อมกัน</div>
-        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
-          ชิป ESP32 มีแรมจำกัดส่งได้แค่ 1 สตรีม Hub ส่วนกลางจึงเป็นตัวดึงภาพมา 1 สตรีม แล้วนำมากระจายต่อให้คนดูหลายคนพร้อมกันโดยบอร์ดไม่ล่ม
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> แหล่งรับสัญญาณ WiFi vs USB</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ตรวจสอบให้แน่ใจว่าบอร์ดต่อ WiFi (ไฟสถานะเขียว)</div>
-        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
-          สาย USB / RS485 รองรับเฉพาะข้อความและคำสั่งตัวอักษร ไม่สามารถส่งไฟล์ภาพ JPEG ได้ หากต่อเฉพาะสาย ภาพจะไม่ขึ้นแต่สามารถตั้งค่าเซนเซอร์ได้
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECTION 2: TUNING CONTROLS -->
-  <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 2: การปรับเซนเซอร์ภาพ (Exposure, Gain, Brightness, Contrast)</b>
-      <span class="info-badge">Sensor Tuning</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/camera-tuning-box.png" alt="Camera Tuning Box" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 40%;" title="1. สไลเดอร์ Brightness / Contrast">1</div>
-      <div class="callout-pin" style="top: 60%; left: 40%;" title="2. สวิตช์ Auto vs Manual Exposure">2</div>
-      <div class="callout-pin" style="top: 85%; left: 40%;" title="3. สมดุลสีขาว White Balance">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ปรับแสงและความคมชัด (Brightness &amp; Contrast)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลื่อนแถบสไลเดอร์ระหว่าง -2 ถึง +2</div>
-        <div class="action-impact"><b>ภาพกล้องเปลี่ยนไปยังไง:</b>
-          ปรับให้ภาพสว่างหรือมืดลง และเพิ่มมิติของภาพให้มองเห็นรายละเอียดใบหน้าได้คมชัดยิ่งขึ้น
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> ปรับแสงและความไว (Exposure &amp; Gain)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ปิด Auto Exposure / Auto Gain ก่อน จึงจะเลื่อนแถบ Manual ได้</div>
-        <div class="action-impact"><b>ภาพกล้องเปลี่ยนไปยังไง:</b>
-          ช่วยให้ภาพไม่มืดในห้องจัดแสดงแสงน้อย หรือลดความจ้าเมื่อจัดแสดงกลางแจ้ง
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <h3>Which camera board is this?</h3>
-  <p>The module works out its own camera board at power-on: it tries each known
-     wiring until the sensor answers, so a clone nobody can name usually just
-     works. Classic ESP32-CAM boards (AI-Thinker, ESP-EYE, M5Stack, TTGO
-     T-Journal, WROVER) and ESP32-S3 boards (Freenove / ESP32-S3-EYE, XIAO S3
-     Sense, FireBeetle S3, S3-CAM) are covered, with the OV2640, OV3660 and
-     OV5640 sensors. An S3 board needs the S3 firmware build; the classic and S3
-     builds only try boards of their own chip. If you know the board, choose it by
-     hand with <code>CAM BOARD &lt;name&gt;</code> (or <code>CAM BOARD AUTO</code>) and
-     restart the module. Pin maps for the S3, WROVER and T-Journal boards are
-     from the makers' tables and have not been tried on real boards yet.</p>
-
-  <h3>Several people can watch at once</h3>
-  <p>The board itself can only be read by one thing at a time, and that is the
-     hardware rather than a limit anybody chose: it has a single frame buffer,
-     and taking a frame reclaims the one already on loan, so two streams would
-     tear each other's pictures. The hub therefore holds <b>one</b> connection
-     to each camera and feeds every viewer from it. Open this page on as many
-     screens as you like.</p>
-  <p>เมื่อการค้นหาล้มเหลว จะแจ้งให้กด Look again แทนการบอกว่าไม่มีกล้อง ข้อมูลที่เก็บไว้จะระบุว่าอาจเก่า; หากค้นหาได้บางส่วน อาจมีกล้องที่ยังไม่แสดง</p>
-
-  <h3>เพิ่มกล้องที่ไม่ใช่บอร์ด ESP32</h3>
-  <p>กด “เพิ่มกล้อง” แล้วเลือกชนิด: กล้องเครือข่ายหรือลิงก์วิดีโอ (ที่อยู่ที่ขึ้นต้นด้วย http หรือ rtsp จากกล้อง IP หรือแอปกล้องในมือถือ) หรือกล้องตัวอย่างที่ไม่ต้องมีอุปกรณ์จริง ต้องเข้าสู่ระบบก่อน กล้อง USB ของเครื่องนี้ไม่ต้องเพิ่ม มันขึ้นมาเอง</p>
-  <p>ลิงก์ที่มีรหัสผ่านของกล้องจะถูกเก็บไว้บนเครื่องนี้เท่านั้น และไม่แสดงบนหน้าเว็บ ที่อยู่ของเครื่องนี้เอง (127.0.0.1) และไฟล์ในเครื่องใช้เป็นลิงก์ไม่ได้</p>
-
-  <p>ช่องในหน้าเพิ่มกล้อง: Add a camera = เพิ่มกล้อง, Kind = ชนิดของกล้อง, Link = ลิงก์ของกล้อง</p>
-
-  <h3>เปิดดูในหน้าต่างแยก</h3>
-  <p>กด “เปิดในหน้าต่างแยก” ที่การ์ดกล้อง จะได้หน้าเต็มจอที่มีแต่ภาพสดของกล้องตัวนั้น เหมาะกับจอที่สอง ทีวี หรือมือถือของคนอื่น เปิดกี่หน้าต่างก็ได้ กล้องไม่รู้สึกอะไร และถ้าภาพหลุดหน้านี้จะต่อใหม่เอง</p>
-
-  <h3>ใช้กับการจำใบหน้า</h3>
-  <p>ติ๊ก “จำใบหน้าด้วยกล้องตัวนี้” แอปจำใบหน้าจะเริ่มใช้กล้องตัวนั้นภายในไม่กี่วินาที โดยไม่ต้องรีสตาร์ต และเลิกใช้เมื่อเอาติ๊กออก กล้อง ESP32-CAM ใช้ได้เหมือนกล้องปกติ และใช้พร้อมกับการดูสดหรือการอัดวิดีโอได้</p>
-
-  <p>ใช้กล้องแต่ละตัวผ่านทางเดียวเท่านั้น กล้อง USB เปิดได้ทีละโปรแกรม และบอร์ด ESP32-CAM รับได้แค่หนึ่งการเชื่อมต่อ ถ้า hub เปิดกล้องอยู่แล้วแล้ว Face_Regonize พยายามเปิดกล้องตัวเดียวกันเอง จะขึ้นว่ากล้องถูกใช้อยู่ หรือภาพดำ ให้ใช้กล้องผ่านสวิตช์ในหน้านี้ แล้วให้ Face_Regonize รับภาพจากลิงก์ของ hub แทน (รอฝั่งเพื่อนทำ)</p>
-
-  <h3>ลิงก์สำหรับโปรแกรมอื่น</h3>
-  <p>เปิดสวิตช์รายละเอียดทางเทคนิคเพื่อดูลิงก์ภาพสดของกล้องแต่ละตัว โปรแกรมอื่นในเครือข่าย เช่น โปรแกรมอัดวิดีโอหรือแอปของเพื่อน ใช้ลิงก์นี้ได้เหมือนกล้องเว็บแคมทั่วไป (MJPEG) ระบบยังคงอ่านกล้องจริงครั้งเดียว</p>
-</section>
-
-<span id="appHelp" hidden></span>
-
-<section id="faces">
-  <div class="shead">
-    <span class="where tech">code/apps/faces · /app/faces/</span>
-    <h2>👋 FaceReg / Reconize — ใบหน้าและการทักทาย</h2>
-    <p>เปิดโปรแกรมใบหน้า ตรวจว่าหุ่นรับข้อมูลได้ แล้วตั้งคำพูดและท่าทางเมื่อพบคน</p>
-  </div>
-  <div class="f">
-    <h3>เลือกหน้าที่ตรงกับงาน</h3>
-    <p><a href="/app/faces/">เปิดหน้า Reconize ของ Mice</a> หน้านี้มี 3 แท็บ ส่วนโปรแกรมจัดการใบหน้าจะเปิดผ่านปุ่ม Open Reconize</p>
-  </div>
-  <div class="scroll"><table>
-    <thead><tr><th>ต้องการทำอะไร</th><th>เลือกแท็บ</th><th>ทำอย่างไร / ผลที่ได้</th></tr></thead>
-    <tbody>
-      <tr><td class="wrap2">เปิดโปรแกรมใบหน้า</td><td>Open it</td><td>กด Open Reconize เพื่อเปิดโปรแกรม ใช้ Check it is running เพื่อตรวจว่าโปรแกรมทำงานหรือยัง</td></tr>
-      <tr><td class="wrap2">ตรวจการรับข้อมูลของหุ่น</td><td>Is the rig following it?</td><td>ดูสถานะตัวติดตามข้อมูล ถ้ายังไม่เริ่ม จะมีปุ่ม Start following Reconize</td></tr>
-      <tr><td class="wrap2">เปลี่ยนคำทักและท่าทาง</td><td>What the rig says</td><td>ตั้งคำพูด ผู้พูด เวลาเว้นการทัก และพฤติกรรมแยกตามกล้อง แล้วกด Save</td></tr>
-    </tbody>
-  </table></div>
-  <div class="info-box">
-    <div class="info-header"><b>1. เปิดการทักทายและเลือกผู้พูด</b></div>
-    <p>ใน <b>What the rig says</b> เปิด <b>Greet people the face app sees</b> แล้วเลือก <b>Speaker</b> ว่าจะให้เสียงออกที่ไหน</p>
-    <p>ช่อง <b>Polite word before a name</b> เป็นคำเรียกนำหน้าชื่อ ส่วน <b>If the rig is already talking or playing</b> เลือก <b>skip this hello</b> เพื่อข้าม หรือ <b>wait its turn</b> เพื่อรอ</p>
-  </div>
-  <div class="info-box">
-    <div class="info-header"><b>2. เขียนคำทักทายและเว้นระยะการทักซ้ำ</b></div>
-    <p>ตั้งเวลาใน <b>Greet the same person at most once every</b> เป็นนาที และเวลาของคนที่ยังไม่รู้จักเป็นวินาทีต่อกล้อง</p>
-    <p>ในส่วน <b>When they arrive</b> และ <b>When they leave</b> ใส่คำพูดแยกตามคนที่มาครั้งแรก กลับมาอีก และคนที่ยังไม่รู้จัก</p>
-    <p><code>{title}</code> แทนคำเรียก และ <code>{name}</code> แทนชื่อ คนที่ยังไม่รู้จักไม่มีชื่อให้แทน ใช้คำทักทั่วไป เช่น “สวัสดีครับ ยินดีต้อนรับครับ”</p>
-  </div>
-  <div class="info-box">
-    <div class="info-header"><b>3. เลือกพฤติกรรมและท่าทางของแต่ละกล้อง</b></div>
-    <p>ในหัวข้อ <b>Cameras</b> เลือกว่ากล้องนั้นจะทักตอนพบคน (<b>says hello</b>) บอกลา (<b>says goodbye</b>) หรือนับคนอย่างเดียว (<b>only counts</b>)</p>
-    <p>เลือก <b>Move</b> และหุ่นในช่อง <b>on</b> ของกล้องนั้น รายการท่ามาจากไฟล์ที่บันทึกไว้จริง ถ้าต้องการพูดอย่างเดียวให้เลือก <b>none</b></p>
-    <p>ถ้ากล้องยังไม่ปรากฏ ใช้ <b>Add a camera by name</b> ชื่อกล้องต้องตรงกับข้อมูลที่โปรแกรมใบหน้าส่งมา</p>
-  </div>
-  <div class="f">
-    <h3>บันทึกและตรวจผล</h3>
-    <p>กด <b>Save</b> ด้านล่างและรอข้อความยืนยันการบันทึก การเปลี่ยนค่ามีผลเมื่อระบบพบคนตามเงื่อนไขครั้งถัดไป <b>Undo my changes</b> โหลดค่าที่บันทึกไว้กลับมา</p>
-    <p>ถ้าต้องการประกาศเมื่อยอดคนถึงจำนวนที่กำหนด ใช้ <b>Celebrations</b> ส่วนคำเรียกเฉพาะบุคคลอยู่ใน <b>Titles for particular people</b></p>
-  </div>
-  <p class="tech">ที่อยู่โปรแกรมภายนอกอ่านจาก config/partners.json</p>
-  <div class="info-box">
-    <div class="info-header"><b>4. ระบบสีและการสืบทอดธีมแบบไดนามิก (Universal Dynamic Theme Sync)</b></div>
-    <p>หน้า Reconize สืบทอดธีมสีจาก Hub กลางอัตโนมัติผ่าน <code>MiceThemeManager</code> (เช่น โหมดมืด Midnight) ไม่บังคับแสดงผลพื้นหลังขาวจ้า แสบตา หรือกระพริบเปลี่ยนสี เมื่อผู้ใช้เปลี่ยนธีมใน Hub ทุกแท็บและแอปจะปรับสีตามทันทีแบบเรียลไทม์</p>
-  </div>
-
-  <p>ถ้าแอปใบหน้า (Reconize) หยุดส่งภาพกลางทาง หน้านี้จะบอกว่า "กำลังเชื่อมต่อใหม่เอง" และให้ตรวจว่า Reconize ยังเปิดอยู่ ตัวช่วยจะลองต่อใหม่เองโดยไม่ต้องกดอะไร</p>
-
-</section>
-<section id="gacha">
-  <p>บันทึกการตั้งค่าได้ขณะระบบอ่านสถานะรางวัล รวมถึงรางวัลจาก Voice ระบบจะอ่านและบันทึกไฟล์ตามลำดับเพื่อให้ได้การตั้งค่าครบชุด และอ่านรายชื่อเกมจากข้อมูลตั้งค่าโดยไม่รอตรวจสถานะเซิร์ฟเวอร์ภายนอก</p>
-  <div class="shead">
-    <span class="where tech">code/apps/gacha · /app/gacha/ · firmware type gacha</span>
-    <h2>🎁 แจกของรางวัล — Prize machines</h2>
-    <p>เตรียมเครื่องและชนิดของรางวัล ตั้งกติกาของงาน แล้วจึงแจกและดูประวัติ</p>
-  </div>
-  <p><b>บันทึกและเปิดงาน:</b> ตรวจชื่อเครื่องและตารางของพรีเซตก่อนกดเริ่ม ระบบจะปิดงานระหว่างบันทึก แล้วเปิดเมื่อบันทึกครบและทุกเครื่องตอบรับเท่านั้น หากขั้นใดล้มเหลว หน้าจอจะแจ้งจุดที่ผิดและไม่รายงานว่าพร้อมแจก กดเริ่มซ้ำระหว่างบันทึกจะไม่ส่งงานซ้ำ ปุ่ม remove เก็บการแก้ไขแถวอื่นไว้ก่อนลบแถวที่เลือก</p>
-  <div class="f">
-    <h3>เริ่มใช้งานที่ไหน</h3>
-    <p><a href="/app/gacha/">เปิดระบบแจกของ</a> แล้วเลือกแท็บตามงาน ชื่อภาษาอังกฤษด้านล่างตรงกับชื่อบนหน้าจอ</p>
-    <p>ถ้าไม่เห็นแท็บและสถานะค้างที่ <b>checking…</b> แสดงว่าหน้าแอปยังโหลดไม่สำเร็จ จึงยังทำตามขั้นตอนต่อไปไม่ได้</p>
-  </div>
-    <div class="info-box">
-    <div class="info-header">
-      <b>⚡ พรีเซตงานกิจกรรมเริ่มต้น (Quick Event Presets)</b>
-      <span class="info-badge">1-Click Setup</span>
-    </div>
-    <p>สำหรับผู้ดูแลงานอีเวนต์ที่ต้องการเริ่มใช้งานทันทีโดยไม่ต้องตั้งค่าตารางเอง สามารถกดเลือกพรีเซต 3 รูปแบบด้านบนของหน้ากาชาปอง:</p>
-    <ul>
-      <li><b>🎁 งานกิจกรรมทั่วไป (Standard Giveaway):</b> 1 ตู้กาชาปอง (พวงกุญแจ 50 ชิ้น สำรองสติกเกอร์ 100 ชิ้น) จำกัดสิทธิ์คนละ 1 ชิ้น</li>
-      <li><b>🍀 ลุ้นโชคไม่อั้น / บูธเกม (Unlimited Fun):</b> 2 ตู้ลุ้นโชค A/B (ขนม 200 ชิ้น และของที่ระลึก 50 ชิ้น) เล่นได้ไม่จำกัดจำนวนต่อคน</li>
-      <li><b>🏆 รางวัลใหญ่ VIP (VIP &amp; Limited Event):</b> ตู้ทองคำรางวัลใหญ่ 10 ชิ้น (คนละ 1 สิทธิ์) + ตู้รางวัลปลอบใจ 80 ชิ้น (คนละ 2 สิทธิ์)</li>
-    </ul>
-    <p class="mini">เมื่อกดพรีเซต ระบบจะกรอกชื่อเครื่อง รหัสของรางวัล และกฎให้ทันที ผู้จัดงานเพียงแก้ไขชื่อของรางวัลตามจริง แล้วกด <b>Save</b> ในแต่ละตารางเพื่อเริ่มใช้งานได้เลย</p>
-  </div>
-
-  <div class="scroll"><table>
-    <thead><tr><th>ต้องการทำอะไร</th><th>เลือกแท็บ</th><th>ทำอย่างไร / ผลที่ได้</th></tr></thead>
-    <tbody>
-      <tr><td class="wrap2">เตรียมเครื่องและของ</td><td>Machines and kinds</td><td>กำหนดเครื่อง ชนิดของรางวัล และจำนวนของที่เติม บันทึกก่อนเริ่มแจก</td></tr>
-      <tr><td class="wrap2">ตั้งสิทธิ์รับของ</td><td>Rules</td><td>กำหนดจำนวนรวมของงานและจำนวนต่อคน แยกตามชนิดของรางวัล หรือกำหนดให้บุคคลเฉพาะ</td></tr>
-      <tr><td class="wrap2">แจกให้ผู้ร่วมงาน</td><td>Give a prize</td><td>เลือก Kind ผู้รับ และ Machine กด Can they have one? เพื่อตรวจสิทธิ์ หรือ Give เพื่อสั่งแจกจริง</td></tr>
-      <tr><td class="wrap2">ดูว่าแจกให้ใครแล้ว</td><td>Prizes given</td><td>ดูประวัติการแจกและจำนวนที่แจกไป</td></tr>
-      <tr><td class="wrap2">ใช้กติกาจากชีต</td><td>Google Sheet</td><td>วางลิงก์ชีตและทำตามวิธีตั้งค่าในแท็บนี้ หากต้องการเขียนกลับชีตต้องตั้งค่าส่วนการเขียนด้วย</td></tr>
-      <tr><td class="wrap2">ให้เกมหรือเสียงเรียกแจก</td><td>Games and Voice</td><td>กำหนดเกมหรือหัวข้อคำถามที่มีสิทธิ์ขอรางวัล (ควิซตั้งคะแนนขั้นต่ำได้ที่ Score from)</td></tr>
-      <tr><td class="wrap2">เชื่อมแอปอื่น</td><td>Other apps</td><td>กำหนดการเชื่อมต่อของแอปที่ขอแจกของ</td></tr>
-      <tr><td class="wrap2">เปลี่ยนคำพูด</td><td>Words</td><td>แก้ข้อความที่ใช้ประกอบการแจกและแจ้งผล</td></tr>
-    </tbody>
-  </table></div>
-  <div class="f">
-    <h3>แจกของหนึ่งครั้ง</h3>
-    <ol>
-      <li>ใน <b>Give a prize</b> เลือก <b>Kind</b> ให้ตรงกับของที่เตรียมไว้</li>
-      <li>ระบุชื่อผู้รับ หรือเลือก <b>the person in front of the camera</b> เพื่อใช้คนที่ระบบใบหน้าเห็น</li>
-      <li>เลือก <b>Machine</b> หรือให้ระบบเลือกเครื่องที่มีของชนิดนั้น</li>
-      <li>กด <b>Check if this guest can win</b> เพื่อตรวจสิทธิ์ก่อน จากนั้นกด <b>Give</b> เมื่อต้องการแจกจริง</li>
-      <li>กด <b>Start a new event and reset counts</b> เพื่อเริ่มงานใหม่และล้างตัวนับของทุกตู้ (ระบบถามยืนยันก่อนเสมอ)</li>
-    </ol>
-    <p><b>Give one anyway (admin)</b> ข้ามข้อจำกัดสิทธิ์ของผู้รับและยังนับการแจก ใช้เมื่อตั้งใจให้เกินกติกา</p>
-  </div>
-  <div class="f" id="gacha-stock">
-    <h3>สต็อกสองทาง, เล่นอย่างเดียว และตู้สุ่ม</h3>
-    <p><b>สต็อกสองทาง</b> การ์ด <b>Stock and random boxes</b> (แท็บ Machines and kinds) แสดงของที่มีจริงในตู้แต่ละชนิดพร้อม <b>Odds</b>
-       เกมหรือโปรแกรมอื่นอ่านรายการนี้ได้ที่ <code>/api/gacha/stock</code> หรือรับแจ้งผ่าน webhook ชื่อ <b>stock</b> (ตั้งในการ์ด Tell other apps)
-       รางวัลในเกมจึงตามของจริง ของหมดก็หายจากรายการ เกมส่งผลกลับมาพร้อม <code>item</code> เพื่อบอกว่าได้ชนิดไหน</p>
-    <p><b>เล่นอย่างเดียว (Play only)</b> นับการชนะและตอบเหมือนเดิมแต่ไม่หมุนตู้จริง ตั้งต่อเกมในตาราง Games ช่อง <b>Play only</b>
-       หรือการ์ด <b>Play only and who may ask</b> (<code>game:quiz</code>, ชื่อโปรแกรม, หรือ <code>*</code> ทั้งหมด) คำขอเดียวส่ง <code>play_only</code> เองได้ด้วย</p>
-    <p><b>โปรแกรมอื่นที่ไม่ใช่เกม</b> ขอของผ่าน <code>/api/gacha/dispense</code> ด้วยชื่อ <code>app</code> ได้เลย
-       ถ้าอยากจำกัดว่าขอชนิดไหนได้หรือปิดไว้ ให้เขียนชื่อโปรแกรมในตาราง Programs</p>
-    <p><b>ตู้สุ่ม</b> ตั้ง <b>Mode</b> ของเครื่องเป็น <code>random</code> ใส่ของหลายชนิดปนกัน แล้วบอกจำนวนแต่ละชนิดตอนใส่ของ (<b>Put items in a random box</b>
-       &rarr; <b>Set what is in it now</b> หรือ <b>Add these</b>) กด <b>Press random</b> เครื่องหมุนหนึ่งครั้งและระบบสุ่มว่าได้ชนิดไหน
-       ยิ่งเหลือมากยิ่งมีโอกาสมาก จำนวนที่เหลือลดลงทีละหนึ่ง หมดแล้วกดไม่ได้</p>
-  </div>
-  <div class="f" id="gacha-mechanism">
-    <h3>กลไกจริง: Hall 1 ตัว กับแม่เหล็ก 4 ตัว</h3>
-    <p>จุดรับของ (Receive) และจุดปล่อยของ (Drop) อยู่ด้านเดียวกัน Hall ติดอยู่กับที่ตรงจุดรับของเพียงตัวเดียว ส่วนแม่เหล็กทั้ง 4 ตัวติดไปกับล้อหมุน ฝั่งปล่อยของไม่มี Hall</p>
-    <figure class="mechanism-figure">
-      <svg viewBox="0 0 680 300" role="img" aria-labelledby="gacha-mechanism-title gacha-mechanism-desc">
-        <title id="gacha-mechanism-title">แม่เหล็ก 4 ตัวบนล้อ และ Hall ตัวเดียวที่จุดรับของ</title>
-        <desc id="gacha-mechanism-desc">ซ้ายแสดงล้อพร้อมแม่เหล็กสี่ตัว ขวาแสดงจุดรับและจุดปล่อยด้านเดียวกัน Hall อยู่ที่ Receive เท่านั้น Drop ไม่มี Hall ผังนี้ไม่ระบุมุมหรือระยะจริง</desc>
-        <g fill="var(--card)" stroke="var(--line)" stroke-width="2">
-          <circle cx="155" cy="150" r="105"/><circle cx="155" cy="150" r="27"/>
-        </g>
-        <g fill="var(--acc-soft)" stroke="var(--acc)" stroke-width="2">
-          <circle cx="155" cy="57" r="26"/><circle cx="248" cy="150" r="26"/>
-          <circle cx="155" cy="243" r="26"/><circle cx="62" cy="150" r="26"/>
-        </g>
-        <g fill="var(--txt)" text-anchor="middle" font-size="15" font-weight="600">
-          <text x="155" y="62">M1</text><text x="248" y="155">M2</text>
-          <text x="155" y="248">M3</text><text x="62" y="155">M4</text>
-          <text x="155" y="155" font-size="12">ล้อหมุน</text>
-        </g>
-        <g fill="var(--card)" stroke="var(--line)" stroke-width="2">
-          <rect x="330" y="28" width="332" height="244" rx="14"/>
-          <rect x="348" y="74" width="296" height="88" rx="8"/>
-          <rect x="348" y="179" width="296" height="70" rx="8"/>
-        </g>
-        <g fill="var(--txt)" font-size="17" text-anchor="middle">
-          <text x="496" y="55" font-weight="700">จุดรับและปล่อยอยู่ด้านเดียวกัน</text>
-          <text x="496" y="104" font-weight="700">Receive · จุดรับของ</text>
-          <text x="496" y="140" fill="var(--acc)">● Hall 1 ตัว อยู่กับที่</text>
-          <text x="496" y="207" font-weight="700">Drop · จุดปล่อยของ</text>
-          <text x="496" y="233">ไม่มี Hall</text>
-        </g>
-      </svg>
-      <figcaption>M1–M4 คือแม่เหล็กที่หมุนไปกับล้อ ผังแยกส่วนประกอบเพื่ออธิบาย ไม่ใช่แบบระบุตำแหน่ง มุม หรือระยะจริง</figcaption>
-    </figure>
-    <p><b>Hall บอกว่าแม่เหล็กอยู่ตรงจุดรับของ</b> สัญญาณนี้ไม่ได้วัดว่าของตกออกจากรางแล้ว และไม่ได้วัดว่าล้ออยู่กึ่งกลางแม่เหล็กพอดี</p>
-  </div>
-  <div class="f">
-    <h3>จำนวนช่องที่หมุนต่อการแจก (drop)</h3>
-    <p>ค่านี้กำหนดจำนวนช่องที่เครื่องหมุนในการแจกหนึ่งครั้ง <b>drop = 1</b> คือหนึ่งช่อง และ <b>drop = 2</b> คือสองช่อง ต้องเลือกตามกลไกและการทดสอบการจ่ายจริงของเครื่อง</p>
-    <p>จำนวนแม่เหล็กไม่ได้บอกระยะจากจุดรับถึงจุดปล่อยโดยลำพัง รูปนี้จึงใช้สรุปไม่ได้ว่าต้องตั้ง 1 หรือ 2 และไม่ได้กำหนดว่า 2 ใช้เฉพาะตอนโหลดของครั้งแรก</p>
-  </div>
-  <details class="f">
-    <summary>ตั้งค่าและทดสอบกลไกของเครื่อง</summary>
-    <p>เปิด <b>Machines and kinds</b> แล้วดูเครื่องที่ต้องการ ปุ่มทดสอบและปรับจูนทำให้มอเตอร์หมุนจริง ควรตรวจพื้นที่และเตรียมรับของก่อนใช้</p>
-    <ul>
-      <li><b>ความเร็วและทิศหมุน:</b> ใช้กำหนดการขับมอเตอร์</li>
-      <li><b>ช่วงโยกไป–กลับและการเข้า Hall:</b> ใช้ปรับการหยุดหลังหมุน ต้องดูการหยุดจริงประกอบ</li>
-      <li><b>เวลาพัก:</b> ระยะรอหลังการหมุนแต่ละครั้ง</li>
-      <li><b>จำนวนช่อง / จำนวนแม่เหล็ก:</b> ตั้งให้ตรงกับชุดกลไกนี้ซึ่งมี 4 ช่องและแม่เหล็ก 4 ตัว</li>
-      <li><b>Auto Detect / Estimate Hall Advance:</b> ประเมินระยะข้ามแถบ Hall ไม่ได้วัดน้ำหนักของรางวัล</li>
-      <li><b>Test 1 Pocket, Test 4 Pockets / Test All Pockets:</b> ทดสอบทีละช่องและดูผลเมื่อเครื่องหยุด สัญญาณ Hall อย่างเดียวไม่ยืนยันความแม่นยำของจุดหยุดหรือการตกของรางวัล</li>
-      <li><b>Drain Machine</b> (ซ่อนอยู่ใต้ "Rarely needed" และจะถามยืนยันก่อน): ใช้วนจ่ายของออกจากเครื่อง ต้องเตรียมรับของและเฝ้าดูการทำงาน</li>
-    </ul>
-    <p>ถ้าสถานะหรือปุ่มไม่โหลด ให้แก้ปัญหาหน้าแอปก่อน ไม่ควรเปลี่ยนค่าตัวเครื่องเพื่อแก้หน้าจอ</p>
-    <div class="tech">
-      <p>สัญญาของชุดแก้ไข A47-20 ที่ต้องตรวจรวมก่อนใช้งาน:</p>
-      <ul>
-        <li><code>GCALIB</code> สแกนแถบ Hall แบบมีขีดจำกัดเวลาไม่เกิน 5 วินาที ถอยครึ่งเวลาที่วัดแล้วตรวจ Hall ขณะหยุด บันทึก advance เฉพาะเมื่อสำเร็จ ตอบรับ <code>OK calibrating</code> ไม่ใช่ผลสำเร็จสุดท้าย ดู <code>G? motion_result</code> เป็น done / jam / stopped</li>
-        <li><code>GTEST 1</code> หรือ <code>GTEST 4</code> ทดสอบทีละช่อง ดู <code>test_done / test_total</code> และผลสุดท้ายจากบอร์ด</li>
-        <li><code>GNUDGE &lt;pwm&gt; &lt;ms&gt;</code> รับเมื่อเครื่องว่าง เวลา 1–1000 ms ทำงานโดยไม่บล็อก และใช้ STOP ยกเลิกได้</li>
-        <li><code>GDRAIN [&lt;max&gt;]</code> ไม่เกิน 999 ครั้ง หยุดเมื่อถึงขีดจำกัด ของหมด ปิดงาน ติดขัด หรือ STOP หน้าเว็บต้องมีสต็อกบวกที่นับไว้ หากไม่นับสต็อกต้องระบุ max</li>
-      </ul>
-    </div>
-  </details>
-  <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · Google Form: docs/gacha/form_sample.gs · sheet script: apps/gacha/sheet_script.gs · API: docs/gacha/README.md</p>
-  <p>หน้าประวัติแยกกรณียังไม่มีรายการจากกรณีโหลดไม่ได้ เมื่อรีเฟรชล้มเหลวจะเก็บข้อมูลเดิมพร้อมข้อความว่าอาจเก่า กด Refresh เพื่อลองใหม่</p>
-</section>
-
-<!-- ===================== ALL-JAO ===================== -->
-<section id="all-jao">
-  <div class="shead">
-    <span class="where tech">code/apps/all-jao · served at /app/all-jao/</span>
-    <h2>🎮 All-Jao Games — มินิเกมและระบบแจกของรางวัลอัตโนมัติ</h2>
-    <p>ชุดมินิเกมสำหรับจัดกิจกรรมงานอีเวนต์ จำนวนและชนิดของเกมเปลี่ยนได้ตามที่เพื่อนเพิ่มในอนาคต (ตอนนี้เช่น ตู้คีบ จับคู่การ์ด ตอบคำถาม วงล้อเสี่ยงโชค)
-       เชื่อมโยงกับเซิร์ฟเวอร์ Mice Hub และผูกเข้ากับตู้กาชาปองแจกของรางวัลอัตโนมัติ</p>
-  </div>
-
-  <!-- SECTION 1: MINI-GAMES SUITE -->
-  <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 1: ชุดมินิเกมกิจกรรมทั้ง 4 ชนิด (Mini-Games Suite)</b>
-      <span class="info-badge">Mini-Games</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/all-jao-games-box.png" alt="All-Jao Games Suite" class="info-img">
-      <div class="callout-pin" style="top: 50%; left: 15%;" title="1. 🕹️ Claw Machine (ตู้คีบ)">1</div>
-      <div class="callout-pin" style="top: 50%; left: 38%;" title="2. 🃏 Matching Game (จับคู่การ์ด)">2</div>
-      <div class="callout-pin" style="top: 50%; left: 62%;" title="3. ❓ Quiz Game (ตอบคำถามชิงรางวัล)">3</div>
-      <div class="callout-pin" style="top: 50%; left: 85%;" title="4. 🎡 Lucky Wheel (วงล้อเสี่ยงโชค)">4</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> เกมตู้คีบและวงล้อ (Claw &amp; Wheel)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่มเล่นเกม ผู้เล่นสามารถควบคุมก้านคีบหรือหมุนวงล้อเสี่ยงทาย</div>
-        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
-          เมื่อคีบตุ๊กตาสำเร็จหรือหมุนได้แต้มรางวัล ระบบจะส่งสัญญาณ Event ไปยัง Hub เพื่อสั่งตู้กาชาปองปล่อยแคปซูลของรางวัล
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> เกมจับคู่และตอบคำถาม (Matching &amp; Quiz)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ผู้เล่นทดสอบความจำหรือตอบคำถามตามเวลาที่กำหนด</div>
-        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
-          เมื่อผ่านด่าน หุ่นยนต์ Nong จะแสดงท่าดีใจและเอ่ยคำยินดีผ่านลำโพง
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="f"><h3>No hub sign-in needed on this PC<span class="tag t-new">new</span></h3>
-    <p>The games have their own login, so opening them on the PC that runs Mice asks for
-       nothing. Opened from another device on the network, the hub asks you to sign in
-       first, so nobody on the venue WiFi can start programs on this PC.</p></div>
-  <div class="f"><h3>A win gives a real prize<span class="tag t-new">new</span></h3>
-    <p>Played inside the hub, a win in the wheel, claw, quiz or memory game can make a prize
-       machine give a prize and tells the player where to collect it. Which result gives what is
-       set on <a href="#gacha">Prize machines</a> ▸ Games that give a prize. For the quiz, fill <b>Score from</b>
-       to give a prize only from that score up (every finished quiz round counts as a win result; write a number or a percent such as 80%; the game says its top score, so more questions need no change;
-       a wheel slice that says &ldquo;try again&rdquo; never gives a prize).
-       The player's name typed in the wheel or claw game is used for the per-person limit.
-       The games now keep their data in their own small server (Node, started by the hub with the Open button);
-       play them from the hub so a win reaches the prize machines.</p></div>
-  <p>ปุ่มเปิดเกมจะเปิดแท็บไว้ก่อนตรวจความพร้อม เพื่อไม่ให้เบราว์เซอร์บล็อกหลังรอเครือข่าย หากเปิดแท็บไม่ได้ ให้อนุญาตป๊อปอัปแล้วกดลองอีกครั้ง</p>
-</section>
 
 <section id="accounts">
   <div class="shead">
@@ -1645,6 +809,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
        never be removed, so the accounts can always be managed. To give someone else the same
        rights, pick <b>super_admin</b> beside Add when you create their account.</p></div>
 </section>
+<span data-help-group="use" hidden></span>
 
 <!-- ===================== FIRMWARE CORE ===================== -->
 <section id="firmware">
@@ -2472,6 +1637,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
        <b>with the resolved duration</b>, so both move as one robot. Every board tracks all
        10 angles, so status on the leader always shows the whole humanoid.</p></div>
 </section>
+<span data-help-group="build" hidden></span>
 
 <!-- ===================== QC ===================== -->
 <section id="qc">
@@ -2660,6 +1826,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
     <tr><td>models/*.stl</td><td class="wrap2">Your CAD exports, in millimetres</td></tr>
   </tbody></table></div>
 </section>
+<span data-help-group="wrong" hidden></span>
 
 <footer>
   Sources: <code>firmware/COMMANDS.md</code>, <code>firmware/src/web/WebUI.h</code>,
@@ -2678,9 +1845,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
 const HELP_GROUPS = [
   {id: "start", label: "Start here", topics: [["bytask", "Start with a task"]]},
   {id: "use", label: "Use it", topics: [
-    ["hub", "Mice Hub"], ["modsite", "A module's own page"], ["studio", "Nong Studio"],
-    ["tv", "TV Remote"], ["camera", "Cameras"], ["faces", "Reconize"],
-    ["gacha", "Prize machines"], ["all-jao", "All-Jao Games"], ["accounts", "Accounts"]]},
+    ["hub", "Mice Hub"], ["modsite", "A module's own page"], ["accounts", "Accounts"]]},
   {id: "build", label: "Build and set up", topics: [
     ["firmware", "Board setup"], ["lift", "Lift module"], ["nong", "Nong module"]]},
   {id: "wrong", label: "When something is wrong", topics: [
@@ -2856,7 +2021,7 @@ function initHelpTopics(groups){
 // elements, so installed HTML cannot run Hub actions or load external resources.
 class HelpApps {
   constructor() {
-    this.placeholder = document.getElementById("appHelp");
+    this.tasks = document.getElementById("installedHelpLinks");
     this.status = document.getElementById("appHelpStatus");
     this.shots = [];
     this.tags = new Set(("section h2 h3 h4 h5 p div span a img figure figcaption " +
@@ -2866,7 +2031,9 @@ class HelpApps {
 
   safeCopy(node, context) {
     if (node.nodeType === Node.TEXT_NODE) return document.createTextNode(node.data);
-    if (node.nodeType !== Node.ELEMENT_NODE || !this.tags.has(node.localName)) return null;
+    if (node.nodeType !== Node.ELEMENT_NODE) return null;
+    if (node.namespaceURI === "http://www.w3.org/2000/svg") return this.safeSvg(node, context);
+    if (!this.tags.has(node.localName)) return null;
     var copy = document.createElement(node.localName);
     ["class", "title", "alt", "colspan", "rowspan", "scope"].forEach(function(attr) {
       if (node.hasAttribute(attr)) copy.setAttribute(attr, node.getAttribute(attr));
@@ -2895,6 +2062,39 @@ class HelpApps {
       if (safe) copy.appendChild(safe);
     }
     return copy;
+  }
+
+  safeSvg(node, context) {
+    if (!["svg", "g", "title", "desc", "circle", "rect", "text"].includes(node.localName)) return null;
+    var copy = document.createElementNS(node.namespaceURI, node.localName);
+    var numeric = ["viewBox", "stroke-width", "cx", "cy", "r", "x", "y",
+      "width", "height", "rx", "font-size", "font-weight"];
+    numeric.forEach(function(attr) {
+      var val = node.getAttribute(attr);
+      if (val && /^[-0-9. ]+$/.test(val)) copy.setAttribute(attr, val);
+    });
+    ["fill", "stroke"].forEach(function(attr) {
+      var val = node.getAttribute(attr);
+      if (val && /^(none|currentColor|var\(--[a-z-]+\))$/.test(val)) copy.setAttribute(attr, val);
+    });
+    if (node.getAttribute("text-anchor") === "middle") copy.setAttribute("text-anchor", "middle");
+    if (node.localName === "svg") copy.setAttribute("role", "img");
+    for (var child of node.childNodes) {
+      if (child.nodeType !== Node.TEXT_NODE && child.namespaceURI !== node.namespaceURI) continue;
+      var safe = this.safeCopy(child, context);
+      if (safe) copy.appendChild(safe);
+    }
+    return copy;
+  }
+
+  addTask(app, lang) {
+    var li = document.createElement("li");
+    var link = document.createElement("a");
+    link.href = "#" + app.anchor;
+    link.textContent = app.title[lang];
+    li.append(link, document.createTextNode(" — " + app.summary[lang]));
+    this.tasks.appendChild(li);
+    this.tasks.parentNode.hidden = false;
   }
 
   updateShots() {
@@ -2945,7 +2145,9 @@ class HelpApps {
         var section = sections[i], group = groups.find(g => g.id === app.group);
         if (!section || !group) { this.status.hidden = false; return; }
         if (document.getElementById(app.anchor)) return;
-        this.placeholder.parentNode.insertBefore(section, this.placeholder);
+        var slot = document.querySelector('[data-help-group="' + group.id + '"]');
+        slot.parentNode.insertBefore(section, slot);
+        this.addTask(app, lang);
         group.topics.push([app.anchor, app.title[lang]]);
       });
       this.updateShots();

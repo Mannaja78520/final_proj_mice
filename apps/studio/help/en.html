@@ -1,0 +1,388 @@
+<!-- ===================== STUDIO ===================== -->
+<section id="studio">
+<h3>Open the latest work with its moves and music</h3>
+<p>The hub's home page has the app <b>Latest works</b> for installed works. A PC that has no list yet can import a file directly. In Nong Studio press <b>Open a work with its music</b> Then choose a clip or a file <code>.nong.json</code> which stores motions, rig, and music in a single file. The system checks the file before switching projects. If you have unsaved work, it prompts you to Save or Cancel first, and lets you choose between using the project's rig or keeping your current settings. Switching rigs may adjust motions or timing to fit the new limits.</p>
+<p>Press <b>Try with music</b> to see the moves on screen with the original music. You can pause, go back to the start or move the time bar. The music is the preview's clock, so it never runs apart from the moves when a tab is slow. If the music ends before the moves, the rest is silent, and a loop restarts the music when the moves end. Opening a work or using this preview sends nothing to the real robot. The Run on robot button is a separate step.</p>
+<p><b>Save</b> The music is kept in the project too, so it is still there when you reopen it, or press <b>Download moves + music</b> to move a single file to another PC. A draft's music is kept separately in the browser; if that storage is closed or cleared you may need to choose the original file again, while the recovered moves are still there. For the real robot, use the YAML file and an MP3 with the same name as the play: command on the SD card, uploaded the usual way. The system does not upload or start the robot for you.</p>
+<p>A project name may use Thai and English letters, numbers, spaces and _ - . but not emoji, / \ :, or names Windows reserves (such as con, nul, com1). The page says so in plain words and nothing already saved is overwritten.</p>
+
+<p><b>A device that cannot draw 3D (a TV, an old computer, or a browser with the graphics card turned off):</b> Studio still opens and works. The sliders, the timeline and playing on the robot work as normal, while the 3D robot view shows a message that this device cannot draw it. To see the robot, open it with a newer browser or another computer.</p>
+<p><b>Automatic dance separation:</b> The default, Automatic, detects several people and camera angle changes in a new clip by itself. With Automatic or Group dance, the system compares the movement across the whole clip every time, and does not fix male/female positions in advance. People whose arms are the same but whose waist twist or shoulder tilt differ may end up in different routines. Choose Dance routine to see each one, or Save separate routines to save, as separate projects, the routines with continuously different evidence and reliable pictures through the picture ratio set in the defaults. A Fragment is a stretch that cannot yet be confirmed as a new routine; it is kept to view and save one at a time, and every camera cut is not counted as a new dance routine. If a new angle cannot be matched clearly to an earlier routine, the system uses the dancers' appearance together with matching every group at once, and marks check cut when the match is still unclear. A new angle whose match is still unclear keeps the pose and is not turned into reliable just because the time has passed. Only when several people seen in that picture really do the same pose is the confirmed shared pose used. The % reliable report is the share of usable pictures, not a guarantee that it is the same person. Users may choose people themselves as an option.</p>
+<p><b>A cut that cannot be matched to the same person:</b> The system automatically splits it into scene segments and picks the main dancer who is seen continuously in that routine, not switching with every picture's confidence value. Each part's video range and move timing start in line. When you edit the video range, the earlier reading is cancelled and the new range is analysed, without adding a long standing-still before the visible stretch. Make and save saves the routines or ranges that pass the criteria separately, and does not create a show that guesses different moves are the same person. An unclear cross-camera match is not a guarantee of gender or of the same person.</p>
+<p><b>Continuous dancing:</b> The default keeps the shape of the pose and adds time according to the robot's limits. To keep the original musical beat, choose Stay with the music, which may reduce the range of movement. The system filters jitter over time, cutting short reversals and sudden joint-angle changes. When a person holds still after changing pose, the robot still moves to the pose it accepted before holding, and does not stop halfway because of the filter. The opening pose and the standing-still stretches are kept, and no pose from the future is pulled in to fill pictures that cannot be seen. After filtering, collisions and timing are checked again and the number of reversals before and after is shown. The original pictures and the error report are still used to check whether filtering has eaten too much pose detail. The rig and the motor limits may leave some poses still different from the person.</p>
+
+  <div class="card"><h3>Follow a single-person video or a group dance</h3>
+    <p>A detour slower than the video player's lowest speed moves the picture one frame at a time by the robot's clock, with the sound paused. Use Play both to stop or resume. Changing the video or the mode restores normal speed and cancels the earlier reading at once. The original music is not sent to be attached to a sequence whose time has been stretched, because the beat would drift; a time-adjusted music file must be used. For cheer sequences, a time-adjusted music file is provided as a pair.</p>
+    <p>On the Video page, choose Performers as One performer or Group dance, and choose Camera as One camera view or Changing shots / viewpoints, separately. After the clip is read, performer numbers appear to choose in Follow. Different routines, such as those of a male and a female dancer, are not averaged together. Check and save each person or each routine under its own name.</p>
+    <p>Turn the waist uses the torso angle relative to the hips, and Follow shoulder tilt uses the shoulder angle relative to the torso, checked against the real mechanism in the rig. A person who stands still does not pull in a future pose to fill in, and nothing is smoothed across a cut. A side or overhead camera is checked within the torso frame before a new pose is accepted.</p>
+    <p>Learned camera checks uses a Q-learning policy trained in a simulator to help decide whether to accept a pose, keep the old pose, or compensate for the viewpoint. It is compared with the geometric method before being switched on. If the person is blocked, it is not certain it is the same person, or the person's rotation cannot be separated from the camera's, it keeps the last reliable pose. The simulator results do not confirm accuracy on real clips.</p>
+    <p>Checks the hand plates, joint balls, arm rods, torso and head against the real pose, including the shoulder lift. Every part must be at least 10 mm apart (to allow for servo gear play; settable in safe_path.json as clearMm plus the rig's allowance). A destination pose that collides first looks for a nearby free pose, then uses RRT* to find a detour, and the checks and timing are done again after the corners are rounded. The preview, the project and the exported commands use the same checked pose set. Stay with the music may reduce the movement range when the robot cannot keep up. If it is off, it keeps the pose and adds time to move or detour, so the preview video slows down to the robot's pace. A repeated pose does not collapse or rewind the music time.</p>
+  </div>
+  <p class="mini">The 3D view quality is chosen automatically from the device that opens the page. Change it in Hub → Settings → 3D view. The economy mode lowers the number of frames and the resolution while keeping the same playback timing and collision checks. Edges use the new value after the page is loaded again.</p>
+  <div class="shead">
+    <span class="where tech">code/nong/main_python_set_nong · served at /studio/</span>
+    <h2>Nong Studio — a user guide and every tuning point in detail</h2>
+    <p>A 3D simulator and animation pose designer for the Nong humanoid robot (10 servo joints). It runs on a PC, with on-demand 3D rendering that saves power, takes little from the machine and does not freeze.</p>
+  </div>
+
+  <!-- OVERALL SCREENSHOT -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Overview of the current Nong Studio screen (Current Real UI)</b>
+      <span class="info-badge">Overview</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-current.png" alt="Nong Studio Current Real UI" class="info-img">
+      <div class="callout-pin" style="top: 45%; left: 30%;" title="1. 3D Model Viewport area">1</div>
+      <div class="callout-pin" style="top: 45%; left: 78%;" title="2. 10-joint slider control panel">2</div>
+      <div class="callout-pin" style="top: 90%; left: 50%;" title="3. Timeline and motion player">3</div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 1: JOINT SLIDERS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Point 1: the panel for adjusting the 10 servo joint angles (Joint Sliders &amp; Inspector)</b>
+      <span class="info-badge">Joint Controls</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-sliders.png" alt="Joint Sliders Panel" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 25%;" title="1. Left arm joints L_SH / L_EL">1</div>
+      <div class="callout-pin" style="top: 55%; left: 25%;" title="2. Right arm joints R_SH / R_EL">2</div>
+      <div class="callout-pin" style="top: 80%; left: 25%;" title="3. Waist and shrug WAIST / SHRUG">3</div>
+      <div class="callout-pin" style="top: 92%; left: 50%;" title="4. Quick Actions buttons (Home / Relax)">4</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> Left arm sliders (L_SH_P, L_SH_R, L_EL_P, L_EL_R)</div>
+        <div class="action-step"><b>How to set it:</b> Drag a slider or type an angle (the range set for that joint; HOME and the zero point may differ).</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          • <b>L_SH_P / L_SH_R:</b> The left shoulder bends forward and back (Pitch) and swings out and in (Roll).<br>
+          • <b>L_EL_P / L_EL_R:</b> The left elbow bends and the forearm twists.<br>
+          The servo turns to the real angle at once, with limits so it never hits the robot's frame.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> Right arm sliders (R_SH_P, R_SH_R, R_EL_P, R_EL_R)</div>
+        <div class="action-step"><b>How to set it:</b> Drag a slider or press the <b>Mirror</b> button to copy the pose from the left arm</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          Controls the right arm's 4 axes independently. If you press Mirror, the right arm opens into a pose symmetric to the left arm at once. Good for a wai greeting, folded arms or raising both hands together.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> Waist and shrug sliders (WAIST &amp; SHRUG)</div>
+        <div class="action-step"><b>How to set it:</b> WAIST turns left-right / SHRUG adjusts the 4-bar linkage</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          • <b>WAIST:</b> The waist twists so the robot can look to the side, ±30°.<br>
+          • <b>SHRUG:</b> The shoulder beam tilts, one side up and the other down, 26° in total, imitating a human shrug.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> Safety shortcut buttons (Home / Relax / Zero Lock)</div>
+        <div class="action-step"><b>How to set it:</b> Click the Home, Relax or Zero Lock button below</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          • <b>Home:</b> Returns to the set HOME pose. Each joint's angle may not be 90°; check the actual pose and the saved values.<br>
+          • <b>Relax:</b> Stops sending the servo control pulses; it does not cut the power supply, and how much holding force is released depends on the servo.<br>
+          • <b>Zero Lock:</b> Locks the zero-point coordinates so no one moves the position by accident.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 2: TIMELINE & KEYFRAMES -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Point 2: the timeline and keyframe sequencer (Timeline &amp; Keyframe Sequencer)</b>
+      <span class="info-badge">Timeline</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-timeline-bar.png" alt="Timeline Controls" class="info-img">
+      <div class="callout-pin" style="top: 50%; left: 8%;" title="1. Play / Run on robot button">1</div>
+      <div class="callout-pin" style="top: 50%; left: 25%;" title="2. + Add keyframe button">2</div>
+      <div class="callout-pin" style="top: 50%; left: 60%;" title="3. Scrub Bar timeline slider">3</div>
+      <div class="callout-pin" style="top: 50%; left: 90%;" title="4. Loop &amp; Zoom checkboxes">4</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> Play a sequence (Play / Run on robot)</div>
+        <div class="action-step"><b>How to set it:</b> Press the <b>▶ Play</b> to preview on screen, or <b>▶ Run on robot</b> to command the real robot</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The 3D model and the real robot move continuously through the keyframes, as smoothly as the speed curve that was calculated.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> Saving a pose (+ Add Keyframe &amp; Duration)</div>
+        <div class="action-step"><b>How to set it:</b> Bend the pose you want, then press <b>+ Add keyframe</b> with a duration (for example 800 ms)</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          to add a new pose to the timeline. If the time is too short for the servo to turn in, the system stretches it automatically to stop the motor from jerking.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> Scrub bar (Scrub Bar &amp; Live Tracking)</div>
+        <div class="action-step"><b>How to set it:</b> Drag the time pointer forward or back</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The robot follows the dragged point in time in real time, so you can check exactly where parts of the structure collide.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> Loop and zoom (Loop Checkbox)</div>
+        <div class="action-step"><b>How to set it:</b> Tick the box <b>Loop</b></div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          When playback reaches the last pose, the robot moves smoothly back to the first pose and plays again continuously, with no jerking or arm flick.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 3: 3D MODEL & IK INTERACTION -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Point 3: the 3D model and Inverse Kinematics control (3D Canvas)</b>
+      <span class="info-badge">3D &amp; IK</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-3d-model.png" alt="3D Model Canvas" class="info-img">
+      <div class="callout-pin" style="top: 35%; left: 35%;" title="1. Servo control dial">1</div>
+      <div class="callout-pin" style="top: 60%; left: 30%;" title="2. Arm IK drag handles (Wrist &amp; Elbow)">2</div>
+      <div class="callout-pin" style="top: 15%; left: 50%;" title="3. Orthographic flat view button">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> Axis control rings (Gizmo Rings)</div>
+        <div class="action-step"><b>How to set it:</b> Click a joint and coloured rings appear: red (Pitch), green (Roll), blue (Yaw). Click and drag</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          to turn that joint directly along its axis, which makes it easier to judge the angle than moving a slider.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> Inverse hand drag (Shift+Drag IK Solver)</div>
+        <div class="action-step"><b>How to set it:</b> Press the <b>Hold Shift</b> then click and drag the wrist ball (🟢 Wrist)</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The system works out the shoulder and elbow angles together on all 4 axes automatically, so you can make the robot's hand point at a target in 3D space at once.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> True view switching (Orthographic Plane Views)</div>
+        <div class="action-step"><b>How to set it:</b> Press the <b>Front</b>, <b>Top</b> or <b>Side</b></div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          Switches the camera to a parallel-projection view (no perspective distortion), which helps you set both arms perfectly straight and level.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 4: CALIBRATION & SERVO OFFSET -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Point 4: offset and servo calibration settings (Setup &amp; Servo Offset)</b>
+      <span class="info-badge">Calibration</span>
+    </div>
+    <p class="mini">Log in first for cards that command or change the real robot (Robot, Rig setup, Servo offset, Movement safety, This robot). Cards that do not reach the real robot (Model 3D shape, Saving) open with no password.
+      <span class="where">The list is in nong/main_python_set_nong/web/settings_open.json</span></p>
+    <p class="mini">To keep a card open, press <b>⧉</b> on the card header. It floats out as its own window. Drag the header anywhere, drag the bottom-right corner to resize it, and it stays visible on every tab. Press <b>⇲</b> to put it back. The browser remembers the position (there is no such button on a phone).</p>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-tuning-card.png" alt="Tuning &amp; Calibration Card" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. ±0.5° Nudge fine-tuning button">1</div>
+      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. Set Min / Max limits">2</div>
+      <div class="callout-pin" style="top: 75%; left: 30%;" title="3. Gear ratio and Shrug Curve">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> Gear offset (Servo Offset Nudge)</div>
+        <div class="action-step"><b>How to set it:</b> Press the <b>-</b> or <b>+</b> Adjust 0.5° at a time, or press 0 to reset</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          Fixes the case where the servo horn meshes with the gear at the wrong position, so the arm can be made perfectly straight. The offset is saved to the NVS memory on the robot and is not lost when switched off.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> Safety limits (Joint Safety Limits)</div>
+        <div class="action-step"><b>How to set it:</b> Set the Min (for example 15°) and Max (for example 165°) of each joint</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The real robot and Studio will never turn past these limits, which stops an arm folding into the torso or a servo jamming until the power sags (Brownout Guard).
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> Shrug calibration table (4-Bar Shrug Curve)</div>
+        <div class="action-step"><b>How to set it:</b> Enter the real lift distance (mm) against the shrug servo angle</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The shrug beam moves according to the real mechanics of the 4-bar linkage, so the shoulder rises realistically and naturally.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 5: SEQUENCE CHAIN -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Point 5: chaining sequences (Sequence Chains &amp; Speeds)</b>
+      <span class="info-badge">Sequences</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-sequence-card.png" alt="Sequence Manager Card" class="info-img">
+      <div class="callout-pin" style="top: 20%; left: 40%;" title="1. YAML file picker">1</div>
+      <div class="callout-pin" style="top: 45%; left: 40%;" title="2. File speed multiplier">2</div>
+      <div class="callout-pin" style="top: 70%; left: 40%;" title="3. Chain next file input">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> Sequence files (YAML Sequence Files)</div>
+        <div class="action-step"><b>How to set it:</b> Choose a file from the dropdown <b>Open saved YAML…</b> or press <b>Save</b></div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          Loads a sequence you designed earlier back into the timeline to edit, or sends the file to the robot's SD card.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> Speed multiplier (Sequence Speed Multiplier)</div>
+        <div class="action-step"><b>How to set it:</b> Set the speed to 0.5x, 1.0x or 1.5x</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          Speeds up or slows down the whole sequence as you wish, while keeping the original rhythm ratios intact.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> Automatic sequence chaining (Sequence Chain)</div>
+        <div class="action-step"><b>How to set it:</b> Enter the next file name in the box <b>Chain</b> for example <code>wave.yaml</code></div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          When the robot finishes the current pose it starts the next one at once, with no new command needed, so a long show can run continuously.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> Speed while dancing to music (Speed limit with music)</div>
+        <div class="action-step"><b>How to set it:</b> In the card <b>Timing</b> the box <b>Speed limit with music</b> (only for sequences that have music) enter °/second. Leave it empty = use the robot's own value, 0 = as fast as the servo can go. Under the box it says which move cannot keep up with the music and by how many seconds it falls behind. Press the move name to go and edit, cut or change it.</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          Use this set of moves only while music is playing (written in the file as <code>pace: music N</code> The robot receives it as <code>PACE MUSIC N</code>) When the song ends, STOP is pressed, or the robot restarts, it resets to its default Peak speed limit (60°/s) every time. Collision checks, joint limits, and hand clearance still operate at the new speed. When testing on the actual robot, start with a low value and increase gradually.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">5</span> See whether the real servos can keep up (Play like the real servos)</div>
+        <div class="action-step"><b>How to set it:</b> Tick <b>Play like the real servos</b> in the Timing card and press Play. The robot in the picture moves slower than planned, like the real servos. A move the servo cannot keep up with has a dashed edge on the time bar (yellow = slightly slow, red = very slow). Each joint's delay and acceleration can be set in Setup &gt; rig (delay ms, speed-up °/s²).</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          It does not change the robot; it is only an on-screen check. The delay values are estimates until measured on a real robot. The physics simulator (tools/nong_sim) uses the same values.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">6</span> Smooth moves with no jerk (through keyframes without stopping)</div>
+        <div class="action-step"><b>How to set it:</b> No action needed. This works automatically with all moves: sets of moves in Studio, moves from videos, alternate paths found by Studio, speaking gestures, moves from RL, and Shows. If a joint keeps moving in the same direction, the arm continues through the keyframes instead of stopping at each one. It still stops exactly at the keyframe when a joint reverses direction (a flicking move), during pauses (hold), and at the start and end. The timing of every move stays the same, so everything stays in sync with the music. You can turn this on or off separately for each motion source in the file <code>motion_smooth.json</code> (sources) Motion files created outside Studio (such as RL) use <code>python tools/smooth_sequence.py ไฟล์.yaml</code> Smoothing will never make movements jerkier than before: any keyframe where the curved path would be jerkier than stopping at each key is automatically slowed down (<code>jerkGuard</code>) For RL motions compressed from 50 frames per second, the arm passes through each keyframe at the original speed and stays on the checked collision-free path (<code>followDensePath</code>)</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The exported file will include the line <code>pass:</code> before the motion (its starting and ending speed). Robots with the updated firmware receive it as a command <code>PASS</code> Older robots skip this line and play the classic way (pausing at every keyframe). Studio checks for collisions along the smoothed path using the same safety distance. If a curved motion causes a collision, it falls back to stopping at keyframes along the pre-checked straight path. The robot also performs its own safety check: if movement is too fast for the servos or timing is stretched, it reverts to the classic way. In 4 cheer routines, mid-motion pauses dropped from 226–429 to just 35–101 stops (not yet tested on the physical robot).
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">7</span> Undo / Redo (a wrong tap does not lose your work)</div>
+        <div class="action-step"><b>How to set it:</b> Press ↶ Undo in the time bar (beside the zoom buttons), or Ctrl+Z, to take back the last change, for example a keyframe deleted by mistake. Press ↷ Redo or Ctrl+Y to put it back. You can go back many steps. Dragging or typing a value in one go counts as one step. Opening a file or a show starts a fresh history.</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The robot does not change. Only the poses on the timeline on screen go back. If you already saved to the robot, save to the robot again.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">8</span> Change the screen colours (dark mode)</div>
+        <div class="action-step"><b>How to set it:</b> Pick a colour set from the box in the top bar of Studio. Midnight is the dark mode and is easier on the eyes for long sessions. The 3D view changes its background too. It is the same colour set as the other Hub pages, so a choice made anywhere applies everywhere.</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The robot and your move files do not change. Only the colours of the screen on this computer.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">9</span> Save asks before replacing a name (two tabs cannot overwrite each other)</div>
+        <div class="action-step"><b>How to set it:</b> When you press Save, Studio asks the hub whether that name is already taken. If another tab or another person has just saved this name, a window asks whether to replace it. Press Cancel and type a new name to keep both files.</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The robot does not change. The old file is left alone if you press Cancel.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">10</span> A video with hardly any person (said in words)</div>
+        <div class="action-step"><b>How to set it:</b> After Make moves, if Studio can see a person in less than a quarter of the video, it first says "I could hardly see a person in this video" and suggests a video where the whole person, arms included, is in the picture. The detailed numbers (short reversals, uncertain moments) are behind Show technical details.</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The robot does not change. This is only a message to help you decide before putting moves on the time bar.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">11</span> Video links on the venue network (for example a NAS)</div>
+        <div class="action-step"><b>How to set it:</b> Internet links and picked files work as usual. A link to a device on your network (a NAS or another PC) is refused first, for safety. 1) Log in on the Robot tab. 2) Paste the device's video link into “Or a link” and press Fetch. 3) When it says the link is a device on your network, press “Allow this device”. 4) Press Fetch again. To see or undo the list, open “Devices on my network that may give videos” under the link box; you can also type a name or address (for example nas.local or 192.168.1.50) or press Remove. This PC itself and cloud addresses are always refused and cannot be allowed.</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          Does not change the robot. It only chooses which devices the hub will fetch a video from. The list is kept on this PC only.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 6: SHOWS & MUSIC -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Point 6: arranging shows and syncing music (Shows &amp; Music Synchronization)</b>
+      <span class="info-badge">Shows &amp; Music</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-shows-card.png" alt="Shows &amp; Music Card" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 40%;" title="1. Select MP3 music from SD card">1</div>
+      <div class="callout-pin" style="top: 50%; left: 40%;" title="2. Set Pause point">2</div>
+      <div class="callout-pin" style="top: 75%; left: 40%;" title="3. Save to robot button for standalone play">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> Attach the show music (Show Music Sync)</div>
+        <div class="action-step"><b>How to set it:</b> Select music file from <code>/music/song.mp3</code> on the SD card</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The music and the robot's moves start together exactly on the beat, and the system turns the sound off automatically when you press Stop.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> Pause intervals</div>
+        <div class="action-step"><b>How to set it:</b> Set a pause time between moves, for example <code>pause: 2.0s</code></div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The robot holds a graceful pose for the set time before it starts the next move.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> Send the show to the board (Save to robot)</div>
+        <div class="action-step"><b>How to set it:</b> Press the <b>💾 Save to robot</b></div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The show is saved to the robot's own SD card, so the robot can power on and perform the show by itself without a computer attached.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 7: MOVES WHILE TALKING (A46-1, A46-4) -->
+  <div class="info-box" id="studio-talk">
+    <div class="info-header">
+      <b>Point 7: arms moving while talking (Moves while talking)</b>
+      <span class="info-badge">Sequence</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> Try a sentence (▶ Show)</div>
+        <div class="action-step"><b>How to set it:</b> Type a sentence for the robot to say, choose a speaking style (friendly, polite, …) and press <b>▶ Show</b></div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          This page speaks the sentence in the same voice as the Voice page, and the arms in the 3D picture move with the sound. It is a preview only; the real robot does not move. The moves stay on the time bar, and you can press Play to watch again (without sound). If you are not logged in you only see the moves, with no sound. A sentence of any length gets at least one move.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> New moves for words that have no move yet</div>
+        <div class="action-step"><b>How to set it:</b> Type a word for a direction or a body part, such as "to the right", "above", "heart", and press Show. Tick <b>Ask the AI for new moves</b> if you want the same AI as the Voice page to think up a move when no rule matches (login needed).</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The generated move is adjusted to the robot's size and joint limits, and checked so it does not hit itself (finding a way around if needed). A move that cannot be made safe gives the reason and is not used. Press <b>＋ Keep</b> to keep it as a permanent move, and the Voice page will use this move for that word. All the words and rules are in <code>config/gesture_makers.json</code>
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> Resting pose for the arms (Hands between gestures)</div>
+        <div class="action-step"><b>How to set it:</b> Choose <b>Hands ready</b> (elbows bent, hands in front of the body) or <b>Standing straight (Home)</b> (standing straight, arms down)</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          Between the moves while talking, the arms come back to rest at this pose. The ready style can move sooner; the standing-straight style looks calmer.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> Moves list and Events</div>
+        <div class="action-step"><b>How to set it:</b> Edit the word that calls each move, press ▶ to see a single move, or arrange the move yourself on the time bar and press <b>＋ Keep as a gesture</b> Untick Events to turn off the moves for that event.</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The Voice page picks moves by the words spoken and fills the gaps with small random moves.
+        </div>
+      </div>
+    </div>
+  </div>
+<p class="mini">The 3D picture stops drawing when it is still, and draws again when the pose from the editor or the Monitor changes, when the grid or the hand markers are turned on or off, when more models load, or when the screen is resized.</p>
+  <p>If the saved project list cannot be read, Studio keeps the previous choice and shows the error both in the status bar and in the central notice bar, so it is seen from every tab. Press Retry saved moves to try reading again. The work on the page stays.</p>
+<details><summary>Robot pose training pictures (PC experiment)</summary><p>Generate pose views with <code>python -m tools.robot_pose synth --n 20000 --no-images --out ABSOLUTE_PRIVATE_PATH</code>, then render <code>python -m tools.robot_pose.render_mujoco ABSOLUTE_PRIVATE_PATH/views.jsonl --out ABSOLUTE_PRIVATE_PATH</code>. MuJoCo uses the Studio rig and the saved camera, random light, colour, textures, blur and noise. Labels mark keypoints hidden by another part using depth. Joint centres inside their own housing use a rig-sized tolerance. Keep all pictures, labels and reports in the PC private <code>.local/robot_pose</code> folder using absolute paths. These are simulated images; real video labels still need independent hold observations and visual review. CAD appearance is optional when the private meshes exist; it follows the shared rig, with source attachment offsets checked. Landmarks absent from the CAD, including its virtual base point, stay unlabelled. Training views need at least three visible joints; fully hidden views are dropped. An unlabelled base point can still bound the robot post. No training, camera capture or robot commands run from this tool.</p><p>For recorded still frames, <code>python -m tools.robot_pose.lab_labels ABSOLUTE_MANIFEST.json --out ABSOLUTE_PRIVATE_DATASET</code> fits a camera from independently measured joint centres and known holds. The private manifest selects settled windows, validated landmarks, robot bounds, video-level train/validation splits and observed pose acceptance. A command acknowledgement alone does not prove the robot reached the pose: moving or visibly wrong frames are dropped. Only validated landmarks receive labels. Review at least 50 frame overlays before training; a single planar pose does not establish metric camera calibration.</p></details>
+</section>
+
+<p>When unsaved work is recovered, Studio waits for the music to be ready before playing or saving. If the music cannot be recovered, open the downloaded .nong.json file again. The moves stay on the screen.</p>
+
+<p>The chosen work files are in the results folder inside mice_system. Open results/index.html or the hub home page → Latest works. The files with moves and music are in results/bundles. No Desktop icon is created automatically.</p>

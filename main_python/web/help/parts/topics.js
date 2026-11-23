@@ -6,9 +6,7 @@
 const HELP_GROUPS = [
   {id: "start", label: "Start here", topics: [["bytask", "Start with a task"]]},
   {id: "use", label: "Use it", topics: [
-    ["hub", "Mice Hub"], ["modsite", "A module's own page"], ["studio", "Nong Studio"],
-    ["tv", "TV Remote"], ["camera", "Cameras"], ["faces", "Reconize"],
-    ["gacha", "Prize machines"], ["all-jao", "All-Jao Games"], ["accounts", "Accounts"]]},
+    ["hub", "Mice Hub"], ["modsite", "A module's own page"], ["accounts", "Accounts"]]},
   {id: "build", label: "Build and set up", topics: [
     ["firmware", "Board setup"], ["lift", "Lift module"], ["nong", "Nong module"]]},
   {id: "wrong", label: "When something is wrong", topics: [

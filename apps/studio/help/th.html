@@ -3,7 +3,7 @@
 <h3>เปิดผลงานล่าสุดพร้อมท่าและเพลง</h3>
 <p>หน้าแรก Hub มีแอป <b>ผลงานล่าสุด</b> สำหรับชุดงานที่ติดตั้งไว้ เครื่องที่ยังไม่มีรายการสามารถนำเข้าไฟล์ได้โดยตรง ใน Nong Studio กด <b>เปิดผลงานพร้อมเพลง</b> แล้วเลือกคลิป หรือเลือกไฟล์ <code>.nong.json</code> ซึ่งเก็บท่า rig และเพลงในไฟล์เดียว ระบบอ่านและตรวจไฟล์ก่อนเปลี่ยนงาน ถ้ามีงานที่ยังไม่เก็บจะถามให้ Save หรือยกเลิกก่อน พร้อมตัวเลือกว่าจะใช้ rig ของชุดงานหรือเก็บการตั้งค่าปัจจุบัน การใช้ rig ต่างจากชุดเดิมอาจเปลี่ยนท่าหรือเวลาตามขีดจำกัดใหม่</p>
 <p>กด <b>ทดลองพร้อมเพลง</b> เพื่อดูท่าในหน้าจอพร้อมเพลงเดิม หยุด กลับต้น หรือเลื่อนแถบเวลาได้ เพลงเป็นนาฬิกาของพรีวิว จึงไม่วิ่งแยกจากท่าเมื่อแท็บช้า หากเพลงจบก่อนท่า ช่วงที่เหลือเงียบ และการวนซ้ำเริ่มเพลงใหม่เมื่อท่าจบ การเปิดชุดงานหรือใช้พรีวิวนี้ไม่ส่งคำสั่งไปหุ่นจริง ปุ่ม Run on robot เป็นขั้นตอนแยก</p>
-<p><b>Save</b> เก็บเพลงไว้ในโปรเจกต์ด้วย เปิดใหม่ยังมีเพลงเดิม หรือกด <b>ดาวน์โหลดท่า+เพลง</b> เพื่อย้ายไฟล์เดียวไปเครื่องอื่น เพลงของ draft เก็บแยกในเบราว์เซอร์ หากพื้นที่ถูกปิดหรือเคลียร์แล้ว อาจต้องเลือกไฟล์เดิมอีกครั้งโดยท่าที่กู้คืนยังอยู่ สำหรับหุ่นจริง ให้ใช้ไฟล์ YAML และ MP3 ชื่อเดียวกับคำสั่ง play: บน SD ตามวิธีอัปโหลดเดิม ระบบไม่อัปโหลดหรือสั่งเล่นหุ่นให้อัตโนมัติ</p>
+<p><b>บันทึก</b> เก็บเพลงไว้ในโปรเจกต์ด้วย เปิดใหม่ยังมีเพลงเดิม หรือกด <b>ดาวน์โหลดท่า+เพลง</b> เพื่อย้ายไฟล์เดียวไปเครื่องอื่น เพลงของ draft เก็บแยกในเบราว์เซอร์ หากพื้นที่ถูกปิดหรือเคลียร์แล้ว อาจต้องเลือกไฟล์เดิมอีกครั้งโดยท่าที่กู้คืนยังอยู่ สำหรับหุ่นจริง ให้ใช้ไฟล์ YAML และ MP3 ชื่อเดียวกับคำสั่ง play: บน SD ตามวิธีอัปโหลดเดิม ระบบไม่อัปโหลดหรือสั่งเล่นหุ่นให้อัตโนมัติ</p>
 <p>ชื่อโปรเจกต์ใช้ตัวอักษรไทยและอังกฤษ ตัวเลข เว้นวรรค _ - และ . ได้ แต่ใช้อีโมจิ / \ : หรือชื่อที่ Windows สงวนไว้ (เช่น con, nul, com1) ไม่ได้ ระบบจะบอกด้วยข้อความธรรมดาและไม่บันทึกทับงานเดิม</p>
 
 <p><b>เครื่องที่วาด 3D ไม่ได้ (ทีวี/คอมเก่า/เบราว์เซอร์ที่ปิดการ์ดจอ):</b> Studio ยังเปิดและใช้ได้ สไลเดอร์ ไทม์ไลน์ และการเล่นบนหุ่นทำงานตามปกติ ส่วนภาพหุ่น 3D จะแสดงข้อความบอกว่าเครื่องนี้วาดไม่ได้ ถ้าต้องการเห็นหุ่นให้เปิดด้วยเบราว์เซอร์ใหม่หรือคอมเครื่องอื่น</p>
@@ -20,7 +20,7 @@
   </div>
   <p class="mini">คุณภาพภาพ 3D เลือกอัตโนมัติจากอุปกรณ์ที่เปิดเว็บ เปลี่ยนได้ที่ Hub → Settings → ภาพ 3D โหมดประหยัดลดจำนวนภาพและความละเอียด โดยยังคงจังหวะการเล่นและการตรวจชนเดิม ขอบภาพใช้ค่าใหม่หลังโหลดหน้าใหม่</p>
   <div class="shead">
-    <span class="where tech">code/nong/main_python_set_nong · served at /studio/</span>
+    <span class="where tech">code/nong/main_python_set_nong · เปิดได้ที่ /studio/</span>
     <h2>Nong Studio — คู่มือการใช้งานและจุดปรับแต่งอย่างละเอียดทุกส่วน</h2>
     <p>โปรแกรมจำลอง 3D และออกแบบท่าทางแอนิเมชันสำหรับหุ่นยนต์ฮิวแมนนอยด์ Nong (10 ข้อต่อเซอร์โว)
        ประมวลผลบนเครื่องคอมพิวเตอร์ PC พร้อมระบบ On-Demand 3D Rendering ที่ช่วยประหยัดพลังงาน ไม่กินสเปก และไม่ค้าง</p>
@@ -30,10 +30,10 @@
   <div class="info-box">
     <div class="info-header">
       <b>ภาพรวมหน้าจอ Nong Studio ในปัจจุบัน (Current Real UI)</b>
-      <span class="info-badge">Overview</span>
+      <span class="info-badge">ภาพรวม</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-current.png" alt="Nong Studio Current Real UI" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-current.png" alt="หน้าจอใช้งานจริงในปัจจุบันของ Nong Studio" class="info-img">
       <div class="callout-pin" style="top: 45%; left: 30%;" title="1. พื้นที่ 3D Model Viewport">1</div>
       <div class="callout-pin" style="top: 45%; left: 78%;" title="2. แผงควบคุมสไลเดอร์ 10 ข้อต่อ">2</div>
       <div class="callout-pin" style="top: 90%; left: 50%;" title="3. แถบไทม์ไลน์และเครื่องเล่นท่าทาง">3</div>
@@ -44,10 +44,10 @@
   <div class="info-box">
     <div class="info-header">
       <b>จุดที่ 1: แผงปรับแต่งองศาข้อต่อเซอร์โว 10 จุด (Joint Sliders &amp; Inspector)</b>
-      <span class="info-badge">Joint Controls</span>
+      <span class="info-badge">ตัวควบคุมข้อต่อ</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-sliders.png" alt="Joint Sliders Panel" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-sliders.png" alt="แผงแถบเลื่อนปรับข้อต่อ" class="info-img">
       <div class="callout-pin" style="top: 25%; left: 25%;" title="1. ข้อต่อแขนซ้าย L_SH / L_EL">1</div>
       <div class="callout-pin" style="top: 55%; left: 25%;" title="2. ข้อต่อแขนขวา R_SH / R_EL">2</div>
       <div class="callout-pin" style="top: 80%; left: 25%;" title="3. เอวและยักไหล่ WAIST / SHRUG">3</div>
@@ -65,7 +65,7 @@
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">2</span> สไลเดอร์แขนขวา (R_SH_P, R_SH_R, R_EL_P, R_EL_R)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือกดปุ่ม <b>Mirror</b> เพื่อคัดลอกท่าจากแขนซ้าย</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือกดปุ่ม <b>กระจก</b> เพื่อคัดลอกท่าจากแขนซ้าย</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           คุมแขนขวา 4 แกนอิสระ หากกด Mirror แขนขวาจะกางทำท่าสมมาตรกับแขนซ้ายทันที เหมาะสำหรับทำท่าไหว้ ท่ากอดอก หรือท่ายกมือพร้อมกัน
         </div>
@@ -74,17 +74,17 @@
         <div class="action-card-title"><span class="num">3</span> สไลเดอร์เอวและยักไหล่ (WAIST &amp; SHRUG)</div>
         <div class="action-step"><b>ปรับอย่างไร:</b> WAIST ปรับหมุนซ้าย-ขวา / SHRUG ปรับโครงสร้าง 4-Bar Linkage</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>WAIST:</b> เอวเอี้ยวตัวมองไปด้านข้างได้ ±30°<br>
-          • <b>SHRUG:</b> คานไหล่เอียงยกข้างหนึ่งขึ้น อีกข้างหนึ่งลง รวม 26° เลียนแบบการยักไหล่ของมนุษย์
+          • <b>เอว:</b> เอวเอี้ยวตัวมองไปด้านข้างได้ ±30°<br>
+          • <b>ยักไหล่:</b> คานไหล่เอียงยกข้างหนึ่งขึ้น อีกข้างหนึ่งลง รวม 26° เลียนแบบการยักไหล่ของมนุษย์
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">4</span> ปุ่มลัดความปลอดภัย (Home / Relax / Zero Lock)</div>
         <div class="action-step"><b>ปรับอย่างไร:</b> คลิกปุ่ม Home, Relax หรือ Zero Lock ด้านล่าง</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>Home:</b> กลับท่า HOME ที่ตั้งไว้ องศาแต่ละข้ออาจไม่ใช่ 90°; ตรวจท่าจริงและค่าที่บันทึกไว้<br>
-          • <b>Relax:</b> หยุดส่งพัลส์ควบคุมเซอร์โว; ไม่ได้ตัดไฟเลี้ยง และการคลายแรงยึดขึ้นกับเซอร์โว<br>
-          • <b>Zero Lock:</b> ล็อคพิกัดจุดศูนย์ ป้องกันคนกดเลื่อนตำแหน่งโดยไม่ตั้งใจ
+          • <b>กลับท่า Home:</b> กลับท่า HOME ที่ตั้งไว้ องศาแต่ละข้ออาจไม่ใช่ 90°; ตรวจท่าจริงและค่าที่บันทึกไว้<br>
+          • <b>ผ่อนแรง:</b> หยุดส่งพัลส์ควบคุมเซอร์โว; ไม่ได้ตัดไฟเลี้ยง และการคลายแรงยึดขึ้นกับเซอร์โว<br>
+          • <b>ล็อกศูนย์:</b> ล็อคพิกัดจุดศูนย์ ป้องกันคนกดเลื่อนตำแหน่งโดยไม่ตั้งใจ
         </div>
       </div>
     </div>
@@ -94,10 +94,10 @@
   <div class="info-box">
     <div class="info-header">
       <b>จุดที่ 2: แถบไทม์ไลน์และลำดับท่าทาง (Timeline &amp; Keyframe Sequencer)</b>
-      <span class="info-badge">Timeline</span>
+      <span class="info-badge">ไทม์ไลน์</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-timeline-bar.png" alt="Timeline Controls" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-timeline-bar.png" alt="ปุ่มควบคุมไทม์ไลน์" class="info-img">
       <div class="callout-pin" style="top: 50%; left: 8%;" title="1. ปุ่ม Play / Run on robot">1</div>
       <div class="callout-pin" style="top: 50%; left: 25%;" title="2. ปุ่ม + Add keyframe">2</div>
       <div class="callout-pin" style="top: 50%; left: 60%;" title="3. แถบเลื่อนเวลา Scrub Bar">3</div>
@@ -106,14 +106,14 @@
     <div class="action-impact-grid">
       <div class="action-card">
         <div class="action-card-title"><span class="num">1</span> สั่งเล่นท่าทาง (Play / Run on robot)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>▶ Play</b> เพื่อพรีวิวในจอ หรือ <b>▶ Run on robot</b> เพื่อสั่งหุ่นจริง</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>▶ เล่น</b> เพื่อพรีวิวในจอ หรือ <b>▶ เล่นบนหุ่น</b> เพื่อสั่งหุ่นจริง</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           โมเดล 3D และตัวหุ่นจริงจะเคลื่อนที่ต่อเนื่องตามคีย์เฟรม ด้วยความนุ่มนวลตามเส้นโค้งความเร็วที่คำนวณไว้
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">2</span> การบันทึกท่า (+ Add Keyframe &amp; Duration)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ดัดท่าที่ต้องการแล้วกด <b>+ Add keyframe</b> พร้อมกำหนดเวลา (เช่น 800ms)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ดัดท่าที่ต้องการแล้วกด <b>+ เพิ่มคีย์เฟรม</b> พร้อมกำหนดเวลา (เช่น 800ms)</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           เพิ่มท่าใหม่เข้าไปในเส้นเวลา หากกำหนดเวลาน้อยเกินกว่าที่เซอร์โวหมุนทัน ระบบจะยืดเวลาออกให้อัตโนมัติเพื่อป้องกันมอเตอร์กระชาก
         </div>
@@ -127,7 +127,7 @@
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">4</span> เล่นวนซ้ำและซูม (Loop Checkbox)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ติ๊กถูกที่ช่อง <b>Loop</b></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ติ๊กถูกที่ช่อง <b>วนซ้ำ</b></div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           เมื่อเล่นถึงท่าสุดท้าย หุ่นยนต์จะเคลื่อนที่ย้อนกลับสู่ท่าแรกอย่างนุ่มนวลและเริ่มเล่นซ้ำต่อเนื่อง ไม่มีการกระตุกหรือสะบัดแขน
         </div>
@@ -142,7 +142,7 @@
       <span class="info-badge">3D &amp; IK</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-3d-model.png" alt="3D Model Canvas" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-3d-model.png" alt="พื้นที่แสดงโมเดล 3D" class="info-img">
       <div class="callout-pin" style="top: 35%; left: 35%;" title="1. วงแหวนควบคุมแกนเซอร์โว">1</div>
       <div class="callout-pin" style="top: 60%; left: 30%;" title="2. จุดจับลากแขน IK (Wrist &amp; Elbow)">2</div>
       <div class="callout-pin" style="top: 15%; left: 50%;" title="3. ปุ่มมุมมองระนาบ Orthographic">3</div>
@@ -164,7 +164,7 @@
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">3</span> สลับมุมมองแท้จริง (Orthographic Plane Views)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Front</b>, <b>Top</b> หรือ <b>Side</b></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>หน้า</b>, <b>บน</b> หรือ <b>ด้านข้าง</b></div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           สลับมุมมองกล้องเป็นแบบฉายระนาบขนาน (ไม่มี Perspective เพี้ยน) ช่วยให้จัดแขนทั้งสองข้างให้ตรงได้ระดับเท่ากันเป๊ะ
         </div>
@@ -176,7 +176,7 @@
   <div class="info-box">
     <div class="info-header">
       <b>จุดที่ 4: การตั้งค่าชดเชยและแคลิเบรตเซอร์โว (Setup &amp; Servo Offset)</b>
-      <span class="info-badge">Calibration</span>
+      <span class="info-badge">การปรับเทียบ</span>
     </div>
     <p class="mini">ต้องล็อกอินก่อนสำหรับการ์ดที่สั่งหรือเปลี่ยนค่าหุ่นจริง (Robot, Rig setup, Servo offset, Movement safety, This robot).
       การ์ดที่ไม่ถึงหุ่นจริง (Model รูปร่าง 3D, Saving) เปิดได้เลยโดยไม่ต้องใส่รหัส.
@@ -184,7 +184,7 @@
     <p class="mini">การ์ดไหนอยากเปิดค้างไว้ กด <b>⧉</b> ที่หัวการ์ด มันจะลอยออกมาเป็นหน้าต่างของตัวเอง ลากหัวการ์ดไปวางตรงไหนก็ได้
       ลากมุมขวาล่างเพื่อปรับขนาด และยังเห็นอยู่ทุก tab. กด <b>⇲</b> เพื่อเก็บกลับเข้าที่. เบราว์เซอร์จำตำแหน่งไว้ให้ (บนมือถือไม่มีปุ่มนี้).</p>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-tuning-card.png" alt="Tuning &amp; Calibration Card" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-tuning-card.png" alt="การ์ดปรับแต่งและปรับเทียบ" class="info-img">
       <div class="callout-pin" style="top: 30%; left: 30%;" title="1. ปุ่ม Nudge ชดเชย ±0.5 องศา">1</div>
       <div class="callout-pin" style="top: 55%; left: 30%;" title="2. กำหนดช่วงลิมิต Min / Max">2</div>
       <div class="callout-pin" style="top: 75%; left: 30%;" title="3. อัตราทดเฟืองและ Shrug Curve">3</div>
@@ -218,10 +218,10 @@
   <div class="info-box">
     <div class="info-header">
       <b>จุดที่ 5: การร้อยเรียงชุดท่าทาง (Sequence Chains &amp; Speeds)</b>
-      <span class="info-badge">Sequences</span>
+      <span class="info-badge">ลำดับท่า</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-sequence-card.png" alt="Sequence Manager Card" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-sequence-card.png" alt="การ์ดจัดการลำดับการทำงาน" class="info-img">
       <div class="callout-pin" style="top: 20%; left: 40%;" title="1. กล่องเลือกไฟล์ YAML">1</div>
       <div class="callout-pin" style="top: 45%; left: 40%;" title="2. ตัวคูณความเร็วประจำไฟล์">2</div>
       <div class="callout-pin" style="top: 70%; left: 40%;" title="3. ช่อง Chain ต่อไฟล์ถัดไป">3</div>
@@ -229,7 +229,7 @@
     <div class="action-impact-grid">
       <div class="action-card">
         <div class="action-card-title"><span class="num">1</span> ไฟล์ท่าทาง (YAML Sequence Files)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกไฟล์จากดรอปดาวน์ <b>Open saved YAML…</b> หรือกด <b>Save</b></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกไฟล์จากดรอปดาวน์ <b>เปิด YAML ที่บันทึกไว้…</b> หรือกด <b>บันทึก</b></div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           โหลดชุดท่าทางที่เคยออกแบบไว้กลับเข้าสู่เส้นเวลาเพื่อแก้ไข หรือส่งไฟล์ขึ้นการ์ด SD ของหุ่นยนต์
         </div>
@@ -243,21 +243,21 @@
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">3</span> การร้อยท่าทางอัตโนมัติ (Sequence Chain)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ใส่ชื่อไฟล์ถัดไปในช่อง <b>Chain</b> เช่น <code>wave.yaml</code></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ใส่ชื่อไฟล์ถัดไปในช่อง <b>ต่อเนื่อง</b> เช่น <code>wave.yaml</code></div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           เมื่อหุ่นเล่นท่าปัจจุบันจบ จะเริ่มเล่นท่าต่อไปทันทีโดยไม่ต้องส่งคำสั่งใหม่ ทำให้จัดโชว์ยาวๆ ได้อย่างต่อเนื่อง
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">4</span> ความเร็วตอนเต้นตามเพลง (Speed limit with music)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ในการ์ด <b>Timing</b> ช่อง <b>Speed limit with music</b> (ขึ้นเฉพาะชุดท่าที่มีเพลง) ใส่ °/วินาที ปล่อยว่าง = ใช้ค่าของหุ่น, 0 = เร็วสุดเท่าที่เซอร์โวไหว ใต้ช่องจะบอกว่าท่าไหนตามเพลงไม่ทันและช้ากว่าเพลงกี่วินาที กดชื่อท่าเพื่อไปแก้ ตัด หรือเปลี่ยนท่านั้น</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ในการ์ด <b>จังหวะเวลา</b> ช่อง <b>จำกัดความเร็วตามเพลง</b> (ขึ้นเฉพาะชุดท่าที่มีเพลง) ใส่ °/วินาที ปล่อยว่าง = ใช้ค่าของหุ่น, 0 = เร็วสุดเท่าที่เซอร์โวไหว ใต้ช่องจะบอกว่าท่าไหนตามเพลงไม่ทันและช้ากว่าเพลงกี่วินาที กดชื่อท่าเพื่อไปแก้ ตัด หรือเปลี่ยนท่านั้น</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           ใช้เฉพาะชุดท่านี้ตอนเพลงเล่นเท่านั้น (ไฟล์เขียน <code>pace: music N</code> หุ่นรับเป็น <code>PACE MUSIC N</code>) จบเพลง กด STOP หรือเปิดเครื่องใหม่ หุ่นกลับไปใช้ Peak speed limit เดิม (60 °/วินาที) ทุกครั้ง ตรวจการชน ขอบเขตข้อต่อ และระยะห่างมือยังทำงานที่ความเร็วใหม่ ลองกับหุ่นจริงให้เริ่มจากค่าต่ำแล้วค่อยเพิ่ม
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">5</span> ดูว่าเซอร์โวจริงตามทันไหม (Play like the real servos)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ติ๊ก <b>Play like the real servos</b> ในการ์ด Timing แล้วกด Play หุ่นในภาพจะขยับช้ากว่าแผนแบบเซอร์โวจริง ท่าที่เซอร์โวตามไม่ทันมีขอบเส้นประบนแถบเวลา (เหลือง = ช้าเล็กน้อย, แดง = ช้ามาก) ค่าความหน่วงและการเร่งของแต่ละข้อปรับได้ใน Setup &gt; rig (delay ms, speed-up °/s²)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ติ๊ก <b>เล่นเหมือนเซอร์โวจริง</b> ในการ์ด Timing แล้วกด Play หุ่นในภาพจะขยับช้ากว่าแผนแบบเซอร์โวจริง ท่าที่เซอร์โวตามไม่ทันมีขอบเส้นประบนแถบเวลา (เหลือง = ช้าเล็กน้อย, แดง = ช้ามาก) ค่าความหน่วงและการเร่งของแต่ละข้อปรับได้ใน Setup &gt; rig (delay ms, speed-up °/s²)</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           ไม่เปลี่ยนหุ่น เป็นภาพตรวจในจอเท่านั้น ค่าความหน่วงยังเป็นค่าประมาณจนกว่าจะวัดกับหุ่นจริง ตัวจำลองฟิสิกส์ (tools/nong_sim) ใช้ค่าชุดเดียวกัน
         </div>
@@ -311,10 +311,10 @@
   <div class="info-box">
     <div class="info-header">
       <b>จุดที่ 6: การจัดโชว์และซิงก์ดนตรี (Shows &amp; Music Synchronization)</b>
-      <span class="info-badge">Shows &amp; Music</span>
+      <span class="info-badge">โชว์และเพลง</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/studio-shows-card.png" alt="Shows &amp; Music Card" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/studio-shows-card.png" alt="การ์ดโชว์และเพลง" class="info-img">
       <div class="callout-pin" style="top: 25%; left: 40%;" title="1. เลือกไฟล์เพลง MP3 จากการ์ด SD">1</div>
       <div class="callout-pin" style="top: 50%; left: 40%;" title="2. กำหนดจุดหยุดพัก Pause">2</div>
       <div class="callout-pin" style="top: 75%; left: 40%;" title="3. ปุ่ม Save to robot สำหรับรันเดี่ยว">3</div>
@@ -336,7 +336,7 @@
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">3</span> ส่งโชว์เข้าบอร์ด (Save to robot)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>💾 Save to robot</b></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>💾 บันทึกลงหุ่น</b></div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           โชว์จะถูกบันทึกลงในการ์ด SD ของตัวหุ่น ทำให้หุ่นยนต์สามารถเปิดเครื่องและแสดงโชว์ได้ด้วยตนเองโดยไม่ต้องต่อคอมพิวเตอร์
         </div>
@@ -348,12 +348,12 @@
   <div class="info-box" id="studio-talk">
     <div class="info-header">
       <b>จุดที่ 7: แขนขยับตอนพูด (Moves while talking)</b>
-      <span class="info-badge">Sequence</span>
+      <span class="info-badge">ลำดับ</span>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
         <div class="action-card-title"><span class="num">1</span> ลองประโยค (▶ Show)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์ประโยคที่หุ่นจะพูด เลือกสไตล์การพูด (friendly, polite, …) แล้วกด <b>▶ Show</b></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์ประโยคที่หุ่นจะพูด เลือกสไตล์การพูด (friendly, polite, …) แล้วกด <b>▶ แสดง</b></div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           หน้านี้พูดประโยคด้วยเสียงเดียวกับหน้า Voice และแขนในภาพ 3D ขยับพร้อมเสียง เป็นการดูตัวอย่างเท่านั้น ตัวหุ่นจริงไม่ขยับ
           ท่าจะอยู่บน time bar ต่อ กด Play ดูซ้ำได้ (ไม่มีเสียง) ถ้ายังไม่ได้ล็อกอิน จะเห็นแค่ท่าโดยไม่มีเสียง
@@ -363,22 +363,22 @@
       <div class="action-card">
         <div class="action-card-title"><span class="num">2</span> ท่าใหม่สำหรับคำที่ยังไม่มีท่า</div>
         <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์คำบอกทิศหรือส่วนของร่างกาย เช่น "ด้านขวาครับ", "ข้างบน", "หัวใจ" แล้วกด Show
-          ติ๊ก <b>Ask the AI for new moves</b> ถ้าอยากให้ AI ตัวเดียวกับหน้า Voice คิดท่าให้ เมื่อไม่มีกฎไหนเข้า (ต้องล็อกอิน)</div>
+          ติ๊ก <b>ขอให้ AI คิดท่าใหม่</b> ถ้าอยากให้ AI ตัวเดียวกับหน้า Voice คิดท่าให้ เมื่อไม่มีกฎไหนเข้า (ต้องล็อกอิน)</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           ท่าที่สร้างขึ้นจะถูกปรับตามขนาดหุ่น ลิมิตข้อต่อ และเช็กไม่ให้ชนตัวเอง (หาทางอ้อมถ้าจำเป็น) ท่าที่ทำให้ปลอดภัยไม่ได้จะบอกเหตุผลและไม่ถูกใช้
-          กด <b>＋ Keep</b> เพื่อเก็บเป็นท่าถาวร แล้วหน้า Voice จะใช้ท่านี้กับคำนั้น คำและกฎทั้งหมดอยู่ใน <code>config/gesture_makers.json</code>
+          กด <b>＋ เก็บไว้</b> เพื่อเก็บเป็นท่าถาวร แล้วหน้า Voice จะใช้ท่านี้กับคำนั้น คำและกฎทั้งหมดอยู่ใน <code>config/gesture_makers.json</code>
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">3</span> ท่าพักแขน (Hands between gestures)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือก <b>Hands ready</b> (ศอกงอ มืออยู่หน้าตัว) หรือ <b>Standing straight (Home)</b> (ยืนตรงแขนลง)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือก <b>มือพร้อม</b> (ศอกงอ มืออยู่หน้าตัว) หรือ <b>ยืนตรง (Home)</b> (ยืนตรงแขนลง)</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           ระหว่างท่าตอนพูด แขนจะกลับมาพักที่ท่านี้ แบบพร้อมขยับได้ไวกว่า แบบยืนตรงดูนิ่งกว่า
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">4</span> รายการท่าและ Events</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> แก้คำที่เรียกแต่ละท่า กด ▶ ดูท่าเดียว หรือจัดท่าเองบน time bar แล้วกด <b>＋ Keep as a gesture</b> ติ๊ก Events ออกเพื่อปิดท่าใน event นั้น</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> แก้คำที่เรียกแต่ละท่า กด ▶ ดูท่าเดียว หรือจัดท่าเองบน time bar แล้วกด <b>＋ เก็บเป็นท่า</b> ติ๊ก Events ออกเพื่อปิดท่าใน event นั้น</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           หน้า Voice เลือกท่าตามคำที่พูด และเติมท่าเล็ก ๆ แบบสุ่มในช่องว่าง
         </div>
@@ -387,7 +387,7 @@
   </div>
 <p class="mini">ภาพ 3D หยุดวาดเมื่ออยู่นิ่ง และวาดใหม่เมื่อท่าจากตัวแก้ไขหรือ Monitor เปลี่ยน เมื่อเปิด/ปิดกริดหรือเครื่องหมายมือ โหลดโมเดลเพิ่ม หรือปรับขนาดหน้าจอ</p>
   <p>ถ้าอ่านรายการโปรเจกต์ที่บันทึกไว้ไม่ได้ Studio จะเก็บตัวเลือกเดิมและแจ้งข้อผิดพลาดทั้งแถบสถานะและแถบแจ้งเตือนกลาง จึงเห็นได้จากทุกแท็บ กด Retry saved moves เพื่อลองอ่านอีกครั้ง งานในหน้ายังคงอยู่</p>
-<details><summary>Robot pose training pictures (PC experiment)</summary><p>Generate pose views with <code>python -m tools.robot_pose synth --n 20000 --no-images --out ABSOLUTE_PRIVATE_PATH</code>, then render <code>python -m tools.robot_pose.render_mujoco ABSOLUTE_PRIVATE_PATH/views.jsonl --out ABSOLUTE_PRIVATE_PATH</code>. MuJoCo uses the Studio rig and the saved camera, random light, colour, textures, blur and noise. Labels mark keypoints hidden by another part using depth. Joint centres inside their own housing use a rig-sized tolerance. Keep all pictures, labels and reports in the PC private <code>.local/robot_pose</code> folder using absolute paths. These are simulated images; real video labels still need independent hold observations and visual review. CAD appearance is optional when the private meshes exist; it follows the shared rig, with source attachment offsets checked. Landmarks absent from the CAD, including its virtual base point, stay unlabelled. Training views need at least three visible joints; fully hidden views are dropped. An unlabelled base point can still bound the robot post. No training, camera capture or robot commands run from this tool.</p><p>For recorded still frames, <code>python -m tools.robot_pose.lab_labels ABSOLUTE_MANIFEST.json --out ABSOLUTE_PRIVATE_DATASET</code> fits a camera from independently measured joint centres and known holds. The private manifest selects settled windows, validated landmarks, robot bounds, video-level train/validation splits and observed pose acceptance. A command acknowledgement alone does not prove the robot reached the pose: moving or visibly wrong frames are dropped. Only validated landmarks receive labels. Review at least 50 frame overlays before training; a single planar pose does not establish metric camera calibration.</p></details>
+<details><summary>ภาพฝึกท่าหุ่น (การทดลองบน PC)</summary><p>สร้างภาพมุมมองท่าทางด้วย <code>python -m tools.robot_pose synth --n 20000 --no-images --out ABSOLUTE_PRIVATE_PATH</code>, แล้วเรนเดอร์ <code>python -m tools.robot_pose.render_mujoco ABSOLUTE_PRIVATE_PATH/views.jsonl --out ABSOLUTE_PRIVATE_PATH</code>. MuJoCo ใช้โครงขยับจาก Studio และการตั้งค่ากล้องที่บันทึกไว้ พร้อมสุ่มแสง สี พื้นผิว ความเบลอ และนอยส์ ป้ายกำกับใช้ข้อมูลความลึกระบุจุดสำคัญที่ถูกชิ้นส่วนอื่นบัง ส่วนจุดศูนย์กลางข้อต่อที่อยู่ภายในตัวเรือนของตัวเองจะใช้ระยะเผื่อในการตรวจตามขนาดของโครงขยับ เก็บภาพ ป้ายกำกับ และรายงานทั้งหมดไว้ในพื้นที่ส่วนตัวบน PC ที่ <code>.local/robot_pose</code> โฟลเดอร์โดยใช้พาธแบบเต็ม ภาพเหล่านี้เป็นภาพจำลอง ส่วนการกำกับวิดีโอจริงยังต้องสังเกตท่าค้างแยกต่างหากและตรวจภาพด้วยตา หากมีไฟล์โมเดล 3 มิติส่วนตัว ก็เลือกใช้รูปลักษณ์จาก CAD ได้ โดยใช้โครงข้อต่อร่วมกันและตรวจสอบระยะเยื้องของจุดยึดจากต้นฉบับ จุดอ้างอิงที่ไม่มีอยู่ใน CAD รวมถึงจุดฐานเสมือนจะไม่ถูกกำกับ ภาพสำหรับฝึกต้องมองเห็นข้อต่ออย่างน้อยสามจุด ภาพที่หุ่นถูกบังทั้งหมดจะถูกตัดออก แม้จุดฐานจะไม่มีป้ายกำกับ ก็ยังใช้กำหนดขอบเขตเสาหุ่นยนต์ได้ เครื่องมือนี้จะไม่ฝึกโมเดล จับภาพจากกล้อง หรือส่งคำสั่งไปยังหุ่นยนต์</p><p>สำหรับภาพนิ่งที่บันทึกไว้ <code>python -m tools.robot_pose.lab_labels ABSOLUTE_MANIFEST.json --out ABSOLUTE_PRIVATE_DATASET</code> คำนวณค่ากล้องจากตำแหน่งศูนย์กลางข้อต่อที่วัดแยกไว้และท่าค้างที่ทราบแน่ชัด ไฟล์รายการภายในจะกำหนดช่วงที่หุ่นหยุดนิ่ง จุดอ้างอิงที่ตรวจสอบแล้ว ขอบเขตหุ่นยนต์ การแบ่งวิดีโอสำหรับฝึกและตรวจสอบโมเดล และท่าที่สังเกตแล้วว่ายอมรับได้ การตอบรับคำสั่งเพียงอย่างเดียวไม่ได้ยืนยันว่าหุ่นยนต์ไปถึงท่านั้นแล้ว เฟรมที่ยังเคลื่อนไหวหรือเห็นชัดว่าท่าผิดจะถูกตัดออก จะใส่ป้ายกำกับเฉพาะจุดอ้างอิงที่ผ่านการตรวจสอบแล้ว ก่อนฝึกโมเดล ให้ตรวจภาพที่ซ้อนจุดกำกับอย่างน้อย 50 เฟรม ท่าเดียวที่อยู่ในระนาบเดียวกันยังไม่เพียงพอสำหรับเทียบค่ากล้องกับขนาดจริง</p></details>
 </section>
 
 <p>เมื่อกู้คืนงานค้าง Studio จะรอเพลงให้พร้อมก่อนเล่นหรือบันทึก หากเพลงกู้คืนไม่ได้ ให้เปิดไฟล์ .nong.json ที่ดาวน์โหลดเก็บไว้อีกครั้ง งานท่ายังคงอยู่ในหน้าจอ</p>

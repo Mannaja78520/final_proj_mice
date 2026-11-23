@@ -1,0 +1,16 @@
+{
+  "title": {
+    "th": "กล้อง",
+    "en": "Cameras",
+    "zh": "摄像头",
+    "ja": "カメラ"
+  },
+  "summary": {
+    "th": "ดูภาพสดและปรับกล้อง",
+    "en": "View the live feed and adjust cameras",
+    "zh": "查看直播画面并调整摄像头",
+    "ja": "ライブ映像を見てカメラを調整する"
+  },
+  "group": "use",
+  "order": 30
+}

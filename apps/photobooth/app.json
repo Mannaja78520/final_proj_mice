@@ -7,6 +7,7 @@
   "icon": "📸",
   "image": "/img/apps/photobooth.webp",
   "order": 35,
+  "help": "photobooth",
   // listed only on a PC where this partner is installed (A51-2)
   "needs": "photobooth"
 }

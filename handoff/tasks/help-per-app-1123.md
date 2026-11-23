@@ -1,6 +1,6 @@
 # help-per-app-1123 — Help per app, dynamic in the hub, real screenshots
 Owner: codex:11231744-055a
-Updated: 2026-11-23 17:51 +07:00
+Updated: 2026-11-23 17:56 +07:00
 Branch: claude/project-thread-181856
 Last commit: this checkpoint
 Plan: A1123-1 (system)
@@ -39,6 +39,7 @@ each matching its step text. Reply to the user in Thai.
   then `python tools/systems.py build`. Do not hardcode lists; one source.
 
 ## Facts found (Claude, 2026-11-23)
+- App groups have insertion slots and the task index renders localized manifest summaries. The shared app visibility rule hides missing partners; documentation inside a partner installation overrides our fallback.
 - main_python/main.py hub_apps already applies extension/partner visibility. The Help API reads manifest_dir (independent of the app page root), and the Help client loads the selected language before creating sidebar/search.
 - Help = main_python/web/help/{index.template.html,style.css,parts/*.html,parts/topics.js,parts/search.js}
   built into main_python/web/help.html. Texts are Thai; other languages come from
@@ -51,22 +52,18 @@ each matching its step text. Reply to the user in Thai.
 - Add app: tools/add_app.py -> POST /api/extensions/add; main_python/extensions.py; manifest mice-app.json.
 - Themes thread (cmsg_01R7BbYxaTb3Yv9YS3gQaaA3R9gxTvRCa7nvxb64kPivcA) may touch Help CSS: pull often.
 
-## Rules (CLAUDE.md, all binding)
-Read HANDOFF.md. Update THIS file + push WIP commit around EVERY step. QC: `python qc/run_qc.py --quiet <checks>`,
-full QC once before merge. Never edit friend repos (Face_Regonize, All-Jao-Games, Photobooth). No keys/real data in repo.
-Look at every screenshot yourself and compare with the step text. Have Gemini 4 review pictures vs text (GPT+Gemini reviews are leads, verify).
-PR as draft from this branch; merge own PR when QC green (standing approval cmsg_01R7BbYxaTb3Yv9YS3gQaaA3XEQcQQyoUgXwMT6wXgfeYv). Tell the user a MiceHub.exe rebuild is needed.
+## Rules
+Follow HANDOFF.md and CLAUDE.md. Review real screenshots against the steps. Draft PR after full QC and Gemini review. Reply in Thai and report EXE rebuild status.
 
 ## Doing now
-Step 2: migrate the remaining app guides and add Photobooth. Keep links and sidebar/search working from the installed-app list.
+Step 3: capture real app and Hub UI in four languages and both themes, replace the screenshots and compare every view with its step.
 
 ## Done
+- Step 2: eight app guides load in four languages. Edge checked all anchors and widths (390/1280 px), the task index, and the gacha technical diagram. Existing drift baseline has no new gaps.
 - Step 1: real Hub HTTP handler and Edge rendered Voice at /help#voice in th/en/zh/ja, with active sidebar link and navigation. API index and system map verify. Shared fake Hub is in use by another task, so full QC is pending.
 - Read handoff and workflow. Branch baseline 12474a5. Protected local EXE, prompt and dist reports are outside the task.
 
 ## Next (in order)
-1. Registry + hub routes + loader in help template (one app, voice, end to end, 4 langs).
-2. Move the other app parts; manifests; topics.js sidebar from data.
 3. tools/help_shots.py + shots.json per app; generate all images; view them; fix text/recipes.
 4. QC checks + add-app test; friend request file note; docs.
 5. Full QC, draft PR, Gemini review, report to user in Thai.
@@ -74,29 +71,81 @@ Step 2: migrate the remaining app guides and add Photobooth. Keep links and side
 ## File status
 | File | Change | State | Verification | Commit |
 |---|---|---|---|---|
-| apps/voice/help/en.html | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| apps/voice/help/help.json | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| apps/voice/help/ja.html | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| apps/voice/help/th.html | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| apps/voice/help/zh.html | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| docs/help_map.json | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| docs/HUB_API.md | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| docs/systems.json | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| docs/systems/agents.md | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| docs/systems/app-voice.md | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| docs/systems/hub-web.md | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| docs/systems/qc.md | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| docs/systems/shared-web.md | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| handoff/tasks/help-per-app-1123.md | updated | doing | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| main_python/api_index.json | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| main_python/extensions.py | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| main_python/hub_api_help.py | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| main_python/main.py | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| main_python/web/help.html | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| main_python/web/help/index.template.html | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| main_python/web/help/parts/apps.js | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| main_python/web/help/parts/search.js | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| main_python/web/help/parts/topics.js | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| main_python/web/help/parts/voice.html | updated | removed | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| tools/registry.py | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
-| tools/web_build.json | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| apps/all-jao/help/en.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/all-jao/help/help.json | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/all-jao/help/ja.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/all-jao/help/th.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/all-jao/help/zh.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/camera/help/en.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/camera/help/help.json | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/camera/help/ja.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/camera/help/th.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/camera/help/zh.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/faces/help/en.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/faces/help/help.json | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/faces/help/ja.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/faces/help/th.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/faces/help/zh.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/gacha/help/en.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/gacha/help/help.json | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/gacha/help/ja.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/gacha/help/th.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/gacha/help/zh.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/photobooth/app.json | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/photobooth/help/en.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/photobooth/help/help.json | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/photobooth/help/ja.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/photobooth/help/th.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/photobooth/help/zh.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/studio/help/en.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/studio/help/help.json | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/studio/help/ja.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/studio/help/th.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/studio/help/zh.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/tv/help/en.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/tv/help/help.json | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/tv/help/ja.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/tv/help/th.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/tv/help/zh.html | added | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| apps/voice/help/en.html | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| apps/voice/help/help.json | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| apps/voice/help/ja.html | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| apps/voice/help/th.html | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| apps/voice/help/zh.html | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| docs/help_map.json | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| docs/HUB_API.md | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| docs/systems.json | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| docs/systems/agents.md | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| docs/systems/app-camera.md | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| docs/systems/app-faces.md | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| docs/systems/app-gacha.md | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| docs/systems/app-small.md | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| docs/systems/app-voice.md | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| docs/systems/hub-web.md | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| docs/systems/qc.md | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| docs/systems/shared-web.md | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| docs/systems/studio.md | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| handoff/tasks/help-per-app-1123.md | updated | doing | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| main_python/api_index.json | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| main_python/extensions.py | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| main_python/hub_api_help.py | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| main_python/main.py | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| main_python/web/help.html | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| main_python/web/help/index.template.html | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| main_python/web/help/parts/all-jao.html | updated | removed | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| main_python/web/help/parts/apps.js | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| main_python/web/help/parts/bytask.html | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| main_python/web/help/parts/camera.html | updated | removed | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| main_python/web/help/parts/faces.html | updated | removed | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| main_python/web/help/parts/gacha.html | updated | removed | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| main_python/web/help/parts/search.js | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| main_python/web/help/parts/studio.html | updated | removed | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| main_python/web/help/parts/topics.js | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| main_python/web/help/parts/tv.html | updated | removed | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| main_python/web/help/parts/voice.html | earlier checkpoint | removed | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| shared/web/lang/help/ja.json | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| shared/web/lang/help/th.json | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| shared/web/lang/help/zh.json | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| tools/help_drift.py | updated | written | Edge four-language app navigation and drift passed; image and full QC pending | this checkpoint |
+| tools/registry.py | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |
+| tools/web_build.json | earlier checkpoint | written | Edge four-language app navigation and drift passed; image and full QC pending | ff0a002 |

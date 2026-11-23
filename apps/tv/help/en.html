@@ -1,0 +1,95 @@
+<!-- ===================== TV REMOTE ===================== -->
+<section id="tv">
+<p><b>Old TV / browser:</b> The Home, Studio, Voice and other pages are built to run on an older Chrome / Android WebView (about Chrome 75 and above). The hub sends an older script (converted at build time) to a browser older than Chrome 80 by itself, so the TV side needs no extra work. Features an old browser lacks are filled in automatically. If it still does not open, a red bar says in plain words that the browser is too old: update Chrome or Android System WebView, or open it on a newer computer or phone. If the 3D page does not work on a machine whose graphics card does not support it, Studio still lets you use the sliders and the timeline.</p>
+  <div class="shead">
+    <span class="where tech">code/apps/tv · served at /tv, /monitor, and /app/tv/</span>
+    <h2>📺 TV Remote &amp; Monitor — a control screen for smart TVs and phones</h2>
+    <p>A very thin control and status web page (a thin client), designed around a centralised server. This page has no 3D renderer. How fast the status shows depends on the network and the device used.</p>
+  </div>
+  <p class="mini">When the tab is hidden, this page pauses asking for status and checks again when the tab is opened. If the browser does not let it remember the mode, the page still opens, choosing the mode by the screen size.</p>
+
+  <!-- SECTION 1: REMOTE CONTROLS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Point 1: the main control buttons and the move player (Remote &amp; Sequence Launcher)</b>
+      <span class="info-badge">Remote Buttons</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" src="/docs/shots/tv-controls-box.png" alt="TV Controls Box" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 50%;" title="1. Restart selected / Stop / Home buttons">1</div>
+      <div class="callout-pin" style="top: 55%; left: 50%;" title="2. Sequence selection list">2</div>
+      <div class="callout-pin" style="top: 80%; left: 50%;" title="3. Quick Speech and Mute all speech buttons">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> Main control buttons (Restart selected, Stop, Home)</div>
+        <div class="action-step"><b>How to set it:</b> Press the large touch buttons on the screen, or press them with the TV remote</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          • <b>Restart selected:</b> Restarts the clip last chosen from the beginning; a clip must be chosen first.<br>
+          • <b>Stop:</b> Stops the show the hub is playing.<br>
+          • <b>Home:</b> Stops the show, then sends HOME to the chosen Nong. It uses the pose the board saved and does not set every joint to 90°.<br>
+          • <b>Mute all speech:</b> The small button in the quick speech box immediately stops all speech currently playing.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> Move list (Sequence Launcher)</div>
+        <div class="action-step"><b>How to set it:</b> Choose a Nong from the Robot list, then press a clip-name button; if there are several machines you must choose the target first.</div>
+        <div class="action-impact"><b>What changes on the robot:</b>
+          The system pulls motion files from the central Hub (<code>/api/list?kind=sequences</code>) and immediately triggers that motion sequence on the robot. Backstage staff can easily select shows from their mobile phones.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: JOINT GAUGES -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Point 2: the 10 servo joint angle gauges (10-Joint Monitor Gauges)</b>
+      <span class="info-badge">Joint Gauges</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" src="/docs/shots/tv-gauges-box.png" alt="TV Gauges Box" class="info-img">
+      <div class="callout-pin" style="top: 50%; left: 25%;" title="1. Left arm angle gauge">1</div>
+      <div class="callout-pin" style="top: 50%; left: 75%;" title="2. Right arm and waist angle gauge">2</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> CSS Light Gauges</div>
+        <div class="action-step"><b>How to set it:</b> Watch the blue-green level bars that move with the servo's real angle.</div>
+        <div class="action-impact"><b>How the system works:</b>
+          It shows the real position of all 10 servos with light CSS gauges, updating every 200 ms without loading the TV's GPU or CPU.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="f"><h3>Decoupled architecture: how does it stop the TV freezing?</h3>
+    <p>In the old architecture, opening a 3D page (Three.js) in the web browser of a smart TV or an older phone made the browser compile WebGL shaders and run a calculation loop 60 times a second, which a smart TV's processor is not designed for, so the TV browser closed itself or the machine froze.</p></div>
+  <!-- SECTION 3: DUAL-MODE CONTROLLER -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Point 3: switching between the two modes (Mobile Remote vs Stage Display)</b>
+      <span class="info-badge">Dual-Mode</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> 📱 Mobile Controller mode</div>
+        <div class="action-step"><b>How to use:</b> Good for staff or the person driving the robot, holding a smartphone.</div>
+        <div class="action-impact"><b>What it can do:</b>
+          Extra-large touch buttons, easy to press with a thumb. It has an emergency stop button ⏹ STOP, the 🏠 HOME start pose, large touch move tiles, and a quick button for a greeting, while hiding the technical servo information to save screen space.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> 📺 10-foot stage display mode</div>
+        <div class="action-step"><b>How to use:</b> Shown on a large TV screen on the stage for the audience and the organisers.</div>
+        <div class="action-impact"><b>What it can do:</b>
+          Shows the current show's name (Now Playing) and the progress bar in extra-large text, clearly visible from 3-5 metres, with the 🟢 PLAYING status.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>If playing, stopping or speaking fails, a message appears under the top bar. HOME is sent on only after the stop was answered successfully and the robot confirmed STOP with no error. If stopping the earlier job fails, the system still tries to send STOP to the chosen robot and reports the combined result. Pressing Stop or changing the robot while the list is loading cancels a start that is still waiting, including a play or HOME request already sent that reaches the hub late. The text you typed stays if speaking fails.</p>
+  <p>The Refresh button shows "Refreshing…" while loading, then says the time of the last update, or that it cannot reach the hub.</p>
+
+</section>

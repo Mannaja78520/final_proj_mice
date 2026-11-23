@@ -2,7 +2,7 @@
 // elements, so installed HTML cannot run Hub actions or load external resources.
 class HelpApps {
   constructor() {
-    this.placeholder = document.getElementById("appHelp");
+    this.tasks = document.getElementById("installedHelpLinks");
     this.status = document.getElementById("appHelpStatus");
     this.shots = [];
     this.tags = new Set(("section h2 h3 h4 h5 p div span a img figure figcaption " +
@@ -12,7 +12,9 @@ class HelpApps {
 
   safeCopy(node, context) {
     if (node.nodeType === Node.TEXT_NODE) return document.createTextNode(node.data);
-    if (node.nodeType !== Node.ELEMENT_NODE || !this.tags.has(node.localName)) return null;
+    if (node.nodeType !== Node.ELEMENT_NODE) return null;
+    if (node.namespaceURI === "http://www.w3.org/2000/svg") return this.safeSvg(node, context);
+    if (!this.tags.has(node.localName)) return null;
     var copy = document.createElement(node.localName);
     ["class", "title", "alt", "colspan", "rowspan", "scope"].forEach(function(attr) {
       if (node.hasAttribute(attr)) copy.setAttribute(attr, node.getAttribute(attr));
@@ -41,6 +43,39 @@ class HelpApps {
       if (safe) copy.appendChild(safe);
     }
     return copy;
+  }
+
+  safeSvg(node, context) {
+    if (!["svg", "g", "title", "desc", "circle", "rect", "text"].includes(node.localName)) return null;
+    var copy = document.createElementNS(node.namespaceURI, node.localName);
+    var numeric = ["viewBox", "stroke-width", "cx", "cy", "r", "x", "y",
+      "width", "height", "rx", "font-size", "font-weight"];
+    numeric.forEach(function(attr) {
+      var val = node.getAttribute(attr);
+      if (val && /^[-0-9. ]+$/.test(val)) copy.setAttribute(attr, val);
+    });
+    ["fill", "stroke"].forEach(function(attr) {
+      var val = node.getAttribute(attr);
+      if (val && /^(none|currentColor|var\(--[a-z-]+\))$/.test(val)) copy.setAttribute(attr, val);
+    });
+    if (node.getAttribute("text-anchor") === "middle") copy.setAttribute("text-anchor", "middle");
+    if (node.localName === "svg") copy.setAttribute("role", "img");
+    for (var child of node.childNodes) {
+      if (child.nodeType !== Node.TEXT_NODE && child.namespaceURI !== node.namespaceURI) continue;
+      var safe = this.safeCopy(child, context);
+      if (safe) copy.appendChild(safe);
+    }
+    return copy;
+  }
+
+  addTask(app, lang) {
+    var li = document.createElement("li");
+    var link = document.createElement("a");
+    link.href = "#" + app.anchor;
+    link.textContent = app.title[lang];
+    li.append(link, document.createTextNode(" — " + app.summary[lang]));
+    this.tasks.appendChild(li);
+    this.tasks.parentNode.hidden = false;
   }
 
   updateShots() {
@@ -91,7 +126,9 @@ class HelpApps {
         var section = sections[i], group = groups.find(g => g.id === app.group);
         if (!section || !group) { this.status.hidden = false; return; }
         if (document.getElementById(app.anchor)) return;
-        this.placeholder.parentNode.insertBefore(section, this.placeholder);
+        var slot = document.querySelector('[data-help-group="' + group.id + '"]');
+        slot.parentNode.insertBefore(section, slot);
+        this.addTask(app, lang);
         group.topics.push([app.anchor, app.title[lang]]);
       });
       this.updateShots();

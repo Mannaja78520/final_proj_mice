@@ -1,0 +1,46 @@
+<!-- ===================== ALL-JAO ===================== -->
+<section id="all-jao">
+  <div class="shead">
+    <span class="where tech">code/apps/all-jao · served at /app/all-jao/</span>
+    <h2>🎮 All-Jao Games — ミニゲームと景品の自動プレゼント</h2>
+    <p>イベント運営用のミニゲーム集です。ゲームの数や種類は、友人が今後追加するにつれて変わります（現在は例としてクレーンゲーム、カードの神経衰弱、クイズ、ルーレット）。Mice Hubサーバーと連携し、景品を自動で出すガチャ機に結び付いています。</p>
+  </div>
+
+  <!-- SECTION 1: MINI-GAMES SUITE -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ポイント 1：イベント用ミニゲーム 4 種（ミニゲームスイート）</b>
+      <span class="info-badge">ミニゲーム</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" src="/docs/shots/all-jao-games-box.png" alt="All-Jao Games Suite" class="info-img">
+      <div class="callout-pin" style="top: 50%; left: 15%;" title="1. 🕹️ Claw Machine（クレーンゲーム）">1</div>
+      <div class="callout-pin" style="top: 50%; left: 38%;" title="2. 🃏 Matching Game（神経衰弱カード合わせ）">2</div>
+      <div class="callout-pin" style="top: 50%; left: 62%;" title="3. ❓ Quiz Game（クイズ大会）">3</div>
+      <div class="callout-pin" style="top: 50%; left: 85%;" title="4. 🎡 Lucky Wheel（ルーレット）">4</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> クレーンとルーレットのゲーム</div>
+        <div class="action-step"><b>設定方法：</b> プレイボタンを押します。プレイヤーはクレーンのアームを操作したり、ラッキールーレットを回したりできます。</div>
+        <div class="action-impact"><b>何が変わるか：</b>
+          ぬいぐるみが取れたりルーレットが景品の目に止まったりすると、システムがハブにイベント信号を送り、ガチャマシンに景品のカプセルを出させます。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> 神経衰弱とクイズのゲーム</div>
+        <div class="action-step"><b>設定方法：</b> プレイヤーは記憶力を試したり、決められた時間内に質問に答えたりします。</div>
+        <div class="action-impact"><b>何が変わるか：</b>
+          ステージをクリアすると、Nong ロボットが喜ぶ動きをして、スピーカーからお祝いの言葉を話します。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="f"><h3>このPCではハブへのログインは不要<span class="tag t-new">新</span></h3>
+    <p>ゲームには独自のログインがあるので、Mice を動かしている PC で開いても何も聞かれません。ネットワーク上の別の端末から開くときは、会場の WiFi にいる誰もこの PC でプログラムを始められないよう、ハブが先にログインを求めます。</p></div>
+  <div class="f"><h3>勝てば本物の景品<span class="tag t-new">新</span></h3>
+    <p>ハブの中で遊ぶと、ルーレット、クレーン、クイズ、神経衰弱での勝ちで景品マシンが景品を出し、プレイヤーにどこで受け取るかを知らせます。どの結果で何がもらえるかは、次で設定します： <a href="#gacha">景品マシン</a> ▸ 景品を渡すゲーム。クイズでは次を入力します： <b>スコア（下限）</b>
+       得点がこの値以上のときだけ景品を渡します（終わったクイズの各ラウンドは勝ちの結果として数えます。数字か 80% のようなパーセントで書きます。ゲームは自分の最高点を知っているので、問題を増やしても直す必要はありません。「もう一度」と書かれたルーレットの区画は景品を出しません）。ルーレットやクレーンのゲームで入力したプレイヤー名は、1 人あたりの上限に使われます。ゲームはデータを自分の小さなサーバー（ハブが「開く」ボタンで起動する Node）に保存します。勝ちが景品マシンに届くよう、ハブ経由で遊んでください。</p></div>
+  <p>ゲームを開くボタンは、準備の確認より先にタブを開くので、ネットワークを待った後でブラウザーにブロックされることがありません。タブが開けないときは、ポップアップを許可してからもう一度押してください。</p>
+</section>

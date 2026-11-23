@@ -10,10 +10,10 @@
   <div class="info-box">
     <div class="info-header">
       <b>จุดที่ 1: กล่องแสดงภาพสดจากกล้อง ESP32-CAM (Live Stream &amp; Relay)</b>
-      <span class="info-badge">Live Stream</span>
+      <span class="info-badge">ภาพสด</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/camera-preview-box.png" alt="Camera Live Stream Box" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/camera-preview-box.png" alt="แผงภาพสดจากกล้อง" class="info-img">
       <div class="callout-pin" style="top: 40%; left: 50%;" title="1. กล่องแสดงภาพสด">1</div>
       <div class="callout-pin" style="top: 85%; left: 50%;" title="2. สถานะการเชื่อมต่อ WiFi">2</div>
     </div>
@@ -39,10 +39,10 @@
   <div class="info-box">
     <div class="info-header">
       <b>จุดที่ 2: การปรับเซนเซอร์ภาพ (Exposure, Gain, Brightness, Contrast)</b>
-      <span class="info-badge">Sensor Tuning</span>
+      <span class="info-badge">ปรับเซนเซอร์</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/camera-tuning-box.png" alt="Camera Tuning Box" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/camera-tuning-box.png" alt="แผงปรับภาพกล้อง" class="info-img">
       <div class="callout-pin" style="top: 30%; left: 40%;" title="1. สไลเดอร์ Brightness / Contrast">1</div>
       <div class="callout-pin" style="top: 60%; left: 40%;" title="2. สวิตช์ Auto vs Manual Exposure">2</div>
       <div class="callout-pin" style="top: 85%; left: 40%;" title="3. สมดุลสีขาว White Balance">3</div>
@@ -65,25 +65,11 @@
     </div>
   </div>
 
-  <h3>Which camera board is this?</h3>
-  <p>The module works out its own camera board at power-on: it tries each known
-     wiring until the sensor answers, so a clone nobody can name usually just
-     works. Classic ESP32-CAM boards (AI-Thinker, ESP-EYE, M5Stack, TTGO
-     T-Journal, WROVER) and ESP32-S3 boards (Freenove / ESP32-S3-EYE, XIAO S3
-     Sense, FireBeetle S3, S3-CAM) are covered, with the OV2640, OV3660 and
-     OV5640 sensors. An S3 board needs the S3 firmware build; the classic and S3
-     builds only try boards of their own chip. If you know the board, choose it by
-     hand with <code>CAM BOARD &lt;name&gt;</code> (or <code>CAM BOARD AUTO</code>) and
-     restart the module. Pin maps for the S3, WROVER and T-Journal boards are
-     from the makers' tables and have not been tried on real boards yet.</p>
+  <h3>นี่คือบอร์ดกล้องรุ่นไหน</h3>
+  <p>โมดูลตรวจหาบอร์ดกล้องของตัวเองตอนเปิดเครื่อง โดยลองรูปแบบการต่อสายที่รู้จักทีละแบบจนกว่าเซ็นเซอร์จะตอบกลับ บอร์ดเลียนแบบที่ไม่ทราบรุ่นจึงมักใช้งานได้ทันที รองรับบอร์ด ESP32-CAM รุ่นดั้งเดิม (AI-Thinker, ESP-EYE, M5Stack, TTGO T-Journal, WROVER) และบอร์ด ESP32-S3 (Freenove / ESP32-S3-EYE, XIAO S3 Sense, FireBeetle S3, S3-CAM) ที่ใช้เซ็นเซอร์ OV2640, OV3660 และ OV5640 บอร์ด S3 ต้องใช้เฟิร์มแวร์รุ่น S3 โดยเฟิร์มแวร์รุ่นดั้งเดิมและรุ่น S3 จะลองเฉพาะบอร์ดที่ใช้ชิปตรงกับรุ่นของตัวเอง หากทราบรุ่นบอร์ด คุณเลือกเองได้ด้วย <code>CAM BOARD &lt;name&gt;</code> (or <code>CAM BOARD AUTO</code>) แล้วรีสตาร์ตโมดูล ผังขาของบอร์ด S3, WROVER และ T-Journal อ้างอิงจากตารางของผู้ผลิต และยังไม่ได้ทดสอบกับบอร์ดจริง</p>
 
-  <h3>Several people can watch at once</h3>
-  <p>The board itself can only be read by one thing at a time, and that is the
-     hardware rather than a limit anybody chose: it has a single frame buffer,
-     and taking a frame reclaims the one already on loan, so two streams would
-     tear each other's pictures. The hub therefore holds <b>one</b> connection
-     to each camera and feeds every viewer from it. Open this page on as many
-     screens as you like.</p>
+  <h3>หลายคนดูพร้อมกันได้</h3>
+  <p>ตัวบอร์ดเองถูกอ่านได้ทีละอย่างเท่านั้น และนั่นเป็นข้อจำกัดของฮาร์ดแวร์ ไม่ใช่ที่ใครเลือกไว้: มันมีเฟรมบัฟเฟอร์เดียว และการเอาเฟรมจะเรียกคืนเฟรมที่ให้ยืมไปแล้ว สองสตรีมจึงจะฉีกภาพของกันและกัน Hub จึงถือ <b>หนึ่ง</b> การเชื่อมต่อต่อกล้องแต่ละตัว แล้วป้อนผู้ชมทุกคนจากมัน เปิดหน้านี้บนกี่จอก็ได้</p>
   <p>เมื่อการค้นหาล้มเหลว จะแจ้งให้กด Look again แทนการบอกว่าไม่มีกล้อง ข้อมูลที่เก็บไว้จะระบุว่าอาจเก่า; หากค้นหาได้บางส่วน อาจมีกล้องที่ยังไม่แสดง</p>
 
   <h3>เพิ่มกล้องที่ไม่ใช่บอร์ด ESP32</h3>

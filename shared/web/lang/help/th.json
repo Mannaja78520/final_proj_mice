@@ -1,6 +1,8 @@
 {
  "name": "th",
  "strings": {
+  "Some app guides could not load. Reload this page to try again.": "โหลดคู่มือบางแอปไม่ได้ โหลดหน้านี้ใหม่เพื่อลองอีกครั้ง",
+  "Use an installed app": "ใช้แอปที่ติดตั้งไว้",
   "AI Watch:": "AI Watch:",
   "Finds modules on its own": "ค้นหาโมดูลเองอัตโนมัติ",
   "Parallel scan of the whole local subnet, plus every COM port on the PC. Bluetooth phantom ports are recognised from the device type and skipped instead of being probed — they hang for ~40 s if opened.": "สแกนซับเน็ตทั้งหมดพร้อมกัน รวมถึงพอร์ต COM ทุกพอร์ตบนเครื่อง พอร์ตบลูทูธผีจะถูกรู้จากชนิดอุปกรณ์และข้าม ไม่ลองเปิด เพราะการเปิดจะค้างราว 40 วินาที",

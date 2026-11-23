@@ -49,6 +49,11 @@ class AppHelp:
             if folder:
                 roots.insert(0, Path(folder) / "help")
             for root in roots:
+                try:
+                    if root.resolve().parent != root.parent.resolve():
+                        continue
+                except (OSError, RuntimeError):
+                    continue
                 meta = self.read(root, anchor)
                 if meta:
                     found[app_id] = (root, dict(meta, id=app_id))

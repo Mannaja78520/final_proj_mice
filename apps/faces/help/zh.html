@@ -1,0 +1,49 @@
+<section id="faces">
+  <div class="shead">
+    <span class="where tech">code/apps/faces · /app/faces/</span>
+    <h2>👋 FaceReg / Reconize——人脸与问候</h2>
+    <p>打开人脸程序，确认机器人能接收其数据，然后设置遇到人时它说什么、做什么。</p>
+  </div>
+  <div class="f">
+    <h3>选择适合工作的页面</h3>
+    <p><a href="/app/faces/">打开 Mice 的 Reconize 页面</a> 此页面有 3 个标签页。人脸管理程序通过“打开 Reconize”按钮打开。</p>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th>你想做什么</th><th>选择标签页</th><th>怎么做 / 结果</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap2">打开人脸程序</td><td>打开它</td><td>按“打开 Reconize”来打开程序。用“检查是否在运行”查看程序是否已经运行。</td></tr>
+      <tr><td class="wrap2">检查机器人是否在接收数据</td><td>设备是否正在跟随它？</td><td>查看数据跟随器的状态。如果尚未启动，会有“开始跟随 Reconize”按钮。</td></tr>
+      <tr><td class="wrap2">更改问候语和动作</td><td>设备说的话</td><td>设置话语、说话者、两次问候之间的间隔以及每个摄像头的行为，然后按保存。</td></tr>
+    </tbody>
+  </table></div>
+  <div class="info-box">
+    <div class="info-header"><b>1. 开启问候并选择说话者</b></div>
+    <p>在 <b>设备说的话</b> 打开 <b>问候人脸应用看到的人</b> 然后选择 <b>说话者</b> 决定声音从哪里发出</p>
+    <p>中的输入框 <b>名字前的礼貌用语</b> 是放在名字前面的称呼，而 <b>如果设备正在说话或播放</b> 选择 <b>跳过这次问候</b> 表示跳过，或选 <b>排队等候</b> 表示等待</p>
+  </div>
+  <div class="info-box">
+    <div class="info-header"><b>2. 写下问候语并设置重复问候的间隔</b></div>
+    <p>在以下位置设置时间 <b>对同一个人最多每隔以下时间问候一次</b> 单位为分钟；对尚未认识的人，则是每个摄像头多少秒</p>
+    <p>在以下部分 <b>当他们到来时</b> 和 <b>当他们离开时</b> 分别写下首次到来的人、再次回来的人和尚未认识的人的话语。</p>
+    <p><code>{title}</code> 代替称谓，并用 <code>{name}</code> 代替姓名。对于尚不认识且没有名字的人，请使用通用问候语，例如“您好，欢迎光临！”</p>
+  </div>
+  <div class="info-box">
+    <div class="info-header"><b>3. 选择每个摄像头的行为和动作</b></div>
+    <p>在以下部分 <b>摄像头</b> 选择该摄像头在看到人时是否问候（<b>问候</b>），道别（<b>道别</b>），或只统计人数（<b>只统计</b>)</p>
+    <p>选择 <b>动作</b> 以及该摄像头的以下栏位中的机器人 <b>on</b> 。动作列表来自真实保存的文件。如果只想要说话，请选择 <b>无</b></p>
+    <p>如果摄像头还没有出现，请使用 <b>按名称添加摄像头</b> 摄像头名称必须与人脸程序发送的数据一致。</p>
+  </div>
+  <div class="f">
+    <h3>保存并检查结果</h3>
+    <p>按 <b>保存</b> 在底部，并等待确认已保存的消息。更改会在系统下次遇到符合条件的人时生效。 <b>撤销我的更改</b> 重新加载已保存的数值。</p>
+    <p>如果想在人数达到设定数量时进行播报，请使用 <b>庆祝</b> 针对特定人的称呼在 <b>特定人的称呼</b></p>
+  </div>
+  <p class="tech">外部程序的地址从 config/partners.json 读取。</p>
+  <div class="info-box">
+    <div class="info-header"><b>4. 颜色与动态主题继承（通用动态主题同步）</b></div>
+    <p>Reconize 页面会自动通过以下方式继承中央 Hub 的配色主题： <code>MiceThemeManager</code> （如 Midnight 深色模式）不会强制显示刺眼的纯白背景，也不会闪烁变色。当用户在 Hub 中切换主题时，所有标签页和应用都会实时自动同步配色。</p>
+  </div>
+
+  <p>如果人脸应用（Reconize）中途停止发送画面，此页面会显示“正在自动重新连接”，并让你检查 Reconize 是否仍在运行。助手会自行尝试重新连接，无需你按任何按钮。</p>
+
+</section>

@@ -1,0 +1,128 @@
+<section id="gacha">
+  <p>Settings can be saved while the system reads the prize state, including prizes from Voice. The files are read and saved in order so the full set of settings is kept, and the game list is read from the settings without waiting for an outside server to be checked.</p>
+  <div class="shead">
+    <span class="where tech">code/apps/gacha · /app/gacha/ · firmware type gacha</span>
+    <h2>🎁 Give prizes — Prize machines</h2>
+    <p>Set up the machines and the kinds of prize, set the event's rules, then give prizes and look at the history.</p>
+  </div>
+  <p><b>Save and open the event:</b> Check the machine names and the preset's tables before you press start. The system closes the event while saving, and opens it only when everything is saved and every machine has confirmed. If any step fails, the screen says where it went wrong and does not report that it is ready to give prizes. Pressing start again while saving does not send the event twice. The remove button keeps your edits to the other rows before deleting the chosen row.</p>
+  <div class="f">
+    <h3>Where to start</h3>
+    <p><a href="/app/gacha/">Open the prize system</a> then choose a tab for the job. The English names below match the names on the screen.</p>
+    <p>If you do not see the tabs and the status stays at <b>checking…</b> the app page has not loaded yet, so you cannot follow the next steps.</p>
+  </div>
+    <div class="info-box">
+    <div class="info-header">
+      <b>⚡ Quick event presets</b>
+      <span class="info-badge">1-Click Setup</span>
+    </div>
+    <p>For event organisers who want to start straight away without setting up the tables themselves, press one of the 3 presets at the top of the gachapon page:</p>
+    <ul>
+      <li><b>🎁 General event (Standard Giveaway):</b> 1 gachapon machine (50 keychains, 100 stickers in reserve), limited to 1 per person</li>
+      <li><b>🍀 Unlimited luck / game booth (Unlimited Fun):</b> 2 lucky machines A/B (200 sweets and 50 souvenirs), play as many times per person as you like</li>
+      <li><b>🏆 VIP grand prize (VIP &amp; Limited Event):</b> A gold machine with 10 grand prizes (1 chance each) + a consolation prize machine with 80 (2 chances each)</li>
+    </ul>
+    <p class="mini">When you press a preset, the system fills in the machine names, prize codes and rules at once. The organiser only edits the prize names to match the real ones, then presses <b>Save</b> in each table to start straight away</p>
+  </div>
+
+  <div class="scroll"><table>
+    <thead><tr><th>What do you want to do</th><th>Choose the tab</th><th>How to do it / what you get</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap2">Prepare the machines and the items</td><td>Machines and kinds</td><td>Set the machines, the kinds of prize and how many items are loaded. Save before you start giving.</td></tr>
+      <tr><td class="wrap2">Set who can receive</td><td>Rules</td><td>Set the event's total and the number per person, by kind of prize, or set it for specific people.</td></tr>
+      <tr><td class="wrap2">Give to participants</td><td>Give a prize</td><td>Select the recipient Kind and Machine, then click "Can they have one?" to check eligibility or "Give" to dispense.</td></tr>
+      <tr><td class="wrap2">See who has already been given something</td><td>Prizes given</td><td>See the history of what was given and how many went out.</td></tr>
+      <tr><td class="wrap2">Use the rules from a sheet</td><td>Google Sheet</td><td>Paste the sheet link and follow the setup steps in this tab. To write back to the sheet you also have to set up the writing part.</td></tr>
+      <tr><td class="wrap2">Let a game or a voice command give prizes</td><td>Games and Voice</td><td>Set which games or question topics may ask for a prize (a quiz can have a minimum score in Score from).</td></tr>
+      <tr><td class="wrap2">Connect other apps</td><td>Other apps</td><td>Set the connection of apps that ask for a prize.</td></tr>
+      <tr><td class="wrap2">Change the wording</td><td>Words</td><td>Edit the text used in giving prizes and announcing results.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="f">
+    <h3>Give something once</h3>
+    <ol>
+      <li>in <b>Give a prize</b> Choose <b>Kind</b> to match what you prepared</li>
+      <li>Give the recipient's name, or choose <b>the person in front of the camera</b> to use the person the face system sees</li>
+      <li>Choose <b>Machine</b> or let the system choose a machine that has that kind of item</li>
+      <li>Press <b>Check if this guest can win</b> to check eligibility first, then press <b>Give</b> when you want to really give it</li>
+      <li>Press <b>Start a new event and reset counts</b> to start a new session and reset counters for all machines (the system always asks for confirmation first)</li>
+    </ol>
+    <p><b>Give one anyway (admin)</b> Skips the recipient's eligibility limits and still counts the giving. Use it when you mean to go beyond the rules.</p>
+  </div>
+  <div class="f" id="gacha-stock">
+    <h3>Two-way stock, play only and random machines</h3>
+    <p><b>Two-way stock</b> The card <b>Stock and random boxes</b> (Machines and kinds tab) shows what is really in each kind of machine, with <b>Odds</b>
+       Games or other apps can read this list at <code>/api/gacha/stock</code> or receive notifications via the webhook named <b>stock</b> (Configured in the "Tell other apps" card) In-game prizes will match real stock; out-of-stock items disappear from the list. The game sends back results with <code>item</code> to specify which type was dispensed</p>
+    <p><b>Play only</b> Counts wins and answers as before but does not turn the real machine. Set it per game in the Games table in the box <b>Play only</b>
+       or the card <b>Play only and who may ask</b> (<code>game:quiz</code>, program name, or <code>*</code> all) A single request sends <code>play_only</code> as well</p>
+    <p><b>Programs other than games</b> Request item via <code>/api/gacha/dispense</code> with the name <code>app</code> Yes. To limit which types can be requested or turn this off, enter the program name in the Programs table.</p>
+    <p><b>Random machine</b> Set <b>Mode</b> of the machine to <code>random</code> Load a mix of different items, and specify how many of each type you’re adding (<b>Put items in a random box</b>
+       &rarr; <b>Set what is in it now</b> or <b>Add these</b>) Press <b>Press random</b> The machine turns once and the system picks at random which kind comes out. The more of a kind is left, the more likely it is. The number left drops by one each time, and when it is gone you cannot press.</p>
+  </div>
+  <div class="f" id="gacha-mechanism">
+    <h3>The real mechanism: 1 Hall sensor and 4 magnets</h3>
+    <p>The receive point (Receive) and the drop point (Drop) are on the same side. The Hall sensor is fixed at the receive point only; all 4 magnets are attached to the rotating wheel. The drop side has no Hall sensor.</p>
+    <figure class="mechanism-figure">
+      <svg viewBox="0 0 680 300" role="img" aria-labelledby="gacha-mechanism-title gacha-mechanism-desc">
+        <title id="gacha-mechanism-title">4 magnets on the wheel, and a single Hall sensor at the receive point</title>
+        <desc id="gacha-mechanism-desc">The left shows the wheel with its four magnets; the right shows the receive and drop points on the same side. The Hall sensor is at Receive only; Drop has none. This diagram does not give real angles or distances.</desc>
+        <g fill="var(--card)" stroke="var(--line)" stroke-width="2">
+          <circle cx="155" cy="150" r="105"/><circle cx="155" cy="150" r="27"/>
+        </g>
+        <g fill="var(--acc-soft)" stroke="var(--acc)" stroke-width="2">
+          <circle cx="155" cy="57" r="26"/><circle cx="248" cy="150" r="26"/>
+          <circle cx="155" cy="243" r="26"/><circle cx="62" cy="150" r="26"/>
+        </g>
+        <g fill="var(--txt)" text-anchor="middle" font-size="15" font-weight="600">
+          <text x="155" y="62">M1</text><text x="248" y="155">M2</text>
+          <text x="155" y="248">M3</text><text x="62" y="155">M4</text>
+          <text x="155" y="155" font-size="12">Wheel turns</text>
+        </g>
+        <g fill="var(--card)" stroke="var(--line)" stroke-width="2">
+          <rect x="330" y="28" width="332" height="244" rx="14"/>
+          <rect x="348" y="74" width="296" height="88" rx="8"/>
+          <rect x="348" y="179" width="296" height="70" rx="8"/>
+        </g>
+        <g fill="var(--txt)" font-size="17" text-anchor="middle">
+          <text x="496" y="55" font-weight="700">Receive and drop are on the same side</text>
+          <text x="496" y="104" font-weight="700">Receive · the receive point</text>
+          <text x="496" y="140" fill="var(--acc)">● 1 Hall sensor, fixed</text>
+          <text x="496" y="207" font-weight="700">Drop · the drop point</text>
+          <text x="496" y="233">No Hall sensor</text>
+        </g>
+      </svg>
+      <figcaption>M1–M4 are the magnets that turn with the wheel. The diagram splits the parts apart to explain; it is not a layout that specifies the real position, angle or distance.</figcaption>
+    </figure>
+    <p><b>The Hall sensor says a magnet is at the receive point.</b> This signal does not measure whether the item has fallen out of the chute, and does not measure whether the wheel is exactly centred on the magnet.</p>
+  </div>
+  <div class="f">
+    <h3>Number of slots turned per giving (drop)</h3>
+    <p>This value sets how many slots the machine turns in one giving. <b>drop = 1</b> is one slot, and <b>drop = 2</b> is two slots. Choose according to the mechanism and the machine's real dispensing test.</p>
+    <p>The number of magnets alone does not tell the distance from the receive point to the drop point. So this picture cannot be used to conclude that it must be set to 1 or 2, and it does not say that 2 is used only when loading the first time.</p>
+  </div>
+  <details class="f">
+    <summary>Set up and test the machine's mechanism</summary>
+    <p>Open <b>Machines and kinds</b> then look at the machine you want. The test and tuning buttons really turn the motor, so check the area and be ready to catch the item before you use them.</p>
+    <ul>
+      <li><b>Speed and turning direction:</b> Used to set how the motor is driven.</li>
+      <li><b>Rock back-and-forth range and entering the Hall:</b> Used to adjust the stop after turning. You need to watch the real stop as well.</li>
+      <li><b>Rest time:</b> The wait after each turn</li>
+      <li><b>Number of slots / number of magnets:</b> Set to match this mechanism, which has 4 slots and 4 magnets.</li>
+      <li><b>Auto Detect / Estimate Hall Advance:</b> Estimates the distance across the Hall band. It does not measure the weight of the prize.</li>
+      <li><b>Test 1 Pocket, Test 4 Pockets / Test All Pockets:</b> Tests one slot at a time and shows the result when the machine stops. The Hall signal alone does not confirm the accuracy of the stop point or that the prize fell.</li>
+      <li><b>Drain Machine</b> (hidden under "Rarely needed" and it asks you to confirm first): used to turn the machine round to dispense everything out. Be ready to catch the items and watch it work.</li>
+    </ul>
+    <p>If the status or the buttons do not load, fix the app page first. Do not change the machine's own values to fix the screen.</p>
+    <div class="tech">
+      <p>The contract of the fix set A47-20 that must be checked together before use:</p>
+      <ul>
+        <li><code>GCALIB</code> Scans the Hall strip with a 5-second timeout, reverses for half the measured time, and checks the Hall sensor while stopped. Saves advance only on success. Acknowledges with <code>OK calibrating</code> This isn’t the final confirmation of success. See <code>G? motion_result</code> as done / jam / stopped</li>
+        <li><code>GTEST 1</code> or <code>GTEST 4</code> Test channels one by one; check <code>test_done / test_total</code> and the final result from the board</li>
+        <li><code>GNUDGE &lt;pwm&gt; &lt;ms&gt;</code> accepted when the machine is free, 1–1000 ms, runs without blocking and can be cancelled with STOP</li>
+        <li><code>GDRAIN [&lt;max&gt;]</code> no more than 999 times, and it stops when it reaches the limit, the items run out, the event is closed, it jams or STOP is pressed. The web page must have a positive stock that was counted; if the stock is not counted, a max must be given.</li>
+      </ul>
+    </div>
+  </details>
+  <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · Google Form: docs/gacha/form_sample.gs · sheet script: apps/gacha/sheet_script.gs · API: docs/gacha/README.md</p>
+  <p>The history page separates the case where there are no entries yet from the case where it could not load. When a refresh fails it keeps the old data with a message that it may be out of date. Press Refresh to try again.</p>
+</section>

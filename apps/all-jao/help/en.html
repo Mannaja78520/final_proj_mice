@@ -1,0 +1,54 @@
+<!-- ===================== ALL-JAO ===================== -->
+<section id="all-jao">
+  <div class="shead">
+    <span class="where tech">code/apps/all-jao · served at /app/all-jao/</span>
+    <h2>🎮 All-Jao Games — mini-games and automatic prize giving</h2>
+    <p>A set of mini-games for running events. The number and kinds of games can change as the friend adds more in future (for now, for example, the claw machine, card matching, a quiz and a prize wheel). It connects to the Mice Hub server and is tied to the gachapon machine that hands out prizes automatically.</p>
+  </div>
+
+  <!-- SECTION 1: MINI-GAMES SUITE -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Point 1: the 4 kinds of event mini-games (Mini-Games Suite)</b>
+      <span class="info-badge">Mini-Games</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" src="/docs/shots/all-jao-games-box.png" alt="All-Jao Games Suite" class="info-img">
+      <div class="callout-pin" style="top: 50%; left: 15%;" title="1. 🕹️ Claw Machine">1</div>
+      <div class="callout-pin" style="top: 50%; left: 38%;" title="2. 🃏 Matching Game (Card matching)">2</div>
+      <div class="callout-pin" style="top: 50%; left: 62%;" title="3. ❓ Quiz Game (Trivia for prizes)">3</div>
+      <div class="callout-pin" style="top: 50%; left: 85%;" title="4. 🎡 Lucky Wheel (Prize wheel)">4</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> Claw and wheel games (Claw &amp; Wheel)</div>
+        <div class="action-step"><b>How to set it:</b> Press the play button. Players can control the claw arm or spin the lucky wheel.</div>
+        <div class="action-impact"><b>What changes:</b>
+          When a toy is caught or the wheel lands on a prize score, the system sends an Event signal to the hub to make the gachapon machine release a prize capsule.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> Matching and quiz games (Matching &amp; Quiz)</div>
+        <div class="action-step"><b>How to set it:</b> Players test their memory or answer questions within a set time.</div>
+        <div class="action-impact"><b>What changes:</b>
+          When a level is passed, the Nong robot shows a happy move and says a word of congratulation through its speaker.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="f"><h3>No hub sign-in needed on this PC<span class="tag t-new">new</span></h3>
+    <p>The games have their own login, so opening them on the PC that runs Mice asks for
+       nothing. Opened from another device on the network, the hub asks you to sign in
+       first, so nobody on the venue WiFi can start programs on this PC.</p></div>
+  <div class="f"><h3>A win gives a real prize<span class="tag t-new">new</span></h3>
+    <p>Played inside the hub, a win in the wheel, claw, quiz or memory game can make a prize
+       machine give a prize and tells the player where to collect it. Which result gives what is
+       set on <a href="#gacha">Prize machines</a> ▸ Games that give a prize. For the quiz, fill <b>Score from</b>
+       to give a prize only from that score up (every finished quiz round counts as a win result; write a number or a percent such as 80%; the game says its top score, so more questions need no change;
+       a wheel slice that says &ldquo;try again&rdquo; never gives a prize).
+       The player's name typed in the wheel or claw game is used for the per-person limit.
+       The games now keep their data in their own small server (Node, started by the hub with the Open button);
+       play them from the hub so a win reaches the prize machines.</p></div>
+  <p>The open-game button opens the tab first, before checking readiness, so the browser does not block it after waiting for the network. If the tab cannot open, allow pop-ups and press it again.</p>
+</section>
