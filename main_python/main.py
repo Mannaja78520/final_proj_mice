@@ -299,13 +299,14 @@ def read_partners():
     return {"ok": True, "partners": cfg}
 
 
-def hub_apps(everything=False):
+def hub_apps(everything=False, *, partners=None):
     """The shipped apps plus the ones this PC added from other folders.
     Without everything: only those this PC shows (A51-2)."""
     apps = (registry.apps() if registry else []) + EXT.extra_apps()
     if everything:
         return apps
-    partners = read_partners().get("partners") or {}
+    if partners is None:
+        partners = read_partners().get("partners") or {}
     return [a for a in apps if EXT.visible(a, partners)]
 
 

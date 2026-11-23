@@ -33,11 +33,13 @@ class AppHelp:
         except (OSError, ValueError, TypeError):
             return None
 
-    def available(self):
+    def available(self, only=None):
         partners = self.hub.read_partners().get("partners") or {}
         found = {}
-        for app in self.hub.hub_apps():
+        for app in self.hub.hub_apps(partners=partners):
             app_id = app["id"]
+            if only is not None and app_id != only:
+                continue
             anchor = app.get("help") or app_id
             if not app.get("show", True) or not SLUG.fullmatch(app_id):
                 continue
@@ -86,7 +88,7 @@ class HelpRoutes:
         if method != "GET" or not path.startswith("/api/help/apps/"):
             return NOT_MINE
         app_id, _, rel = path[len("/api/help/apps/"):].partition("/")
-        match = self.app_help.available().get(app_id)
+        match = self.app_help.available(only=app_id).get(app_id)
         asset = match and self.app_help.asset(match[0], rel)
         if asset is None:
             return self.send_err("Help file not found", 404)

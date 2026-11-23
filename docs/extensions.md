@@ -82,3 +82,39 @@ this PC needs no hub login, but a web page from another site is refused. If
 no hub is installed yet, nothing breaks: the hub offers the app under
 "เจอในเครื่องนี้" when it starts, provided the app sits beside the hub's
 folder.
+
+
+## Help that ships with an app
+
+Put `help/` beside `app.json` or `mice-app.json`, even if the app serves its
+pages from another subfolder. Put these files in `help/`.
+
+- `help.json` contains `title` and `summary` objects with `th`, `en`, `zh`, and
+  `ja` strings. It also contains `group` (`start`, `use`, `build`, or `wrong`)
+  and an integer `order` for that group.
+- `th.html`, `en.html`, `zh.html`, and `ja.html` each contain one
+  `<section id="your-anchor">`. The anchor is the app manifest's `help`
+  value. It defaults to the app ID. Choose an anchor unique in Hub Help.
+- Use `<img data-shot="your-view" alt="Description of the screen">` to refer
+  to a screenshot. Put all eight variants in `img/`, such as
+  `th-light-your-view.webp` and `th-dark-your-view.webp`.
+- For a capture recipe, add `shots.json` next to the fragments. Each key is a
+  view name. Its value supplies a loopback demo Hub path (`url`), optional
+  `steps` to open the view, a `ready` selector, and an optional crop selector
+  (`clip`). Use a demo Hub and sample data. Run
+  `python tools/help_shots.py --base <demo-hub-url> --app <app-id>`
+  from the source tree with Python Playwright, Edge, and Pillow installed.
+  Review the photos and text before shipping, especially names, addresses,
+  and anything visible in a form.
+
+Hub Help loads formatted text and matching images from the guides listed by
+`GET /api/help/apps`. It uses the same installed-app visibility as Tools.
+Open or reload Help after adding or removing an app. Instructions that come
+from an installed app can use headings, lists, tables, links, and images.
+The Help reader strips interactive HTML and script.
+
+A partner may ship that same `help/` folder in its own installation. A
+complete partner guide takes priority. Hub falls back to the guide under
+`apps/<id>/help/` when the partner has no complete guide. An app with its
+own language or colors can show its actual screen and explain the difference
+in its guide.

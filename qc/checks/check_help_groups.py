@@ -5,9 +5,8 @@
 main_python/web/help/parts/topics.js (one topic at a time and Previous / Next
 are search.js, held by check_help_topics). In a real browser:
 
-  * every section of the page is named in HELP_GROUPS once (a new app's
-    section with no line there would be unreachable) and nothing names a
-    missing one;
+  * every section has one sidebar link; installed app guides also appear
+    in the task index without an entry in HELP_GROUPS;
   * a group shut by a click stays shut after a reload, the others stay open;
   * opening a topic whose group is shut opens that group again.
 """
@@ -31,6 +30,12 @@ window.addEventListener("load", async function(){
   try{
     var f = document.getElementById("h"), d = f.contentDocument, w = f.contentWindow;
     await qcWaitFor(function(){ return d.querySelector("#helpNav .grp-box"); }, 15000);
+    var sections = Array.from(d.querySelectorAll("main > section")).map(s => s.id).sort();
+    var links = Array.from(d.querySelectorAll("#helpNav a")).map(a => a.hash.slice(1)).sort();
+    await say("all", JSON.stringify(sections) === JSON.stringify(links));
+    var tasks = Array.from(d.querySelectorAll("#installedHelpLinks a")).map(a => a.hash.slice(1)).sort();
+    var apps = Array.from(d.querySelectorAll("main > section[lang]")).map(s => s.id).sort();
+    await say("apps", apps.length > 0 && JSON.stringify(tasks) === JSON.stringify(apps));
     d.querySelector('[data-grp="wrong"] .grp').click();
     await say("click", shut(d, "wrong"));
     // Only the #part would differ, so setting src would not reload: reload for real.
@@ -68,6 +73,8 @@ def run(t):
         if m.startswith("HG "):
             k, _, v = m[3:].partition("=")
             got[k] = v
+    t.ok(got.get("all") == "true", "every rendered section has exactly one grouped link", got)
+    t.ok(got.get("apps") == "true", "every visible app guide has one task index link", got)
     t.ok(got.get("click") == "true", "a click on a group's name shuts it", got)
     t.ok(got.get("kept") == "true!false", "a shut group stays shut after a reload, the others stay open", got)
     t.ok(got.get("reopen") == "false", "opening a topic in a shut group opens that group", got)

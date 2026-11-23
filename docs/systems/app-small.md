@@ -84,11 +84,12 @@ Small apps: help, All-Jao.
 
 - nothing
 
-## Checks that test it (4)
+## Checks that test it (5)
 
+- `check_app_help`
 - `check_old_browser`
 - `check_press_feedback`
 - `check_remote_scripts`
 - `check_tv_remote`
 
-Run them: `python qc/run_qc.py --no-build check_old_browser check_press_feedback check_remote_scripts check_tv_remote`
+Run them: `python qc/run_qc.py --no-build check_app_help check_old_browser check_press_feedback check_remote_scripts check_tv_remote`

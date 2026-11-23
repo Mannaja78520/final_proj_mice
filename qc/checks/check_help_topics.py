@@ -5,6 +5,8 @@ shown on the page could report no results. Exercise that behaviour, clearing,
 navigation, technical visibility, and phone overflow in the browser.
 """
 import re
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import browser
 import fake_serial
@@ -16,9 +18,9 @@ SLOW = True
 
 
 def run(t):
-    parts = F.CODE / "main_python/web/help/parts"
-    gacha = (parts / "gacha.html").read_text(encoding="utf-8")
-    faces = (parts / "faces.html").read_text(encoding="utf-8")
+    apps = F.CODE / "apps"
+    gacha = (apps / "gacha/help/th.html").read_text(encoding="utf-8")
+    faces = (apps / "faces/help/en.html").read_text(encoding="utf-8")
     t.contains(gacha, "Hall 1 ตัว", "one fixed Hall sensor is documented")
     t.contains(gacha, "ฝั่งปล่อยของไม่มี Hall", "Drop has no sensor")
     t.contains(gacha, "อยู่ด้านเดียวกัน", "Receive and Drop share the same side")
@@ -26,7 +28,8 @@ def run(t):
          "diagram distinguishes four rotating magnets")
     t.ok(not re.search(r"Hall #[1-4]|100%|180°", gacha),
          "no extra Hall sensors, guaranteed centering or assumed opposite stations", gacha[:200])
-    for app, help_text in (("gacha", gacha), ("faces", faces)):
+    gacha_en = (apps / "gacha/help/en.html").read_text(encoding="utf-8")
+    for app, help_text in (("gacha", gacha_en), ("faces", faces)):
         source = (F.CODE / "apps" / app / "index.html").read_text(encoding="utf-8")
         if app == "gacha":
             tabs = source[source.index("const TABS ="):source.index("const TAB_LOAD")]
@@ -37,7 +40,21 @@ def run(t):
             t.contains(help_text, label, app + " Help names actual tab: " + label)
     if not t.ok(browser.available(), "browser available for Help search regression", "Edge required"):
         return
-    base, _ = F.start_hub()
+    base, main = F.start_hub()
+    # This browser regression covers Reconize even on PCs without a partner install.
+    with TemporaryDirectory(prefix="mice-help-reconize-") as tmp:
+        (Path(tmp) / "installed").touch()
+        original = main._partner_templates
+        templates = original()
+        templates["reconize"].update(folder=tmp, detect=["installed"])
+        try:
+            main._partner_templates = lambda: templates
+            check_browser(t, base)
+        finally:
+            main._partner_templates = original
+
+
+def check_browser(t, base):
     fake_serial.qc_marks.clear()
     try:
         browser.raw_page('''

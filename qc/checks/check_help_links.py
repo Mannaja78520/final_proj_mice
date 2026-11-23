@@ -34,8 +34,23 @@ HELP = "main_python/web/help.html"
 def run(t):
     help_html = (F.CODE / HELP).read_text(encoding="utf-8")
     sections = set(re.findall(r'<section id="([a-z0-9-]+)"', help_html))
+    static_sections = sections.copy()
     t.ok(len(sections) >= 8, "the help page has a section per area (%d)"
          % len(sections), "found %s" % sorted(sections))
+
+    import sys
+    sys.path.insert(0, str(F.CODE / "tools"))
+    import registry
+
+    apps = registry.apps()
+    for app in apps:
+        folder = app["manifest_dir"] / "help"
+        if folder.is_dir():
+            anchor = app.get("help") or app["id"]
+            fragment = (folder / "th.html").read_text(encoding="utf-8")
+            t.ok(anchor not in sections and '<section id="%s"' % anchor in fragment,
+                 f"{app['id']} owns a unique Help anchor", anchor)
+            sections.add(anchor)
 
     # ---- every anchor in the whole project resolves -----------------
     # The silent failure this exists for: a wrong anchor shows the top of the
@@ -81,10 +96,7 @@ def run(t):
     reg = (F.CODE / "tools" / "registry.py").read_text(encoding="utf-8")
     t.contains(reg, '"help": ""',
                "an app can declare which section is about it")
-    import sys
-    sys.path.insert(0, str(F.CODE / "tools"))
-    import registry  # noqa: PLC0415
-    for a in registry.apps():
+    for a in apps:
         if a.get("help"):
             t.ok(a["help"] in sections,
                  "%s names a real help section (#%s)" % (a["id"], a["help"]),
@@ -101,7 +113,7 @@ def run(t):
     if not t.ok(idx, "there is a by-task index at the top"):
         return
     linked = set(re.findall(r'href="#([a-z0-9-]+)"', idx))
-    orphans = sorted(sections - linked - {"bytask"})
+    orphans = sorted(static_sections - linked - {"bytask"})
     t.eq(orphans, [],
          "every section is reachable from a task, not only from the order "
          "they happen to appear in")
