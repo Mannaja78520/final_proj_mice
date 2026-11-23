@@ -1,7 +1,8 @@
 # help-friend-apps-1124 — Detailed in-app Help (real screenshots) for All-Jao, Reconize, Photobooth
 Owner: codex:11240637-1d82 (Claude reviews). Branch: claude/project-thread-181856
-Updated: 2026-11-24 06:37 +0700
-Last commit: 7f8b1b3 (baseline)
+Updated: 2026-11-24 06:43 +0700
+Last commit: 2e93bdf (claim)
+Plan: system A59-1
 
 ## Goal (user, 2026-11-23 23:34, Thai)
 "Game app, Reconize: put pictures from the REAL app into their Help too. I said detailed Help, not only
@@ -50,13 +51,15 @@ person they name) uploads it. If you ever must touch it: back up first.
 5. Update this file + push a WIP commit after EVERY step. Report in Thai to the user at the end.
 
 ## Doing now
-Step 1: inspect the three running apps and record screens, languages, themes and safe test states.
+Step 2: extend capture recipes and capture native screens in isolated demo instances. Add native image resolution, Help parity and QC in the same checkpoint if needed.
 
 ## Done
 - Read handoff, task and project workflow. Clean task tree at 7f8b1b3.
 
+- Opened all three apps in Edge against scratch databases. Inventory recorded below.
+
 ## Next
-- Inventory live screens, then build the screenshot recipes.
+- Capture and view each screenshot, then write and translate its matching step.
 
 ## Blocked
 - None confirmed yet.
@@ -64,6 +67,11 @@ Step 1: inspect the three running apps and record screens, languages, themes and
 ## Facts found
 - PR #233 (merged) made per-app Help: apps/<id>/help, hub_api_help.py, check_app_help.
 - Partners are hidden when not installed: run the hub from mice_system\dist (parent folder holds Face_Regonize, All-Jao-Games).
+
+- Reconize: Login, Dashboard, People, Face Recognition, Attendees, Activities, CCTV/Camera Node, Connect, Import Participants, Upload History, Recognition History, Reports, PDPA, Event Photos, Settings, Local Video Experiment and Privacy Policy. Native English.
+- All-Jao: landing, game grid, wheel, memory, claw and quiz in game navigation. The grid changes with restored session state. Native Thai with English headings.
+- Photobooth: unpaired notice, paired Admin sign in, Event Profiles and editor, Frames, Test booth / TV, History, Statistics, Activity log, Retention and System. Native English. Need activate a dummy event for guest flow.
+- Scratch processes: backend/frontend Reconize 8000/5173, All-Jao 4173, Photobooth Dummy 8111/8113. No fake Hub or PyInstaller ran. Original app repos untouched.
 
 ## File status
 | File | Change | State | Verification | Commit |
