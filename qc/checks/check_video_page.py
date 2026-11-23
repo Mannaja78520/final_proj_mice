@@ -279,6 +279,15 @@ def _hub_half(t, base, local, links, clip, cfg_path, tmp):
                 "http://169.254.169.254/latest/", "http://[::1]/a.mp4", "http://printer.local/a.mp4"):
         j, why = strict.start(bad)
         t.ok(j is None and "internet" in why, "link %s is refused" % bad, why)
+    # a NAS on the venue LAN can be allowed by the admin; this PC and metadata never (2026-11-23)
+    lan = hub_video.Links(cfg_path, tmp / "cache")
+    lan.cfg["lanHosts"] = ["192.168.1.50", "10.0.0.0/24", "nas.local"]
+    for ok in ("http://192.168.1.50/a.mp4", "http://10.0.0.7/a.mp4"):
+        t.ok(not hub_video._is_local_host(ok.split("/")[2], lan.cfg["lanHosts"]), "listed LAN host %s is allowed" % ok)
+    for bad in ("http://192.168.1.51/a.mp4", "http://10.0.1.7/a.mp4", "http://127.0.0.1/a.mp4",
+                "http://169.254.169.254/x", "http://[::1]/x"):
+        j, why = lan.start(bad)
+        t.ok(j is None and "internet" in why, "unlisted or never-allowed %s still refused" % bad, why)
     fake.cfg["shares"] = [{"id": "qc", "label": "QC share", "match": re.escape(local) + r"share/([\w.]+)",
                            "direct": local + r"\1", "html": "SHARE IT WITH ANYONE"}]
     fake.run_ytdlp = lambda j: fake._fail(fake.jobs[j], "went to yt-dlp")

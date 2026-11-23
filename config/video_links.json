@@ -1,5 +1,7 @@
 {
   "_why": "Moves from a video, from a LINK (A44-8, user 2026-10-19: a YouTube link, Google Drive and other links). The browser cannot read the picture of a video another site plays, so the hub fetches it onto this PC (main_python/hub_video.py) and Studio reads it from the hub. For the user's own use. A new share site is one entry in shares; a new error in words is one entry in say.",
+  "lanHosts": [],
+  "_why_lan": "Links to this PC or the venue network are refused (2026-11-22 sweep: a page could aim the hub at the router). A video on a NAS or another PC is allowed by listing its name, address or network here, e.g. nas.local, 192.168.1.50, 192.168.1.0/24. Only private LAN addresses count: this PC itself and cloud-metadata addresses stay refused. Internet links and file upload are not affected (user 2026-11-23).",
   "maxMB": 800,
   "keep": 6,
   "height": 720,
