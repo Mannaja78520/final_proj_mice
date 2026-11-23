@@ -7,7 +7,10 @@ const fs = require("fs"), path = require("path");
 const base = process.argv[2], out = process.argv[3], quick = process.argv.includes("--quick");
 const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, "pages.json"), "utf8"));
 const only = (process.argv.find(a => a.startsWith("--lang=")) || "").slice(7);
-const langs = only ? [only] : quick ? ["th", "en"] : cfg.langs, themes = quick ? cfg.themes.slice(0, 1) : cfg.themes;
+const langs = only ? [only] : quick ? ["th", "en"] : cfg.langs, themes0 = quick ? cfg.themes.slice(0, 1) : cfg.themes;
+// --themes=indigo,carnival picks others than the two in pages.json (the default look is "indigo")
+const pick = (process.argv.find(a => a.startsWith("--themes=")) || "").slice(9);
+const themes = pick ? pick.split(",").map(id => ({ id })) : themes0;
 const vps = quick ? cfg.viewports.slice(0, 1) : cfg.viewports;
 const PROBE = "(function(){" + fs.readFileSync(path.join(__dirname, "probe.js"), "utf8") + "; return visualProbe(document); })()";
 (async () => {

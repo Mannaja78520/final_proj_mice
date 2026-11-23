@@ -44,6 +44,14 @@ Work in a branch off main, one PR per item, QC per CLAUDE.md (`python qc/run_qc.
 6. PC cleanup (low): E:\final_proj\mice\mice_sim_wt has a locked qemu-system-xtensa.exe; stop the QEMU processes under that folder, delete it, `git worktree prune`.
 Stop rule: max 3 rounds per item; if stuck, write the theory in this file and take the next.
 
+## Round 7 (2026-11-23): themes + simulated device cases
+- indigo/carnival old-vs-new compared by eye (Home, Modules, Studio Shows phone, Tools): redesign diffs only, no defect. `shoot.js --themes=indigo,carnival` added.
+- Simulated in cloud (Playwright, TV-like 960x540, Chrome 75 user-agent, CDP 50 KB/s + 600 ms latency): `/` loads in 3.4 s, `/tv` 6.5 s, `/studio/` 14.7 s, no sideways scroll, no page errors. A user-agent string is NOT the Chrome 75 engine.
+## Lab list (cannot be simulated)
+- Real Android TV (Chrome 75 engine) timing and remote-control focus.
+- Real cable/WiFi drop mid-play on a board; real 3D numeric check vs URDF (urdf_numeric.py on the PC).
+- Firmware module page on a real board (capability cards before the board answers), real USB/ESP32 cameras.
+
 ## Blocked
 - Real URDF check needs the PC (E:\final_proj\mice\mice_system) to run tools/visual/urdf_numeric.py with MICE model.
 - PC leftover: E:\final_proj\mice\mice_sim_wt still holds a locked qemu-system-xtensa.exe (4 QEMU processes under that folder: PIDs seen 2026-11-23 11780, 32752, 48392, 53372). The PC refused Stop-Process/Remove-Item from a remote session; close those QEMU processes, delete the folder, then `git worktree prune` in mice_system. Low priority.
