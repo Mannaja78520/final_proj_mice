@@ -2,5 +2,5 @@
 rem Starts Cameras by itself - no hub needed. Other Mice apps that are open
 rem on this PC are found automatically. Close this window to stop it.
 cd /d "%~dp0.."
-if exist MiceHub.exe (MiceHub.exe --alone camera) else (python main.py --alone camera)
+if exist ..\dist\MiceHub.exe (..\dist\MiceHub.exe --alone camera) else (python main.py --alone camera)
 pause
