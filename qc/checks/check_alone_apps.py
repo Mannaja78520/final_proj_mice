@@ -189,6 +189,12 @@ def run(t):
                 except subprocess.TimeoutExpired:
                     p.kill()
 
+    # ---- double-click starters (non-engineers do not type flags) -----------
+    r = subprocess.run([sys.executable, str(F.CODE / "tools" / "make_launchers.py"), "--check"],
+                       capture_output=True, text=True)
+    t.ok(r.returncode == 0, "every app that runs alone has a double-click starter, and no stray one",
+         r.stdout.strip())
+
     # ---- 5. a camera another program owns is read from it -----------------
     fake = tmp / "ffmpeg_fake.py"
     fake.write_text(FAKE, encoding="utf-8")
