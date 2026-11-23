@@ -1,7 +1,7 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
 Owner: codex:11232254-6f5e
-Updated: 2026-11-23T23:57+07:00
+Updated: 2026-11-24T00:00+07:00
 Branch: codex/visual-regression-1123
 Last commit: this checkpoint
 Plan: A1123-2
@@ -11,7 +11,7 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 4, finish the focused Help QC on `2a9bf08` when the shared slot clears. Case 20 found `CAM LIST` before identification on Nong/Lift. Add a camera capability guard to the module PR, document it and extend its static camera QC. Use one failed-status browser replay on Nong/Lift/Cam and one cached 12-target rebuild plus QEMU checks after the other QC slot clears.
+Item 4, verify case 20 final module PR head `6c298e1`. Use the C: cached 12-target rebuild and focused module and QEMU checks after the case 12 gate releases the shared slot. Retain the separate full-QC result at the original PR head `8fa77aa`.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
@@ -26,12 +26,13 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 | shared/web/lang/help/th.json | Thai Help guidance for items 1 and 2 | done | lang check | 51b2c93 |
 | shared/web/lang/help/zh.json | Chinese Help guidance for items 1 and 2 | done | lang check | 51b2c93 |
 | shared/web/lang/help/ja.json | Japanese Help guidance for items 1 and 2 | done | lang check and Edge phone | 51b2c93 |
-| firmware/src/web/WebUI.h | Hide capability cards until status | done | 390 px Edge delayed status with nong and lift | 8fa77aa |
-| firmware/generated/web/ModuleUI.h | Regenerate all-types module page | done | gen_tables.py; 107.1 KB; 390 px Edge passed on generated per-type pages | uncommitted (ignored) |
+| firmware/src/web/WebUI.h | Wait for status before cards and camera settings request | doing | 390 px Edge initial failure and recovery 4/4, rebuild pending | 6c298e1 |
+| firmware/generated/web/ModuleUI.h | Regenerate all-types module page | done | gen_tables.py; 107.2 KB; 390 px Edge all-types 4/4 | uncommitted (ignored) |
 | qc/checks/check_board_page_motors_first.py | Assert capability cards start hidden | done | 11 fails at baseline, 15/15 after | 8fa77aa |
 | main_python/web/help/parts/modsite.html | Document connection and control visibility | done | Help rebuilt on latest main | 8fa77aa |
 | main_python/web/help/parts/search.js | Search current Help topic text | done | private Edge replay 4/4 | 2a9bf08 |
 | qc/checks/check_help_topics.py | Guard localized and late Help text | doing | syntax passed, official focused QC pending | 2a9bf08 |
+| qc/checks/check_cam_panel.py | Assert card and settings use the same camera capability | doing | official focused QC pending | 6c298e1 |
 
 ## Facts found
 - Item 2 baseline (module-before-caps.json): on the hub at 390 px, all eight control cards appeared before JavaScript and before the first nong or lift status. After status, only the correct card remained. applyTabs() permits data-cap values other than 0, including missing.
@@ -43,6 +44,7 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 - haveRobot() in Studio means "connected to a robot", not "3D ready".
 
 ## Done
+- Item 4 case 20 follow-up pushed to module draft PR #234 at `6c298e1`. At 390 px all 4 fixtures hid controls and sent zero commands after an initial 503. Nong and Lift sent no camera command after identification. Current and legacy camera status each sent exactly one `CAM LIST` after identification. Evidence: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/case20-after.log`. Matching Help source, page and th/ja/zh packs updated.
 - Item 4 case 20 baseline: Edge 390 px with a simulated 503 kept all capability cards hidden, then showed the correct Nong or Lift card after successful reload. Both boards received one startup `CAM LIST` before identification. Treat the command count as the assertion and ignore the probe's stale footer. Private log: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/case20-wire.log`.
 - Item 4 case 12 commit `2a9bf08` searches current topic text and omits Previous/Next captions from matches. The same private Edge component replay passed 4/4 after the patch, including the normal empty result. Language catalog check and Help generation passed. Help source, page and th/ja/zh pack variants are also at `2a9bf08`. Evidence: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/after-navigator.log`.
 - Item 4 case 12 baseline: Edge 390 px found the displayed Module website title in all four languages, then failed to match the same title after a controlled late text update in all 4/4. The private fixture needed explicit navigator initialization. The existing full-QC Help topics check passed the ordinary first-load path. Evidence: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/before-navigator.log`.
