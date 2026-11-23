@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 import sys
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from urllib.request import urlopen
 
 import qc as F
@@ -135,6 +136,28 @@ def served_images(t, base):
             t.eq(response.read() == sample.read_bytes(), True, f"{prefix} serves the checked-in bytes")
 
 
+def reconize_package(t, app_help):
+    original = F.CODE / "apps/faces/help"
+    package = F.CODE / "docs/friend/reconize_help_package/help"
+
+    def contents(folder):
+        return {path.relative_to(folder): path.read_bytes()
+                for path in folder.rglob("*") if path.is_file()}
+
+    t.eq(contents(package) == contents(original), True,
+         "Reconize drop-in Help matches the installed fallback byte for byte")
+    partner = {"folder": str(package.parent)}
+    hub = SimpleNamespace(
+        read_partners=lambda: {"partners": {"reconize": partner}},
+        hub_apps=lambda **_: [{"id": "faces", "needs": "reconize", "help": "faces",
+                               "manifest_dir": original.parent}],
+    )
+    catalog = app_help.AppHelp(hub)
+    t.eq(catalog.available()["faces"][0], package, "Hub prefers the partner's drop-in Help")
+    partner.clear()
+    t.eq(catalog.available()["faces"][0], original, "Hub keeps the fallback when partner has no folder")
+
+
 def run(t):
     sys.path.insert(0, str(F.CODE / "main_python"))
     sys.path.insert(0, str(F.CODE / "tools"))
@@ -142,6 +165,7 @@ def run(t):
     import registry
 
     sources(t, hub_api_help, registry)
+    reconize_package(t, hub_api_help)
     base, _ = F.start_hub()
     _, raw = F.get(base + "/api/apps")
     shown = {a["id"] for a in json.loads(raw)["apps"]}

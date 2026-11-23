@@ -96,8 +96,13 @@ pages from another subfolder. Put these files in `help/`.
   `<section id="your-anchor">`. The anchor is the app manifest's `help`
   value. It defaults to the app ID. Choose an anchor unique in Hub Help.
 - Use `<img data-shot="your-view" alt="Description of the screen">` to refer
-  to a screenshot. Put all eight variants in `img/`, such as
+  to a screenshot. For screens that follow the Hub's language and theme, put all eight variants in `img/`, such as
   `th-light-your-view.webp` and `th-dark-your-view.webp`.
+- For screens with their own fixed language and colors, set `nativeVariant`
+  in `help.json`, for example `"en-light"`. Put one image per native view in
+  `img/`, such as `en-light-your-view.webp`. Help uses that image when the
+  selected language and theme have no matching image. Explain the app's
+  language and colors below the picture.
 - For a capture recipe, add `shots.json` next to the fragments. Each key is a
   view name. Its value supplies a loopback demo Hub path (`url`), optional
   `steps` to open the view, a `ready` selector, and an optional crop selector
@@ -106,6 +111,11 @@ pages from another subfolder. Put these files in `help/`.
   from the source tree with Python Playwright, Edge, and Pillow installed.
   Review the photos and text before shipping, especially names, addresses,
   and anything visible in a form.
+- Add `"native": true` to a recipe that shows a partner's own UI and
+  `"fixed": true` to capture only its declared `nativeVariant`.
+  For a demo app served outside Hub, set `"direct": true` and pass
+  `--native <app-id>=<loopback-demo-app-url>`. Use `--state <app-id>=<private-state.json>`
+  for an isolated signed-in session. Use `--out` to review before shipping.
 
 Hub Help loads formatted text and matching images from the guides listed by
 `GET /api/help/apps`. It uses the same installed-app visibility as Tools.
