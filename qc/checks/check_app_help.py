@@ -17,17 +17,19 @@ def shots_in(path):
     return set(re.findall(r'\bdata-shot="([a-z0-9_-]+)"', path.read_text(encoding="utf-8")))
 
 
-def full_catalog(t, folder, shots, langs):
+def full_catalog(t, folder, shots, langs, native=None):
     recipes = json.loads((folder / "shots.json").read_text(encoding="utf-8"))
     t.eq(set(recipes), shots, f"{folder.name}: each used view has a capture recipe")
     missing = []
     for shot in sorted(shots):
-        for lang in langs:
-            for mode in ("light", "dark"):
-                img = folder / "img" / f"{lang}-{mode}-{shot}.webp"
-                if not img.is_file() or img.read_bytes()[:12][8:12] != b"WEBP":
-                    missing.append(img.name)
-    t.eq(missing, [], f"{folder.name}: WebP files cover all four languages and both themes")
+        recipe = recipes.get(shot, {})
+        variants = [native] if recipe.get("fixed") else [
+            f"{lang}-{mode}" for lang in langs for mode in ("light", "dark")]
+        for variant in variants:
+            img = folder / "img" / f"{variant}-{shot}.webp"
+            if not img.is_file() or img.read_bytes()[:12][8:12] != b"WEBP":
+                missing.append(img.name)
+    t.eq(missing, [], f"{folder.name}: every required WebP variant is present")
 
 
 def sources(t, app_help, registry):
@@ -52,7 +54,7 @@ def sources(t, app_help, registry):
         t.ok(bool(refs["th"]) and all(shots == refs["th"] for shots in refs.values()),
              f"{app['id']}: every language illustrates the same steps", refs)
         by_app[app["id"]] = refs["th"]
-        full_catalog(t, folder, refs["th"], app_help.LANGS)
+        full_catalog(t, folder, refs["th"], app_help.LANGS, meta.get("nativeVariant"))
     t.ok(len(by_app) >= 8, "the eight initial app guides are covered", sorted(by_app))
 
     # A Hub gallery picture may reuse an installed app's own screenshot.
@@ -84,7 +86,7 @@ def install_round_trip(t, base, langs):
         folder = Path(tmp)
         meta = {key: dict.fromkeys(langs, words) for key, words in
                 (("title", "Example Guide"), ("summary", "Install and remove this guide"))}
-        meta.update(group="use", order=99)
+        meta.update(group="use", order=99, nativeVariant="en-light")
         (folder / "web").mkdir()
         (folder / "web/index.html").write_text("<h1>Example</h1>", encoding="utf-8")
         (folder / "mice-app.json").write_text(json.dumps(
@@ -95,6 +97,10 @@ def install_round_trip(t, base, langs):
         for lang in langs:
             (help_dir / (lang + ".html")).write_text(
                 '<section id="example-guide"><h2>' + lang + '</h2></section>', encoding="utf-8")
+        image_dir = help_dir / "img"
+        image_dir.mkdir()
+        image = next((F.CODE / "apps/voice/help/img").glob("en-light-*.webp")).read_bytes()
+        (image_dir / "en-light-demo.webp").write_bytes(image)
 
         t.ok(app_id not in app_ids(base), "uninstalled extension does not contribute a guide", app_id)
         result = F.post(base + "/api/extensions/add", json.dumps({"folder": str(folder)}).encode())
@@ -103,6 +109,8 @@ def install_round_trip(t, base, langs):
             app = app_ids(base).get(app_id, {})
             t.eq(app.get("anchor"), "example-guide", "installed extension keeps its declared anchor")
             t.eq(app.get("title"), meta["title"], "localized titles are read from extension manifest")
+            with urlopen(url + "img/ja-dark-demo.webp", timeout=10) as response:
+                t.eq(response.read() == image, True, "native picture serves in other Help variants")
             for lang in langs:
                 status, html = F.get(url + lang + ".html")
                 t.eq(status, 200, f"{lang} fragment is served from the extension's manifest folder")

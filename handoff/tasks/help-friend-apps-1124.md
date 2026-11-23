@@ -1,7 +1,7 @@
 # help-friend-apps-1124 — Detailed in-app Help (real screenshots) for All-Jao, Reconize, Photobooth
 Owner: codex:11240637-1d82 (Claude reviews). Branch: claude/project-thread-181856
-Updated: 2026-11-24 06:43 +0700
-Last commit: 2e93bdf (claim)
+Updated: 2026-11-24 06:49 +0700
+Last commit: 8998b6e (screen inventory)
 Plan: system A59-1
 
 ## Goal (user, 2026-11-23 23:34, Thai)
@@ -51,18 +51,21 @@ person they name) uploads it. If you ever must touch it: back up first.
 5. Update this file + push a WIP commit after EVERY step. Report in Thai to the user at the end.
 
 ## Doing now
-Step 2: extend capture recipes and capture native screens in isolated demo instances. Add native image resolution, Help parity and QC in the same checkpoint if needed.
+Step 3: write the four-language guides, document capture, sync the Reconize package and add parity QC.
 
 ## Done
 - Read handoff, task and project workflow. Clean task tree at 7f8b1b3.
 
 - Opened all three apps in Edge against scratch databases. Inventory recorded below.
 
+- Captured and visually inspected 44 native views using isolated data. Re-captured sensitive QR/addresses and public demo sign-in hints with those details hidden.
+- Added one-set native screenshot support with exact Hub language/theme variants retained for launcher images. Web build ran.
+
 ## Next
-- Capture and view each screenshot, then write and translate its matching step.
+- Write and translate the steps, sync the package and run the Help QC gate.
 
 ## Blocked
-- None confirmed yet.
+- Gemini review pending. Native captures ready. The expanded recipe catalog will match the text after step 3.
 
 ## Facts found
 - PR #233 (merged) made per-app Help: apps/<id>/help, hub_api_help.py, check_app_help.
@@ -71,9 +74,67 @@ Step 2: extend capture recipes and capture native screens in isolated demo insta
 - Reconize: Login, Dashboard, People, Face Recognition, Attendees, Activities, CCTV/Camera Node, Connect, Import Participants, Upload History, Recognition History, Reports, PDPA, Event Photos, Settings, Local Video Experiment and Privacy Policy. Native English.
 - All-Jao: landing, game grid, wheel, memory, claw and quiz in game navigation. The grid changes with restored session state. Native Thai with English headings.
 - Photobooth: unpaired notice, paired Admin sign in, Event Profiles and editor, Frames, Test booth / TV, History, Statistics, Activity log, Retention and System. Native English. Need activate a dummy event for guest flow.
+- All-Jao first screen, four player and four organizer views confirmed. Photobooth guest Start, Frame, Capture, Review, Decorate and QR delivery ran with synthetic camera.
 - Scratch processes: backend/frontend Reconize 8000/5173, All-Jao 4173, Photobooth Dummy 8111/8113. No fake Hub or PyInstaller ran. Original app repos untouched.
 
 ## File status
 | File | Change | State | Verification | Commit |
 |---|---|---|---|---|
-| handoff/tasks/help-friend-apps-1124.md | claim and next step | active | diff inspected | this checkpoint |
+| apps/all-jao/help/help.json | native capture and Help parity | written | not run | this checkpoint |
+| apps/all-jao/help/img/th-light-game-claw-admin.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/all-jao/help/img/th-light-game-claw.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/all-jao/help/img/th-light-game-login.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/all-jao/help/img/th-light-game-memory-admin.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/all-jao/help/img/th-light-game-memory.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/all-jao/help/img/th-light-game-quiz-admin.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/all-jao/help/img/th-light-game-quiz.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/all-jao/help/img/th-light-game-wheel-admin.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/all-jao/help/img/th-light-game-wheel.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/all-jao/help/shots.json | native capture and Help parity | written | not run | this checkpoint |
+| apps/faces/help/help.json | native capture and Help parity | written | not run | this checkpoint |
+| apps/faces/help/img/en-light-reconize-activities.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-attendees.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-cctv.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-connect.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-dashboard.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-event-photos.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-history.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-import.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-login.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-pdpa.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-people.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-privacy.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-recognition.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-reports.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-settings.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-uploads.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/img/en-light-reconize-video.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/faces/help/shots.json | native capture and Help parity | written | not run | this checkpoint |
+| apps/photobooth/help/help.json | native capture and Help parity | written | not run | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-activity.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-capture.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-choose.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-decorate.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-delivery.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-editor.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-frames.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-history.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-profiles.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-retention.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-review.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-sign-in.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-start.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-statistics.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-system.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-test.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/img/en-light-booth-unpaired.webp | captured native screen | written | seen in Edge capture | this checkpoint |
+| apps/photobooth/help/shots.json | native capture and Help parity | written | not run | this checkpoint |
+| handoff/tasks/help-friend-apps-1124.md | native capture and Help parity | written | not run | this checkpoint |
+| main_python/hub_api_help.py | native capture and Help parity | written | not run | this checkpoint |
+| main_python/web/help.html | native capture and Help parity | written | not run | this checkpoint |
+| main_python/web/help/parts/bytask.html | native capture and Help parity | written | not run | this checkpoint |
+| qc/checks/check_app_help.py | native capture and Help parity | written | not run | this checkpoint |
+| shared/web/lang/help/ja.json | native capture and Help parity | written | not run | this checkpoint |
+| shared/web/lang/help/th.json | native capture and Help parity | written | not run | this checkpoint |
+| shared/web/lang/help/zh.json | native capture and Help parity | written | not run | this checkpoint |
+| tools/help_shots.py | native capture and Help parity | written | not run | this checkpoint |

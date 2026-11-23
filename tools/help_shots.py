@@ -20,6 +20,14 @@ THEMES = {"light": "daylight", "dark": "midnight"}
 VIEWPORT = {"width": 1440, "height": 900}
 
 
+def loopback_origin(value):
+    url = urlsplit(value)
+    if (url.scheme != "http" or url.hostname not in {"127.0.0.1", "localhost"}
+            or url.username or url.password or url.path or url.query or url.fragment):
+        raise ValueError("expected an HTTP loopback origin")
+    return value
+
+
 class ShotCatalog:
     def __init__(self, root):
         self.root = root
@@ -31,18 +39,28 @@ class ShotCatalog:
 
 
 class HelpShooter:
-    def __init__(self, browser, base, out=None):
+    def __init__(self, browser, base, out=None, native=None, states=None):
         self.browser = browser
         self.base = base
         self.out = out
+        self.native = native or {}
+        self.states = states or {}
 
-    def capture(self, shot, lang, mode):
+    def capture(self, shot, lang, mode, app):
+        direct = shot.get("direct", False)
+        base = self.native.get(app) if direct else self.base
+        if not base:
+            raise RuntimeError(f"Set --native {app}=URL for its isolated demo app")
+        options = {}
+        if direct and app in self.states and not shot.get("anonymous"):
+            options["storage_state"] = self.states[app]
         with self.browser.new_context(viewport=shot.get("viewport", VIEWPORT), color_scheme=mode,
-                                      service_workers="block") as context:
-            login = context.request.post(self.base + "/api/login",
-                                         data={"password": os.environ.get("HUB_PW", "qc-test-password")})
-            if not login.ok:
-                raise RuntimeError("Demo Hub login failed")
+                                      service_workers="block", **options) as context:
+            if not direct:
+                login = context.request.post(base + "/api/login",
+                                             data={"password": os.environ.get("HUB_PW", "qc-test-password")})
+                if not login.ok:
+                    raise RuntimeError("Demo Hub login failed")
             context.add_init_script(
                 f"localStorage.setItem('mice.lang', {json.dumps(lang)});"
                 f"localStorage.setItem('mice_theme', {json.dumps(THEMES[mode])});"
@@ -51,10 +69,10 @@ class HelpShooter:
                 "style.textContent = '*,*::before,*::after{transition:none!important;animation:none!important}';"
                 "document.head.append(style); });"
             )
-            self.demo_routes(context, shot.get("responses", {}))
+            self.demo_routes(context, base, shot.get("responses", {}), direct)
             page = context.new_page()
             page.set_default_timeout(8000)
-            response = page.goto(self.base + shot["url"], wait_until="domcontentloaded")
+            response = self.go(page, base, shot["url"])
             if not response or not response.ok:
                 raise RuntimeError(f"Could not open {shot['url']}")
             if not shot.get("native"):
@@ -65,6 +83,12 @@ class HelpShooter:
             for step in shot.get("steps", []):
                 if "click" in step:
                     page.locator(step["click"]).click()
+                if "fill" in step:
+                    field = step["fill"]
+                    value = os.environ[field["env"]] if "env" in field else field["value"]
+                    page.locator(field["selector"]).fill(value)
+                if "goto" in step:
+                    self.go(page, base, step["goto"])
                 if "eval" in step:
                     page.evaluate(step["eval"])
                 if "wait" in step:
@@ -85,18 +109,24 @@ class HelpShooter:
             image.convert("RGB").save(out, "WEBP", quality=88, method=4)
         return out.getvalue()
 
-    def demo_routes(self, context, responses):
+    @staticmethod
+    def go(page, base, path):
+        if not path.startswith("/") or path.startswith("//") or "\\" in path:
+            raise RuntimeError("Screenshot routes must stay on the demo origin")
+        return page.goto(base + path, wait_until="domcontentloaded")
+
+    def demo_routes(self, context, base, responses, direct):
         def permitted(route):
             req = route.request
             url = urlsplit(req.url)
-            if req.method != "GET" or not req.url.startswith(self.base + "/"):
+            if not req.url.startswith(base + "/") or (not direct and req.method != "GET"):
                 return route.abort()
             fixture = responses.get(url.path)
             if isinstance(fixture, dict) and "$qr" in fixture:
                 sys.path.insert(0, str(ROOT / "main_python"))
                 import qr
                 return route.fulfill(content_type="image/svg+xml", body=qr.svg(fixture["$qr"]))
-            if fixture is not None:
+            if fixture is not None and req.method == "GET":
                 return route.fulfill(json=fixture)
             return route.continue_()
         context.route("**/*", permitted)
@@ -107,26 +137,26 @@ class HelpShooter:
             if apps and app not in apps:
                 continue
             shots = json.loads(recipe.read_text(encoding="utf-8"))
+            manifest = recipe.parent / "help.json"
+            meta = json.loads(manifest.read_text(encoding="utf-8")) if manifest.is_file() else {}
             folder = self.out / app if self.out else recipe.parent / "img"
             folder.mkdir(parents=True, exist_ok=True)
             for name, shot in shots.items():
                 if only and name not in only:
                     continue
+                pairs = [(lang, mode) for lang in LANGS for mode in THEMES]
+                if shot.get("fixed"):
+                    pairs = [tuple(meta["nativeVariant"].split("-"))]
                 variants = {}
-                failed = False
-                for lang in LANGS:
-                    for mode in THEMES:
-                        key = f"{lang}-{mode}-{name}"
-                        try:
-                            variants[key] = self.capture(shot, lang, mode)
-                        except (Error, RuntimeError) as exc:
-                            failures.append(f"{app}/{key}: {str(exc).splitlines()[0]}")
-                            print(failures[-1], flush=True)
-                            failed = True
-                            break
-                    if failed:
+                for lang, mode in pairs:
+                    key = f"{lang}-{mode}-{name}"
+                    try:
+                        variants[key] = self.capture(shot, lang, mode, app)
+                    except (Error, RuntimeError, KeyError) as exc:
+                        failures.append(f"{app}/{key}: {str(exc).splitlines()[0]}")
+                        print(failures[-1], flush=True)
                         break
-                if len(variants) == len(LANGS) * len(THEMES):
+                if len(variants) == len(pairs):
                     for key, blob in variants.items():
                         (folder / (key + ".webp")).write_bytes(blob)
                     print(f"{app}/{name}: {len(variants)} WebP files", flush=True)
@@ -139,16 +169,27 @@ def main():
     p.add_argument("--app", action="append", help="app id or hub (repeatable)")
     p.add_argument("--only", action="append", help="shot name (repeatable)")
     p.add_argument("--out", type=Path, help="capture outside shipping folders for review")
+    p.add_argument("--native", action="append", default=[], metavar="APP=URL",
+                   help="isolated native demo app origin. Its normal UI actions can write demo data")
+    p.add_argument("--state", action="append", default=[], metavar="APP=JSON",
+                   help="private Playwright storage state from the isolated demo instance")
+    p.add_argument("--fake-camera", action="store_true", help="use Edge's synthetic camera input")
     args = p.parse_args()
-    base = args.base.rstrip("/")
-    url = urlsplit(base)
-    if url.scheme != "http" or url.hostname not in {"127.0.0.1", "localhost"} or url.path:
-        p.error("--base needs a loopback demo Hub URL")
+    try:
+        base = loopback_origin(args.base.rstrip("/"))
+        native = {app: loopback_origin(url.rstrip("/"))
+                  for app, url in (pair.split("=", 1) for pair in args.native)}
+        states = dict(pair.split("=", 1) for pair in args.state)
+    except ValueError as exc:
+        p.error(str(exc))
+    flags = ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
+    if args.fake_camera:
+        flags.extend(["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"])
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(channel="msedge", args=["--use-gl=angle", "--use-angle=swiftshader",
-                                                            "--enable-unsafe-swiftshader"])
+        browser = pw.chromium.launch(channel="msedge", args=flags)
         try:
-            return 0 if HelpShooter(browser, base, args.out).run(ShotCatalog(ROOT), args.app, args.only) else 1
+            shooter = HelpShooter(browser, base, args.out, native, states)
+            return 0 if shooter.run(ShotCatalog(ROOT), args.app, args.only) else 1
         finally:
             browser.close()
 

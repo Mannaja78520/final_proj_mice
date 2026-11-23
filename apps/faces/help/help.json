@@ -12,5 +12,6 @@
     "ja": "顔認識の結果を確認し、反応を設定する"
   },
   "group": "use",
-  "order": 50
+  "order": 50,
+  "nativeVariant": "en-light"
 }

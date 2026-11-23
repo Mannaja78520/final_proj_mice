@@ -12,5 +12,6 @@
     "ja": "フォトブースと管理画面を開く"
   },
   "group": "use",
-  "order": 80
+  "order": 80,
+  "nativeVariant": "en-light"
 }
