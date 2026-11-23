@@ -29,6 +29,16 @@ every main screen / game / tab, in order, each picture matching its step text.
 - Look at EVERY screenshot yourself and compare with its text; ask Gemini 4 (medium) to review picture vs text; findings are leads.
 - Ask friend nothing; if the app needs something from them, append to docs/friend/friend_requests_all_2026-11-23.md.
 
+## Added 2026-11-23 23:36 (user, cmsg_01R7BbYxaTb3Yv9YS3gQaaA3UpcFi8qSpSKyV15CmSFPMp, Thai: "we make this and can upload it into the friend's repo; make a handoff for Reconize's help")
+Extra deliverable, Reconize ONLY (user's own exception): a READY-TO-DROP Help package under
+docs/friend/reconize_help_package/ : the files exactly as they must sit in the Face_Regonize repo
+(its own `help/` folder in our PR #233 format: help.json, th/en/zh/ja.html, img/), a README.md (Thai + English)
+saying where each file goes, the 3-5 short steps to drop it in, how the hub then picks it up
+(hub_api_help.py reads {partner folder}/help first, then our apps/faces/help), and how to re-take the pictures
+(tools/help_shots.py recipe). Keep the package and apps/faces/help identical (one source, a script or QC check
+that they match). Do NOT write into the Face_Regonize folder yourself and do not change its code; the user (or a
+person they name) uploads it. If you ever must touch it: back up first.
+
 ## Steps
 1. List real screens of each app (read their running UI, not the plan). Write the list in "Facts found".
 2. Recipes in shots.json + capture; view all images.
