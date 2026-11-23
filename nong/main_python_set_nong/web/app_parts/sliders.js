@@ -15,7 +15,17 @@ function renderSliders() {
       num.type = "number"; num.min = 0; num.max = 180; num.id = "jn" + i;
       slider.oninput = () => { pose[i] = clampJ(i, +slider.value); poseChanged(true); };
       slider.onchange = () => poseChanged(false);
-      num.onchange = () => { pose[i] = clampJ(i, +num.value); poseChanged(false); };
+      // A blank or junk box keeps the joint where it was (a blank used to read as 0
+      // and snap the joint to its minimum), and the box is always rewritten with the
+      // value really used: "-50" stayed on screen while the joint sat at 25
+      // (case review 2026-11-23).
+      num.onchange = () => {
+        const typed = num.value.trim() === "" ? NaN : +num.value;
+        if (Number.isFinite(typed)) pose[i] = clampJ(i, typed);
+        _lastVal[i] = NaN;
+        num.value = Math.round(pose[i] * 10) / 10;
+        poseChanged(false);
+      };
       row.append(name, slider, num);
       box.appendChild(row);
     });

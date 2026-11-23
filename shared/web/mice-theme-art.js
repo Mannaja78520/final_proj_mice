@@ -1,16 +1,13 @@
-/* Pictures that follow the theme (hub pages only; not in a board's flash).
+/* Pictures that follow a theme PACK (hub pages only; not in a board's flash).
  * ========================================================================
- * User 2026-11-23: a dark theme should show the dark pictures, a light theme
- * the light ones. A picture at /img/<name>.<ext> has an optional dark twin at
- * /img/<name>.dark.<ext>; a theme pack can also swap any picture by name
- * ("images": {"apps/tv": "tv.svg"}). No twin and no swap = the picture stays.
- * mice.js marks <html data-mode="dark|light"> from the theme's own declaration.
+ * A pack can swap any picture by name ("images": {"apps/tv": "tv.svg"}).
+ * Dark/light pictures themselves are CSS (shared/web/img-dark.css, keyed on
+ * <html data-mode="dark"> which mice.js sets from the theme's --theme-mode).
  */
 (function () {
   "use strict";
   var IMG = /^(\/img\/)([A-Za-z0-9_\/-]+?)(\.dark)?\.(png|webp|svg)(\?.*)?$/;
   var swaps = {};          // "apps/tv" -> url, from the active pack
-  var missing = {};        // dark twins that do not exist: never asked twice
   var timer = 0;
 
   function path(img) {
@@ -30,16 +27,9 @@
     if (!m) return;
     var base = m[1] + m[2] + "." + m[4], key = m[2];
     if (swaps[key]) return setSrc(img, swaps[key], base);
-    var dark = document.documentElement.getAttribute("data-mode") === "dark";
-    var twin = m[1] + m[2] + ".dark." + m[4];
-    if (dark && !missing[twin]) {
-      var probe = new Image();
-      probe.onload = function () { setSrc(img, twin, base); };
-      probe.onerror = function () { missing[twin] = 1; };
-      probe.src = twin;
-    } else if (img.hasAttribute("data-src0")) {
-      img.setAttribute("src", img.getAttribute("data-src0"));
-    }
+    // Dark pictures: shared/web/img-dark.css swaps them for data-mode="dark" (any dark theme).
+    // Only when a pack stops naming this picture do we go back to the original.
+    if (img.hasAttribute("data-src0")) img.setAttribute("src", img.getAttribute("data-src0"));
   }
 
   function all() {

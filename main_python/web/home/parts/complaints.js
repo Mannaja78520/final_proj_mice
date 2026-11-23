@@ -28,7 +28,23 @@ async function loadComplaints(){
       return;
     }
     el.innerHTML = '';
-    list.forEach(function(rep){
+    // 93 rows drawn at once on 2026-11-23 (most are automatic "stopped answering"
+    // notes), a page a phone has to scroll for a minute: show a screenful, ask for more.
+    var PAGE = 40, shown = 0;
+    function drawMore(){
+      var old = el.querySelector('.more-reports');
+      if(old) old.remove();
+      list.slice(shown, shown + PAGE).forEach(drawRow);
+      shown = Math.min(list.length, shown + PAGE);
+      if(shown < list.length){
+        var more = document.createElement('button');
+        more.className = 'secondary more-reports';
+        more.textContent = 'Show older reports';
+        more.onclick = drawMore;
+        el.appendChild(more);
+      }
+    }
+    function drawRow(rep){
       var row = document.createElement('div');
       row.className = 'mod';
       row.style.cursor = 'pointer';
@@ -54,7 +70,8 @@ async function loadComplaints(){
       open.onclick = function(){ openComplaintDetail(rep); };
       row.appendChild(open);
       el.appendChild(row);
-    });
+    }
+    drawMore();
   }catch(e){
     el.textContent = 'Failed to load: ' + Mice.Words.plain(e).says;
   }
@@ -135,8 +152,11 @@ async function setComplaintStatus(id, status){
 // Lost with a duplicate-closeReport cleanup on 2026-08-25 and restored from
 // patch 0003: closeReport() first so a complaint's retitled heading never
 // leaks onto a fresh report.
+var reportOpener = null;   // who opened it, so closing hands the keyboard back there
 function openReport(){
+  var from = document.activeElement;
   closeReport();
+  reportOpener = from && from !== document.body ? from : null;
   var m = document.getElementById('reportModal');
   if(!m) return;
   m.hidden = false;
@@ -145,7 +165,10 @@ function openReport(){
 }
 function closeReport(){
   var m = document.getElementById('reportModal');
+  var wasOpen = m && !m.hidden;
   if(m) m.hidden = true;
+  if(wasOpen && reportOpener && reportOpener.focus) reportOpener.focus();
+  reportOpener = null;
   // complaint detail retitles the modal - without this reset the next
   // report opens under yesterday's heading
   var title = document.getElementById('reportTitle');

@@ -21,7 +21,7 @@ Baseline: 363e810
 | `main_python/hub_api_themes.py`, `main.py`, `hub_auth.py` | /api/themes, /themes/<id>/<file>, packs appended to /mice.css | done | hub run + curl + Playwright screenshot | this checkpoint |
 | `shared/web/themes/{cloudy,cream,aurora}/` | built-in packs + svg art | done | contrast measured (all >=5:1) | this checkpoint |
 | `shared/web/mice.js`, `themes.css` | `--theme-mode`, `data-mode` on html | done | screenshot | this checkpoint |
-| `shared/web/mice-theme-art.js`, `mice-ui.js` | dark twin `name.dark.webp` + pack picture swap | done | not browser-QC'd on real images (no dark twins exist yet) | this checkpoint |
+| `shared/web/mice-theme-art.js`, `mice-ui.js` | dark twin `name-dark.webp` + pack picture swap | done | not browser-QC'd on real images (no dark twins exist yet) | this checkpoint |
 | `main_python/web/home/parts/{themes.js,settings.*}`, `style.css`, `hub.html` | Themes gallery in Settings | done | screenshot | this checkpoint |
 | `qc/checks/check_theme_packs.py`, `check_themes.py`, `check_theme_contrast.py` | new + updated | see Done | quick | this checkpoint |
 | `shared/web/lang/*.json`, `lang/help/*.json`, `web/help/parts/hub.html`, `help.html` | 4-language text | done | lang.py | this checkpoint |

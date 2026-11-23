@@ -25,6 +25,10 @@ function closeAnyOpen(){
     if (_fcResolve) fcClose(false); else modal.hidden = true;
     did = true;
   }
+  // The report box was missing here: Esc left the most-used dialog open
+  // (found 2026-11-23 by pressing it, not by reading code).
+  const rep = $('reportModal');
+  if (rep && !rep.hidden){ closeReport(); did = true; }
   const keys = $('keysModal');
   if (keys && !keys.hidden){ toggleKeys(false); did = true; }
   // A search box with something in it is also "something open": Esc clears the
