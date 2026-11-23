@@ -1,6 +1,7 @@
 """Add translations to the language packs in one step.
 
-    python tools/lang_add.py batch.json
+    python tools/lang_add.py batch.json [--help] [--force]
+    --help writes the Help page packs (shared/web/lang/help/) instead of the main ones.
 
 batch.json = [{"src": "<text as the page carries it>", "th": "...", "en": "...", "zh": "...", "ja": "..."}, ...]
 A Thai source text is a key of en/zh/ja; an English source text is a key of th/zh/ja
@@ -19,6 +20,7 @@ def is_thai(t):
 
 def main(argv):
     force = "--force" in argv
+    base = LANG / "help" if "--help" in argv else LANG      # Help texts live in lang/help/<code>.json
     items = json.loads(Path([a for a in argv[1:] if not a.startswith("--")][0]).read_text(encoding="utf-8"))
     packs = {c: json.loads((LANG / (c + ".json")).read_text(encoding="utf-8")) for c in ("th", "en", "zh", "ja")}
     added = 0
@@ -37,7 +39,7 @@ def main(argv):
                 s[src] = val
                 added += 1
     for code, p in packs.items():
-        (LANG / (code + ".json")).write_text(json.dumps(p, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        (base / (code + ".json")).write_text(json.dumps(p, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     print("added/updated %d entries" % added)
 
 
