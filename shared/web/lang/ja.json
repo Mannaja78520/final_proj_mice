@@ -1492,6 +1492,10 @@
   "Point ahead": "前を指す",
   "how fast this servo can speed up (°/s² of the joint). A guess until measured; only Studio's picture of the real servos uses it.": "このサーボがどれだけ速く加速できるか（関節の°/s²）。測定するまでは推測値で、Studioの実サーボの表示にだけ使われます。",
   "In the words,": "語の中では、",
-  "ค่ามีผลกับการโหลดงานครั้งถัดไป บางค่าเธรดต้องเปิดตัวช่วยเสียงใหม่ งานที่เปิดอยู่ยังใช้ค่าเดิม งบหน่วยความจำช่วยตรวจความพร้อมและเลือกวิธีโหลด ไม่ใช่เพดานการใช้ทั้งหมด": "設定は次回の読み込みから有効です。一部のスレッド設定は音声ヘルパーの再起動が必要です。開いている作業は以前の値のままです。メモリ予算は準備状況の確認と読み込み方法の選択に使われ、全体の上限ではありません。"
+  "ค่ามีผลกับการโหลดงานครั้งถัดไป บางค่าเธรดต้องเปิดตัวช่วยเสียงใหม่ งานที่เปิดอยู่ยังใช้ค่าเดิม งบหน่วยความจำช่วยตรวจความพร้อมและเลือกวิธีโหลด ไม่ใช่เพดานการใช้ทั้งหมด": "設定は次回の読み込みから有効です。一部のスレッド設定は音声ヘルパーの再起動が必要です。開いている作業は以前の値のままです。メモリ予算は準備状況の確認と読み込み方法の選択に使われ、全体の上限ではありません。",
+  "Show older reports": "古い報告をもっと見る",
+  "USB / RS485 (shared) goes through the hub, which owns the cable and shares it — the module's own website (⚙ Open module) can be open on the same USB port at the same time, and it works from a phone or another laptop too. USB direct talks to the port straight from this browser (Chrome/Edge on this PC only) and takes the port for itself: nothing else can use that cable until you close this tab.": "USB / RS485（共有）はハブ経由で、ハブがケーブルを持って共有します。モジュール自身のサイト（⚙ モジュールを開く）も同じ USB ポートで同時に開け、スマホや別のノートPCからも使えます。USB 直結はこのブラウザ（この PC の Chrome/Edge のみ）から直接ポートに話しかけ、ポートを独占します。このタブを閉じるまで、そのケーブルは他で使えません。",
+  "no SD card? the robot still runs on live commands from here (poses, monitor) — only saved sequences need the card.": "SD カードがなくても、ここからのライブコマンド（ポーズ、モニター）でロボットは動きます。保存したシーケンスだけカードが必要です。",
+  "or use the view buttons at the top-right of the 3D view (Front / Top / Left…): the camera snaps straight at that plane, and stays there — you cannot orbit out of a flat view by accident, and dragging a hand moves it flat in that plane with no Shift held. Press 3D to turn the view loose again; there, dragging a hand needs Shift, because a plain drag orbits. Like Fusion/SolidWorks.": "または 3D ビュー右上のビューボタン（正面 / 上 / 左…）を使います。カメラはその平面にまっすぐ向いたまま固定され、うっかり平面ビューから回り込むことはありません。手のドラッグもその平面内で動き、Shift は不要です。3D を押すとビューをまた自由に回せます。その場合、手のドラッグには Shift が必要です（ふつうのドラッグはカメラを回すため）。Fusion/SolidWorks と同じです。"
  }
 }

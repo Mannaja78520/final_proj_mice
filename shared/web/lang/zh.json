@@ -1492,6 +1492,10 @@
   "Point ahead": "指向前方",
   "how fast this servo can speed up (°/s² of the joint). A guess until measured; only Studio's picture of the real servos uses it.": "此舵机能多快加速（关节的 °/s²）。在测量之前只是估计值；仅用于 Studio 对真实舵机的显示。",
   "In the words,": "在词语中，",
-  "ค่ามีผลกับการโหลดงานครั้งถัดไป บางค่าเธรดต้องเปิดตัวช่วยเสียงใหม่ งานที่เปิดอยู่ยังใช้ค่าเดิม งบหน่วยความจำช่วยตรวจความพร้อมและเลือกวิธีโหลด ไม่ใช่เพดานการใช้ทั้งหมด": "设置在下次加载时生效。部分线程设置需要重新打开语音助手；已打开的任务仍使用旧值。内存预算用于检查就绪情况并选择加载方式，不是总用量的上限。"
+  "ค่ามีผลกับการโหลดงานครั้งถัดไป บางค่าเธรดต้องเปิดตัวช่วยเสียงใหม่ งานที่เปิดอยู่ยังใช้ค่าเดิม งบหน่วยความจำช่วยตรวจความพร้อมและเลือกวิธีโหลด ไม่ใช่เพดานการใช้ทั้งหมด": "设置在下次加载时生效。部分线程设置需要重新打开语音助手；已打开的任务仍使用旧值。内存预算用于检查就绪情况并选择加载方式，不是总用量的上限。",
+  "Show older reports": "显示更早的报告",
+  "USB / RS485 (shared) goes through the hub, which owns the cable and shares it — the module's own website (⚙ Open module) can be open on the same USB port at the same time, and it works from a phone or another laptop too. USB direct talks to the port straight from this browser (Chrome/Edge on this PC only) and takes the port for itself: nothing else can use that cable until you close this tab.": "USB / RS485（共享）经由中心转发，由中心占用并共享这根线——模块自己的网站（⚙ 打开模块）可以同时使用同一个 USB 端口，手机或另一台笔记本也能用。USB 直连是由此浏览器（仅限这台电脑上的 Chrome/Edge）直接访问端口，并独占该端口：关闭此标签页之前，其他程序都无法使用那根线。",
+  "no SD card? the robot still runs on live commands from here (poses, monitor) — only saved sequences need the card.": "没有 SD 卡？机器人仍可通过这里的实时命令运行（姿势、监视）——只有已保存的序列才需要这张卡。",
+  "or use the view buttons at the top-right of the 3D view (Front / Top / Left…): the camera snaps straight at that plane, and stays there — you cannot orbit out of a flat view by accident, and dragging a hand moves it flat in that plane with no Shift held. Press 3D to turn the view loose again; there, dragging a hand needs Shift, because a plain drag orbits. Like Fusion/SolidWorks.": "或使用 3D 视图右上角的视图按钮（正面 / 顶部 / 左侧…）：相机会直接对准该平面并保持不动——你不会不小心从平面视图转出去，拖动手时也会在该平面内平移，无需按住 Shift。按 3D 可再次让视图自由旋转；在那里拖动手需要按住 Shift，因为普通拖动是旋转。和 Fusion/SolidWorks 一样。"
  }
 }
