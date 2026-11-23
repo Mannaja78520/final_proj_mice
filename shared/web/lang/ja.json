@@ -1496,6 +1496,17 @@
   "Show older reports": "古い報告をもっと見る",
   "USB / RS485 (shared) goes through the hub, which owns the cable and shares it — the module's own website (⚙ Open module) can be open on the same USB port at the same time, and it works from a phone or another laptop too. USB direct talks to the port straight from this browser (Chrome/Edge on this PC only) and takes the port for itself: nothing else can use that cable until you close this tab.": "USB / RS485（共有）はハブ経由で、ハブがケーブルを持って共有します。モジュール自身のサイト（⚙ モジュールを開く）も同じ USB ポートで同時に開け、スマホや別のノートPCからも使えます。USB 直結はこのブラウザ（この PC の Chrome/Edge のみ）から直接ポートに話しかけ、ポートを独占します。このタブを閉じるまで、そのケーブルは他で使えません。",
   "no SD card? the robot still runs on live commands from here (poses, monitor) — only saved sequences need the card.": "SD カードがなくても、ここからのライブコマンド（ポーズ、モニター）でロボットは動きます。保存したシーケンスだけカードが必要です。",
-  "or use the view buttons at the top-right of the 3D view (Front / Top / Left…): the camera snaps straight at that plane, and stays there — you cannot orbit out of a flat view by accident, and dragging a hand moves it flat in that plane with no Shift held. Press 3D to turn the view loose again; there, dragging a hand needs Shift, because a plain drag orbits. Like Fusion/SolidWorks.": "または 3D ビュー右上のビューボタン（正面 / 上 / 左…）を使います。カメラはその平面にまっすぐ向いたまま固定され、うっかり平面ビューから回り込むことはありません。手のドラッグもその平面内で動き、Shift は不要です。3D を押すとビューをまた自由に回せます。その場合、手のドラッグには Shift が必要です（ふつうのドラッグはカメラを回すため）。Fusion/SolidWorks と同じです。"
+  "or use the view buttons at the top-right of the 3D view (Front / Top / Left…): the camera snaps straight at that plane, and stays there — you cannot orbit out of a flat view by accident, and dragging a hand moves it flat in that plane with no Shift held. Press 3D to turn the view loose again; there, dragging a hand needs Shift, because a plain drag orbits. Like Fusion/SolidWorks.": "または 3D ビュー右上のビューボタン（正面 / 上 / 左…）を使います。カメラはその平面にまっすぐ向いたまま固定され、うっかり平面ビューから回り込むことはありません。手のドラッグもその平面内で動き、Shift は不要です。3D を押すとビューをまた自由に回せます。その場合、手のドラッグには Shift が必要です（ふつうのドラッグはカメラを回すため）。Fusion/SolidWorks と同じです。",
+  "ข้อมูล addons ไม่ถูกต้อง": "addons のデータが正しくありません",
+  "ข้อมูลคำสั่งในคีย์ไม่ถูกต้อง": "キーフレーム内のコマンドが正しくありません",
+  "เพลงที่กู้คืนยังไม่พร้อม เลือกไฟล์ .nong.json อีกครั้ง": "復元した曲の準備ができていません。.nong.json をもう一度選んでください",
+  "เพลงที่กู้คืนยังไม่พร้อม รอให้โหลดเสร็จ หรือเปิดไฟล์ .nong.json อีกครั้ง": "復元した曲の準備ができていません。読み込みを待つか、.nong.json をもう一度開いてください",
+  "ขนาดไฟล์เพลงไม่ถูกต้อง": "曲ファイルのサイズが正しくありません",
+  "ความยาวเพลงไม่ถูกต้อง": "曲の長さが正しくありません",
+  "เพลงหยุดเพราะอ่านไฟล์ไม่ได้ ท่ายังคงอยู่ เลือกเพลงใหม่แล้วลองอีกครั้ง": "ファイルを読めず曲が止まりました。動きは残っています。曲を選び直してもう一度試してください",
+  "ใส่โฟลเดอร์ของแอป หรือกด \"เลือกโฟลเดอร์…\"": "アプリのフォルダを入力するか、「フォルダを選ぶ…」を押してください",
+  "ไม่มีโหมดภาพนี้": "この画面モードはありません",
+  "เปิดเกมไม่ได้ ลองอีกครั้ง": "ゲームを開けませんでした。もう一度試してください",
+  "เปิดแท็บไม่ได้ อนุญาตป๊อปอัปแล้วกดลองอีกครั้ง": "タブを開けませんでした。ポップアップを許可してもう一度試してください"
  }
 }

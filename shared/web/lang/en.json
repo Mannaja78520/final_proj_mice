@@ -237,6 +237,17 @@
   "ผลงานล่าสุด": "Latest work",
   "เปิดตู้ถ่ายภาพของงาน ถ่ายภาพและรับภาพกลับไป": "Open the event's photo booth: take pictures and take them home",
   "ดูภาพจากกล้องที่เชื่อมต่อกับระบบ": "See the picture from the cameras connected to the system",
-  "ค่ามีผลกับการโหลดงานครั้งถัดไป บางค่าเธรดต้องเปิดตัวช่วยเสียงใหม่ งานที่เปิดอยู่ยังใช้ค่าเดิม งบหน่วยความจำช่วยตรวจความพร้อมและเลือกวิธีโหลด ไม่ใช่เพดานการใช้ทั้งหมด": "Values apply to the next load. Some thread values need the voice helper reopened; work already open keeps its old values. The memory budget helps check readiness and pick how to load; it is not a ceiling on total use."
+  "ค่ามีผลกับการโหลดงานครั้งถัดไป บางค่าเธรดต้องเปิดตัวช่วยเสียงใหม่ งานที่เปิดอยู่ยังใช้ค่าเดิม งบหน่วยความจำช่วยตรวจความพร้อมและเลือกวิธีโหลด ไม่ใช่เพดานการใช้ทั้งหมด": "Values apply to the next load. Some thread values need the voice helper reopened; work already open keeps its old values. The memory budget helps check readiness and pick how to load; it is not a ceiling on total use.",
+  "ข้อมูล addons ไม่ถูกต้อง": "The addons data is not valid",
+  "ข้อมูลคำสั่งในคีย์ไม่ถูกต้อง": "The commands inside a keyframe are not valid",
+  "เพลงที่กู้คืนยังไม่พร้อม เลือกไฟล์ .nong.json อีกครั้ง": "The restored song is not ready. Choose the .nong.json file again",
+  "เพลงที่กู้คืนยังไม่พร้อม รอให้โหลดเสร็จ หรือเปิดไฟล์ .nong.json อีกครั้ง": "The restored song is not ready. Wait for it to load, or open the .nong.json file again",
+  "ขนาดไฟล์เพลงไม่ถูกต้อง": "The song file size is not valid",
+  "ความยาวเพลงไม่ถูกต้อง": "The song length is not valid",
+  "เพลงหยุดเพราะอ่านไฟล์ไม่ได้ ท่ายังคงอยู่ เลือกเพลงใหม่แล้วลองอีกครั้ง": "The song stopped because its file could not be read. Your moves are still here. Choose the song again and retry",
+  "ใส่โฟลเดอร์ของแอป หรือกด \"เลือกโฟลเดอร์…\"": "Type the app's folder, or press \"Choose folder…\"",
+  "ไม่มีโหมดภาพนี้": "This picture mode is not available",
+  "เปิดเกมไม่ได้ ลองอีกครั้ง": "Could not open the game. Try again",
+  "เปิดแท็บไม่ได้ อนุญาตป๊อปอัปแล้วกดลองอีกครั้ง": "Could not open the tab. Allow pop-ups and try again"
  }
 }
