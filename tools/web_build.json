@@ -94,6 +94,7 @@
         "pairing.js",
         "firmware.js",
         "settings.js",
+        "themes.js",
         "start.js"
       ]
     },

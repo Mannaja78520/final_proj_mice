@@ -198,6 +198,18 @@
   #homeTools .tool-pic{width:40px;height:40px;border-radius:10px}
   #homeTools   #homeTools .tool-tile .nm{font-size:15px}
 }
+
+/* ---- Themes gallery (Settings). Preview colours are set from each theme's own block. ---- */
+.themeGrid{display:grid;gap:var(--sp-3);grid-template-columns:repeat(auto-fill,minmax(210px,1fr));margin-top:var(--sp-3)}
+.themeCard{border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-3);background:var(--card)}
+.themeCard.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}
+.themePrev{position:relative;height:84px;border:2px solid;border-radius:var(--r-sm);padding:var(--sp-2);margin-bottom:var(--sp-2);overflow:hidden}
+.themePrev b{position:relative;font-size:22px}
+.themePrev .pCard{position:absolute;right:10px;top:10px;width:46%;height:34px;border-radius:8px}
+.themePrev .pBtn{position:absolute;left:12px;bottom:10px;width:44px;height:14px;border-radius:7px}
+.themePrev .pDot{position:absolute;bottom:12px;width:10px;height:10px;border-radius:50%}
+.themePrev .pDot:nth-of-type(1){right:48px}.themePrev .pDot:nth-of-type(2){right:32px}.themePrev .pDot:nth-of-type(3){right:16px}
+.themeName{font-weight:600;display:flex;gap:var(--sp-2);align-items:center;flex-wrap:wrap}
 </style>
 </head>
 <body class="page">
@@ -582,11 +594,18 @@
   <!-- HOW MUCH TO SHOW. An address serves nothing while everything works, and
        it sat on every row in the same grey as the name. One switch, one class
        in the shared sheet, remembered per browser. -->
-  <div class="card" data-tab="settings">
-    <h2>🎨 Colour</h2>
-    <div class="row" id="themePick"></div>
-    <div class="mini">Dark stays the default: a bright screen spills light into
-      the show area.</div>
+  <div class="card" data-tab="settings" style="grid-column:1/-1">
+    <h2>🎨 Themes</h2>
+    <div class="mini">Pick a look and press Use. It changes every app at once, and the pictures
+      switch to the dark or light set to match.</div>
+    <div class="themeGrid" id="themeGrid"></div>
+    <div class="row" style="margin-top:var(--sp-3)">
+      <button class="secondary" id="themeInstall" type="button">Install a theme…</button>
+      <input type="file" id="themeFile" accept=".json,.zip,.micetheme" hidden>
+      <span class="mini" id="themeSay" role="status"></span>
+    </div>
+    <div class="mini">A theme pack is a .zip (or a theme.json) with colours and, if you like, pictures.
+      Packs that are hard to read are refused, with the reason.</div>
 
     <h2 style="margin-top:var(--sp-6)">🔧 How much to show</h2>
     <div class="mini">The Show technical details switch at the top of the
@@ -3750,10 +3769,7 @@ onTab('firmware', paintFirmware);
 // page does not know which themes exist, and must not: that is the whole point
 // of keeping them in one file. The technical switch is the shared one in the
 // head (miceAdv + Mice.TopBar), the same on every page.
-document.addEventListener('DOMContentLoaded', function(){
-  if (window.miceTheme) miceTheme.picker(document.getElementById('themePick'));
-});
-
+// The theme gallery is themes.js; the shared picker on other pages still reads the stylesheet.
 function paintSettings(){
   loadUsers();
   if (authed) resourceView.load();
@@ -3832,6 +3848,131 @@ class ResourceSettingsView {
   }
 }
 const resourceView = new ResourceSettingsView();
+
+// Themes page: preview cards, Use, Install from a file, Remove. The list comes from
+// /api/themes (built-in packs + installed ones), so a new pack is a file and no code here.
+class ThemeGallery {
+  constructor(grid, say, fileInput, installBtn) {
+    this.grid = grid; this.say = say; this.file = fileInput;
+    installBtn.onclick = () => this.file.click();
+    this.file.onchange = () => this.install();
+    this.list = [];
+    if (window.miceTheme) miceTheme.onChange(() => this.paint());
+    this.load();
+  }
+  lang() { try { return localStorage.getItem('mice.lang') || 'en'; } catch (e) { return 'en'; } }
+  noteOf(t) { const n = t.note; return (n && typeof n === 'object') ? (n[this.lang()] || n.en || '') : (n || ''); }
+  label(t) { const n = t.name || {}; return n[this.lang()] || n.en || t.id; }
+  // Colours of a theme read from its own stylesheet block: the picture on the card is the
+  // real thing, for the four built-in CSS themes and for packs alike.
+  sheetColors(id) {
+    const out = {}, want = ['bg', 'card', 'txt', 'acc', 'ok', 'warn', 'err'];
+    for (const sh of document.styleSheets) {
+      let rules; try { rules = sh.cssRules; } catch (e) { continue; }
+      for (const r of rules || []) {
+        const parts = (r.selectorText || '').split(',').map(s => s.trim().replace(/'/g, '"'));
+        if (!parts.includes(':root[data-theme="' + id + '"]')) continue;
+        want.forEach(k => { const v = r.style.getPropertyValue('--' + k).trim(); if (v) out[k] = v; });
+        out.mode = (r.style.getPropertyValue('--theme-mode') || '').replace(/["'\s]/g, '')
+          || (/dark/.test(r.style.getPropertyValue('color-scheme')) ? 'dark' : 'light');
+      }
+    }
+    return out;
+  }
+  async load() {
+    let packs = [];
+    try { packs = (await (await fetch('/api/themes')).json()).themes || []; } catch (e) { /* no packs */ }
+    const meta = {}; packs.forEach(t => { meta[t.id] = t; });
+    this.list = (window.miceTheme ? miceTheme.list() : []).map(t => {
+      const c = this.sheetColors(t.id), m = meta[t.id];
+      return {id: t.id, name: m ? m.name : {en: t.name}, note: m ? m.note : t.note, mode: c.mode || 'light',
+              source: m ? m.source : 'css', colors: c};
+    });
+    this.paint();
+  }
+  current() { return (window.miceTheme && miceTheme.get()) || document.documentElement.getAttribute('data-theme') || 'indigo'; }
+  card(t) {
+    const c = t.colors, on = t.id === this.current();
+    const d = document.createElement('div');
+    d.className = 'themeCard' + (on ? ' on' : '');
+    d.setAttribute('data-id', t.id);
+    const prev = document.createElement('div');
+    prev.className = 'themePrev';
+    prev.style.background = c.bg; prev.style.color = c.txt; prev.style.borderColor = c.acc;
+    prev.innerHTML = '<span class="pCard"></span><b>Aa</b><span class="pBtn"></span>'
+      + '<i class="pDot"></i><i class="pDot"></i><i class="pDot"></i>';
+    prev.querySelector('.pCard').style.background = c.card;
+    prev.querySelector('.pBtn').style.background = c.acc;
+    const dots = prev.querySelectorAll('.pDot');
+    [c.ok, c.warn, c.err].forEach((v, i) => { dots[i].style.background = v; });
+    const name = document.createElement('div');
+    name.className = 'themeName';
+    name.textContent = this.label(t);
+    const tag = document.createElement('span');
+    tag.className = 'badge';
+    tag.textContent = t.mode === 'dark' ? 'Dark' : 'Light';
+    name.appendChild(tag);
+    const note = document.createElement('div');
+    note.className = 'mini';
+    note.textContent = this.noteOf(t);
+    const row = document.createElement('div');
+    row.className = 'row';
+    const use = document.createElement('button');
+    use.type = 'button';
+    use.className = on ? 'secondary' : 'primary';
+    use.disabled = on;
+    use.textContent = on ? 'In use' : 'Use';
+    use.onclick = () => { miceTheme.set(t.id); this.paint(); };
+    row.appendChild(use);
+    if (t.source === 'installed') {
+      const rm = document.createElement('button');
+      rm.type = 'button'; rm.className = 'danger'; rm.textContent = 'Remove';
+      rm.onclick = () => this.remove(t);
+      row.appendChild(rm);
+    }
+    [prev, name, note, row].forEach(x => d.appendChild(x));
+    return d;
+  }
+  paint() {
+    this.grid.textContent = '';
+    this.list.forEach(t => this.grid.appendChild(this.card(t)));
+  }
+  refreshCss() {
+    document.querySelectorAll('link[href^="/mice.css"]').forEach(l => { l.href = '/mice.css?v=' + Date.now(); });
+  }
+  async post(url, body, type) {
+    const r = await fetch(url, {method: 'POST', body: body, headers: {'Content-Type': type}});
+    let d = {};
+    try { d = await r.json(); } catch (e) { /* not JSON */ }
+    if (r.status === 401 || d.need_login) throw Error('Log in first to change themes.');
+    if (!d.ok) throw Error(d.error || 'That did not work.');
+    return d;
+  }
+  async install() {
+    const f = this.file.files[0];
+    this.file.value = '';
+    if (!f) return;
+    this.say.textContent = 'Installing…';
+    try {
+      const d = await this.post('/api/themes/install', await f.arrayBuffer(), 'application/octet-stream');
+      this.refreshCss();
+      this.say.textContent = 'Installed. Press Use to switch to it.';
+      setTimeout(() => this.load(), 400);
+    } catch (e) { this.say.textContent = e.message; }
+  }
+  async remove(t) {
+    try {
+      const d = await this.post('/api/themes/remove', JSON.stringify({id: t.id}), 'application/json');
+      if (this.current() === t.id) miceTheme.set('indigo');
+      this.refreshCss(); setTimeout(() => this.load(), 400);
+      this.say.textContent = 'Removed.';
+    } catch (e) { this.say.textContent = e.message; }
+  }
+}
+document.addEventListener('DOMContentLoaded', function () {
+  window.themeGallery = new ThemeGallery(document.getElementById('themeGrid'), document.getElementById('themeSay'),
+    document.getElementById('themeFile'), document.getElementById('themeInstall'));
+});
 
 // ---- last: what runs once every part is in --------------------------
 // Home repaints on its own timer while it is the tab on screen.

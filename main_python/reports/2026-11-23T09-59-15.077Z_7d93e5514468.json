@@ -1,0 +1,12 @@
+{
+  "id": "7d93e5514468",
+  "time": "2026-11-23T09:59:15.077Z",
+  "text": "STUDIO FREEZE {\"gapMs\":1767,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":5,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":11,\"longTasks\":[{\"ms\":56,\"at\":4210},{\"ms\":219,\"at\":4407},{\"ms\":86,\"at\":4645},{\"ms\":89,\"at\":4816},{\"ms\":148,\"at\":4942},{\"ms\":64,\"at\":5185},{\"ms\":1743,\"at\":5551}],\"slowCalls\":[{\"u\":\"/api/login\",\"ms\":373,\"at\":769},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=INFO\",\"ms\":586,\"at\":976},{\"u\":\"/api/gestures/fit\",\"ms\":19,\"at\":3855},{\"u\":\"/api/gestures/make\",\"ms\":20,\"at\":3918},{\"u\":\"/api/gestures/make\",\"ms\":30,\"at\":3986},{\"u\":\"/api/voice/say\",\"ms\":30,\"at\":3987},{\"u\":\"/api/gestures/plan\",\"ms\":21,\"at\":4189},{\"u\":\"/api/play/stop\",\"ms\":22,\"at\":4266},{\"u\":\"/api/gestures\",\"ms\":23,\"at\":4266},{\"u\":\"/api/dev/cmd?dev=usb%3ACOM99&c=STOP\",\"ms\":20,\"at\":4288},{\"u\":\"/api/play/stop\",\"ms\":116,\"at\":4644},{\"u\":\"/api/dev/cmd?dev=usb%3ACOM99&c=STOP\",\"ms\":55,\"at\":4760}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+  "text_en": "Sure! {\"label\": \"Point up high\", \"word\": \"ฟ้า\", \"keys\": [{\"R\": [0.2, 3, 0.4], \"palmR\": \"sideways\", \"t\": 99999, \"hold\": -5, \"x\": 1}]}"
+}

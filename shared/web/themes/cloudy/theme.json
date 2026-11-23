@@ -1,0 +1,37 @@
+{
+  "id": "cloudy",
+  "name": {
+    "en": "Cloudy",
+    "th": "เมฆน้อย",
+    "zh": "云朵",
+    "ja": "くもりぞら"
+  },
+  "note": {
+    "en": "light, soft pastel sky with little clouds",
+    "th": "สว่าง ท้องฟ้าพาสเทลนุ่มๆ มีก้อนเมฆน่ารัก",
+    "zh": "浅色，柔和的粉彩天空与小云朵",
+    "ja": "ライト。やわらかいパステルの空と小さな雲"
+  },
+  "mode": "light",
+  "author": "Mice",
+  "version": 1,
+  "colors": {
+    "bg": "#eef6ff",
+    "card": "#ffffff",
+    "sunk": "#e1edfb",
+    "line": "#c5d9f1",
+    "txt": "#26304f",
+    "mut": "#4a557d",
+    "acc": "#4346c0",
+    "on-acc": "#ffffff",
+    "btn": "#e4ecff",
+    "ok": "#176a46",
+    "warn": "#8f4d00",
+    "err": "#a3274a",
+    "ty-nong": "#c2410c",
+    "ty-lift": "#0e7fb5",
+    "ty-cam": "#9333ea",
+    "ty-other": "#4a557d"
+  },
+  "art": "clouds.svg"
+}

@@ -129,6 +129,10 @@ A `-` in the table means the code has no comment for that URL yet.
 | POST | `/api/stream/start` | live audio to a module's speaker (A24-32) POST /api/stream/start  {dev|ip, port, rate, file} -> {session, ...} | - | hub_api_play.py |
 | POST | `/api/stream/stop` | - | session | hub_api_play.py |
 | POST | `/api/stream/voice` | - | - | hub_api_play.py |
+| GET | `/api/themes` | - | - | hub_api_themes.py |
+| GET | `/api/themes/images` | - | id | hub_api_themes.py |
+| GET | `/api/themes/install` | - | - | hub_api_themes.py |
+| GET | `/api/themes/remove` | - | - | hub_api_themes.py |
 | POST | `/api/upload/cancel` | - | - | main.py |
 | GET | `/api/upload/progress` | the background upload: | - | main.py |
 | GET | `/api/usb/close` | - | port | main.py |

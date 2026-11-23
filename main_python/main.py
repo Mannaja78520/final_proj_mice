@@ -1596,6 +1596,9 @@ def shared_css():
             parts.append(b"/* ---- " + name.encode() + b" ---- */" + nl)
             parts.append(f.read_text(encoding="utf-8").encode("utf-8"))
             parts.append(nl)
+    # Theme packs (built in + installed) are hub-only: one more CSS block each.
+    parts.append(b"/* ---- theme packs ---- */" + nl)
+    parts.append(hub_api_themes.shared_css_extra())
     return b"".join(parts)
 
 
@@ -1616,6 +1619,10 @@ import hub_api_apps  # noqa: E402
 hub_api_apps.bind(sys.modules[__name__])
 import hub_api_extensions  # noqa: E402
 hub_api_extensions.bind(sys.modules[__name__])
+import hub_api_themes  # noqa: E402
+import theme_packs  # noqa: E402
+THEME_PACKS = theme_packs.ThemePacks(SHARED_WEB / "themes", HERE / "themes")
+hub_api_themes.bind(sys.modules[__name__])
 import hub_compress  # noqa: E402
 import hub_legacy  # noqa: E402
 import hub_api_resources  # noqa: E402
@@ -1667,7 +1674,7 @@ ALONE = [None]      # the AloneMode when started with --alone <app>, else None
 
 # ---------------------------------------------------------------- handler
 class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
-              hub_api_extensions.ExtensionRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_busmap.BusMapRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, hub_api_cameras.CamerasRoutes, hub_api_peers.PeersRoutes, BaseHTTPRequestHandler):
+              hub_api_extensions.ExtensionRoutes, hub_api_themes.ThemeRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_busmap.BusMapRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, hub_api_cameras.CamerasRoutes, hub_api_peers.PeersRoutes, BaseHTTPRequestHandler):
     # HTTP/1.1, so a browser can KEEP ITS CONNECTION.
     #
     # BaseHTTPRequestHandler defaults to HTTP/1.0, which means every response
@@ -2321,6 +2328,8 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
             if icon.is_file():
                 return self.send_bytes(icon.read_bytes(), "image/x-icon")
             return self.send_bytes(b"", "image/x-icon", code=204)
+        if path.startswith("/themes/"):      # a theme pack's pictures
+            return self.theme_file(path)
         if path == "/img-dark.css":       # dark-theme pictures (tools/make_dark_images.py); hub pages only, not the board flash
             f = SHARED_WEB / "img-dark.css"
             return self.send_bytes(f.read_bytes() if f.is_file() else b"", MIME[".css"])
@@ -2680,6 +2689,9 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 return self.send_json({"ok": False, "servos": {}})
             return self.send_json({"ok": True, "servos": registry.servos()})
 
+        r = self.api_themes(method, path, q)   # hub_api_themes.py
+        if r is not hub_api_themes.NOT_MINE:
+            return r
         r = self.api_extensions(method, path, q)   # hub_api_extensions.py
         if r is not hub_api_extensions.NOT_MINE:
             return r

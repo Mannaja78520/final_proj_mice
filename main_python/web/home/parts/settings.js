@@ -2,10 +2,7 @@
 // page does not know which themes exist, and must not: that is the whole point
 // of keeping them in one file. The technical switch is the shared one in the
 // head (miceAdv + Mice.TopBar), the same on every page.
-document.addEventListener('DOMContentLoaded', function(){
-  if (window.miceTheme) miceTheme.picker(document.getElementById('themePick'));
-});
-
+// The theme gallery is themes.js; the shared picker on other pages still reads the stylesheet.
 function paintSettings(){
   loadUsers();
   if (authed) resourceView.load();
