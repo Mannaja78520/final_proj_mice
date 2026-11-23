@@ -1929,6 +1929,7 @@
   "Help — MICE": "ヘルプ — MICE",
   "The page waits for the board to answer before showing its controls.": "ボードから応答が届くまで、操作ボタンは表示されません。",
   "The page reads camera settings after it identifies a camera.": "カメラを識別してから、カメラの設定を読み込みます。",
-  "Use the globe to change the page language. Screen readers follow the selected language.": "地球アイコンでページの言語を切り替えられます。スクリーンリーダーにも選んだ言語が伝わります。"
+  "Use the globe to change the page language. Screen readers follow the selected language.": "地球アイコンでページの言語を切り替えられます。スクリーンリーダーにも選んだ言語が伝わります。",
+  "Search Help in the language selected on the page.": "ページで選択した言語でヘルプの項目を検索できます。"
  }
 }

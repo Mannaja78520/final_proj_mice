@@ -1268,6 +1268,7 @@
   "Help — MICE": "วิธีใช้ — MICE",
   "The page waits for the board to answer before showing its controls.": "หน้าเว็บรอให้บอร์ดตอบก่อนแสดงตัวควบคุม",
   "The page reads camera settings after it identifies a camera.": "หน้าจะอ่านการตั้งค่ากล้องเมื่อทราบว่าบอร์ดเป็นโมดูลกล้อง",
-  "Use the globe to change the page language. Screen readers follow the selected language.": "ใช้ไอคอนรูปโลกเพื่อเปลี่ยนภาษาของหน้าเว็บ โปรแกรมอ่านหน้าจอจะใช้ภาษาที่เลือก"
+  "Use the globe to change the page language. Screen readers follow the selected language.": "ใช้ไอคอนรูปโลกเพื่อเปลี่ยนภาษาของหน้าเว็บ โปรแกรมอ่านหน้าจอจะใช้ภาษาที่เลือก",
+  "Search Help in the language selected on the page.": "ค้นหาหัวข้อวิธีใช้ด้วยภาษาที่เลือกบนหน้า"
  }
 }

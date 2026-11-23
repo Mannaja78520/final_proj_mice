@@ -7,7 +7,6 @@
       this.secs = Array.prototype.slice.call(document.querySelectorAll("main > section[id]"));
       this.links = Array.prototype.slice.call(document.querySelectorAll("nav a[href^='#']"));
       this.byId = {};
-      this.topicText = new Map(this.secs.map(function(s){ return [s, s.textContent.toLowerCase()]; }));
       var self = this;
       this.links.forEach(function(a){ self.byId[a.getAttribute("href").slice(1)] = a; });
     }
@@ -80,7 +79,7 @@
 
     search(term) {
       term = (term || "").trim().toLowerCase();
-      var any = false, secs = this.secs, topicText = this.topicText;
+      var any = false, secs = this.secs;
       if (!term) {
         this.showTopic(location.hash.slice(1));
         if (this.none) this.none.style.display = "none";
@@ -88,7 +87,12 @@
       }
       secs.forEach(function(s){
         s.classList.remove("pv-off");
-        var keep = topicText.get(s).indexOf(term) >= 0;
+        // Help translations and app content can arrive after navigation is initialized.
+        var text = Array.from(s.children)
+          .filter(function(child){ return !child.classList.contains("sec-nav"); })
+          .map(function(child){ return child.textContent; })
+          .join(" ");
+        var keep = text.toLowerCase().indexOf(term) >= 0;
         s.style.display = keep ? "" : "none";
         if (keep) any = true;
       });

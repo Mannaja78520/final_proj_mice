@@ -80,12 +80,18 @@ window.addEventListener("load", async function(){
     await qcMark("nav=" + visible());
     await qcMark("phone=" + (d.documentElement.scrollWidth <= d.documentElement.clientWidth + 1));
     await qcMark("tech=" + (w.getComputedStyle(d.querySelector("#gacha .where")).display === "none"));
+    // Mimic a translated heading that arrives after the navigator starts.
+    var late = d.querySelector("#modsite .shead h2");
+    late.textContent += " 9283471";
+    q.value = late.textContent.trim();
+    q.dispatchEvent(new w.Event("input", {bubbles:true}));
+    await qcMark("late-search=" + visible());
   } catch(e) { await qcMark("error=" + e.message); }
   finally { qcMark("done"); }
 });
 </script>''', base, seconds=25)
         marks = fake_serial.qc_marks
-        for expected in ("card-search=faces", "empty=true", "cleared=faces", "nav=gacha", "phone=true", "tech=true"):
+        for expected in ("card-search=faces", "empty=true", "cleared=faces", "nav=gacha", "phone=true", "tech=true", "late-search=modsite"):
             t.ok(expected in marks, expected, marks)
     finally:
         browser.kill()
