@@ -142,3 +142,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0058 | 2026-11-23 09:29 | Robot tab: monitor label and three paragraphs without inline bold so they translate |
 | 0059 | 2026-11-23 09:32 | Pose tab view-buttons paragraph and CAD-look labels translate |
 | 0060 | 2026-11-23 10:09 | Joint and time boxes: blank keeps old value, box always shows the value really used |
+| 0061 | 2026-11-23 10:27 | Studio applies the saved theme in the head, no default-colour flash |
