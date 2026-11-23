@@ -27,7 +27,8 @@
           var aPrev = document.createElement("a");
           aPrev.className = "sec-nav-btn sec-nav-prev";
           aPrev.href = "#" + prev.id;
-          aPrev.innerHTML = "<span class='sec-nav-lbl'>← ก่อนหน้า (Previous)</span><span class='sec-nav-title'>" + prevTitle + "</span>";
+          aPrev.innerHTML = "<span class='sec-nav-lbl'>← ก่อนหน้า (Previous)</span><span class='sec-nav-title'></span>";
+          aPrev.lastElementChild.textContent = prevTitle;
           nav.appendChild(aPrev);
         } else {
           var dummy = document.createElement("div");
@@ -40,7 +41,8 @@
           var aNext = document.createElement("a");
           aNext.className = "sec-nav-btn sec-nav-next";
           aNext.href = "#" + next.id;
-          aNext.innerHTML = "<span class='sec-nav-lbl'>ถัดไป (Next) →</span><span class='sec-nav-title'>" + nextTitle + "</span>";
+          aNext.innerHTML = "<span class='sec-nav-lbl'>ถัดไป (Next) →</span><span class='sec-nav-title'></span>";
+          aNext.lastElementChild.textContent = nextTitle;
           nav.appendChild(aNext);
         }
         s.appendChild(nav);
@@ -109,6 +111,4 @@
   }
 
   window.MiceHelpNavigator = MiceHelpNavigator;
-  window.miceHelp = new MiceHelpNavigator();
-  window.miceHelp.init();
 })();

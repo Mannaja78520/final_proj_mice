@@ -1,0 +1,18 @@
+{
+  "all-jao-launcher": {
+    "url": "/app/all-jao/",
+    "clip": ".card:has(#openBtn)",
+    "ready": "#openBtn"
+  },
+  "all-jao-games-box": {
+    "url": "/play/all-jao/",
+    "clip": "#page-guest .game-grid",
+    "ready": "#page-guest .game-grid",
+    "native": true,
+    "steps": [
+      {
+        "click": ".continue-guest-button"
+      }
+    ]
+  }
+}

@@ -1,0 +1,90 @@
+<section id="voice">
+  <p class="mini">Voice and the emotional speech maker are managed by the hub. They share the hub's performance values: the main listening, language-specific listening and the fallback to CPU use the same thread budget and parallel jobs. A model that is already open keeps its old values, and translation from several requests uses the same batch. Some thread values need the voice helper reopened. The Voice status shows which version of the values is loaded and says when values are waiting for the next load, without changing the model, character or service you chose.</p>
+  <div class="shead">
+    <span class="where tech">code/apps/voice · served at /app/voice/</span>
+    <h2>🎤 Voice — talk and give commands by voice</h2>
+    <p>A smart Q&amp;A system and text-to-speech, switching smoothly between the computer's speaker and the speaker on the Nong robot.</p>
+  </div>
+  <p class="mini">Read the status at the top before you start speaking or listening. If it says the voice helper or the connection is not ready, check the connection and try again. The status on the web does not confirm that the robot's speaker really made a sound.</p>
+
+  <!-- SECTION 1: CHAT & STT -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Point 1: the Q&amp;A box and typing/speaking (Q&amp;A Chat &amp; Speech Input)</b>
+      <span class="info-badge">Chat &amp; STT</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="voice-chat-box" alt="Voice Chat Box" class="info-img">
+    </div>
+    <ol><li>In Talk, type your question and choose Ask, or use Press to talk.</li></ol>
+  </div>
+
+  <div class="info-box">
+    <div class="info-header"><b>Set up the speaking voice</b></div>
+    <figure class="info-visual-wrapper"><img data-shot="voice-settings-card" alt="Set up the speaking voice" class="info-img"></figure>
+    <ol><li>Open Voice and choose a tone and speed. Pick a voice for each language, adjust Speed and Pitch below, then choose Save voice.</li><li>Turn on Start replies sooner with a voice on this device to let the local voice answer when the primary voice is slow.</li><li>In Talk, use Sound here to hear replies in the browser, and use the Robot list to choose which robot should respond.</li></ol>
+  </div>
+
+  <div class="f"><h3>Ask the rig a question</h3>
+    <p>The Voice app in the Tools list: type a question, the rig answers. The
+       answers come from a helper program that runs on this PC next to the
+       hub (the hub itself never carries an AI — it only passes the question
+       along and the answer back).</p></div>
+  <div class="f"><h3>The helper starts by itself<span class="tag t-new">new</span></h3>
+    <p>If the helper is not running, the hub starts it the moment anything
+       needs a voice: opening the Voice app, a line the rig must say, or a talk
+       gesture in Studio. The Voice page shows <b>starting the voice helper…</b>
+       with the seconds counting; a question asked meanwhile waits and is then
+       answered. If startup takes too long, the page says why. The hub keeps
+       the same helper while it is still running, so another request cannot
+       open a second copy. A late healthy reply lets the app continue; a
+       helper that has stopped can be started again. If it cannot start,
+       the page says why (its last lines are
+       behind the technical switch, the full log is in
+       <code>.local/voice/helper.log</code>). Which Python it uses and how long
+       it may take are in <code>config/voice_helper.json</code>.</p></div>
+  <div class="f"><h3>Speak instead of typing<span class="tag t-new">new</span></h3>
+    <p>The Voice page has a <b>Press to talk</b> button: press it, speak, press
+       again to stop, and your words appear in the box ready to send. The
+       listening runs on this PC too. Which languages it hears — and the words
+       each language gets wrong often — live in <code>config/voice.json</code>;
+       adding a language in <code>config/voice.json</code> (<code>tts.voices</code> / <code>stt.languages</code>) automatically adds its column and translation target in the Answers sheet and script detector. Use a plain code such as <code>ko</code>. The detector reads the alphabet, not the exact language: French, German, Spanish or Vietnamese questions land in the English column, and kanji with no kana lands in Chinese.</p></div>
+  <div class="f"><h3>One voice at a time<span class="tag t-new">new</span></h3>
+    <p>If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.</p></div>
+  <div class="f"><h3>The rig speaks one thing at a time<span class="tag t-new">new</span></h3>
+    <p>Everything the rig says goes through <b>one queue</b> on the hub: a
+       greeting, an answer from this page spoken through a robot, a message
+       from another program on this PC. So two of them never talk over each
+       other. Something that arrives while the rig is talking either
+       <b>waits its turn</b> or is <b>skipped</b> — whoever asked chooses — and
+       a greeting that waited too long is dropped, because the person has
+       walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p></div>
+  <!-- SECTION 3: ANSWERS SHEET & QUESTIONS ANALYTICS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Point 3: the expanded answers sheet and the question statistics dashboard (Answers Sheet &amp; Questions Analytics)</b>
+      <span class="info-badge">Answers &amp; Analytics</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> Comfortable answers sheet</div>
+        <div class="action-step"><b>How to use:</b> The Answers tab — type the question people ask at the top, and the robot's answer below.</div>
+        <div class="action-impact"><b>What it can do:</b>
+          The text boxes resize freely without being squeezed, with no nested scroll bars inside the box, and automatic translation for the languages you leave empty when you press Save.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> Questions dashboard and unanswered questions (Questions &amp; Unanswered)</div>
+        <div class="action-step"><b>How to use:</b> The Questions tab — see the analysis charts and the frequent questions.</div>
+        <div class="action-impact"><b>What it can do:</b>
+          Shows statistics in 6 ways (topic, time of day, answer source, language, prizes, top questions) and a box that gathers questions people often ask but that have no fixed answer yet, with a button <b>+ Make an answer</b> to add it to the answers sheet in a single click.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>If Load the AI, Unload the AI or reading the status fails, the button comes back to press again, with an error message. Loading a real model can take a while depending on the machine.</p>
+  <p><b>The on-device AI (Ollama) starts by itself when used:</b> You do not need to start it after switching on the computer, and it is not set to open at login. Pressing Load the AI or asking the first question opens it with a hidden window and waits until it is ready (normally no more than about 40 seconds). If it does not come up, it says why in plain words and does not retry for 1 minute; press Load the AI again.</p>
+  <p>Press the talk button and you see "opening the microphone…" at once. If the browser has not yet allowed the microphone, it tells you how to fix it, and you can still type the question instead.</p>
+
+</section>

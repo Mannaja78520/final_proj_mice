@@ -1,0 +1,79 @@
+<!-- ===================== TV REMOTE ===================== -->
+<section id="tv">
+<p><b>旧电视/浏览器：</b> Home、Studio、Voice 等页面都能在较旧的 Chrome / Android WebView 上运行（大约 Chrome 75 及以上）。对于早于 Chrome 80 的浏览器，中心会自动发送旧版脚本（构建时已转换），电视端无需额外操作。旧浏览器缺少的功能会自动补上。如果仍然打不开，会出现一条红色横幅，用通俗的话说明浏览器太旧：请更新 Chrome 或 Android System WebView，或在更新的电脑或手机上打开。如果 3D 页面在显卡不支持的机器上无法工作，Studio 仍可使用滑块和时间轴。</p>
+  <div class="shead">
+    <span class="where tech">code/apps/tv · served at /tv, /monitor, and /app/tv/</span>
+    <h2>📺 电视遥控与监视——面向智能电视和手机的控制界面</h2>
+    <p>一个极其轻量的控制和状态网页（瘦客户端），按集中式服务器架构设计。此页面没有 3D 渲染器。状态显示的速度取决于网络和所用设备。</p>
+  </div>
+  <p class="mini">标签页被隐藏时，此页面会暂停查询状态，重新打开标签页时再检查。如果浏览器不允许记住模式，页面仍能打开，并根据屏幕大小选择模式。</p>
+
+  <!-- SECTION 1: REMOTE CONTROLS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>第 1 点：主控制按钮和动作播放器（遥控与序列启动器）</b>
+      <span class="info-badge">遥控按钮</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="tv-controls-box" alt="TV 控制面板" class="info-img">
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> 主控制按钮（重新开始所选项、停止、回原位）</div>
+        <div class="action-step"><b>如何设置：</b> 按屏幕上的大触摸按钮，或用电视遥控器按</div>
+        <div class="action-impact"><b>机器人会发生什么变化：</b>
+          • <b>重新开始所选项：</b> 从头重新开始最近选择的片段；必须先选择片段。<br>
+          • <b>停止：</b> 停止中心正在播放的演出。<br>
+          • <b>回原位：</b> 停止演出，然后向所选的 Nong 发送 HOME。使用开发板保存的姿势，不会把每个关节都设为 90°。<br>
+          • <b>关闭所有语音：</b> 快捷语音框中的小按钮，可立即停止当前正在播放的所有语音。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> 动作列表（序列启动器）</div>
+        <div class="action-step"><b>如何设置：</b> 从“机器人”列表中选择一个 Nong，然后按片段名称按钮；如果有多台机器，必须先选择目标。</div>
+        <div class="action-impact"><b>机器人会发生什么变化：</b>
+          系统会从中央 Hub 拉取动作文件（<code>/api/list?kind=sequences</code>）并立即命令机器运行该动作序列。后台工作人员可以用手机轻松点选演出。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: JOINT GAUGES -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>第 2 点：10 个舵机关节角度的仪表条（10 关节监视仪表）</b>
+      <span class="info-badge">关节仪表</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="tv-gauges-box" alt="TV 仪表面板" class="info-img">
+    </div>
+    <p><b>关节监视</b> 选择舵机监视模式和机器人。每个条形图显示所选机器人报告的角度。</p>
+  </div>
+
+  <div class="f"><h3>解耦架构：它如何防止电视卡死？</h3>
+    <p>在旧架构中，在智能电视或旧手机的网页浏览器里打开 3D 页面（Three.js）时，浏览器必须编译 WebGL 着色器并每秒运行 60 次计算循环，而智能电视的处理器并不是为此设计的，结果电视浏览器会自己关闭或机器卡死。</p></div>
+  <div class="info-box">
+    <div class="info-header"><b>选择视图</b></div>
+    <p>手机遥控、舞台显示和舵机监视</p>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> 📱 手机遥控模式</div>
+        <div class="action-step"><b>使用方法：</b> 适合工作人员或操控机器人的人手持智能手机使用。</div>
+        <div class="action-impact"><b>功能：</b>
+          超大触摸按钮，用拇指就能轻松按下。有紧急停止按钮 ⏹ STOP、初始姿势 🏠 HOME、大尺寸的触摸动作卡片，以及快速问候按钮，并隐藏了技术性的舵机信息以节省屏幕空间。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> 📺 舞台显示模式（10 英尺）</div>
+        <div class="action-step"><b>使用方法：</b> 显示在舞台上的大电视屏幕上，供观众和活动组织者观看。</div>
+        <div class="action-impact"><b>功能：</b>
+          以超大文字显示当前演出的名称（正在播放）和进度条，3–5 米外也清晰可见，并带有 🟢 正在演出（PLAYING）状态。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>如果播放、停止或说话失败，顶部栏下方会出现一条消息。只有在停止被成功应答，且机器人确认 STOP 没有错误之后，才会继续发送 HOME。如果停止原来的任务失败，系统仍会尝试向所选机器人发送 STOP，并报告合并后的结果。在加载列表期间按停止或更换机器人，会取消仍在等待的开始请求，包括已发出但较晚到达中心的播放或 HOME 请求。说话失败时，你输入的文字会保留。</p>
+  <p>刷新按钮在加载期间显示“正在刷新……”，随后显示最近一次更新的时间，或提示无法连接中心。</p>
+
+</section>

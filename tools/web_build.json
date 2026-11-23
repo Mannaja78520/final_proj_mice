@@ -103,7 +103,8 @@
       "out": "main_python/web/help.html",
       "js": [
         "topics.js",
-        "search.js"
+        "search.js",
+        "apps.js"
       ]
     }
   ]

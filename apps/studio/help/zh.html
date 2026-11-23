@@ -1,0 +1,187 @@
+<!-- ===================== STUDIO ===================== -->
+<section id="studio">
+<h3>打开最新作品，包含动作和音乐</h3>
+<p>中心主页有应用 <b>最新作品</b> 用于已安装的作品。还没有列表的电脑可以直接导入文件。在 Nong Studio 中按 <b>打开带音乐的作品</b> 然后选择片段或文件 <code>.nong.json</code> 它将动作、骨骼绑定（rig）和音乐保存在单个文件中。系统在切换项目前会先读取并检查文件。如果有未保存的内容，会提示您先保存（Save）或取消，并让您选择是使用该项目的 rig 还是保留当前设置。更换 rig 可能会根据新的机械极限调整动作姿态或时间节奏。</p>
+<p>按 <b>带音乐试一试</b> 即可在屏幕上配合原来的音乐查看动作。可以暂停、回到开头或拖动时间条。音乐是预览的时钟，所以标签页变慢时它也不会与动作脱节。如果音乐比动作先结束，剩下的部分是静音；循环时会在动作结束后重新开始音乐。打开作品或使用此预览不会向真实机器人发送任何命令。“在机器人上运行”按钮是单独的步骤。</p>
+<p><b>保存</b> 音乐也会保存在项目里，重新打开时仍然在，或者按 <b>下载动作+音乐</b> 将单个文件移到另一台电脑。草稿的音乐单独保存在浏览器里；如果该存储被关闭或清除，可能需要重新选择原文件，而恢复的动作仍然在。对于真实机器人，请使用 YAML 文件以及与 play: 命令同名的 MP3，放在 SD 卡上，按原有方式上传。系统不会自动上传或让机器人播放。</p>
+<p>项目名称可以使用泰文和英文字母、数字、空格以及 _ - . ，但不能使用表情符号、/ \ :，也不能使用 Windows 保留的名称（如 con、nul、com1）。页面会用简单的话提示，已保存的内容不会被覆盖。</p>
+
+<p><b>无法绘制 3D 的设备（电视、旧电脑，或关闭了显卡的浏览器）：</b> Studio 仍然可以打开并使用。滑块、时间轴和在机器人上播放都正常，只是 3D 机器人画面会显示一条消息，说明这台设备无法绘制。要看到机器人，请用较新的浏览器或另一台电脑打开。</p>
+<p><b>自动分离舞段：</b> 默认的“自动”会自己检测新片段中的多个人物和镜头角度变化。使用“自动”或“群舞”时，系统每次都会比较整个片段中的动作，不会预先固定男/女的位置。手臂相同但腰部扭转或肩膀倾斜不同的人，可能被分进不同的舞段。选择“舞蹈编排”可查看每一段，或选择“分别保存舞段”，把证据持续不同、画面可靠、且达到默认设置所定画面比例的舞段另存为独立项目。“片段（Fragment）”是尚无法确认为新舞段的一段内容，可逐个查看和保存，不会每次镜头切换都算作新的舞段。如果新角度无法与之前的舞段清楚匹配，系统会结合舞者的外观和对所有组同时匹配，并在匹配仍不明确时标记“check cut”。仍不明确的新角度会保持原姿势，不会仅因时间过去就变得可靠。只有当该画面中看到的多个人确实做同一个姿势时，才会使用已确认的共享姿势。“% reliable”报告表示可用画面的比例，并不保证是同一个人。用户也可以选择自己手动指定人物。</p>
+<p><b>无法匹配到同一个人的镜头切换：</b> 系统会自动把它拆成多个场景片段，并选出在该舞段中连续出现的主要舞者，而不是随每个画面的置信度来回切换。每个部分的视频范围和动作时间对齐开始。修改视频范围时，会取消之前的读取并分析新的范围，不会在可见片段之前补上很长的静止站立。“生成并保存”会分别保存达到标准的舞段或片段，不会生成把不同动作猜成同一个人的演出。含糊的跨镜头匹配并不保证性别或同一个人。</p>
+<p><b>连续舞蹈：</b> 默认会保持姿势的形状，并根据机器人的限制增加时间。若想保持原来的音乐节奏，请选择“配合音乐”，这可能会减小运动幅度。系统会按时间过滤抖动，减少短暂的反向和关节角度的突变。当人在换姿势后静止不动时，机器人仍会运动到它在静止之前接受的姿势，不会因滤波而半途停下。开场姿势和静止片段会被保留，也不会把未来的姿势拉进来填补看不见的画面。滤波之后会再次检查碰撞和时间，并显示前后的反向次数。原始画面和误差报告仍用来检查滤波是否吃掉了太多姿势细节。骨架和电机的限位可能使某些姿势仍与真人不同。</p>
+
+  <div class="card"><h3>跟随单人视频或群舞</h3>
+    <p>比视频播放器最低速度还慢的绕行阶段，会按机器人的时钟一帧一帧地推进画面，同时声音暂停。用“同时播放”来停止或继续。更换视频或模式会立即恢复正常速度，并取消之前的读取。原始音乐不会被发送去绑定已被拉长时间的序列，因为节拍会错位；必须使用调整过时间的音乐文件。对于加油助威序列，会成对提供调整过时间的音乐文件。</p>
+    <p>在“视频”页面，可以分别把“表演者”选为“单个表演者”或“群舞”，把“镜头”选为“单一镜头”或“切换镜头 / 视角”。读取片段后，会出现可在“跟随”中选择的表演者编号。不同的舞段，例如男舞者和女舞者的，不会被平均在一起。请分别检查并以各自的名称保存每个人或每个舞段。</p>
+    <p>“转动腰部”使用躯干相对于髋部的角度，“跟随肩部倾斜”使用肩膀相对于躯干的角度，并与骨架中的真实机构对照。静止站立的人不会拉入未来的姿势来填补，也不会跨越镜头切换做平滑。侧面或俯视的摄像头在接受新姿势之前，会先在躯干坐标系内进行检查。</p>
+    <p>“学习型镜头检查”使用在模拟器中训练的 Q-learning 策略，帮助决定是接受姿势、保留旧姿势，还是补偿视角。在开启之前，会与几何方法做比较。如果人被遮挡、不确定是否是同一个人，或无法区分人的旋转与摄像头的旋转，就会保留最近一次可靠的姿势。模拟器的结果并不能证明在真实片段上的准确度。</p>
+    <p>按真实姿势检查手板、关节球、手臂杆、躯干和头部，包括耸肩抬升。每个部件之间必须至少相距 10 毫米（为舵机齿轮间隙留出余量；可在 safe_path.json 中以 clearMm 加上骨架的余量设置）。会发生碰撞的目标姿势会先寻找附近的无碰撞姿势，然后用 RRT* 寻找绕行路径，圆角处理之后再次检查碰撞和时间。预览、项目和导出的命令使用同一套已检查的姿势。当机器人跟不上时，“配合音乐”可能会减小运动幅度。关闭后，会保持姿势并增加时间去移动或绕行，预览视频也会放慢到机器人的节奏。重复的姿势不会压缩或倒回音乐的时间。</p>
+  </div>
+  <p class="mini">3D 画面质量会根据打开网页的设备自动选择。可在 中心 → 设置 → 3D 画面 中更改。节能模式会降低帧数和分辨率，同时保持相同的播放节奏和碰撞检测。重新加载页面后，边缘效果会采用新值。</p>
+  <div class="shead">
+    <span class="where tech">code/nong/main_python_set_nong · served at /studio/</span>
+    <h2>Nong Studio —— 使用指南与每个调整点的详细说明</h2>
+    <p>Nong 人形机器人（10 个舵机关节）的 3D 模拟器和动画姿势设计器。在电脑上运行，采用按需 3D 渲染，省电、占用资源少，不会卡住。</p>
+  </div>
+
+  <!-- OVERALL SCREENSHOT -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>当前 Nong Studio 界面概览（当前真实界面）</b>
+      <span class="info-badge">概览</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="studio-current" alt="Nong Studio 当前的实际界面" class="info-img">
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 1: JOINT SLIDERS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>第 1 点：调整 10 个舵机关节角度的面板（关节滑块与检查器）</b>
+      <span class="info-badge">关节控制</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="studio-sliders" alt="关节滑块面板" class="info-img">
+    </div>
+    <ol><li>在姿势标签页移动关节滑块，并查看三维预览。</li><li>使用中立姿势重置预览。左右镜像会交换两侧，前后镜像会翻转双臂的伸展方向。</li></ol>
+  </div>
+
+  <!-- SUB-SECTION 2: TIMELINE & KEYFRAMES -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>第 2 点：时间轴与关键帧序列器</b>
+      <span class="info-badge">时间轴</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="studio-timeline-bar" alt="时间轴控制" class="info-img">
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> 播放序列（播放 / 在机器人上运行）</div>
+        <div class="action-step"><b>如何设置：</b> 按 <b>▶ 播放</b> 在屏幕上预览，或按 <b>▶ 在机器人上运行</b> 来指挥真实机器人</div>
+        <div class="action-impact"><b>机器人会发生什么变化：</b>
+          3D 模型和真实机器人会连续地依次经过各个关键帧，平滑程度取决于计算出的速度曲线。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> 保存姿势（+ 添加关键帧与时长）</div>
+        <div class="action-step"><b>如何设置：</b> 摆好你想要的姿势，然后按 <b>+ 添加关键帧</b> 并设定时长（例如 800 毫秒）</div>
+        <div class="action-impact"><b>机器人会发生什么变化：</b>
+          将新姿势添加到时间轴。如果设定的时间太短，舵机来不及转到位，系统会自动拉长时间，防止电机突然抖动。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> 拖动条（拖动条与实时跟踪）</div>
+        <div class="action-step"><b>如何设置：</b> 向前或向后拖动时间指针</div>
+        <div class="action-impact"><b>机器人会发生什么变化：</b>
+          机器人会实时跟随拖动到的时间点，帮助你准确检查结构发生碰撞的位置。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> 循环与缩放（循环复选框）</div>
+        <div class="action-step"><b>如何设置：</b> 勾选此复选框 <b>循环</b></div>
+        <div class="action-impact"><b>机器人会发生什么变化：</b>
+          播放到最后一个姿势时，机器人会平滑地回到第一个姿势并连续重复播放，没有抖动或甩臂。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 3: 3D MODEL & IK INTERACTION -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>第 3 点：3D 模型与逆运动学控制（3D 画布）</b>
+      <span class="info-badge">3D &amp; IK</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="studio-3d-model" alt="3D 模型画布" class="info-img">
+    </div>
+    <ol><li>选择上方、左侧、正面、右侧、背面或下方查看模型。选择 3D 即可环绕观察。</li><li>在姿势标签页拖动预览中的关节，或使用对应滑块。</li></ol>
+  </div>
+
+  <!-- SUB-SECTION 4: CALIBRATION & SERVO OFFSET -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>第 4 点：补偿与舵机校准设置（设置与舵机偏移）</b>
+      <span class="info-badge">校准</span>
+    </div>
+    <p class="mini">对于会指挥或更改真实机器人的卡片（机器人、骨架设置、舵机偏移、动作安全、此机器人），需要先登录。不会触及真实机器人的卡片（3D 形状模型、保存）无需密码即可打开。
+      <span class="where">列表位于 nong/main_python_set_nong/web/settings_open.json</span></p>
+    <p class="mini">要让某张卡片一直开着，请按 <b>⧉</b> 在卡片标题上。它会作为独立窗口浮出。可把标题拖到任何位置，拖动右下角调整大小，并且在每个标签页上都可见。按 <b>⇲</b> 即可放回原位。浏览器会记住位置（手机上没有此按钮）。</p>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="studio-tuning-card" alt="调节与校准卡片" class="info-img">
+    </div>
+    <ol><li>打开设置并展开舵机偏移。用 − 或 + 每次微调 0.5°，也可以输入偏移值，或按 0 清除该关节的偏移。</li><li>关节限位和耸肩曲线在同一标签页的机架设置卡中。</li></ol>
+  </div>
+
+  <!-- SUB-SECTION 5: SEQUENCE CHAIN -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>第 5 点：串联序列（序列链与速度）</b>
+      <span class="info-badge">序列</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="studio-sequence-card" alt="动作序列管理卡片" class="info-img">
+    </div>
+    <ol><li>在序列标签页选择已保存的 YAML，再选择加载以编辑，在时间轴上打开动作。</li><li>选择播放已保存的动作可预览。用然后运行指定下一段，留空即可在结束时停止。</li></ol>
+  </div>
+
+  <!-- SUB-SECTION 6: SHOWS & MUSIC -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>第 6 点：编排演出与音乐同步</b>
+      <span class="info-badge">演出与音乐</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="studio-shows-card" alt="演出与音乐卡片" class="info-img">
+    </div>
+    <ol><li>在演出标签页打开已保存的演出或选择新建，然后按顺序添加已保存的序列。</li><li>选择音乐或从电脑添加。使用间隔设置过渡速度和最短时间。可在时间轴上预览顺序。</li></ol>
+  </div>
+
+  <!-- SUB-SECTION 7: MOVES WHILE TALKING (A46-1, A46-4) -->
+  <div class="info-box" id="studio-talk">
+    <div class="info-header">
+      <b>第 7 点：说话时手臂的动作（说话时的动作）</b>
+      <span class="info-badge">序列</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> 试一个句子（▶ 显示）</div>
+        <div class="action-step"><b>如何设置：</b> 输入机器人要说的句子，选择说话风格（亲切、礼貌……），然后按 <b>▶ 显示</b></div>
+        <div class="action-impact"><b>机器人会发生什么变化：</b>
+          此页面用与“语音”页面相同的声音说出句子，3D 画面中的手臂会随声音运动。这只是预览；真实机器人不会动。动作会保留在时间条上，可按播放再看一遍（没有声音）。如果没有登录，则只能看到动作，没有声音。再短的句子也至少会有一个动作。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> 为还没有动作的词创建新动作</div>
+        <div class="action-step"><b>如何设置：</b> 输入表示方向或身体部位的词，例如“在右边”“上面”“心”，然后按显示。勾选 <b>让 AI 想出新动作</b> 如果希望在没有任何规则匹配时，由与“语音”页面相同的 AI 来想出动作（需要登录）。</div>
+        <div class="action-impact"><b>机器人会发生什么变化：</b>
+          生成的动作会根据机器人的尺寸和关节限位进行调整，并检查不会撞到自身（必要时寻找绕行路径）。无法做到安全的动作会给出原因，且不会被使用。按 <b>＋ 保留</b> 将其保存为永久动作，“语音”页面就会对该词使用这个动作。所有词和规则都在 <code>config/gesture_makers.json</code>
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> 手臂的休息姿势（手势之间的手位）</div>
+        <div class="action-step"><b>如何设置：</b> 选择 <b>手势就绪</b> （肘弯曲，手在身前）或 <b>站直（原位）</b> （站直，手臂放下）</div>
+        <div class="action-impact"><b>机器人会发生什么变化：</b>
+          说话时在动作之间，手臂会回到这个姿势休息。准备姿势可以更快动起来；站直姿势看起来更安静。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> 动作列表与事件</div>
+        <div class="action-step"><b>如何设置：</b> 修改调用每个动作的词，按 ▶ 查看单个动作，或自己在时间条上编排动作，然后按 <b>＋ 保存为手势</b> 取消勾选“事件”即可关闭该事件的动作。</div>
+        <div class="action-impact"><b>机器人会发生什么变化：</b>
+          “语音”页面根据所说的词挑选动作，并用随机的小动作填补空隙。
+        </div>
+      </div>
+    </div>
+  </div>
+<p class="mini">3D 画面静止时会停止绘制，并在编辑器或监视器中的姿势变化、打开/关闭网格或手部标记、加载更多模型、或调整屏幕大小时重新绘制。</p>
+  <p>如果无法读取已保存的项目列表，Studio 会保留之前的选择，并同时在状态栏和中央通知栏显示错误，因此从每个标签页都能看到。按“重试已保存的动作”可再次尝试读取。页面上的作品会保留。</p>
+<details><summary>机器人姿势训练图片（电脑上的实验）</summary><p>生成姿势视图可使用 <code>python -m tools.robot_pose synth --n 20000 --no-images --out ABSOLUTE_PRIVATE_PATH</code>，然后渲染 <code>python -m tools.robot_pose.render_mujoco ABSOLUTE_PRIVATE_PATH/views.jsonl --out ABSOLUTE_PRIVATE_PATH</code>。MuJoCo 使用 Studio 的骨架和已保存的相机设置，并随机调整光照、颜色、纹理、模糊和噪点。标注会根据深度信息，标出被其他部件挡住的关键点。对于位于自身外壳内部的关节中心，会根据骨架尺寸留出判断余量。所有图片、标注和报告都应保存在 PC 的私有位置： <code>.local/robot_pose</code> 文件夹，使用完整路径。这些是模拟图像；真实视频的标注仍需要另行观察机器人保持静止的姿态，并人工检查画面。如果有私有的网格模型，也可以选用 CAD 外观；它使用同一套关节结构，并核对源模型中各部件的安装偏移。CAD 中不存在的参考点，包括虚拟底座点，都不会标注。用于训练的视角必须至少能看到三个关节；完全被遮挡的视角会被剔除。未标注的底座点仍可用来确定机器人立柱的范围。此工具不会启动训练、拍摄，也不会向机器人发送命令。</p><p>对于已录制的静止画面， <code>python -m tools.robot_pose.lab_labels ABSOLUTE_MANIFEST.json --out ABSOLUTE_PRIVATE_DATASET</code> 根据独立测量的关节中心位置和已知的静止姿态，估算相机参数。私有清单会指定机器人已停稳的时间段、验证过的参考点、机器人范围、按整个视频划分的训练集和验证集，以及实际观察后可接受的姿态。收到命令确认，并不代表机器人已经到达指定姿态：仍在移动或姿态明显不对的画面会被剔除。只有验证过的参考点才会标注。训练前，至少检查 50 帧叠加了标记的画面；仅凭一个平面内的单一姿态，无法完成基于实际尺寸的相机标定。</p></details>
+</section>
+
+<p>恢复未保存的作品时，Studio 会等音乐准备好后才播放或保存。如果无法恢复音乐，请重新打开已下载的 .nong.json 文件。动作仍保留在屏幕上。</p>
+
+<p>选用的作品文件位于 mice_system 内的 results 文件夹。打开 results/index.html，或中心主页 → 最新作品。带动作和音乐的文件在 results/bundles 中。不会自动创建桌面图标。</p>

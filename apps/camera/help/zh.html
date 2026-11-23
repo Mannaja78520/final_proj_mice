@@ -1,0 +1,65 @@
+<section id="camera">
+  <div class="shead">
+    <span class="where tech">code/apps/camera · served at /app/camera/ · list: GET /api/cameras</span>
+    <h2>📷 Cameras——所有摄像头集中在一处，多个屏幕和程序可同时使用</h2>
+    <p>本页汇集所有类型的摄像头：ESP32-CAM 板、这台电脑的 USB 摄像头，以及您自己添加的网络摄像头。系统对每个摄像头只读取一次，再同时分享给多个人和程序：本页、单独的观看窗口和人脸应用。</p>
+  </div>
+
+  <!-- SECTION 1: STREAM PREVIEW -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>第 1 点：ESP32-CAM 摄像头的实时画面框（实时流与中继）</b>
+      <span class="info-badge">实时画面</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="camera-preview-box" alt="摄像头实时画面面板" class="info-img">
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> 实时画面框与信号分发（多客户端中继）</div>
+        <div class="action-step"><b>如何设置：</b> 通过以下方式打开查看： <code>/app/camera</code> 同时在任意数量的浏览器中查看</div>
+        <div class="action-impact"><b>会发生什么变化：</b>
+          ESP32 芯片内存有限，只能发送 1 路流。因此中央中心拉取 1 路画面，再同时分发给多个观看者，开发板不会崩溃。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> 信号来源：WiFi 与 USB</div>
+        <div class="action-step"><b>如何设置：</b> 在摄像头卡片上打开实时画面，或选择拍一张。仅用线缆连接的摄像头板在此不会显示图像。</div>
+        <div class="action-impact"><b>会发生什么变化：</b>
+          USB / RS485 线缆只传输文本和文字命令，不能发送 JPEG 图片文件。如果只接了线缆，画面不会显示，但仍可以设置传感器。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <div class="info-header"><b>添加网络摄像头</b></div>
+    <figure class="info-visual-wrapper"><img data-shot="camera-add-box" alt="添加网络摄像头" class="info-img"></figure>
+    <p>选择添加摄像头，选好类型并填写名称和链接，然后选择添加。</p>
+    <p>要调整 ESP32-CAM 的画面，请打开该摄像头卡片上的设置。</p>
+  </div>
+
+  <h3>这是哪种摄像头开发板？</h3>
+  <p>模块会在开机时自动识别自己的摄像头板：逐一尝试已知的接线配置，直到传感器回应，所以即使是不知道型号的仿制板，通常也能直接使用。支持经典 ESP32-CAM 板（AI-Thinker, ESP-EYE, M5Stack, TTGO T-Journal, WROVER）和 ESP32-S3 板（Freenove / ESP32-S3-EYE, XIAO S3 Sense, FireBeetle S3, S3-CAM），以及 OV2640、OV3660 和 OV5640 传感器。S3 板需要使用 S3 版固件；经典版和 S3 版固件都只会尝试与自身芯片类型相符的板子。如果你知道板子的型号，也可以手动选择，使用 <code>CAM BOARD &lt;name&gt;</code> (or <code>CAM BOARD AUTO</code>），然后重启模块。S3、WROVER 和 T-Journal 开发板的引脚对应关系来自厂商提供的表格，尚未在实物板上测试。</p>
+
+  <h3>多人可以同时观看</h3>
+  <p>开发板本身一次只能被一个对象读取，这是硬件的限制，不是谁选择的：它只有一个帧缓冲区，取一帧会收回已借出的那一帧，所以两路流会互相撕坏对方的画面。因此中心保持 <b>一个</b> 与每台摄像头的连接，并由它向所有观看者供流。你可以在任意多个屏幕上打开此页面。</p>
+  <p>搜索失败时，会提示你按“再找一次”，而不是说没有摄像头。保存的数据会标明可能已过时；如果只搜索到一部分，可能还有摄像头尚未显示。</p>
+
+  <h3>添加不是 ESP32 板的摄像头</h3>
+  <p>点击“添加摄像头”并选择类型：网络摄像头或视频链接（以 http 或 rtsp 开头的地址，来自 IP 摄像头或手机摄像头应用），或无需真实设备的演示摄像头。需要先登录。这台电脑的 USB 摄像头无需添加，会自动出现。</p>
+  <p>包含摄像头密码的链接只保存在这台电脑上，不会显示在网页上。这台电脑自身的地址（127.0.0.1）和本机文件不能用作链接。</p>
+
+  <p>添加摄像头表单中的项目：Add a camera = 添加摄像头，Kind = 摄像头类型，Link = 摄像头链接</p>
+
+  <h3>在单独窗口中观看</h3>
+  <p>在摄像头卡片上点击“在单独窗口打开”，即可得到只显示该摄像头实时画面的全屏页面，适合第二个显示器、电视或他人的手机。可以打开任意多个窗口，摄像头不受影响；画面中断时本页会自动重连。</p>
+
+  <h3>用于人脸识别</h3>
+  <p>勾选“用这个摄像头识别人脸”，人脸应用会在几秒内开始使用该摄像头，无需重启；取消勾选即停止。ESP32-CAM 与普通摄像头一样使用，并可与实时观看或视频录制同时进行。</p>
+
+  <p>每个摄像头只通过一条途径使用。USB 摄像头同一时间只能被一个程序打开，ESP32-CAM 板只接受一个连接。如果 hub 已占用摄像头，而 Face_Regonize 又自己去打开同一个，就会提示摄像头正在使用或出现黑屏。请通过本页的开关使用摄像头，并让 Face_Regonize 改从 hub 的链接取画面（等待朋友那边实现）。</p>
+
+  <h3>供其他程序使用的链接</h3>
+  <p>打开技术详情开关可查看每个摄像头的实时画面链接。网络上的其他程序（例如视频录制程序或朋友的应用）可以像普通网络摄像头（MJPEG）一样使用该链接，系统仍然只读取真实摄像头一次。</p>
+</section>

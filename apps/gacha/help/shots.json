@@ -1,0 +1,6 @@
+{
+  "gacha-tabs": {
+    "url": "/app/gacha/",
+    "ready": ".preset-card button"
+  }
+}

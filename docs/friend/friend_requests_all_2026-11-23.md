@@ -249,3 +249,13 @@ hub อ่านกล้องแต่ละตัว **ครั้งเด�
 `docs/gacha/friend_requests.md` (2026-10-22 + อัปเดต 11-05 และ (2) สต็อกสองทาง), `docs/friend_requests_admin_2026-11-04.md` (PR #122 ยังไม่ merge; เนื้อหาอยู่ใน A4 แล้ว), `docs/friend/face_regonize_perf_2026-11-05.md` (PR #125),
 `friend_api/ขอเพื่อนแก้_2026-10-19.md`, `friend_api/gacha_requests_2026-10-22.md`, `handoff/tasks/face-photobooth-pc.md`, `handoff/tasks/friend-face-server.md`
 เอกสารเดิมยังเก็บไว้เป็นหลักฐาน ฉบับนี้แทนที่ในการส่งให้เพื่อน
+
+
+## ส่วน H — ให้แอปส่งคู่มือของตัวเองได้
+
+**Face_Regonize, Photobooth และ All-Jao Games** ส่งโฟลเดอร์ `help/` มาพร้อมแอปได้
+ใส่ `help.json` ที่มีชื่อและคำอธิบาย 4 ภาษา (`th`, `en`, `zh`, `ja`)
+พร้อม `group` และ `order` ใส่คู่มือ `th.html`, `en.html`, `zh.html`, `ja.html`
+และภาพหน้าจอจริงใน `img/` เช่น `th-light-open.webp` กับ `th-dark-open.webp`
+ถ้าแอปใช้ภาษาและชุดสีของตัวเอง ให้บอกไว้ใต้ภาพ หน้าคู่มือ Hub จะอ่านคู่มือที่ส่งมาเมื่อเพิ่มแอป
+ถ้ายังไม่มีคู่มือครบ Hub จะใช้คู่มือที่เราจัดไว้ให้ ดูรูปแบบที่ [ส่วน Help ใน extensions.md](../extensions.md#help-that-ships-with-an-app)

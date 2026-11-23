@@ -1,0 +1,16 @@
+{
+  "title": {
+    "th": "Nong Studio",
+    "en": "Nong Studio",
+    "zh": "Nong Studio",
+    "ja": "Nong Studio"
+  },
+  "summary": {
+    "th": "จัดท่าหุ่นและลำดับการแสดง",
+    "en": "Create poses and shows",
+    "zh": "编辑姿势与演出",
+    "ja": "ポーズとショーを作る"
+  },
+  "group": "use",
+  "order": 10
+}

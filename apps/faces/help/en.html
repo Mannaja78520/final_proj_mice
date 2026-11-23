@@ -1,0 +1,50 @@
+<section id="faces">
+  <div class="shead">
+    <span class="where tech">code/apps/faces · /app/faces/</span>
+    <h2>👋 FaceReg / Reconize — faces and greetings</h2>
+    <p>Open the face program, check that the robot can receive its data, then set what it says and does when it meets someone.</p>
+  </div>
+  <figure class="info-visual-wrapper"><img data-shot="faces-open" alt="Open Reconize and the three tabs in Mice" class="info-img"></figure>
+  <div class="f">
+    <h3>Choose the page that fits the job</h3>
+    <p><a href="/app/faces/">Open Mice's Reconize page</a> This page has 3 tabs. The face management program opens through the Open Reconize button.</p>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th>What do you want to do</th><th>Choose the tab</th><th>How to do it / what you get</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap2">Open the face program</td><td>Open it</td><td>Press Open Reconize to open the program. Use Check it is running to see whether the program is running yet.</td></tr>
+      <tr><td class="wrap2">Check the robot is receiving the data</td><td>Is the rig following it?</td><td>See the status of the data follower. If it has not started, there is a Start following Reconize button.</td></tr>
+      <tr><td class="wrap2">Change the greeting and the moves</td><td>What the rig says</td><td>Set the words, the speaker, the pause between greetings and the behaviour for each camera, then press Save.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="info-box">
+    <div class="info-header"><b>1. Turn the greeting on and choose the speaker</b></div>
+    <p>in <b>What the rig says</b> Open <b>Greet people the face app sees</b> then choose <b>Speaker</b> for where the sound should come out</p>
+    <p>the box <b>Polite word before a name</b> is the word placed before a name, and <b>If the rig is already talking or playing</b> Choose <b>skip this hello</b> to skip it, or <b>wait its turn</b> to wait</p>
+  </div>
+  <div class="info-box">
+    <div class="info-header"><b>2. Write the greetings and set the pause between repeat greetings</b></div>
+    <p>Set the times in <b>Greet the same person at most once every</b> in minutes, and the time for someone not yet known in seconds per camera</p>
+    <p>In the section <b>When they arrive</b> and <b>When they leave</b> put the words for someone coming the first time, someone coming back, and someone not yet known.</p>
+    <p><code>{title}</code> in place of the title, and <code>{name}</code> in place of the name. If someone isn't recognized yet and has no name, use a general greeting such as "Hello, welcome!"</p>
+  </div>
+  <div class="info-box">
+    <div class="info-header"><b>3. Choose the behaviour and moves of each camera</b></div>
+    <p>In the section <b>Cameras</b> choose whether that camera greets when it sees someone (<b>says hello</b>), says goodbye (<b>says goodbye</b>) or only counts people (<b>only counts</b>)</p>
+    <p>Choose <b>Move</b> and the robot in the box <b>on</b> of that camera. The list of moves comes from the files really saved. If you want speech only, choose <b>none</b></p>
+    <p>If the camera does not appear yet, use <b>Add a camera by name</b> The camera name must match the data the face program sends.</p>
+  </div>
+  <div class="f">
+    <h3>Save and check the result</h3>
+    <p>Press <b>Save</b> at the bottom and wait for the message confirming it was saved. A change takes effect the next time the system meets someone who matches the conditions. <b>Undo my changes</b> Loads the saved values back.</p>
+    <p>If you want to announce when the number of people reaches a set count, use <b>Celebrations</b> The titles for particular people are in <b>Titles for particular people</b></p>
+  </div>
+  <p class="tech">The address of the outside program is read from config/partners.json.</p>
+  <div class="info-box">
+    <div class="info-header"><b>4. Colours and dynamic theme inheritance (Universal Dynamic Theme Sync)</b></div>
+    <p>The Reconize page automatically inherits the color theme from the central Hub via <code>MiceThemeManager</code> (such as Midnight dark mode) avoids harsh, glaring white backgrounds or distracting color flashes. When users change themes in Hub, all tabs and apps update their colors instantly in real time.</p>
+  </div>
+
+  <p>If the face app (Reconize) stops sending pictures halfway, this page says "reconnecting by itself" and asks you to check that Reconize is still open. The helper tries to reconnect by itself without you pressing anything.</p>
+
+</section>

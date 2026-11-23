@@ -2,21 +2,19 @@
 // หรือเก็บได้ตาม group เผื่อมีแอพและอย่างอื่นเพิ่มในอนาคต"). Each group opens and
 // closes and the page remembers which (localStorage); the open topic's group
 // always opens. Runs before search.js, which reads these links and adds
-// Previous / Next. A new app = one [id, words] line here + its part file.
+// Previous / Next. Installed apps supply their own titles and group.
 const HELP_GROUPS = [
   {id: "start", label: "Start here", topics: [["bytask", "Start with a task"]]},
   {id: "use", label: "Use it", topics: [
-    ["hub", "Mice Hub"], ["modsite", "A module's own page"], ["studio", "Nong Studio"],
-    ["tv", "TV Remote"], ["camera", "Cameras"], ["voice", "Voice"], ["faces", "Reconize"],
-    ["gacha", "Prize machines"], ["all-jao", "All-Jao Games"], ["accounts", "Accounts"]]},
+    ["hub", "Mice Hub"], ["modsite", "A module's own page"], ["accounts", "Accounts"]]},
   {id: "build", label: "Build and set up", topics: [
     ["firmware", "Board setup"], ["lift", "Lift module"], ["nong", "Nong module"]]},
   {id: "wrong", label: "When something is wrong", topics: [
     ["qc", "Check the system"], ["transports", "Connections"], ["commands", "Robot commands"],
-    ["files", "Files &amp; formats"]]},
+    ["files", "Files & formats"]]},
 ];
 
-(function(){
+function initHelpTopics(groups){
   var nav = document.getElementById("helpNav");
   if (!nav) return;
   var closed = {};
@@ -25,14 +23,23 @@ const HELP_GROUPS = [
   // First visit on a phone: only "Start here" is open, so the search box and the task cards show
   // without scrolling past 18 links (UX audit 2026-11-22, GPT and Gemini both).
   if (saved === null && window.innerWidth <= 860) {
-    HELP_GROUPS.forEach(function(g){ if (g.id !== "start") closed[g.id] = true; });
+    groups.forEach(function(g){ if (g.id !== "start") closed[g.id] = true; });
   }
   function keep(){ try { localStorage.setItem("help_groups_closed", JSON.stringify(closed)); } catch (e) {} }
-  nav.innerHTML = HELP_GROUPS.map(function(g){
+  nav.innerHTML = groups.map(function(g){
     return '<div class="grp-box" data-grp="' + g.id + '"><button type="button" class="grp">' +
       g.label + '<span class="grp-n">' + g.topics.length + '</span></button><div class="grp-links">' +
-      g.topics.map(function(t){ return '<a href="#' + t[0] + '">' + t[1] + '</a>'; }).join("") + '</div></div>';
+      '</div></div>';
   }).join("");
+  groups.forEach(function(g, i) {
+    var container = nav.children[i].querySelector(".grp-links");
+    g.topics.forEach(function(t) {
+      var a = document.createElement("a");
+      a.href = "#" + t[0];
+      a.textContent = t[1];
+      container.appendChild(a);
+    });
+  });
   function draw(){
     nav.querySelectorAll(".grp-box").forEach(function(box){
       var shut = !!closed[box.dataset.grp];
@@ -47,11 +54,11 @@ const HELP_GROUPS = [
     });
   });
   function openFor(hash){
-    var a = nav.querySelector('a[href="#' + hash + '"]');
+    var a = Array.from(nav.querySelectorAll("a")).find(link => link.hash === "#" + hash);
     var id = a && a.closest(".grp-box").dataset.grp;
     if (id && closed[id]) { closed[id] = false; keep(); draw(); }
   }
   window.addEventListener("hashchange", function(){ openFor(location.hash.slice(1)); });
   draw();
   openFor(location.hash.slice(1));
-})();
+}

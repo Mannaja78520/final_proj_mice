@@ -1,0 +1,79 @@
+<section id="camera">
+  <div class="shead">
+    <span class="where tech">code/apps/camera · served at /app/camera/ · list: GET /api/cameras</span>
+    <h2>📷 Cameras — every camera in one place, used by many screens and programs at once</h2>
+    <p>This page gathers every kind of camera: ESP32-CAM boards, the USB cameras on this PC, and network cameras you add yourself. The system reads each camera only once and shares it with many people and programs at the same time: this page, the separate watch window and the face app.</p>
+  </div>
+
+  <!-- SECTION 1: STREAM PREVIEW -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>Point 1: the live picture box from the ESP32-CAM cameras (Live Stream &amp; Relay)</b>
+      <span class="info-badge">Live Stream</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="camera-preview-box" alt="Camera Live Stream Box" class="info-img">
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> The live picture box and signal distribution (Multi-Client Relay)</div>
+        <div class="action-step"><b>How to set it:</b> Open and view via <code>/app/camera</code> from any number of browsers at the same time</div>
+        <div class="action-impact"><b>What changes:</b>
+          An ESP32 chip has limited RAM and can send only 1 stream. So the central hub pulls the picture as 1 stream and then redistributes it to many viewers at once, without the board crashing.
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> The signal source: WiFi vs USB</div>
+        <div class="action-step"><b>How to set it:</b> On the camera card, turn on live view or select Take a picture. A camera board connected only by cable has no picture here.</div>
+        <div class="action-impact"><b>What changes:</b>
+          A USB / RS485 cable carries only text and text commands; it cannot send JPEG picture files. If only the cable is connected, the picture will not appear but the sensor can still be set.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <div class="info-header"><b>Add a network camera</b></div>
+    <figure class="info-visual-wrapper"><img data-shot="camera-add-box" alt="Add a network camera" class="info-img"></figure>
+    <p>Choose Add a camera, select its kind, enter a name and a link, then choose Add.</p>
+    <p>To adjust an ESP32-CAM’s picture, open Settings on the camera card.</p>
+  </div>
+
+  <h3>Which camera board is this?</h3>
+  <p>The module works out its own camera board at power-on: it tries each known
+     wiring until the sensor answers, so a clone nobody can name usually just
+     works. Classic ESP32-CAM boards (AI-Thinker, ESP-EYE, M5Stack, TTGO
+     T-Journal, WROVER) and ESP32-S3 boards (Freenove / ESP32-S3-EYE, XIAO S3
+     Sense, FireBeetle S3, S3-CAM) are covered, with the OV2640, OV3660 and
+     OV5640 sensors. An S3 board needs the S3 firmware build; the classic and S3
+     builds only try boards of their own chip. If you know the board, choose it by
+     hand with <code>CAM BOARD &lt;name&gt;</code> (or <code>CAM BOARD AUTO</code>) and
+     restart the module. Pin maps for the S3, WROVER and T-Journal boards are
+     from the makers' tables and have not been tried on real boards yet.</p>
+
+  <h3>Several people can watch at once</h3>
+  <p>The board itself can only be read by one thing at a time, and that is the
+     hardware rather than a limit anybody chose: it has a single frame buffer,
+     and taking a frame reclaims the one already on loan, so two streams would
+     tear each other's pictures. The hub therefore holds <b>one</b> connection
+     to each camera and feeds every viewer from it. Open this page on as many
+     screens as you like.</p>
+  <p>When a search fails, it tells you to press Look again instead of saying there is no camera. The stored data says it may be out of date; if only part of the search worked, there may be cameras that are not shown yet.</p>
+
+  <h3>Add a camera that is not an ESP32 board</h3>
+  <p>Press “Add a camera” and choose a kind: a network camera or video link (an address starting with http or rtsp, from an IP camera or a phone camera app) or the demo camera, which needs no real device. You have to log in first. USB cameras on this PC need no adding; they appear by themselves.</p>
+  <p>A link that contains the camera's password is kept only on this PC and is never shown on the web page. This PC's own address (127.0.0.1) and files on this PC cannot be used as a link.</p>
+
+  <p>Fields on the add-camera form: Add a camera = add a camera, Kind = the kind of camera, Link = the camera's link</p>
+
+  <h3>Watch in a separate window</h3>
+  <p>Press “Open in its own window” on a camera card to get a full-screen page showing only that camera's live picture. It suits a second monitor, a TV or someone else's phone. Open as many windows as you like: the camera does not feel it, and if the picture drops this page reconnects by itself.</p>
+
+  <h3>Use for face recognition</h3>
+  <p>Tick “Recognise faces with this camera” and the face app starts using that camera within a few seconds, with no restart, and stops when you untick it. An ESP32-CAM works like any normal camera, and can be used at the same time as live viewing or video recording.</p>
+
+  <p>Use each camera through one route only. A USB camera can be opened by one program at a time, and an ESP32-CAM board accepts a single connection. If the hub already holds the camera and Face_Regonize tries to open the same one itself, you will see that the camera is in use, or a black picture. Use the camera through the switch on this page, and let Face_Regonize take the picture from the hub's link instead (waiting for the friend's side).</p>
+
+  <h3>Link for other programs</h3>
+  <p>Turn on the technical details switch to see each camera's live-picture link. Other programs on the network, such as a video recorder or a friend's app, can use this link like an ordinary webcam (MJPEG). The system still reads the real camera only once.</p>
+</section>

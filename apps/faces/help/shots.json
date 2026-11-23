@@ -1,0 +1,7 @@
+{
+  "faces-open": {
+    "url": "/app/faces/",
+    "clip": ".tabbed",
+    "ready": "#openBtn"
+  }
+}

@@ -1,0 +1,79 @@
+<!-- ===================== TV REMOTE ===================== -->
+<section id="tv">
+<p><b>古いテレビ / ブラウザー：</b> ホーム、Studio、音声などのページは、古い Chrome / Android WebView（Chrome 75 以降くらい）でも動くように作られています。Chrome 80 より古いブラウザーには、ハブが古い形式のスクリプト（ビルド時に変換済み）を自動で送るので、テレビ側で追加の作業は要りません。古いブラウザーにない機能は自動で補われます。それでも開けないときは、ブラウザーが古すぎることを分かりやすい言葉で赤いバーが伝えます。Chrome か Android System WebView を更新するか、新しい PC やスマートフォンで開いてください。グラフィックカードが対応していない端末で 3D ページが動かなくても、Studio のスライダーとタイムラインは使えます。</p>
+  <div class="shead">
+    <span class="where tech">code/apps/tv · served at /tv, /monitor, and /app/tv/</span>
+    <h2>📺 テレビリモコンとモニター — スマートテレビとスマートフォン用の操作画面</h2>
+    <p>ごく薄い操作・状態表示のウェブページ（シンクライアント）で、集中サーバー型の構成で作られています。このページには 3D 描画はありません。状態が出る速さは、ネットワークと使う端末によります。</p>
+  </div>
+  <p class="mini">タブが隠れると、このページは状態の問い合わせを止め、タブをまた開いたときに確認し直します。ブラウザーがモードを覚えさせてくれない場合でも、ページは画面の大きさに合わせてモードを選んで開きます。</p>
+
+  <!-- SECTION 1: REMOTE CONTROLS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ポイント 1：メインの操作ボタンと動きのプレーヤー（リモコンとシーケンスランチャー）</b>
+      <span class="info-badge">リモコンのボタン</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="tv-controls-box" alt="TV操作パネル" class="info-img">
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> メインの操作ボタン（選択項目を再開、停止、ホーム）</div>
+        <div class="action-step"><b>設定方法：</b> 画面の大きなタッチボタンを押すか、テレビのリモコンで押します</div>
+        <div class="action-impact"><b>ロボットに起こること：</b>
+          • <b>選択項目を再開：</b> 最後に選んだクリップを最初から再開します。先にクリップを選ぶ必要があります。<br>
+          • <b>停止：</b> ハブが再生しているショーを止めます。<br>
+          • <b>ホーム：</b> ショーを止めてから、選んだ Nong に HOME を送ります。ボードが保存したポーズを使い、すべての関節を 90° にするわけではありません。<br>
+          • <b>すべての音声読み上げをミュート：</b> クイック発話ボックス内の小さなボタンで、現在再生中のすべての音声を即座に停止します。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> 動きの一覧（シーケンスランチャー）</div>
+        <div class="action-step"><b>設定方法：</b> ロボットの一覧から Nong を選び、クリップ名のボタンを押します。複数台あるときは、先に対象を選ぶ必要があります。</div>
+        <div class="action-impact"><b>ロボットに起こること：</b>
+          システムは中央の Hub からモーションファイルを取得します（<code>/api/list?kind=sequences</code>）そしてロボットにそのモーションを即座に実行させます。舞台裏のスタッフもスマートフォンから手軽にショーを選べます。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: JOINT GAUGES -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ポイント 2：サーボ関節 10 個の角度ゲージ（10 関節モニターゲージ）</b>
+      <span class="info-badge">関節ゲージ</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="tv-gauges-box" alt="TVメーターパネル" class="info-img">
+    </div>
+    <p><b>関節モニター</b> サーボモニターを選び、ロボットを選択します。各バーにはロボットが報告した角度が表示されます。</p>
+  </div>
+
+  <div class="f"><h3>分離アーキテクチャ：どうやってテレビの固まりを防ぐのか？</h3>
+    <p>以前の構成では、スマートテレビや古いスマートフォンのブラウザーで 3D ページ（Three.js）を開くと、WebGL のシェーダーをコンパイルして 1 秒 60 回の計算ループを回す必要があり、スマートテレビのプロセッサーはそれに向いていないため、テレビのブラウザーが勝手に閉じたり本体が固まったりしました。</p></div>
+  <div class="info-box">
+    <div class="info-header"><b>表示モードを選ぶ</b></div>
+    <p>スマートフォンリモコン、ステージ表示、サーボモニター</p>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> 📱 スマホリモコンのモード</div>
+        <div class="action-step"><b>使い方：</b> スタッフやロボットを操作する人が、スマートフォンを持って使うのに向いています。</div>
+        <div class="action-impact"><b>できること：</b>
+          特大のタッチボタンで、親指で押しやすくなっています。非常停止ボタン ⏹ STOP、初期ポーズ 🏠 HOME、大きなタッチの動きタイル、あいさつのクイックボタンがあり、画面を広く使うため技術的なサーボ情報は隠れています。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> 📺 ステージ表示のモード（10 フィート）</div>
+        <div class="action-step"><b>使い方：</b> ステージ上の大きなテレビ画面に表示し、観客と主催者に見せます。</div>
+        <div class="action-impact"><b>できること：</b>
+          現在のショーの名前（再生中）と進行バーを特大の文字で表示し、3〜5 m 離れてもはっきり見えます。🟢 再生中（PLAYING）の状態も出ます。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>再生、停止、発話に失敗すると、上のバーの下にメッセージが出ます。HOME は、停止が正常に応答され、ロボットが STOP をエラーなしで確認した後にだけ送られます。前の作業の停止に失敗しても、システムは選んだロボットに STOP を送ろうとし、まとめた結果を知らせます。一覧の読み込み中に停止を押したりロボットを変えたりすると、まだ待っている開始（すでに送られてハブに遅れて届く再生や HOME のリクエストも含む）が取り消されます。話すのに失敗しても、入力した文字は残ります。</p>
+  <p>更新ボタンは読み込み中に「更新中…」と表示し、その後、最後に更新した時刻、またはハブにつながらないことを知らせます。</p>
+
+</section>

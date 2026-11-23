@@ -27,6 +27,9 @@ def run(t):
     if not t.ok(HELP.is_file(), "the help page exists", str(HELP)):
         return
     help_txt = HELP.read_text(encoding="utf-8", errors="replace")
+    # App guides ship in apps/<id>/help (their own folder), not in help.html: count them as the help page.
+    for _f in sorted((HELP.parents[2] / "apps").glob("*/help/*.html")):
+        help_txt += _f.read_text(encoding="utf-8", errors="replace")
     low = help_txt.lower()
 
     # ---- it is actually reachable, not just present on disk ---------

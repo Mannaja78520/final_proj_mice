@@ -1,0 +1,16 @@
+{
+  "title": {
+    "th": "เครื่องแจกของ",
+    "en": "Prize machines",
+    "zh": "奖品机",
+    "ja": "景品機"
+  },
+  "summary": {
+    "th": "ตั้งค่ารางวัลและดูประวัติการแจก",
+    "en": "Set up prizes and view dispensing history",
+    "zh": "设置奖品并查看发放记录",
+    "ja": "景品を設定し、払い出し履歴を見る"
+  },
+  "group": "use",
+  "order": 60
+}

@@ -22,8 +22,7 @@
 <div class="wrap">
 <!-- GROUPED BY WHAT YOU ARE DOING (A41-6), not by where the code runs: the
      day-to-day screens first, building a board second, reference last.
-     A new section is a part file, one line below and one [id, words] line
-     in parts/topics.js (HELP_GROUPS), which draws this list. -->
+     Hub topics are parts. The browser loads installed app guides into the same groups. -->
 <nav id="helpNav" aria-label="Help topics"></nav>
 
 <main>
@@ -47,32 +46,30 @@
     <b>WiFi</b>, <b>SD</b> or <b>flash</b>.</div>
 </header>
 
+<p id="appHelpStatus" class="mini" role="status" hidden>Some app guides could not load. Reload this page to try again.</p>
+
 <!-- part: bytask.html -->
+<span data-help-group="start" hidden></span>
 
 <!-- part: hub.html -->
 
 <!-- part: modsite.html -->
 
-<!-- part: studio.html -->
 
-<!-- part: tv.html -->
 
-<!-- part: camera.html -->
 
-<!-- part: voice.html -->
 
-<!-- part: faces.html -->
-<!-- part: gacha.html -->
 
-<!-- part: all-jao.html -->
 
 <!-- part: accounts.html -->
+<span data-help-group="use" hidden></span>
 
 <!-- part: firmware.html -->
 
 <!-- part: lift.html -->
 
 <!-- part: nong.html -->
+<span data-help-group="build" hidden></span>
 
 <!-- part: qc.html -->
 
@@ -81,6 +78,7 @@
 <!-- part: commands.html -->
 
 <!-- part: files.html -->
+<span data-help-group="wrong" hidden></span>
 
 <footer>
   Sources: <code>firmware/COMMANDS.md</code>, <code>firmware/src/web/WebUI.h</code>,

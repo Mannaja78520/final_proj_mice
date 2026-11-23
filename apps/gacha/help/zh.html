@@ -1,0 +1,129 @@
+<section id="gacha">
+  <p>系统读取奖品状态（包括来自语音的奖品）时也可以保存设置。文件按顺序读取和保存，以保证得到完整的一套设置，游戏列表直接从设置中读取，不必等待检查外部服务器的状态。</p>
+  <div class="shead">
+    <span class="where tech">code/apps/gacha · /app/gacha/ · firmware type gacha</span>
+    <h2>🎁 发放奖品——奖品机</h2>
+    <p>先准备机器和奖品种类，设置活动规则，然后发放奖品并查看历史记录。</p>
+  </div>
+  <figure class="info-visual-wrapper"><img data-shot="gacha-tabs" alt="奖品机标签页与发放奖品控件" class="info-img"></figure>
+  <p><b>保存并开始活动：</b> 按下开始之前，请先检查机器名称和预设的表格。系统在保存期间会关闭活动，只有在全部保存完毕且所有机器都已确认后才会开启。如果任何一步失败，屏幕会指出出错的地方，并且不会报告已可以发放。保存期间重复按开始，不会重复发送活动。“移除”按钮会先保留你对其他行的修改，再删除所选行。</p>
+  <div class="f">
+    <h3>从哪里开始</h3>
+    <p><a href="/app/gacha/">打开奖品系统</a> 然后按工作选择标签页。下面的英文名称与屏幕上的名称一致。</p>
+    <p>如果看不到标签页，状态一直停留在 <b>检查中…</b> 说明应用页面尚未加载成功，所以还无法进行后续步骤。</p>
+  </div>
+    <div class="info-box">
+    <div class="info-header">
+      <b>⚡ 快速活动预设</b>
+      <span class="info-badge">一键设置</span>
+    </div>
+    <p>对于想立刻开始、不想自己设置表格的活动负责人，可以点击扭蛋页面顶部的 3 种预设之一：</p>
+    <ul>
+      <li><b>🎁 普通活动（标准赠送）：</b> 1 台扭蛋机（50 个钥匙扣，备用 100 个贴纸），每人限领 1 个</li>
+      <li><b>🍀 不限次数的运气 / 游戏摊位（Unlimited Fun）：</b> 2 台幸运机 A/B（200 个糖果和 50 个纪念品），每人可无限次玩</li>
+      <li><b>🏆 VIP 大奖（VIP 与限定活动）：</b> 一台装有 10 个大奖的金色机器（每人 1 次机会）+ 一台装有 80 个安慰奖的机器（每人 2 次机会）</li>
+    </ul>
+    <p class="mini">按下预设后，系统会立刻填好机器名称、奖品代码和规则。负责人只需把奖品名称改成实际的，然后按 <b>保存</b> 在每个表格中，即可立即开始</p>
+  </div>
+
+  <div class="scroll"><table>
+    <thead><tr><th>你想做什么</th><th>选择标签页</th><th>怎么做 / 结果</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap2">准备机器和物品</td><td>机器与奖品种类</td><td>设置机器、奖品种类和装入的数量。开始发放前先保存。</td></tr>
+      <tr><td class="wrap2">设置谁可以领取</td><td>规则</td><td>按奖品种类设置活动总数和每人的数量，或为特定的人设置。</td></tr>
+      <tr><td class="wrap2">发放给参与者</td><td>发放奖品</td><td>选择奖品种类、领取人和机器。选择他们可以领取吗来检查资格，或选择发放来发出奖品。</td></tr>
+      <tr><td class="wrap2">查看已经发给了谁</td><td>已发放奖品</td><td>查看发放历史和已发出的数量。</td></tr>
+      <tr><td class="wrap2">使用表格中的规则</td><td>Google 表格</td><td>粘贴表格链接，并按此标签页中的设置步骤操作。如果要写回表格，还需要设置写入部分。</td></tr>
+      <tr><td class="wrap2">让游戏或语音命令发放奖品</td><td>游戏与语音</td><td>设置哪些游戏或问题主题可以申请奖品（问答游戏可在“得分从”中设置最低分）。</td></tr>
+      <tr><td class="wrap2">连接其他应用</td><td>其他应用</td><td>设置申请奖品的应用的连接方式。</td></tr>
+      <tr><td class="wrap2">修改措辞</td><td>文字</td><td>编辑发放奖品和公布结果时使用的文字。</td></tr>
+    </tbody>
+  </table></div>
+  <div class="f">
+    <h3>发放一次</h3>
+    <ol>
+      <li>在 <b>发放奖品</b> 选择 <b>种类</b> 与你准备的物品一致</li>
+      <li>填写接收人的名字，或选择 <b>镜头前的人</b> 使用人脸系统看到的人</li>
+      <li>选择 <b>机器</b> 或让系统选择有该种类物品的机器</li>
+      <li>按 <b>他们可以领取吗？</b> 先检查资格，然后按 <b>发放</b> 在你想真正发放时</li>
+      <li>按 <b>新活动（计数归零）</b> 以开始新任务并重置所有设备的计数器（系统始终会先要求确认）</li>
+    </ol>
+    <p><b>仍然发放一个（管理员）</b> 跳过接收人的资格限制，但仍会计入发放数量。在你有意超出规则时使用。</p>
+  </div>
+  <div class="f" id="gacha-stock">
+    <h3>双向库存、仅可玩和随机机器</h3>
+    <p><b>双向库存</b> 卡片 <b>库存与随机盒</b> （“机器与种类”标签页）显示每种机器里实际有的物品，并带有 <b>概率</b>
+       游戏或其他程序可以在此读取该列表： <code>/api/gacha/stock</code> 或通过名为以下名称的 webhook 接收通知： <b>stock</b> （在“Tell other apps”卡片中设置）游戏奖品与实物库存实时同步，缺货时会自动从列表中移除。游戏返回结果时附带 <code>item</code> 以说明获得了哪种类型</p>
+    <p><b>仅可玩</b> 像之前一样统计获胜并回答，但不转动真实机器。在“游戏”表格的输入框中为每个游戏设置 <b>仅可玩</b>
+       或卡片 <b>仅可玩以及谁可以询问</b> (<code>game:quiz</code>、程序名称，或 <code>*</code> 全部）单次请求即可发送 <code>play_only</code> 也可以自行操作</p>
+    <p><b>游戏之外的其他程序</b> 申领物品通过 <code>/api/gacha/dispense</code> 名称为 <code>app</code> 可以。如果想限制可请求的种类，或关闭此功能，请在 Programs 表中填写程序名称。</p>
+    <p><b>随机机器</b> 设置 <b>模式</b> 该设备的设置为 <code>random</code> 可以混放多种物品，放入时注明每种物品的数量 (<b>将物品放入随机盒</b>
+       &rarr; <b>设置现在里面的内容</b> 或 <b>添加这些</b>）按 <b>按随机</b> 机器转动一次，系统随机决定掉出哪个种类。剩下的越多，被抽中的机会越大。每次剩余数量减一，用完后就按不动了。</p>
+  </div>
+  <div class="f" id="gacha-mechanism">
+    <h3>真实机构：1 个霍尔传感器和 4 块磁铁</h3>
+    <p>接收点（Receive）和掉落点（Drop）位于同一侧。霍尔传感器只固定在接收点上；4 块磁铁都随转轮一起转动。掉落一侧没有霍尔传感器。</p>
+    <figure class="mechanism-figure">
+      <svg viewBox="0 0 680 300" role="img" aria-labelledby="gacha-mechanism-title gacha-mechanism-desc">
+        <title id="gacha-mechanism-title">轮上有 4 块磁铁，接收点有一个霍尔传感器</title>
+        <desc id="gacha-mechanism-desc">左侧显示带有四块磁铁的转轮；右侧显示位于同一侧的接收点和掉落点。霍尔传感器只在 Receive 处；Drop 处没有。此示意图不标明真实的角度或距离。</desc>
+        <g fill="var(--card)" stroke="var(--line)" stroke-width="2">
+          <circle cx="155" cy="150" r="105"/><circle cx="155" cy="150" r="27"/>
+        </g>
+        <g fill="var(--acc-soft)" stroke="var(--acc)" stroke-width="2">
+          <circle cx="155" cy="57" r="26"/><circle cx="248" cy="150" r="26"/>
+          <circle cx="155" cy="243" r="26"/><circle cx="62" cy="150" r="26"/>
+        </g>
+        <g fill="var(--txt)" text-anchor="middle" font-size="15" font-weight="600">
+          <text x="155" y="62">M1</text><text x="248" y="155">M2</text>
+          <text x="155" y="248">M3</text><text x="62" y="155">M4</text>
+          <text x="155" y="155" font-size="12">转轮转动</text>
+        </g>
+        <g fill="var(--card)" stroke="var(--line)" stroke-width="2">
+          <rect x="330" y="28" width="332" height="244" rx="14"/>
+          <rect x="348" y="74" width="296" height="88" rx="8"/>
+          <rect x="348" y="179" width="296" height="70" rx="8"/>
+        </g>
+        <g fill="var(--txt)" font-size="17" text-anchor="middle">
+          <text x="496" y="55" font-weight="700">接收和掉落在同一侧</text>
+          <text x="496" y="104" font-weight="700">Receive · 接收点</text>
+          <text x="496" y="140" fill="var(--acc)">● 1 个霍尔传感器，固定</text>
+          <text x="496" y="207" font-weight="700">Drop · 掉落点</text>
+          <text x="496" y="233">没有霍尔传感器</text>
+        </g>
+      </svg>
+      <figcaption>M1–M4 是随转轮一起转动的磁铁。示意图为了说明而把各部件分开画；它不是规定真实位置、角度或距离的布局图。</figcaption>
+    </figure>
+    <p><b>霍尔传感器表示有一块磁铁位于接收点。</b> 这个信号并不能测量物品是否已从滑道掉出，也不能测量转轮是否正好对准磁铁中心。</p>
+  </div>
+  <div class="f">
+    <h3>每次发放转动的槽数（drop）</h3>
+    <p>此数值决定机器每次发放转动多少个槽。 <b>drop = 1</b> 表示一个槽，而 <b>drop = 2</b> 表示两个槽。请根据机构和机器的真实出货测试来选择。</p>
+    <p>仅凭磁铁数量无法知道从接收点到掉落点的距离。因此不能用这张图推断必须设为 1 还是 2，也没有说明 2 只在第一次装货时使用。</p>
+  </div>
+  <details class="f">
+    <summary>设置并测试机器的机构</summary>
+    <p>打开 <b>机器与奖品种类</b> 然后查看你想要的机器。测试和调整按钮会让电机真实转动，使用前请检查周围区域，并准备好接住物品。</p>
+    <ul>
+      <li><b>速度和转动方向：</b> 用于设定电机的驱动方式。</li>
+      <li><b>来回摆动范围和进入霍尔区：</b> 用于调整转动后的停止位置。还需要观察实际的停止情况。</li>
+      <li><b>休息时间：</b> 每次转动之后的等待时间</li>
+      <li><b>槽数 / 磁铁数：</b> 设置为与这套机构一致，它有 4 个槽和 4 块磁铁。</li>
+      <li><b>自动检测 / 估算霍尔进给量：</b> 估算越过霍尔带的距离。不测量奖品的重量。</li>
+      <li><b>测试 1 个槽、测试 4 个槽 / 测试所有槽：</b> 一次测试一个槽，并在机器停止时显示结果。仅凭霍尔信号并不能确认停止点是否准确，也不能确认奖品是否掉落。</li>
+      <li><b>清空机器</b> （藏在“很少需要”下面，使用前会先要求确认）：用于让机器不停转动，把所有东西排出来。请准备好接住物品，并盯着它运行。</li>
+    </ul>
+    <p>如果状态或按钮没有加载，请先解决应用页面的问题。不要为了修复屏幕而更改机器自身的数值。</p>
+    <div class="tech">
+      <p>使用前必须一起检查的修复集 A47-20 的约定：</p>
+      <ul>
+        <li><code>GCALIB</code> 扫描霍尔传感器磁条（限时 5 秒以内），回退测得时间的一半，并在静止时检测霍尔状态。仅在成功时保存 advance。回复确认 <code>OK calibrating</code> 这不是最终的成功确认，请参阅 <code>G? motion_result</code> 为 done / jam / stopped</li>
+        <li><code>GTEST 1</code> 或 <code>GTEST 4</code> 逐项测试各个通道，查看 <code>test_done / test_total</code> 以及控制板的最终结果</li>
+        <li><code>GNUDGE &lt;pwm&gt; &lt;ms&gt;</code> 机器空闲时接受，1–1000 毫秒，运行时不阻塞，可用 STOP 取消</li>
+        <li><code>GDRAIN [&lt;max&gt;]</code> 不超过 999 次，达到上限、物品用完、活动关闭、卡住或按下 STOP 时停止。网页必须有已计数的正库存；如果不计库存，必须给出 max。</li>
+      </ul>
+    </div>
+  </details>
+  <p class="tech">示例：docs/gacha/items.sample.csv、people.sample.csv · Google 表单：docs/gacha/form_sample.gs · 表格脚本：apps/gacha/sheet_script.gs · API：docs/gacha/README.md</p>
+  <p>历史页面把“还没有记录”和“无法加载”区分开来。刷新失败时会保留旧数据，并提示数据可能已过时。按“刷新”可重试。</p>
+</section>

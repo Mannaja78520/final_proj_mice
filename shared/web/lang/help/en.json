@@ -1,6 +1,13 @@
 {
  "name": "en",
  "strings": {
+  "อัปเดตเฟิร์มแวร์ของบอร์ด": "Update board firmware",
+  "เปิด Firmware แล้วเลือกเฟิร์มแวร์ที่เครื่องนี้สร้างไว้สำหรับบอร์ดชนิดนั้น หากยังไม่มีไฟล์ ให้ทำตามคำสั่ง build ที่แสดงในรายการ": "Open Firmware and choose the available build for the board type. If none is available, follow the build command shown in the list.",
+  "เลือกบอร์ดปลายทางในแถวของเฟิร์มแวร์ แล้วตรวจชนิดบอร์ดและวิธีเชื่อมต่อในหน้าต่างยืนยันก่อนเริ่ม": "Choose the target board on that firmware row. Confirm the board type and connection before starting.",
+  "จับคู่ Hub สองเครื่อง": "Pair two Hubs",
+  "ในแท็บ Network กดแสดงรหัสให้เครื่องอื่นบน Hub เครื่องแรก": "In Network on the first Hub, choose Show a code for another PC.",
+  "บน Hub เครื่องที่สอง กดฉันมีรหัสจากเครื่องอื่น แล้วกรอกที่อยู่และรหัสที่เครื่องแรกแสดง เพื่อใช้บัญชีเดียวกันทั้งสองเครื่อง": "On the second Hub, choose I have a code from another PC and enter the address and code shown on the first Hub. The same account then works on both.",
+  "เมื่อเพิ่มหรือถอดแอปใน Tools คู่มือของแอปนั้นจะปรากฏหรือหายไปเมื่อเปิดหน้า Help อีกครั้ง": "When you add or remove an app in Tools, its guide appears or disappears the next time you open Help.",
   "สำหรับผู้ดูแล: โฟลเดอร์อัปเดตระบบ": "For administrators: the system update folder",
   "เครื่องมือนำงานที่ตรวจผ่านเข้าระบบอ้างอิงโฟลเดอร์หลักของโครงการ แม้เรียกจากสำเนาทำงาน โฟลเดอร์งานและบันทึกการอัปเดตจึงไม่ซ้อนอยู่ในสำเนาอีกชั้น": "The tool that brings checked work into the system always points at the project's main folder, even when called from a working copy, so the work folder and the update log are never nested inside the copy.",
   "ใช้ทางลัด ON / OFF บนเดสก์ท็อปเพื่อเปิดหรือหยุดตัวติดตามลิมิต ตัวติดตามทำงานด้วยลำดับความสำคัญต่ำเพื่อลดการแย่งทรัพยากร การกด OFF หยุดตัวติดตาม แต่งาน AI ที่เริ่มไปแล้วจะทำต่อ": "Use the ON / OFF shortcut on the desktop to start or stop the limit tracker. It runs at low priority so it does not compete for resources. OFF stops the tracker, but AI jobs already started carry on.",

@@ -109,6 +109,7 @@ def apps(apps_dir=None):
             cfg["name"] = cfg["id"]
         # where the files are: the app's own folder unless it points elsewhere
         cfg["dir"] = (CODE / cfg["root"]) if cfg["root"] else man.parent
+        cfg["manifest_dir"] = man.parent
         cfg["path"] = cfg["url"] or ("/app/%s/" % cfg["id"])
         out.append(cfg)
     out.sort(key=lambda a: (a["order"], a["name"].lower()))

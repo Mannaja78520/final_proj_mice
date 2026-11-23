@@ -1,0 +1,69 @@
+<section id="voice">
+  <p class="mini">语音及情感语音生成器由中心管理。它们共用中心的性能设置：主听写、特定语言听写和回退到 CPU 使用同一份线程预算和并行任务数。已打开的模型保留原来的数值，多个请求的翻译使用同一批次。部分线程数值需要重新打开语音助手。语音状态会显示已加载的数值版本，并在有数值等待下次加载时提示，不会更改你选择的模型、角色或服务。</p>
+  <div class="shead">
+    <span class="where tech">code/apps/voice · served at /app/voice/</span>
+    <h2>🎤 语音——用声音对话和下达指令</h2>
+    <p>智能问答系统和文字转语音，可在电脑扬声器与 Nong 机器人自带扬声器之间顺畅切换。</p>
+  </div>
+  <p class="mini">开始说话或聆听之前，先看顶部的状态。如果提示语音助手或连接未就绪，请检查连接后重试。网页上的状态并不能证明机器人的扬声器真的发出了声音。</p>
+
+  <!-- SECTION 1: CHAT & STT -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>第 1 点：问答框与输入/说话（问答聊天与语音输入）</b>
+      <span class="info-badge">聊天与语音识别</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" data-shot="voice-chat-box" alt="语音聊天框" class="info-img">
+    </div>
+    <ol><li>在对话标签页输入问题后选择提问，或按住说话来使用麦克风。</li></ol>
+  </div>
+
+  <div class="info-box">
+    <div class="info-header"><b>设置说话声音</b></div>
+    <figure class="info-visual-wrapper"><img data-shot="voice-settings-card" alt="设置说话声音" class="info-img"></figure>
+    <ol><li>打开语音标签页，选择语气和速度。为各语言选择声音，在下方调整语速和音高，然后保存语音。</li><li>开启使用此设备的声音更快开始回复，主要声音较慢时可使用本机声音。</li><li>在对话标签页，选择在此播放声音以在浏览器中听到回答，并从机器人列表中选择应答的机器人。</li></ol>
+  </div>
+
+  <div class="f"><h3>向设备提一个问题</h3>
+    <p>工具列表中的“语音”应用：输入问题，设备作答。答案来自与中心并排运行在这台电脑上的助手程序（中心本身不带 AI——只负责转交问题并回传答案）。</p></div>
+  <div class="f"><h3>助手会自己启动<span class="tag t-new">新</span></h3>
+    <p>如果助手没有运行，只要有东西需要语音——打开“语音”应用、设备必须说的一句话，或 Studio 中的说话动作——中心就会立刻启动它。“语音”页面显示 <b>正在启动语音助手…</b>
+       伴随秒数计时；在此期间发出的询问会先排队等待，随后再获得解答。如果启动耗时过长，页面会说明原因。hub 会在 helper 正常运行时一直沿用同一个，因此其他请求不会重复打开第二个副本。即使回复稍微迟到，只要内容正常应用就能继续运行；已停止的 helper 可以重新启动。如果无法启动，页面会说明原因（最后几行信息收起在技术开关后，完整日志位于
+       <code>.local/voice/helper.log</code>）。使用哪个 Python、可能需要多长时间，请查看 <code>config/voice_helper.json</code>.</p></div>
+  <div class="f"><h3>说话代替打字<span class="tag t-new">新</span></h3>
+    <p>“语音”页面有一个 <b>按住说话</b> 按钮：点一下开始说话，再点一下停止，识别出的文字就会出现在输入框中，随时可以发送。语音识别也在这台 PC 上运行。支持的语言，以及各语言中经常识别错误的词，都记录在 <code>config/voice.json</code>; 在以下位置添加语言： <code>config/voice.json</code> (<code>tts.voices</code> / <code>stt.languages</code>）会自动在 Answers 工作表和文字类型检测器中添加对应的列和目标语言。使用简单的语言代码，例如 <code>ko</code>。检测器按文字类型判断，并不能准确识别具体语言：法语、德语、西班牙语或越南语的问题会归到英语栏，没有假名的汉字文本则会归到中文栏。</p></div>
+  <div class="f"><h3>一次只有一个声音<span class="tag t-new">新</span></h3>
+    <p>如果在答案还在播放时按下 Try 或提出新问题，旧的答案会先停止，两个声音不会互相重叠。如果语音助手一分钟内没有回应，页面会告诉你，你可以再试一次，而不是一直等下去。离开页面时声音也会停止。</p></div>
+  <div class="f"><h3>设备一次只说一件事<span class="tag t-new">新</span></h3>
+    <p>设备说的每一句话都经过 <b>同一个队列</b> 在中心上：问候语、通过机器人说出的此页面的回答、这台电脑上其他程序发来的消息。这样两者就不会互相抢着说。在设备说话时到达的内容会
+       <b>排队等候</b> or is <b>被跳过</b> — 由发起请求的一方决定 — 并且等待时间过长的问候语会被直接丢弃，因为人已经走开了（<code>maxAgeSeconds</code>，未修改时为 30 秒）。</p></div>
+  <!-- SECTION 3: ANSWERS SHEET & QUESTIONS ANALYTICS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>第 3 点：扩展的答案表格与问题统计仪表盘（答案表格与问题分析）</b>
+      <span class="info-badge">答案与统计</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> 宽松舒适的答案表格</div>
+        <div class="action-step"><b>使用方法：</b> “答案”标签页——在上方输入人们问的问题，在下方输入机器人的回答。</div>
+        <div class="action-impact"><b>功能：</b>
+          文本框可自由调整大小，不会被压缩，框内也不会出现重复嵌套的滚动条，保存时会为留空的语言自动翻译。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> 问题仪表盘与未回答的问题（问题与未回答）</div>
+        <div class="action-step"><b>使用方法：</b> “问题”标签页——查看分析图表和常见问题。</div>
+        <div class="action-impact"><b>功能：</b>
+          以 6 个维度显示统计（主题、时段、答案来源、语言、奖品、热门问题），并有一个汇集“经常被问但还没有固定答案”的问题的框，附带按钮 <b>生成答案</b> 即可一键将其添加到答案表格。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>如果加载 AI、卸载 AI 或读取状态失败，按钮会重新出现以便再次点击，并附带错误消息。真实模型的加载可能需要一段时间，取决于机器。</p>
+  <p><b>本机 AI（Ollama）在使用时会自动启动：</b> 开机后不需要自己启动，也没有设置为登录时启动。按下“加载 AI”或提出第一个问题时，会以隐藏窗口的方式打开它，并等待其就绪（通常不超过约 40 秒）。如果没有启动成功，会用通俗的话说明原因，并在 1 分钟内不再重试；请重新按“加载 AI”。</p>
+  <p>按下说话按钮后，会立即看到“正在打开麦克风……”。如果浏览器尚未允许使用麦克风，会告诉你如何解决，你仍可以改为输入问题。</p>
+
+</section>

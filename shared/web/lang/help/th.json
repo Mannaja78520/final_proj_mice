@@ -1,6 +1,12 @@
 {
  "name": "th",
  "strings": {
+  "Open Network in the Hub. Connect your phone to the same WiFi and scan the QR code shown on your own Hub.": "เปิดแท็บเครือข่ายใน Hub ให้มือถืออยู่บน WiFi เดียวกัน แล้วสแกน QR ที่แสดงใน Hub ของคุณ",
+  "Manage sign-ins": "จัดการการเข้าสู่ระบบ",
+  "Set up user accounts and passwords for the Hub.": "ตั้งค่าบัญชีผู้ใช้และรหัสผ่านสำหรับ Hub",
+  "Open Cameras, then turn on live view for the camera you want to check.": "เปิดหน้ากล้อง แล้วเลือกดูสดที่กล้องที่ต้องการตรวจ",
+  "Some app guides could not load. Reload this page to try again.": "โหลดคู่มือบางแอปไม่ได้ โหลดหน้านี้ใหม่เพื่อลองอีกครั้ง",
+  "Use an installed app": "ใช้แอปที่ติดตั้งไว้",
   "AI Watch:": "AI Watch:",
   "Finds modules on its own": "ค้นหาโมดูลเองอัตโนมัติ",
   "Parallel scan of the whole local subnet, plus every COM port on the PC. Bluetooth phantom ports are recognised from the device type and skipped instead of being probed — they hang for ~40 s if opened.": "สแกนซับเน็ตทั้งหมดพร้อมกัน รวมถึงพอร์ต COM ทุกพอร์ตบนเครื่อง พอร์ตบลูทูธผีจะถูกรู้จากชนิดอุปกรณ์และข้าม ไม่ลองเปิด เพราะการเปิดจะค้างราว 40 วินาที",
