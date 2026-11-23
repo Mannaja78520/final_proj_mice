@@ -281,8 +281,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 .brand-mouse{width:40px;height:40px;object-fit:contain;vertical-align:middle;margin-right:var(--sp-2)}
 .topbar h1{display:flex;align-items:center}
 header.top{position:relative;padding-right:170px;min-height:150px}
-.hero-mouse{position:absolute;right:0;top:-6px;width:150px;height:150px;object-fit:contain}
-@media (max-width:640px){ header.top{padding-right:0} .hero-mouse{position:static;float:right;width:84px;height:84px;margin:0 0 var(--sp-2) var(--sp-3)} }
+.hero-mascot{position:absolute;right:0;top:-6px;width:150px;height:150px;object-fit:contain}
+@media (max-width:640px){ header.top{padding-right:0} .hero-mascot{position:static;float:right;width:84px;height:84px;margin:0 0 var(--sp-2) var(--sp-3)} }
 /* Real app captures use the same language and light/dark mode as this guide. */
 figure.pic{margin:var(--sp-4) 0;display:flex;gap:var(--sp-4);align-items:center;flex-wrap:wrap;
            background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-3)}

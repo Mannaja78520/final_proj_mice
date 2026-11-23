@@ -1,7 +1,7 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Camera — Mice</title>
+<title>Camera — MICE</title>
 <link rel="stylesheet" href="/mice.css">
 <!--
   ONE CAMERA IN ITS OWN WINDOW (user 2026-11-23: *show it separately, for other
@@ -30,7 +30,7 @@ html,body{height:100%;margin:0;background:#000;color:#fff}
   var dev = q.get('dev') || '', say = document.getElementById('say');
   var img = document.getElementById('v'), tries = 0;
   document.getElementById('name').textContent = q.get('name') || dev || 'Camera';
-  document.title = (q.get('name') || 'Camera') + ' — Mice';
+  document.title = (q.get('name') || 'Camera') + ' — MICE';
   document.getElementById('full').onclick = function () {
     var el = document.documentElement;
     (el.requestFullscreen || el.webkitRequestFullscreen || function () {}).call(el);

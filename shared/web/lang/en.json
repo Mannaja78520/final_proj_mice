@@ -1,6 +1,9 @@
 {
  "name": "English",
  "strings": {
+  "About MICE": "About MICE",
+  "MICE stands for Meetings, Incentives, Conferences and Exhibitions.": "MICE stands for Meetings, Incentives, Conferences and Exhibitions.",
+  "MICE helps you run robots and interactive tools at events.": "MICE helps you run robots and interactive tools at events.",
   "📖 คู่มือ Help ↗": "📖 Help ↗",
   "ไทย": "ไทย",
   "เครื่องมือ": "Tools",

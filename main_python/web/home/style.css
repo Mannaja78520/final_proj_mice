@@ -82,7 +82,7 @@
 /* The head's own buttons, kept together at the right: STOP first, where a
    hand finds it, and full width on a phone so it cannot be missed. */
 .topbar h1{display:flex;align-items:center;gap:var(--sp-3)}
-.brand-mouse{width:40px;height:40px;object-fit:contain;flex:0 0 auto}
+.brand-mascot{width:40px;height:40px;object-fit:contain;flex:0 0 auto}
 .home-acts{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;order:3;flex-basis:100%}
 .home-acts button{white-space:nowrap}
 #stopAll{font-weight:700;letter-spacing:.02em}

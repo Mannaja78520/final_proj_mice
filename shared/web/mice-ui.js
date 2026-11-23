@@ -292,7 +292,7 @@
         const got = a.data || {};
         const log = [].concat(got.log || []).join(" ");
         if (a.needLogin)
-          throw [this.name + " can only be started from the PC that runs Mice, or after signing in on the hub page."];
+          throw [this.name + " can only be started from the PC that runs MICE, or after signing in on the hub page."];
         if (!a.ok) throw [a.says || this.name + " could not be started.", log || a.tech];
         if (got.ready || got.already_running) return this._where(got);
         // A starter that only launches (no `ready` in its answer): ask the

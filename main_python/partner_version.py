@@ -83,15 +83,15 @@ def report(entry, timeout=2.0):
     checked, missing = spec_missing(entry, timeout)
     name = entry.get("name") or "It"
     if not sha:
-        words = "Mice cannot tell which version of %s is installed." % name
+        words = "MICE cannot tell which version of %s is installed." % name
     elif same:
-        words = "%s is the version Mice was tested with." % name
+        words = "%s is the version MICE was tested with." % name
     else:
-        words = ("%s has been updated since Mice was tested with it. Everything keeps "
+        words = ("%s has been updated since MICE was tested with it. Everything keeps "
                  "working as before; if greetings or counts stop, this is the first "
                  "place to look." % name)
     if missing:
-        words += " Some of the addresses Mice uses are no longer listed by it."
+        words += " Some of the addresses MICE uses are no longer listed by it."
     return {"ok": True, "commit": sha, "branch": branch, "version": version,
             "tested": tested, "same": same, "why": why,
             "spec": {"checked": checked, "missing": missing}, "words": words}

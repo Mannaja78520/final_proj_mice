@@ -499,7 +499,7 @@ class Auth:
 
     def _write_plain(self, password: str, user: str = DEFAULT_USER):
         text = (
-            "This PC's Mice hub login:\n\n"
+            "This PC's MICE hub login:\n\n"
             "    user: %s\n"
             "    %s\n\n"
             "Set %s. Anyone at this PC can read this file. Nobody on the\n"

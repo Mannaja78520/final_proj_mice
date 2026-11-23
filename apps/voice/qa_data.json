@@ -157,10 +157,10 @@
     "晚上好",
     "你是谁"
    ],
-   "answer": "สวัสดีครับ! ผมคือหุ่นยนต์ Mice ยินดีต้อนรับครับ มีอะไรให้ผมช่วยไหมครับ",
-   "answer_en": "Hello! I am Mice robot. Welcome! How can I help you today?",
-   "answer_ja": "こんにちは！マイスロボットです。いらっしゃいませ！何かお手伝いしましょうか？",
-   "answer_zh": "您好！我是Mice机器人。欢迎光临！请问有什么我可以帮您的吗？",
+   "answer": "สวัสดีครับ! ผมคือหุ่นยนต์ MICE ยินดีต้อนรับครับ มีอะไรให้ผมช่วยไหมครับ",
+   "answer_en": "Hello! I am MICE robot. Welcome! How can I help you today?",
+   "answer_ja": "こんにちは！MICE ロボットです。いらっしゃいませ！何かお手伝いしましょうか？",
+   "answer_zh": "您好！我是MICE机器人。欢迎光临！请问有什么我可以帮您的吗？",
    "moves": [
     {
      "module": "nong",
@@ -235,10 +235,10 @@
     "你叫什么名字",
     "你叫什么"
    ],
-   "answer": "ผมชื่อ Mice ครับ เป็นหุ่นยนต์ต้อนรับที่นี่ครับ",
-   "answer_en": "My name is Mice. I am the welcome robot here.",
-   "answer_ja": "マイスと申します。ここの案内ロボットです。",
-   "answer_zh": "我叫Mice，是这里的迎宾机器人。"
+   "answer": "ผมชื่อ MICE ครับ เป็นหุ่นยนต์ต้อนรับที่นี่ครับ",
+   "answer_en": "My name is MICE. I am the welcome robot here.",
+   "answer_ja": "MICE と申します。ここの案内ロボットです。",
+   "answer_zh": "我叫MICE，是这里的迎宾机器人。"
   },
   {
    "questions": [

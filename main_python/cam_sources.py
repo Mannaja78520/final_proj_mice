@@ -201,7 +201,7 @@ _claims = {}          # dev -> (when, (mine, owner)): asking the folder every fr
 def _pc_or_peer(dev, pc_cfg):
     """This PC's webcam, opened by ONE program on the PC (user 2026-11-23).
 
-    Whoever asks first owns the camera (peers.claim_camera); a second Mice
+    Whoever asks first owns the camera (peers.claim_camera); a second MICE
     program - the hub and Voice alone, two apps alone - reads the OWNER's
     picture instead of opening the webcam again, which gives black frames."""
     if dev == "pc:":
@@ -221,7 +221,7 @@ def _pc_or_peer(dev, pc_cfg):
         return cam_relay.pc_relay(pc_cfg, dev[3:])
     spec = (config().get("kinds") or {}).get("link")
     if not spec:
-        return None, "another Mice program has this camera open"
+        return None, "another MICE program has this camera open"
     link = owner["url"].rstrip("/") + "/api/dev/cam.stream?dev=" + urllib.parse.quote(dev)
     return UrlCamRelay.get(dev + "@peer", run=_expand(spec, link)), ""
 
