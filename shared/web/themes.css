@@ -73,7 +73,7 @@
 :root[data-theme="midnight"]{
   --theme-name:"Midnight";
   --theme-mode:"dark";
-  --theme-note:"the dark one. Stays the default: a bright screen spills light into the show area";
+  --theme-note:"the dark one. For a dark hall: a bright screen spills light into the show area";
 
   /* surfaces — three depths, no more: page, raised, inset */
   --bg:#18191d; --card:#23252b; --sunk:#121317; --line:#3a3d47;
