@@ -8,3 +8,6 @@
 .cam .kind{font-weight:400;color:var(--mut);font-size:12px}
 .cam .row{flex-wrap:wrap}
 .cam{max-width:480px}
+.ph{display:flex;align-items:center;justify-content:center;text-align:center;padding:var(--sp-4);
+    color:var(--mut);font-size:13px}
+.ph[hidden],.shot[hidden]{display:none}
