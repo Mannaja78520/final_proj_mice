@@ -164,7 +164,7 @@
 .js-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:var(--sp-3);margin-top:var(--sp-4)}
 .mod.tool-tile{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;padding:var(--sp-4);margin:0;gap:var(--sp-2);min-width:0}
 .tool-tile .nm,.tool-tile .ip{white-space:normal;overflow:visible;overflow-wrap:anywhere}
-.tool-tile .ip{line-height:1.5}
+.tool-tile .ip{line-height:1.5;font-size:14px}   /* its own size, not the 13px address style (panel review 2026-11-23) */
 /* Drawn app icon: 56 px, beside the name. Rounded like the tile it was drawn on. */
 .tool-tile .nm{display:flex;align-items:center;gap:var(--sp-3)}
 .tool-pic{width:56px;height:56px;border-radius:16px;flex:0 0 auto;display:block;box-sizing:border-box;padding:4px;
@@ -174,9 +174,9 @@
    saturated, so the colour belongs to the page. */
 :root[data-theme="midnight"] .mod.tool-tile,:root[data-theme="carnival"] .mod.tool-tile{
   background:color-mix(in srgb,var(--card) 90%,var(--txt));box-shadow:0 1px 0 color-mix(in srgb,var(--txt) 8%,transparent) inset}
-:root[data-theme="midnight"] .tool-pic,:root[data-theme="carnival"] .tool-pic{filter:saturate(.85) brightness(.94)}
 .tool-open{display:flex;align-items:center;justify-content:center;min-height:44px;text-decoration:none;margin-top:var(--sp-1);background:var(--btn);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--txt);font-weight:600}
-.tool-open:hover{border-color:var(--acc)}
+.tool-open{color:var(--acc)}
+.tool-open:hover{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,var(--btn))}
 .tool-state{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3)}
 .tool-state .tech{flex-basis:100%;overflow-wrap:anywhere}
 .tool-state button{min-height:44px}
