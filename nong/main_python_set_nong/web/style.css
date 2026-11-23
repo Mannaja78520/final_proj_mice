@@ -245,8 +245,6 @@ input[type=checkbox]{accent-color:var(--acc)}
 #lookStat{display:block;max-width:220px;text-align:center}
 #rigCadStat{display:block;max-width:220px;text-align:center;white-space:normal;overflow-wrap:anywhere}
 #viewCube .vcRow:has(#rigCadMake){flex-wrap:wrap;max-width:220px}
-#lookAsk{max-width:min(460px,92vw);background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:10px}
-#lookAsk::backdrop{background:rgba(0,0,0,.5)}
 #lookAsk p{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 /* distances overlay (A26-44): labels sit over the 3D view, never catch the mouse */
 #distLayer{position:absolute;inset:0;pointer-events:none;z-index:4}
