@@ -306,6 +306,8 @@ OPEN = {
     # program - an app's installer calls /api/extensions/add itself).
     "/api/extensions", "/api/extensions/add", "/api/extensions/remove",
     "/api/extensions/restore", "/api/extensions/update", "/api/extensions/pick",
+    # Theme packs (2026-11-23): the list is open; install/remove go through start_refused.
+    "/api/themes", "/api/themes/install", "/api/themes/remove",
     # Reconize and our face watcher together, by the same rule (A11-1).
     "/api/faces/start",
     # A report is a complaint, not a command: it changes nothing on any

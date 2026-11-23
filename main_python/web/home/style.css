@@ -178,3 +178,15 @@
   #homeTools .tool-pic{width:40px;height:40px;border-radius:10px}
   #homeTools .tool-tile .nm{font-size:15px}
 }
+
+/* ---- Themes gallery (Settings). Preview colours are set from each theme's own block. ---- */
+.themeGrid{display:grid;gap:var(--sp-3);grid-template-columns:repeat(auto-fill,minmax(210px,1fr));margin-top:var(--sp-3)}
+.themeCard{border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-3);background:var(--card)}
+.themeCard.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}
+.themePrev{position:relative;height:84px;border:2px solid;border-radius:var(--r-sm);padding:var(--sp-2);margin-bottom:var(--sp-2);overflow:hidden}
+.themePrev b{position:relative;font-size:22px}
+.themePrev .pCard{position:absolute;right:10px;top:10px;width:46%;height:34px;border-radius:8px}
+.themePrev .pBtn{position:absolute;left:12px;bottom:10px;width:44px;height:14px;border-radius:7px}
+.themePrev .pDot{position:absolute;bottom:12px;width:10px;height:10px;border-radius:50%}
+.themePrev .pDot:nth-of-type(1){right:48px}.themePrev .pDot:nth-of-type(2){right:32px}.themePrev .pDot:nth-of-type(3){right:16px}
+.themeName{font-weight:600;display:flex;gap:var(--sp-2);align-items:center;flex-wrap:wrap}

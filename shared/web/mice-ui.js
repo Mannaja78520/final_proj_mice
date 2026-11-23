@@ -445,4 +445,13 @@
       document.head.appendChild(l);
     }
   } catch (e) { /* no language switch, the page still works */ }
+  // Pictures that follow the theme (dark twins, theme-pack pictures).
+  try {
+    if (document.head && document.querySelector &&
+        !document.querySelector('script[src="/mice-theme-art.js"]')) {
+      const t = document.createElement("script");
+      t.src = "/mice-theme-art.js";
+      document.head.appendChild(t);
+    }
+  } catch (e) { /* the pictures simply stay */ }
 })();

@@ -1,0 +1,36 @@
+{
+  "id": "cream",
+  "name": {
+    "en": "Cream",
+    "th": "ครีม",
+    "zh": "奶油",
+    "ja": "クリーム"
+  },
+  "note": "light, warm ivory paper with burgundy. The Help page look",
+  "mode": "light",
+  "author": "Mice",
+  "version": 1,
+  "colors": {
+    "bg": "#fff8ee",
+    "card": "#fffdf9",
+    "sunk": "#fbefdc",
+    "line": "#efdcc0",
+    "txt": "#3b2a2a",
+    "mut": "#76604f",
+    "acc": "#9b2c4a",
+    "on-acc": "#ffffff",
+    "btn": "#fbefdc",
+    "ok": "#1c6b4a",
+    "warn": "#9a5a00",
+    "err": "#b3261e",
+    "ty-nong": "#a35a00",
+    "ty-lift": "#0f7a8a",
+    "ty-cam": "#7b3fa0",
+    "ty-other": "#76604f"
+  },
+  "shape": {
+    "r-sm": "12px",
+    "r-md": "18px",
+    "r-lg": "22px"
+  }
+}

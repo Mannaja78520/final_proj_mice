@@ -1,0 +1,32 @@
+{
+  "id": "cloudy",
+  "name": {
+    "en": "Cloudy",
+    "th": "เมฆน้อย",
+    "zh": "云朵",
+    "ja": "くもりぞら"
+  },
+  "note": "light, soft pastel sky with little clouds",
+  "mode": "light",
+  "author": "Mice",
+  "version": 1,
+  "colors": {
+    "bg": "#eef6ff",
+    "card": "#ffffff",
+    "sunk": "#e1edfb",
+    "line": "#c5d9f1",
+    "txt": "#26304f",
+    "mut": "#515c85",
+    "acc": "#5457d6",
+    "on-acc": "#ffffff",
+    "btn": "#e4ecff",
+    "ok": "#1c7a52",
+    "warn": "#a35a00",
+    "err": "#c0365a",
+    "ty-nong": "#c2410c",
+    "ty-lift": "#0e7fb5",
+    "ty-cam": "#9333ea",
+    "ty-other": "#515c85"
+  },
+  "art": "clouds.svg"
+}

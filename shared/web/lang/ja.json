@@ -955,6 +955,19 @@
   "Choose a robot first": "先にロボットを選んでください",
   "NO ROBOT": "ロボットなし",
   "Connecting…": "接続中…",
-  "Looking for cameras… this takes a few seconds.": "カメラを探しています…数秒かかります。"
+  "Looking for cameras… this takes a few seconds.": "カメラを探しています…数秒かかります。",
+  "🎨 Themes": "🎨 テーマ",
+  "Pick a look and press Use. It changes every app at once, and the pictures switch to the dark or light set to match.": "好きな見た目を選んで「使う」を押します。すべてのアプリがいっしょに変わり、絵も暗い／明るいセットに切り替わります。",
+  "Install a theme…": "テーマをインストール…",
+  "A theme pack is a .zip (or a theme.json) with colours and, if you like, pictures. Packs that are hard to read are refused, with the reason.": "テーマパックは色（絵も入れられます）を入れた .zip か theme.json です。読みにくいパックは理由つきで断られます。",
+  "Dark": "ダーク",
+  "Light": "ライト",
+  "Use": "使う",
+  "In use": "使用中",
+  "Installing…": "インストール中…",
+  "Installed. Press Use to switch to it.": "インストールしました。「使う」で切り替えられます。",
+  "Removed.": "削除しました。",
+  "Log in first to change themes.": "テーマを変えるには先にログインしてください。",
+  "That did not work.": "うまくいきませんでした。"
  }
 }

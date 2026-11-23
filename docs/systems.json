@@ -26,6 +26,12 @@
      "depends": ["hub-auth", "hub-net", "hub-alone", "hub-media", "hub-shows", "fw-registry", "hub-usb",
                  "hub-flash", "hub-show", "hub-apps", "hub-extensions", "hub-support", "hub-studio", "hub-modules"]},
 
+    {"id": "hub-themes", "summary": "Theme packs (2026-11-23): colours + pictures installed like extensions, light/dark mode, dark picture twins. Built-ins in shared/web/themes/<id>/theme.json, installed ones beside hub_auth.json.",
+     "files": ["main_python/theme_packs.py", "main_python/hub_api_themes.py", "shared/web/themes/**",
+               "shared/web/mice-theme-art.js", "main_python/web/home/parts/themes.js"],
+     "names": ["/api/themes", "ThemePacks", "data-mode", "--theme-mode"],
+     "checks": ["check_theme_packs", "check_themes", "check_theme_contrast"], "depends": ["shared-web", "hub-extensions"]},
+
     {"id": "hub-extensions", "summary": "This PC's apps as extensions (A51-2): which apps are installed here and where, add by folder (mice-app.json, app.json or a partner template), remove/restore, update; apps whose partner is missing are hidden.",
      "files": ["main_python/extensions.py", "main_python/hub_api_extensions.py",
                "tools/api_index.py", "main_python/api_index.json", "docs/HUB_API.md",

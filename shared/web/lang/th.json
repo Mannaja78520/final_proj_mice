@@ -744,6 +744,19 @@
   "Choose a robot first": "เลือกหุ่นก่อน",
   "NO ROBOT": "ยังไม่มีหุ่น",
   "Connecting…": "กำลังเชื่อมต่อ…",
-  "Looking for cameras… this takes a few seconds.": "กำลังค้นหากล้อง… ใช้เวลาไม่กี่วินาที"
+  "Looking for cameras… this takes a few seconds.": "กำลังค้นหากล้อง… ใช้เวลาไม่กี่วินาที",
+  "🎨 Themes": "🎨 ธีม",
+  "Pick a look and press Use. It changes every app at once, and the pictures switch to the dark or light set to match.": "เลือกหน้าตาที่ชอบแล้วกด ใช้ ทุกแอปจะเปลี่ยนพร้อมกัน และรูปจะเปลี่ยนเป็นชุดมืดหรือสว่างให้เข้ากัน",
+  "Install a theme…": "ติดตั้งธีม…",
+  "A theme pack is a .zip (or a theme.json) with colours and, if you like, pictures. Packs that are hard to read are refused, with the reason.": "แพ็กธีมคือไฟล์ .zip (หรือ theme.json) ที่มีสี และมีรูปด้วยก็ได้ แพ็กที่อ่านยากจะถูกปฏิเสธพร้อมบอกเหตุผล",
+  "Dark": "มืด",
+  "Light": "สว่าง",
+  "Use": "ใช้",
+  "In use": "กำลังใช้",
+  "Installing…": "กำลังติดตั้ง…",
+  "Installed. Press Use to switch to it.": "ติดตั้งแล้ว กด ใช้ เพื่อเปลี่ยนไปใช้ธีมนี้",
+  "Removed.": "ลบแล้ว",
+  "Log in first to change themes.": "ต้องเข้าสู่ระบบก่อนจึงจะเปลี่ยนธีมได้",
+  "That did not work.": "ทำไม่สำเร็จ"
  }
 }

@@ -506,6 +506,9 @@
   "ถ้าเปิดหน้าของแอพอื่นในหน้าต่างของแอพเดี่ยว จะเห็นหน้าสั้น ๆ บอกว่าแอพนั้นยังไม่ได้เปิดที่นี่ หรือมีปุ่ม เปิด พาไปหน้าต่างที่แอพนั้นเปิดอยู่": "If you open another app's page in an app's own window, you see a short page saying that app is not open here, or a button Open that takes you to the window where it is running.",
   "เปิดเดี่ยว: ดับเบิลคลิกไฟล์ที่ชื่อเหมือนแอพในโฟลเดอร์ launchers เช่น Voice, Cameras, Prize machines, Nong Studio, TV Remote หรือ Features & help หน้าของแอพจะเปิดขึ้นเอง ปิดหน้าต่างสีดำเพื่อหยุด": "Open one app by itself: double-click the file named like the app in the launchers folder, for example Voice, Cameras, Prize machines, Nong Studio, TV Remote or Features & help. The app's page opens by itself. Close the black window to stop it.",
   "← ก่อนหน้า (Previous)": "← Previous",
-  "ถัดไป (Next) →": "Next →"
+  "ถัดไป (Next) →": "Next →",
+  "ธีมแพ็ก: Cloudy, Cream, Aurora และติดตั้งเพิ่ม (Theme packs)": "Theme packs: Cloudy, Cream, Aurora and installing more (Theme packs)",
+  "เปิดแท็บ Settings เลือกการ์ดธีมที่ชอบ แล้วกดปุ่ม Use มีธีมน่ารักมาให้แล้ว ได้แก่ Cloudy (ฟ้าอ่อนมีก้อนเมฆ) Cream (ครีมเหมือนหน้า Help) และ Aurora (กลางคืนสีเขียวม่วง)": "Open the Settings tab, pick a theme card and press Use. Cute themes come built in: Cloudy (soft sky with clouds), Cream (warm cream, like this Help page) and Aurora (a green and violet night).",
+  "สีและรูปของทุกแอปเปลี่ยนพร้อมกัน ธีมมืดใช้รูปชุดมืด ธีมสว่างใช้รูปชุดสว่าง ถ้าอยากเพิ่มธีม กด Install a theme แล้วเลือกไฟล์ .zip หรือ theme.json (ต้องล็อกอินฮับ) ธีมที่อ่านยากเกินไปจะถูกปฏิเสธพร้อมบอกเหตุผล ธีมที่ติดตั้งเองลบได้ด้วยปุ่ม Remove": "The colours and pictures of every app change together. A dark theme uses the dark picture set, a light theme the light one. To add a theme, press Install a theme and choose a .zip or theme.json file (hub login needed). A theme that is too hard to read is refused with the reason. Themes you installed can be removed with Remove."
  }
 }

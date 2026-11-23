@@ -955,6 +955,19 @@
   "Choose a robot first": "请先选择机器人",
   "NO ROBOT": "没有机器人",
   "Connecting…": "正在连接…",
-  "Looking for cameras… this takes a few seconds.": "正在查找摄像头…需要几秒钟。"
+  "Looking for cameras… this takes a few seconds.": "正在查找摄像头…需要几秒钟。",
+  "🎨 Themes": "🎨 主题",
+  "Pick a look and press Use. It changes every app at once, and the pictures switch to the dark or light set to match.": "选一个外观并按“使用”。所有应用会同时改变，图片也会换成匹配的深色或浅色版本。",
+  "Install a theme…": "安装主题…",
+  "A theme pack is a .zip (or a theme.json) with colours and, if you like, pictures. Packs that are hard to read are refused, with the reason.": "主题包是包含颜色（也可含图片）的 .zip 或 theme.json。难以阅读的主题包会被拒绝并说明原因。",
+  "Dark": "深色",
+  "Light": "浅色",
+  "Use": "使用",
+  "In use": "使用中",
+  "Installing…": "正在安装…",
+  "Installed. Press Use to switch to it.": "已安装。按“使用”切换到它。",
+  "Removed.": "已移除。",
+  "Log in first to change themes.": "请先登录再更改主题。",
+  "That did not work.": "没有成功。"
  }
 }

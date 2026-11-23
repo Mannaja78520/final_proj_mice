@@ -1,0 +1,32 @@
+{
+  "id": "aurora",
+  "name": {
+    "en": "Aurora",
+    "th": "แสงเหนือ",
+    "zh": "极光",
+    "ja": "オーロラ"
+  },
+  "note": "dark, deep night sky with green and violet glow",
+  "mode": "dark",
+  "author": "Mice",
+  "version": 1,
+  "colors": {
+    "bg": "#0e1424",
+    "card": "#172036",
+    "sunk": "#0a0f1c",
+    "line": "#2e3d63",
+    "txt": "#e8f0ff",
+    "mut": "#9fb2d8",
+    "acc": "#5eead4",
+    "on-acc": "#04302b",
+    "btn": "#23314f",
+    "ok": "#4ade80",
+    "warn": "#fbbf24",
+    "err": "#fb7185",
+    "ty-nong": "#fcd34d",
+    "ty-lift": "#7dd3fc",
+    "ty-cam": "#c4b5fd",
+    "ty-other": "#9fb2d8"
+  },
+  "art": "stars.svg"
+}
