@@ -1,17 +1,17 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
-Owner: codex:11232030-35b8
-Updated: 2026-11-23T20:52+07:00
+Owner: codex:11232254-6f5e
+Updated: 2026-11-23 22:54 +0700
 Branch: codex/visual-regression-1123
 Last commit: this checkpoint
-Plan: none (user ask 2026-11-23: "ได้เช็คทั้งหมดแล้วจริงปะ ทำไมยังเหลือพังอีกเยอะ")
+Plan: A1123-2
 
 ## Goal
 Look at every page like a person (screenshots, 4 languages, dark/light, phone/desktop), check the 3D robot
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 2, build and QEMU verification. PlatformIO builds the ESP32, S3 and simulator targets in this worktree. One build pass and one QEMU phone walkthrough using the generated page and actual emulated status over UART. Retain browser proof and record any emulator blocker.
+Item 2, resume after E: filled. Preserve the completed nong compile and UART-backed 390 px walkthrough evidence. Finish the missing builds from this snapshot with private C: scratch, then use the lift generated page and real emulated UART status for the second phone walkthrough. Budget one resumed build and one walkthrough per board type, with one retry for a diagnosed environment failure.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
