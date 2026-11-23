@@ -116,12 +116,12 @@ setTimeout(async function(){
     if (!w.miceTheme) return done("missing=miceTheme");
 
     var found = w.miceTheme.list().map(function(t){ return t.id; }).join(",");
-    var box = d.getElementById('themePick');
-    var sel = box ? box.querySelector('select') : null;
-    var opts = sel ? [].slice.call(sel.options).map(function(o){ return o.value; }).join(",")
-                   : "none";
-    var names = sel ? [].slice.call(sel.options).map(function(o){
-                        return o.textContent; }).join(",").replace(/[^A-Za-z,]/g, "")
+    // The hub's Themes gallery: one card per theme, found by reading the stylesheet.
+    await new Promise(function(r){ setTimeout(r, 1500); });
+    var cards = [].slice.call(d.querySelectorAll('#themeGrid .themeCard'));
+    var opts = cards.length ? cards.map(function(c){ return c.getAttribute('data-id'); }).join(",") : "none";
+    var names = cards.length ? cards.map(function(c){
+                        return c.querySelector('.themeName').firstChild.textContent; }).join(",").replace(/[^A-Za-z,]/g, "")
                     : "none";
 
     // Actually wear one, and see whether the paint changed.

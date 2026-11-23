@@ -54,6 +54,7 @@
 :root,
 :root[data-theme="indigo"]{
   --theme-name:"Reconize";
+  --theme-mode:"light";
   --theme-note:"light, indigo. The face app's own colours";
 
   --bg:#f6f7fb; --card:#ffffff; --sunk:#f9fafb; --line:#e5e7eb;
@@ -71,6 +72,7 @@
    lit set in a dark room. One click in the picker, and the choice is kept. */
 :root[data-theme="midnight"]{
   --theme-name:"Midnight";
+  --theme-mode:"dark";
   --theme-note:"the dark one. Stays the default: a bright screen spills light into the show area";
 
   /* surfaces — three depths, no more: page, raised, inset */
@@ -97,6 +99,7 @@
    colour. Measured: text 15.3:1, muted 7.5:1, accent 11.9:1. */
 :root[data-theme="carnival"]{
   --theme-name:"Carnival";
+  --theme-mode:"dark";
   --theme-note:"dark, with colour. For when the hall is dark and the rig is not";
 
   --bg:#1a1025; --card:#2b1b3d; --sunk:#110a18; --line:#4a2b6b;
@@ -113,6 +116,7 @@
    a window. Measured: text 14.6:1, muted 5.9:1, accent 5.5:1. */
 :root[data-theme="daylight"]{
   --theme-name:"Daylight";
+  --theme-mode:"light";
   --theme-note:"light. For a bright room, or a screen with sun on it";
 
   --bg:#f8f9fa; --card:#ffffff; --sunk:#e9ecef; --line:#ced4da;

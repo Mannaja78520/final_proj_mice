@@ -275,7 +275,7 @@ def pc_relay(cfg, name=""):
 
 # What a viewer is told when the webcam gives nothing. On Windows that is
 # almost always another app (a browser tab) holding it.
-PC_CAMERA_BUSY = "this PC's camera is in use by another app, or unplugged"
+PC_CAMERA_BUSY = "this PC's camera is in use by another app (a browser tab, or an older Mice window that is still open), or unplugged - close it and try again"
 
 # No console window flashing up on Windows for each read (check_no_console_window).
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0

@@ -1,5 +1,0 @@
-name: qc_old
-steps:
-  - pose: "10 160 90 90 90 90 90 90 T 700"
-  - play: some_song.mp3
-  - pose: "20 150 90 90 90 90 90 90"

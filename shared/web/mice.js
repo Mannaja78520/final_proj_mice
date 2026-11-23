@@ -26,6 +26,9 @@ class MiceThemeManager {
     if (saved) {
       document.documentElement.setAttribute("data-theme", saved);
     }
+    this.mode();
+    // The stylesheet may arrive after this script: mark light/dark again then.
+    window.addEventListener("load", () => this.mode());
     // Dynamic cross-window / cross-tab theme synchronization
     if (typeof window !== "undefined") {
       window.addEventListener("storage", (e) => {
@@ -60,6 +63,19 @@ class MiceThemeManager {
     return out;
   }
 
+  // "light" or "dark" as the theme declares it (--theme-mode), kept on <html>
+  // as data-mode so pages and picture sets can match it.
+  mode() {
+    if (typeof getComputedStyle !== "function") return "light";   // QC's bare stub of the page
+    var m = (getComputedStyle(document.documentElement).getPropertyValue("--theme-mode") || "").replace(/["'\s]/g, "");
+    if (m !== "light" && m !== "dark") m = /dark/.test(getComputedStyle(document.documentElement).colorScheme || "") ? "dark" : "light";
+    if (document.documentElement.getAttribute("data-mode") !== m) {
+      document.documentElement.setAttribute("data-mode", m);
+      document.dispatchEvent(new CustomEvent("micemode", { detail: { mode: m } }));
+    }
+    return m;
+  }
+
   get() {
     try { return localStorage.getItem(this.key) || ""; } catch (e) { return ""; }
   }
@@ -67,6 +83,7 @@ class MiceThemeManager {
   apply(id, persist = true) {
     if (id) document.documentElement.setAttribute("data-theme", id);
     else document.documentElement.removeAttribute("data-theme");
+    this.mode();
     if (persist) {
       try { localStorage.setItem(this.key, id || ""); } catch (e) { /* private mode */ }
     }
