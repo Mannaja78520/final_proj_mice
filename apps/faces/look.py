@@ -61,6 +61,7 @@ class Looker:
         self.gap = 1.0 / max(0.1, float(per_second or 4))
         self.idle = idle
         self.stopped = False
+        self.gone = False                     # taken off the list: the thread ends
         self.busy = 0                         # 429s in a row
         self.status = {"camera": camera, "state": "starting", "why": "",
                        "sent": 0, "at": ""}
@@ -123,14 +124,59 @@ class Looker:
 
     def run(self):
         seen = 0
-        while True:
+        while not self.gone:
             try:
                 seen, wait = self.step(seen)
             except Exception as e:                       # noqa: BLE001
                 self._say("error", "%s: %s" % (type(e).__name__, e))
                 wait = 2.0
             time.sleep(wait)
+        getattr(self.frames, "rest", lambda: None)()   # let the camera go
+
+    def retire(self):
+        self.gone = True
 
     def start(self):
         threading.Thread(target=self.run, daemon=True).start()
         return self
+
+
+def sync(state, hub, every=10.0, ask=None):
+    """Follow the Cameras page (user 2026-11-23): a camera switched on there for
+    face recognition starts being looked at within `every` seconds, and one
+    switched off is let go - no restart of this watcher. Cameras named in
+    config/faces.json look.cameras stay as they are. `ask(hub)` -> [{name, dev}]
+    is the hub's GET /api/cameras?face=1 (a check swaps it)."""
+    import json
+    import urllib.request
+
+    def from_hub(h):
+        with urllib.request.urlopen(h.rstrip("/") + "/api/cameras?face=1", timeout=5) as r:
+            return [{"name": c["name"], "dev": c["dev"]}
+                    for c in json.loads(r.read().decode()).get("cameras") or []]
+
+    mine = {}                                  # dev -> Looker started here
+    fixed = {c.get("dev") for c in state.look.get("cameras") or []}
+
+    def once():
+        try:
+            want = {c["dev"]: c for c in (ask or from_hub)(hub) if c.get("dev") and c.get("name")}
+        except Exception:                                    # noqa: BLE001
+            return                              # the hub is away: keep what runs
+        for dev, c in want.items():
+            if dev not in mine and dev not in fixed:
+                mine[dev] = Looker(state, c["name"], hub_frames(hub, dev),
+                                   per_second=state.look.get("perSecond") or 4).start()
+                state.lookers.append(mine[dev])
+        for dev in [d for d in mine if d not in want]:
+            lk = mine.pop(dev)
+            lk.retire()
+            if lk in state.lookers:
+                state.lookers.remove(lk)
+
+    def loop():
+        while True:
+            once()
+            time.sleep(every)
+    threading.Thread(target=loop, daemon=True).start()
+    return once

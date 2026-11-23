@@ -117,6 +117,7 @@ except Exception as _e:            # a broken registry must not stop the hub
 import app_window                                          # noqa: E402
 import build_stamp                                         # noqa: E402
 import cam_relay                                           # noqa: E402
+import cam_sources                                         # noqa: E402
 import children                                            # noqa: E402
 import extensions                                          # noqa: E402
 import hub_auth                                            # noqa: E402
@@ -1655,11 +1656,13 @@ import hub_api_faces  # noqa: E402
 hub_api_faces.bind(sys.modules[__name__])
 import hub_api_gacha  # noqa: E402
 hub_api_gacha.bind(sys.modules[__name__])
+import hub_api_cameras  # noqa: E402
+hub_api_cameras.bind(sys.modules[__name__])
 
 
 # ---------------------------------------------------------------- handler
 class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
-              hub_api_extensions.ExtensionRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_busmap.BusMapRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, BaseHTTPRequestHandler):
+              hub_api_extensions.ExtensionRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_busmap.BusMapRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, hub_api_cameras.CamerasRoutes, BaseHTTPRequestHandler):
     # HTTP/1.1, so a browser can KEEP ITS CONNECTION.
     #
     # BaseHTTPRequestHandler defaults to HTTP/1.0, which means every response
@@ -2039,10 +2042,11 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 # through the fetch shim, so the page addresses this URL
                 # itself; the hub copies the module's multipart body to the
                 # browser until one of them goes away.
-                if dev.startswith("pc:"):
-                    # This PC's own webcam, opened once here and shared, so
-                    # Voice and the face app are not fighting over it.
-                    relay, why = cam_relay.pc_relay(hub_api_faces.pc_camera(), dev[3:])
+                if cam_sources.is_hub_read(dev):
+                    # This PC's own webcam, or a camera someone added by its link
+                    # (cam_sources): opened once here and shared, so Voice, the
+                    # face app and a watch window are not fighting over it.
+                    relay, why = cam_sources.relay_for(dev, hub_api_faces.pc_camera())
                     if relay is None:
                         return self.send_err(why, 503)
                     # Busy a moment ago: say so, start nothing. A clear 503
@@ -2066,7 +2070,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                     relay = cam_relay.CamRelay.get(addr)
                 relay.join()
                 seen, jpeg = 0, b""
-                if dev.startswith("pc:"):
+                if cam_sources.is_hub_read(dev):
                     # The first picture before the 200: a webcam that gives
                     # none answers 503 with the reason, not an empty stream.
                     seen, jpeg = relay.next_frame(0)
@@ -2105,6 +2109,20 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 # A camera frame, for the module site served BY the hub.
                 # The page asks for /api/cam.jpg; the shim rewrites it to
                 # here, and this fetches it from the board.
+                if cam_sources.is_hub_read(dev):
+                    # One picture from a camera the hub reads itself: the next
+                    # frame of its shared relay, never a second open of it.
+                    relay, why = cam_sources.relay_for(dev, hub_api_faces.pc_camera())
+                    if relay is None:
+                        return self.send_err(why, 503)
+                    relay.join()
+                    try:
+                        _seen, jpeg = relay.next_frame(0)
+                    finally:
+                        relay.leave()
+                    if jpeg is None:
+                        return self.send_err(relay.why(), 503)
+                    return self.send_bytes(jpeg, "image/jpeg")
                 kind, addr, bus, peer = parse_dev(dev)
                 if kind != "wifi" or peer:
                     # Not a limitation worth hiding: a JPEG cannot travel on
@@ -2841,6 +2859,9 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
             return r
         r = self.api_faces(method, path, q)   # hub_api_faces.py
         if r is not hub_api_faces.NOT_MINE:
+            return r
+        r = self.api_cameras(method, path, q)   # hub_api_cameras.py
+        if r is not hub_api_cameras.NOT_MINE:
             return r
 
         r = self.api_play(method, path, q)   # hub_api_play.py
