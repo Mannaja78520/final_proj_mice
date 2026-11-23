@@ -920,6 +920,13 @@
    "file": "hub_api_studio.py"
   },
   {
+   "path": "/api/video/lan",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_studio.py"
+  },
+  {
    "path": "/api/video/put",
    "method": "POST",
    "what": "",

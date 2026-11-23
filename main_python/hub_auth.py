@@ -158,6 +158,8 @@ GATED_POST = {
     # A video fetched from a link onto this PC (A44-8): POST reaches the
     # internet and writes here, GET only says how far it has got.
     "/api/video/fetch",
+    # Which devices on the network a link may point at: it opens the hub to them.
+    "/api/video/lan",
     # A46-1: talk gestures played on a robot. Reading, planning and saving
     # the library are Studio tools (NEVER_GATED below); playing moves an arm.
     "/api/gestures/play",

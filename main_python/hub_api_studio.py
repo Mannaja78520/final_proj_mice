@@ -21,7 +21,8 @@ LINKS = None          # hub_video.Links, made on first use (QC swaps it)
 def links():
     global LINKS
     if LINKS is None:
-        LINKS = hub_video.Links(_hub.asset("config", "video_links.json"))
+        LINKS = hub_video.Links(_hub.asset("config", "video_links.json"),
+                                  lan_file=_hub.DATA / ".local" / "video_lan.json")
     return LINKS
 
 
@@ -342,8 +343,21 @@ class StudioRoutes:
                 return self.send_json({"ok": links().cancel(str(d["cancel"]))})
             jid, why = links().start(str(d.get("url") or ""))
             if not jid:
-                return self.send_err(why)
+                return self.send_json({"ok": False, "error": why,
+                                       "lanHost": links().lan_host_of(d.get("url"))}, code=400)
             return self.send_json({"ok": True, "id": jid, **links().status(jid)})
+        if path == "/api/video/lan":
+            # Devices on the venue network an admin allowed as video sources.
+            if method == "POST":
+                d = json.loads(self.body().decode() or "{}")
+                if d.get("remove"):
+                    links().lan_remove(d["remove"])
+                elif d.get("add"):
+                    ok, why = links().lan_add(d["add"])
+                    if not ok:
+                        return self.send_err(why)
+            return self.send_json({"ok": True, "hosts": links().lan_saved(),
+                                   "fixed": links().cfg.get("lanHosts") or []})
         if path == "/api/video/fetch":
             st = links().status((q.get("id") or [""])[0])
             if st is None:
