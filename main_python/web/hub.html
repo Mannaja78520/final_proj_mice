@@ -1785,9 +1785,23 @@ class MiceAppsManager {
       return this.row((a.icon ? a.icon + ' ' : '') + (a.name || a.id), sub, p ? p.folder : '', btns);
     }));
   }
+  // Without this the card kept its first words 'กำลังโหลด…' for ever when the hub said no
+  // (user 2026-11-23: stuck 'Loading…' on a real PC). Say what is wrong and offer a retry.
+  drawFailed(needLogin) {
+    const msg = needLogin ? 'ล็อกอินที่ด้านบนของหน้านี้เพื่อดูแอปในเครื่องนี้' : 'ยังโหลดรายการแอปไม่ได้';
+    const box = document.getElementById('apps-list');
+    const retry = this.button('ลองอีกครั้ง', () => this.load());
+    box.className = 'js-apps-list';
+    box.replaceChildren(this.row(msg, '', '', needLogin ? [] : [retry]));
+    document.getElementById('apps-found').replaceChildren();
+  }
   async load() {
     const ans = await Mice.Api.get('/api/extensions');
-    if (!ans.ok) { this.say.error('โหลดรายการแอปไม่ได้', ans.tech || ans.says); return; }
+    if (!ans.ok) {
+      this.say.error('โหลดรายการแอปไม่ได้', ans.tech || ans.says);
+      this.drawFailed(ans.status === 401 || ans.status === 403);
+      return;
+    }
     this.draw(ans.data);
   }
 }

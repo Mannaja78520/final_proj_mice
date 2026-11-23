@@ -24,7 +24,7 @@ const grab = () => {
     ['placeholder', 'title', 'aria-label', 'alt'].forEach(a => { const v = e.getAttribute(a); if (v && v.trim()) res.push([a, v.trim()]); });
   });
   document.querySelectorAll('input[type=button],input[type=submit],option').forEach(e => { if (e.value && e.tagName!=='OPTION') res.push(['value', e.value]); });
-  res.push(['title', document.title]);
+  res.push(['title', document.title]);   // the tab title too: it is translated by mice-lang.js (2026-11-23)
   return res;
 };
 (async () => {

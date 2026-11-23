@@ -1280,6 +1280,10 @@
   "Also set the arm lengths from this URDF?": "ตั้งความยาวแขนจาก URDF นี้ด้วยไหม?",
   "OK sets them. Cancel keeps the lengths you have.": "ตกลง = ตั้งตามนี้ ยกเลิก = ใช้ความยาวเดิม",
   "Remove {}? They are logged out straight away.": "ลบ {} ใช่ไหม? เขาจะถูกออกจากระบบทันที",
-  "Reset the rig to the factory defaults? (You haven't saved a default of your own — use “★ Save current as default” to keep your tuning.)": "รีเซ็ตหุ่นกลับเป็นค่าโรงงานไหม? (คุณยังไม่ได้บันทึกค่าเริ่มต้นของตัวเอง — ใช้ “★ Save current as default” เพื่อเก็บค่าที่ปรับไว้)"
+  "Reset the rig to the factory defaults? (You haven't saved a default of your own — use “★ Save current as default” to keep your tuning.)": "รีเซ็ตหุ่นกลับเป็นค่าโรงงานไหม? (คุณยังไม่ได้บันทึกค่าเริ่มต้นของตัวเอง — ใช้ “★ Save current as default” เพื่อเก็บค่าที่ปรับไว้)",
+  "Help — Mice": "วิธีใช้ — Mice",
+  "TV Remote & Monitor — Mice": "รีโมตทีวีและมอนิเตอร์ — Mice",
+  "Cameras — Mice": "กล้อง — Mice",
+  "Mice — light strip": "Mice — แถบไฟ"
  }
 }

@@ -238,5 +238,22 @@ const machine = (id, label = id) => ({id, label, module: id, item: "gift", near:
     ok(pics[1].src === "/img/apps/default.svg", "the shared default icon is the cartoon one", String(pics[1].src));
     ok(rows(box).length === apps.length, "redrawing replaces rather than duplicates rows");
   });
+  await test("Apps on this PC: a failed list leaves a message, never 'Loading' for ever", async () => {
+    const c = context(), src = read("main_python/web/home/parts/apps_manage.js");
+    c.onTab = () => {};
+    vm.runInContext(src.slice(0, src.indexOf("window.miceApps = new")), c);
+    const m = vm.runInContext("new MiceAppsManager()", c);
+    const list = c.el("apps-list"), found = c.el("apps-found");
+    list.textContent = "กำลังโหลด…";
+    c.Mice.Api.get = async () => ({ok: false, status: 500, says: "boom", tech: "boom"});
+    await m.load();
+    const text = n => (n.children.length ? n.children.map(text).join(" ") : n.textContent);
+    ok(!text(list).includes("กำลังโหลด") && text(list).includes("ยังโหลดรายการแอปไม่ได้"),
+      "a failed answer replaces Loading with a message");
+    ok(list.children[0].children.some(n => n.tag === "button"), "and offers a retry");
+    c.Mice.Api.get = async () => ({ok: false, status: 401, says: "log in", tech: "401"});
+    await m.load();
+    ok(text(list).includes("ล็อกอิน"), "no login: it says to log in");
+  });
   process.exitCode = failed ? 1 : 0;
 })().catch(error => { console.error(error); process.exitCode = 1; });
