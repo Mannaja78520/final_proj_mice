@@ -79,6 +79,7 @@ class CameraApp extends (window.Mice && window.Mice.App ? window.Mice.App : Obje
       if (!r.ok || data.ok === false || !Array.isArray(data.cameras)) data = null;
     } catch (_) { data = null; }
     if (generation !== this.loadGeneration) return;
+    this.$('looking').hidden = true;     // the first answer, good or bad, ends the waiting message
     if (data) {
       this.cams = data.cameras;
       this.render();

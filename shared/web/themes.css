@@ -59,7 +59,7 @@
   --bg:#f6f7fb; --card:#ffffff; --sunk:#f9fafb; --line:#e5e7eb;
   --txt:#111827; --mut:#6b7280;
   --acc:#4f46e5; --on-acc:#ffffff; --btn:#ffffff;
-  --ok:#16a34a; --warn:#b45309; --err:#dc2626;
+  --ok:#15803d; --warn:#b45309; --err:#b91c1c;
   --ty-nong:#a16207; --ty-lift:#0284c7; --ty-cam:#7c3aed; --ty-other:#6b7280;
 
   color-scheme:light;
@@ -81,7 +81,7 @@
 
   /* ONE accent carries interaction; ok/warn/err mean state and nothing else */
   --acc:#aebcff; --on-acc:#191e35; --btn:#30343f;
-  --ok:#3ecf8e; --warn:#ffb454; --err:#ff6b6b;
+  --ok:#3ecf8e; --warn:#ffb454; --err:#ff8383;
 
   /* Which KIND of board a row is. Decoration, deliberately separate from the
      state colours above so --ok/--warn/--err keep meaning only "fine /
@@ -102,7 +102,7 @@
   --bg:#1a1025; --card:#2b1b3d; --sunk:#110a18; --line:#4a2b6b;
   --txt:#f2e6ff; --mut:#b899d9;
   --acc:#00e5ff; --on-acc:#001a1c; --btn:#402060;
-  --ok:#00f58c; --warn:#ffc233; --err:#ff3366;
+  --ok:#00f58c; --warn:#ffc233; --err:#ff6b92;
   --ty-nong:#ffb84d; --ty-lift:#8affff; --ty-cam:#c9a0ff; --ty-other:#b899d9;
 
   color-scheme:dark;
@@ -120,8 +120,8 @@
   /* #0b5ed7, not the #0d6efd this was designed with: that measured 4.27:1 on
      this background, and links are text. */
   --acc:#0b5ed7; --on-acc:#ffffff; --btn:#e2e6ea;
-  --ok:#198754; --warn:#d97706; --err:#dc3545;
-  --ty-nong:#b8860b; --ty-lift:#1f6feb; --ty-cam:#6f42c1; --ty-other:#5a6268;
+  --ok:#146c43; --warn:#b45309; --err:#b02a37;
+  --ty-nong:#946200; --ty-lift:#1f6feb; --ty-cam:#6f42c1; --ty-other:#5a6268;
 
   color-scheme:light;
 }
