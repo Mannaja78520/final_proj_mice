@@ -9,7 +9,7 @@
    default; changing it reloads the page, which keeps this file simple. */
 (function () {
   var KEY = "mice.lang", DEFAULT = "th", SOURCE = "en";
-  var ATTRS = ["placeholder", "title", "aria-label"];
+  var ATTRS = ["placeholder", "title", "aria-label", "alt"];   // alt: drawn icons and QR codes (2026-11-23)
   var SKIP = {SCRIPT: 1, STYLE: 1, TEXTAREA: 1, CODE: 1, PRE: 1};
   var dict = null;
   var loaded = null;        // the language this page was translated into
@@ -35,13 +35,18 @@
       if (hit) n.nodeValue = n.nodeValue.replace(/\S[\s\S]*\S|\S/, hit.to);
       return;
     }
-    if (n.nodeType !== 1 || SKIP[n.nodeName]) return;
+    if (n.nodeType !== 1 || n.nodeName === "SCRIPT" || n.nodeName === "STYLE") return;
     for (var i = 0; i < ATTRS.length; i++) {
       var v = n.getAttribute(ATTRS[i]);
       var h = v && lookup(v);
       if (h) n.setAttribute(ATTRS[i], h.to);
     }
+    if (SKIP[n.nodeName]) return;     // code and text boxes keep their text, but their placeholder/title above are translated (2026-11-23)
     for (var c = n.firstChild; c; c = c.nextSibling) node(c);
+  }
+  function pageTitle() {                         // the browser tab's own title (2026-11-23)
+    var h = lookup(document.title || "");
+    if (h) document.title = h.to;
   }
   function watch() {
     if (!window.MutationObserver) return;
@@ -49,9 +54,13 @@
       for (var i = 0; i < list.length; i++) {
         var m = list[i];
         if (m.type === "characterData") node(m.target);
+        else if (m.type === "attributes") {      // a title / label set after the first pass (tool tiles, dialogs)
+          var av = m.target.getAttribute(m.attributeName), ah = av && lookup(av);
+          if (ah) m.target.setAttribute(m.attributeName, ah.to);
+        }
         else for (var j = 0; j < m.addedNodes.length; j++) node(m.addedNodes[j]);
       }
-    }).observe(document.documentElement, {childList: true, subtree: true, characterData: true});
+    }).observe(document.documentElement, {childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS});
   }
   function get(url, done) {
     var x = new XMLHttpRequest();
@@ -122,10 +131,12 @@
           return get("/lang/help/" + encodeURIComponent(code) + ".json", function (h) {
             if (h && h.strings) for (var k in h.strings) if (Object.prototype.hasOwnProperty.call(h.strings, k)) dict[k] = h.strings[k];
             node(document.body);
+            pageTitle();
             watch();
           });
         }
         node(document.body);
+        pageTitle();
         watch();
       });
     });

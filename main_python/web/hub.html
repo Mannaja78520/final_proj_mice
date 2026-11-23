@@ -7,6 +7,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mice Control Hub</title>
 <link rel="stylesheet" href="/mice.css">
+<link rel="stylesheet" href="/img-dark.css">
 <script src="/mice.js"></script>
 <script src="/mice-ui.js"></script>
 <style>
@@ -164,12 +165,19 @@
 .js-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:var(--sp-3);margin-top:var(--sp-4)}
 .mod.tool-tile{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;padding:var(--sp-4);margin:0;gap:var(--sp-2);min-width:0}
 .tool-tile .nm,.tool-tile .ip{white-space:normal;overflow:visible;overflow-wrap:anywhere}
-.tool-tile .ip{line-height:1.5}
+.tool-tile .ip{line-height:1.5;font-size:14px}   /* its own size, not the 13px address style (panel review 2026-11-23) */
 /* Drawn app icon: 56 px, beside the name. Rounded like the tile it was drawn on. */
 .tool-tile .nm{display:flex;align-items:center;gap:var(--sp-3)}
-.tool-pic{width:56px;height:56px;border-radius:14px;flex:0 0 auto;display:block}
+.tool-pic{width:56px;height:56px;border-radius:16px;flex:0 0 auto;display:block;box-sizing:border-box;padding:4px;
+  background:color-mix(in srgb,var(--txt) 9%,var(--card));border:1px solid var(--line)}
+/* Dark themes (user 2026-11-23: bright drawn icons on a black tile looked pasted on): the tile is
+   LIFTED above the card instead of sunk below it, and the icon sits on a soft plate, a little less
+   saturated, so the colour belongs to the page. */
+:root[data-theme="midnight"] .mod.tool-tile,:root[data-theme="carnival"] .mod.tool-tile{
+  background:color-mix(in srgb,var(--card) 90%,var(--txt));box-shadow:0 1px 0 color-mix(in srgb,var(--txt) 8%,transparent) inset}
 .tool-open{display:flex;align-items:center;justify-content:center;min-height:44px;text-decoration:none;margin-top:var(--sp-1);background:var(--btn);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--txt);font-weight:600}
-.tool-open:hover{border-color:var(--acc)}
+.tool-open{color:var(--acc)}
+.tool-open:hover{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,var(--btn))}
 .tool-state{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3)}
 .tool-state .tech{flex-basis:100%;overflow-wrap:anywhere}
 .tool-state button{min-height:44px}
@@ -188,7 +196,7 @@
   #homeTools .tool-tile .ip{display:none}
   #homeTools .tool-tile{padding:var(--sp-3)}
   #homeTools .tool-pic{width:40px;height:40px;border-radius:10px}
-  #homeTools .tool-tile .nm{font-size:15px}
+  #homeTools   #homeTools .tool-tile .nm{font-size:15px}
 }
 </style>
 </head>
@@ -1577,13 +1585,18 @@ class MiceToolsManager {
     name.className = 'nm';
     // A drawn icon when the app has one (app.json "image"), the emoji otherwise.
     // Only a path on this hub: never another address or a script URL.
-    if (typeof app.image === 'string' && /^\/[A-Za-z0-9_\/.-]+$/.test(app.image)) {
+    // No drawn icon (an app added on this PC): the shared cartoon one, so every tile is the same set
+    // and size (user 2026-11-23: cartoon for all, no small folder emoji).
+    const image = (typeof app.image === 'string' && app.image) ? app.image : '/img/apps/default.svg';
+    if (/^\/[A-Za-z0-9_\/.-]+$/.test(image)) {
       const pic = document.createElement('img');
       pic.className = 'tool-pic';
-      pic.src = app.image; pic.alt = ''; pic.width = 56; pic.height = 56;
+      pic.src = image; pic.alt = ''; pic.width = 56; pic.height = 56;
       pic.setAttribute('loading', 'lazy');
       name.appendChild(pic);
-      name.appendChild(document.createTextNode(app.name || app.id || 'เครื่องมือ'));
+      const label = document.createElement('span');
+      label.textContent = app.name || app.id || 'เครื่องมือ';
+      name.appendChild(label);
     } else {
       name.textContent = (app.icon ? app.icon + ' ' : '') + (app.name || app.id || 'เครื่องมือ');
     }

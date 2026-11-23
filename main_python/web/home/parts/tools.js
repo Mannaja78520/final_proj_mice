@@ -20,13 +20,18 @@ class MiceToolsManager {
     name.className = 'nm';
     // A drawn icon when the app has one (app.json "image"), the emoji otherwise.
     // Only a path on this hub: never another address or a script URL.
-    if (typeof app.image === 'string' && /^\/[A-Za-z0-9_\/.-]+$/.test(app.image)) {
+    // No drawn icon (an app added on this PC): the shared cartoon one, so every tile is the same set
+    // and size (user 2026-11-23: cartoon for all, no small folder emoji).
+    const image = (typeof app.image === 'string' && app.image) ? app.image : '/img/apps/default.svg';
+    if (/^\/[A-Za-z0-9_\/.-]+$/.test(image)) {
       const pic = document.createElement('img');
       pic.className = 'tool-pic';
-      pic.src = app.image; pic.alt = ''; pic.width = 56; pic.height = 56;
+      pic.src = image; pic.alt = ''; pic.width = 56; pic.height = 56;
       pic.setAttribute('loading', 'lazy');
       name.appendChild(pic);
-      name.appendChild(document.createTextNode(app.name || app.id || 'เครื่องมือ'));
+      const label = document.createElement('span');
+      label.textContent = app.name || app.id || 'เครื่องมือ';
+      name.appendChild(label);
     } else {
       name.textContent = (app.icon ? app.icon + ' ' : '') + (app.name || app.id || 'เครื่องมือ');
     }
