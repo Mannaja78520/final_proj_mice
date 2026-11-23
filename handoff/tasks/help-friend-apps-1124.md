@@ -1,8 +1,8 @@
 # help-friend-apps-1124 ? In-app Help for All-Jao, Reconize and Photobooth
 Owner: codex:11240637-1d82 (Claude reviews)
 Branch: claude/project-thread-181856 ? baseline 7f8b1b3 ? system plan A59-1
-Updated: 2026-11-24 06:55 +0700
-Last commit: aa8e2ad (native captures)
+Updated: 2026-11-24 06:58 +0700
+Last commit: e6fc031 (four-language guides and package)
 
 ## Goal
 Detailed step-by-step app and Hub guides in th/en/zh/ja with real app screenshots and demo data.
@@ -16,7 +16,7 @@ Ready to copy from docs/friend/reconize_help_package/help to Face_Regonize/help 
 Thai/English README covers install, precedence and recapture. Keep byte-identical to apps/faces/help with QC.
 
 ## Doing now
-Step 4: targeted QC, visual review and full QC with exclusive shared resources; draft PR; merge and rebuild only if green.
+Step 4: run full QC under exclusive claim. [Draft PR #245](https://github.com/Mannaja78520/final_proj_mice/pull/245).
 
 ## Done
 - 8998b6e: inspected the real UI for all three in Edge against scratch instances.
@@ -32,16 +32,16 @@ Step 4: targeted QC, visual review and full QC with exclusive shared resources; 
 - Scratch used 4173, 5173, 8000, 8111/8113. No real data, fake Hub or PyInstaller used.
 
 ## Next
-Run and record exact QC evidence and reviews. Check installed Help in all four languages.
+Targeted QC passed 1285/0 on e6fc031. Full gate next. Check installed Help in four languages.
 
 ## Blocked
-Gemini CLI model review and QC pending.
+Gemini 4 Argon Medium review and full QC pending.
 
 ## File status
 | File | Change | State | Verification | Commit |
 |---|---|---|---|---|
-| apps/all-jao/help/en.html | guide, parity check or docs | written | QC pending | this checkpoint |
-| apps/all-jao/help/help.json | native capture and Help support | written | QC pending | aa8e2ad |
+| apps/all-jao/help/en.html | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| apps/all-jao/help/help.json | native capture and Help support | written | targeted QC 1285/0 | aa8e2ad |
 | apps/all-jao/help/img/th-light-game-claw-admin.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
 | apps/all-jao/help/img/th-light-game-claw.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
 | apps/all-jao/help/img/th-light-game-login.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
@@ -51,12 +51,12 @@ Gemini CLI model review and QC pending.
 | apps/all-jao/help/img/th-light-game-quiz.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
 | apps/all-jao/help/img/th-light-game-wheel-admin.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
 | apps/all-jao/help/img/th-light-game-wheel.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
-| apps/all-jao/help/ja.html | guide, parity check or docs | written | QC pending | this checkpoint |
-| apps/all-jao/help/shots.json | native capture and Help support | written | QC pending | aa8e2ad |
-| apps/all-jao/help/th.html | guide, parity check or docs | written | QC pending | this checkpoint |
-| apps/all-jao/help/zh.html | guide, parity check or docs | written | QC pending | this checkpoint |
-| apps/faces/help/en.html | guide, parity check or docs | written | QC pending | this checkpoint |
-| apps/faces/help/help.json | native capture and Help support | written | QC pending | aa8e2ad |
+| apps/all-jao/help/ja.html | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| apps/all-jao/help/shots.json | native capture and Help support | written | targeted QC 1285/0 | aa8e2ad |
+| apps/all-jao/help/th.html | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| apps/all-jao/help/zh.html | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| apps/faces/help/en.html | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| apps/faces/help/help.json | native capture and Help support | written | targeted QC 1285/0 | aa8e2ad |
 | apps/faces/help/img/en-light-reconize-activities.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
 | apps/faces/help/img/en-light-reconize-attendees.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
 | apps/faces/help/img/en-light-reconize-cctv.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
@@ -74,12 +74,12 @@ Gemini CLI model review and QC pending.
 | apps/faces/help/img/en-light-reconize-settings.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
 | apps/faces/help/img/en-light-reconize-uploads.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
 | apps/faces/help/img/en-light-reconize-video.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
-| apps/faces/help/ja.html | guide, parity check or docs | written | QC pending | this checkpoint |
-| apps/faces/help/shots.json | native capture and Help support | written | QC pending | aa8e2ad |
-| apps/faces/help/th.html | guide, parity check or docs | written | QC pending | this checkpoint |
-| apps/faces/help/zh.html | guide, parity check or docs | written | QC pending | this checkpoint |
-| apps/photobooth/help/en.html | guide, parity check or docs | written | QC pending | this checkpoint |
-| apps/photobooth/help/help.json | native capture and Help support | written | QC pending | aa8e2ad |
+| apps/faces/help/ja.html | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| apps/faces/help/shots.json | native capture and Help support | written | targeted QC 1285/0 | aa8e2ad |
+| apps/faces/help/th.html | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| apps/faces/help/zh.html | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| apps/photobooth/help/en.html | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| apps/photobooth/help/help.json | native capture and Help support | written | targeted QC 1285/0 | aa8e2ad |
 | apps/photobooth/help/img/en-light-booth-activity.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
 | apps/photobooth/help/img/en-light-booth-capture.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
 | apps/photobooth/help/img/en-light-booth-choose.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
@@ -97,15 +97,15 @@ Gemini CLI model review and QC pending.
 | apps/photobooth/help/img/en-light-booth-system.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
 | apps/photobooth/help/img/en-light-booth-test.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
 | apps/photobooth/help/img/en-light-booth-unpaired.webp | native app screenshot | written | reviewed in Edge | aa8e2ad |
-| apps/photobooth/help/ja.html | guide, parity check or docs | written | QC pending | this checkpoint |
-| apps/photobooth/help/shots.json | native capture and Help support | written | QC pending | aa8e2ad |
-| apps/photobooth/help/th.html | guide, parity check or docs | written | QC pending | this checkpoint |
-| apps/photobooth/help/zh.html | guide, parity check or docs | written | QC pending | this checkpoint |
-| docs/extensions.md | guide, parity check or docs | written | QC pending | this checkpoint |
-| docs/friend/friend_requests_all_2026-11-23.md | guide, parity check or docs | written | QC pending | this checkpoint |
-| docs/friend/reconize_help_package/README.md | guide, parity check or docs | written | QC pending | this checkpoint |
-| docs/friend/reconize_help_package/help/en.html | package copy | written | QC pending | this checkpoint |
-| docs/friend/reconize_help_package/help/help.json | package copy | written | QC pending | this checkpoint |
+| apps/photobooth/help/ja.html | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| apps/photobooth/help/shots.json | native capture and Help support | written | targeted QC 1285/0 | aa8e2ad |
+| apps/photobooth/help/th.html | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| apps/photobooth/help/zh.html | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| docs/extensions.md | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| docs/friend/friend_requests_all_2026-11-23.md | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| docs/friend/reconize_help_package/README.md | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| docs/friend/reconize_help_package/help/en.html | package copy | written | targeted QC 1285/0 | this checkpoint |
+| docs/friend/reconize_help_package/help/help.json | package copy | written | targeted QC 1285/0 | this checkpoint |
 | docs/friend/reconize_help_package/help/img/en-dark-faces-open.webp | package copy | written | reviewed capture copied | this checkpoint |
 | docs/friend/reconize_help_package/help/img/en-light-faces-open.webp | package copy | written | reviewed capture copied | this checkpoint |
 | docs/friend/reconize_help_package/help/img/en-light-reconize-activities.webp | package copy | written | reviewed capture copied | this checkpoint |
@@ -131,19 +131,19 @@ Gemini CLI model review and QC pending.
 | docs/friend/reconize_help_package/help/img/th-light-faces-open.webp | package copy | written | reviewed capture copied | this checkpoint |
 | docs/friend/reconize_help_package/help/img/zh-dark-faces-open.webp | package copy | written | reviewed capture copied | this checkpoint |
 | docs/friend/reconize_help_package/help/img/zh-light-faces-open.webp | package copy | written | reviewed capture copied | this checkpoint |
-| docs/friend/reconize_help_package/help/ja.html | package copy | written | QC pending | this checkpoint |
-| docs/friend/reconize_help_package/help/shots.json | package copy | written | QC pending | this checkpoint |
-| docs/friend/reconize_help_package/help/th.html | package copy | written | QC pending | this checkpoint |
-| docs/friend/reconize_help_package/help/zh.html | package copy | written | QC pending | this checkpoint |
-| docs/systems/agents.md | guide, parity check or docs | written | QC pending | this checkpoint |
-| docs/systems/app-faces.md | guide, parity check or docs | written | QC pending | this checkpoint |
-| docs/systems/app-small.md | guide, parity check or docs | written | QC pending | this checkpoint |
-| handoff/tasks/help-friend-apps-1124.md | guide, parity check or docs | written | QC pending | this checkpoint |
-| main_python/hub_api_help.py | native capture and Help support | written | QC pending | aa8e2ad |
-| main_python/web/help.html | native capture and Help support | written | QC pending | aa8e2ad |
-| main_python/web/help/parts/bytask.html | native capture and Help support | written | QC pending | aa8e2ad |
-| qc/checks/check_app_help.py | guide, parity check or docs | written | QC pending | this checkpoint |
-| shared/web/lang/help/ja.json | native capture and Help support | written | QC pending | aa8e2ad |
-| shared/web/lang/help/th.json | native capture and Help support | written | QC pending | aa8e2ad |
-| shared/web/lang/help/zh.json | native capture and Help support | written | QC pending | aa8e2ad |
-| tools/help_shots.py | native capture and Help support | written | QC pending | aa8e2ad |
+| docs/friend/reconize_help_package/help/ja.html | package copy | written | targeted QC 1285/0 | this checkpoint |
+| docs/friend/reconize_help_package/help/shots.json | package copy | written | targeted QC 1285/0 | this checkpoint |
+| docs/friend/reconize_help_package/help/th.html | package copy | written | targeted QC 1285/0 | this checkpoint |
+| docs/friend/reconize_help_package/help/zh.html | package copy | written | targeted QC 1285/0 | this checkpoint |
+| docs/systems/agents.md | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| docs/systems/app-faces.md | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| docs/systems/app-small.md | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| handoff/tasks/help-friend-apps-1124.md | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| main_python/hub_api_help.py | native capture and Help support | written | targeted QC 1285/0 | aa8e2ad |
+| main_python/web/help.html | native capture and Help support | written | targeted QC 1285/0 | aa8e2ad |
+| main_python/web/help/parts/bytask.html | native capture and Help support | written | targeted QC 1285/0 | aa8e2ad |
+| qc/checks/check_app_help.py | guide, parity check or docs | written | targeted QC 1285/0 | this checkpoint |
+| shared/web/lang/help/ja.json | native capture and Help support | written | targeted QC 1285/0 | aa8e2ad |
+| shared/web/lang/help/th.json | native capture and Help support | written | targeted QC 1285/0 | aa8e2ad |
+| shared/web/lang/help/zh.json | native capture and Help support | written | targeted QC 1285/0 | aa8e2ad |
+| tools/help_shots.py | native capture and Help support | written | targeted QC 1285/0 | aa8e2ad |
