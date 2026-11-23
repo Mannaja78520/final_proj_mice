@@ -1,7 +1,7 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
 Owner: codex:11232254-6f5e
-Updated: 2026-11-23T23:41+07:00
+Updated: 2026-11-23T23:44+07:00
 Branch: codex/visual-regression-1123
 Last commit: this checkpoint
 Plan: A1123-2
@@ -11,7 +11,7 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 1, isolate the previously verified document language fix from 10019b4 on current main. Rebuild Help and run focused QC plus the 28 Japanese phone states against the new branch. Keep the comparison evidence and leave the branch for review if the full gate remains red.
+Item 4, reproduce case 12 (localized Help search) on current main using a private loopback Hub and Edge. Hypothesis: the search index captures English text before language packs load. Fixed inputs are the Module website topic, en/th/ja/zh packs and 390 px viewport. Run one baseline and one patched replay, then the focused existing Help QC if the shared slot is free.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
@@ -19,9 +19,9 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | handoff/tasks/visual-regression-1123.md | Item 1 evidence and item 2 start | doing | staged diff audited | this checkpoint |
-| shared/web/mice-lang.js | Publish applied language on the document | done | Edge 28/28 phone cases | 10019b4 |
-| qc/checks/check_dialog_language.py | Assert exact root language | done | isolated Edge failed twice at baseline; 11/11 after | 10019b4 |
-| main_python/web/help/parts/bytask.html | Screen reader language guidance | done | web build and lang check | 10019b4 |
+| shared/web/mice-lang.js | Publish applied language on the document | done | Edge 28/28 phone cases at PR head | 19b50be |
+| qc/checks/check_dialog_language.py | Assert exact root language | done | isolated Edge failed twice at baseline; 11/11 after on original snapshot | 19b50be |
+| main_python/web/help/parts/bytask.html | Screen reader language guidance | done | web build and lang check | 19b50be |
 | main_python/web/help.html | Rebuilt Help for items 1 and 2 | done | web build and lang check | 51b2c93 |
 | shared/web/lang/help/th.json | Thai Help guidance for items 1 and 2 | done | lang check | 51b2c93 |
 | shared/web/lang/help/zh.json | Chinese Help guidance for items 1 and 2 | done | lang check | 51b2c93 |
@@ -41,6 +41,7 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 - haveRobot() in Studio means "connected to a robot", not "3D ready".
 
 ## Done
+- Item 1 [draft PR #235](https://github.com/Mannaja78520/final_proj_mice/pull/235) isolates the prior screen-reader language fix. Language catalog check passed and the exact head `19b50be` passed 28/28 Japanese states at 390 px across four themes and seven pages. Private evidence: `%TEMP%/mice-visual-1123-e6f3b60/language-proof/phone-theme-check.json`. The other host QC process occupied the shared slot, so this replay used a private loopback Hub without a fake serial driver. Help and its three translated pack variants are also at `19b50be`.
 - Item 2 full QC finished on PR #234 head `8fa77aa`: 10,631 passed, 27 failed, exit 1 in 1,279.9 s. QEMU firmware 53/53, peripherals 24/24, RS485 bus 12/12 and census 4/4 passed. The stale API index check has byte-identical inputs and outputs on main. Other failures: local clone branch/results metadata, Reconize watcher startup, Help contrast, and remaining locale leakage on Home, Help and Camera. Private log: `%TEMP%/mice-visual-1123-e6f3b60/qc-module-full.log`. PR remains draft.
 - Item 2 [draft PR #234](https://github.com/Mannaja78520/final_proj_mice/pull/234) contains only seven module files against main `b1c35dc0`, head `8fa77aa`. Help rebuilt with current main. Shared Help and th/ja/zh pack variants for item 2 are tracked at `8fa77aa`. Firmware inputs and the regression check are identical to the verified snapshot.
 - Item 2 builds: 12/12 PlatformIO environments passed at `e6f3b60` (8 production including S3, 4 simulator). Private evidence: `%TEMP%/mice-visual-1123-e6f3b60/firmware-build.log`.
