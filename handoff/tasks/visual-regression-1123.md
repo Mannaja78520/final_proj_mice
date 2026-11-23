@@ -1,7 +1,7 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
 Owner: codex:11232030-35b8
-Updated: 2026-11-23T20:48+07:00
+Updated: 2026-11-23T20:52+07:00
 Branch: codex/visual-regression-1123
 Last commit: this checkpoint
 Plan: none (user ask 2026-11-23: "ได้เช็คทั้งหมดแล้วจริงปะ ทำไมยังเหลือพังอีกเยอะ")
@@ -11,7 +11,7 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 2, round 1: verify suppression in the full module page at 390 px while GET /api/status stays pending. Hypothesis: capability cards start allowed because their data-cap attributes are missing. Baseline reproduced: eight controls painted before JavaScript and while status was held. Mark all cards managed by showCard() as unavailable at first paint, add a structural QC check, update localized Help, then replay the same two fixtures. Build touched firmware and verify in QEMU before any merge.
+Item 2, build and QEMU verification. PlatformIO builds the ESP32, S3 and simulator targets in this worktree. One build pass and one QEMU phone walkthrough using the generated page and actual emulated status over UART. Retain browser proof and record any emulator blocker.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
@@ -22,14 +22,14 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 | shared/web/mice-lang.js | Publish applied language on the document | done | Edge 28/28 phone cases | 10019b4 |
 | qc/checks/check_dialog_language.py | Assert exact root language | done | isolated Edge failed twice at baseline; 11/11 after | 10019b4 |
 | main_python/web/help/parts/bytask.html | Screen reader language guidance | done | web build and lang check | 10019b4 |
-| main_python/web/help.html | Rebuilt Help | done | web build and lang check | 10019b4 |
-| shared/web/lang/help/th.json | Thai Help guidance | done | lang check | 10019b4 |
-| shared/web/lang/help/zh.json | Chinese Help guidance | done | lang check | 10019b4 |
-| shared/web/lang/help/ja.json | Japanese Help guidance | done | lang check and Edge phone | 10019b4 |
-| firmware/src/web/WebUI.h | Hide capability cards until status | pending | not run | uncommitted |
-| firmware/generated/web/ModuleUI.h | Regenerate all-types module page | pending | not run | uncommitted |
-| qc/checks/check_board_page_motors_first.py | Assert capability cards start hidden | pending | not run | uncommitted |
-| main_python/web/help/parts/modsite.html | Document connection and control visibility | pending | not run | uncommitted |
+| main_python/web/help.html | Rebuilt Help for items 1 and 2 | done | web build and lang check | 51b2c93 |
+| shared/web/lang/help/th.json | Thai Help guidance for items 1 and 2 | done | lang check | 51b2c93 |
+| shared/web/lang/help/zh.json | Chinese Help guidance for items 1 and 2 | done | lang check | 51b2c93 |
+| shared/web/lang/help/ja.json | Japanese Help guidance for items 1 and 2 | done | lang check and Edge phone | 51b2c93 |
+| firmware/src/web/WebUI.h | Hide capability cards until status | done | 390 px Edge delayed status with nong and lift | 51b2c93 |
+| firmware/generated/web/ModuleUI.h | Regenerate all-types module page | done | gen_tables.py; 107.1 KB; QEMU pending | uncommitted (ignored) |
+| qc/checks/check_board_page_motors_first.py | Assert capability cards start hidden | done | 11 fails at baseline, 15/15 after | 51b2c93 |
+| main_python/web/help/parts/modsite.html | Document connection and control visibility | done | Help rebuild and lang check | 51b2c93 |
 
 ## Facts found
 - Item 2 baseline (module-before-caps.json): on the hub at 390 px, all eight control cards appeared before JavaScript and before the first nong or lift status. After status, only the correct card remained. applyTabs() permits data-cap values other than 0, including missing.
@@ -41,6 +41,7 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 - haveRobot() in Studio means "connected to a robot", not "3D ready".
 
 ## Done
+- Item 2 source and Help patch: all eight control cards stay hidden before JavaScript and while the first reply is held. After release, only nong or lift appears, matching each fixture. Private evidence: module-after-caps.json. Structural QC 4/15 before, 15/15 after. Firmware build and QEMU pending.
 - Item 1: compared the Japanese matrix, reviewed the largest changes and fixed the document language for screen readers. WIP retained for full QC and review before PR/merge.
 - PR #215, #217 (visual tool, phone/theme/contrast fixes), #219 (reports paging, Esc closes Report box, Studio texts translate), #220 (blank/negative number boxes). Each has a QC check proven by breaking it.
 - Old-vs-new screenshots compared: desktop dark/light and zh desktop+phone (old build was untranslated; new is fine). ja and carnival/indigo not compared.
