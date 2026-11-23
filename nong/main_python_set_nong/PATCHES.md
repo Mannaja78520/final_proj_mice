@@ -138,3 +138,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0117 | 2026-11-05 03:32 | Latest results library opens editable motion and original music together |
 | 0118 | 2026-11-05 03:42 | Latest results motion audio recovery verified |
 | 0056 | 2026-11-23 08:40 | phone: Studio 3D view 34vh so both rows of side tabs clear the Stop strip |
+| 0057 | 2026-11-23 09:02 | desktop: Studio header stays one row at 1440px |
