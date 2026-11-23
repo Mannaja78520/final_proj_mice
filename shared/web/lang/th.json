@@ -740,6 +740,10 @@
   "checking what this PC has built…": "กำลังตรวจสิ่งที่เครื่องนี้สร้างไว้…",
   "or by name:": "หรือพิมพ์ชื่อ:",
   "move LEFT wrist to:": "ย้ายข้อมือซ้ายไปที่:",
-  "move RIGHT wrist to:": "ย้ายข้อมือขวาไปที่:"
+  "move RIGHT wrist to:": "ย้ายข้อมือขวาไปที่:",
+  "Choose a robot first": "เลือกหุ่นก่อน",
+  "NO ROBOT": "ยังไม่มีหุ่น",
+  "Connecting…": "กำลังเชื่อมต่อ…",
+  "Looking for cameras… this takes a few seconds.": "กำลังค้นหากล้อง… ใช้เวลาไม่กี่วินาที"
  }
 }

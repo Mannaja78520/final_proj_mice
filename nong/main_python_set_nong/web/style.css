@@ -375,7 +375,9 @@ input[type=checkbox]{accent-color:var(--acc)}
   .rigjrow{grid-template-columns:52px 1fr 1fr 1fr 1fr 46px 18px}
   .lbl{min-width:64px}
   .key{min-width:88px}
-  #viewport{height:44vh;min-height:220px}
+  /* 34vh, not 44: at 390x844 the second row of tabs (Shows / Robot / Setup) sat half under the
+     Stop strip on first load (screenshot review 2026-11-23); now both rows clear it */
+  #viewport{height:34vh;min-height:200px}
 }
 
 /* ---- touch: fingers need bigger targets than a mouse pointer ---- */

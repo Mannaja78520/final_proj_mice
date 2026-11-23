@@ -260,7 +260,7 @@ body.mode-tech .tv-grid {
 
     <div class="now-playing-box">
       <div class="mini" style="color:var(--mut); margin-bottom:2px;">NOW PLAYING</div>
-      <div class="now-playing-title" id="nowSeq">Ready</div>
+      <div class="now-playing-title" id="nowSeq">Connecting…</div>
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" id="playProgress"></div>
       </div>
@@ -503,12 +503,12 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
       tot.textContent = (total / 1000).toFixed(1) + "s";
       if (this.pollInterval !== 600) this.resetPollTimer(600);
     } else {
-      badge.textContent = p && p.error ? "ERROR" : "IDLE";
+      // no robot chosen: "Ready" / "IDLE" next to "Choose an available Nong" contradicted each other (2026-11-23)
+      badge.textContent = p && p.error ? "ERROR" : (this.activeDev ? "IDLE" : "NO ROBOT");
       if (p && p.error) title.textContent = p.error;
+      else title.textContent = this.activeDev ? "Ready" : "Choose a robot first";
       badge.className = "tv-badge badge-idle";
-      if (title.textContent !== "Ready") {
-        fill.style.width = "0%";
-      }
+      fill.style.width = "0%";
       if (this.pollInterval !== 1500) this.resetPollTimer(1500);
     }
   }

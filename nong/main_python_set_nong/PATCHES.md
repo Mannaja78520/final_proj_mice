@@ -137,3 +137,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0057 | 2026-10-25 07:44 | Redraw idle CAD updates and preserve selected native HOME controls |
 | 0117 | 2026-11-05 03:32 | Latest results library opens editable motion and original music together |
 | 0118 | 2026-11-05 03:42 | Latest results motion audio recovery verified |
+| 0056 | 2026-11-23 08:40 | phone: Studio 3D view 34vh so both rows of side tabs clear the Stop strip |

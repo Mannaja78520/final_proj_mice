@@ -951,6 +951,10 @@
   "checking what this PC has built…": "このPCでビルド済みのものを確認中…",
   "or by name:": "または名前で：",
   "move LEFT wrist to:": "左手首の移動先：",
-  "move RIGHT wrist to:": "右手首の移動先："
+  "move RIGHT wrist to:": "右手首の移動先：",
+  "Choose a robot first": "先にロボットを選んでください",
+  "NO ROBOT": "ロボットなし",
+  "Connecting…": "接続中…",
+  "Looking for cameras… this takes a few seconds.": "カメラを探しています…数秒かかります。"
  }
 }
