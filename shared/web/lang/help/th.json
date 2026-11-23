@@ -563,6 +563,10 @@
   "If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.": "ถ้ากด Try หรือถามคำถามใหม่ตอนที่คำตอบเก่ายังเล่นอยู่ คำตอบเก่าจะหยุดก่อน เสียงสองเสียงจึงไม่พูดทับกัน ถ้าตัวช่วยเสียงไม่ตอบภายในหนึ่งนาที หน้าจะบอก แล้วลองใหม่ได้แทนการรอไม่จบ ออกจากหน้านี้เสียงก็หยุดด้วย",
   "Check the system": "ตรวจสอบระบบ",
   "Connections": "การเชื่อมต่อ",
-  "Robot commands": "คำสั่งหุ่น"
+  "Robot commands": "คำสั่งหุ่น",
+  "Start here": "เริ่มที่นี่",
+  "Use it": "ใช้งาน",
+  "Build and set up": "สร้างและติดตั้ง",
+  "When something is wrong": "เมื่อมีปัญหา"
  }
 }

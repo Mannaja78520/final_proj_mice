@@ -20,7 +20,7 @@ const PROBE = "(function(){" + fs.readFileSync(path.join(__dirname, "probe.js"),
     for (const pg of cfg.pages) {
       const p = await ctx.newPage(); const errs = [];
       // no animations: a screenshot taken mid-fade shows a "dim" button that is not a bug (seen 2026-11-23)
-      await p.addInitScript(() => { const st = document.createElement("style"); st.textContent = "*,*::before,*::after{transition:none!important;animation:none!important}"; (document.head || document.documentElement).appendChild(st); });
+      await p.addInitScript(() => { const st = document.createElement("style"); st.textContent = "*,*::before,*::after{transition:none!important;animation:none!important}"; document.addEventListener("DOMContentLoaded", () => document.head.appendChild(st)); });
       p.on("pageerror", e => errs.push("js: " + e.message.slice(0, 120)));
       p.on("console", m => { if (m.type() === "error") errs.push("console: " + m.text().slice(0, 120)); });
       p.on("response", r => { if (r.status() >= 400) errs.push(r.status() + " " + r.url().replace(base, "")); });

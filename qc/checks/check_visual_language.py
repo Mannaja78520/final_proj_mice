@@ -4,7 +4,7 @@
 looked at APIs, not at screens. This is the part of the screen-look that a script can
 decide: every page is opened in en, zh and ja (the language is kept in localStorage,
 same origin, so the iframe obeys it) and the visible text is scanned for Thai
-letters. Text composed at run time ("Thai label: " + value) is not covered by the
+letters (and, in th/zh/ja, for English UI words that nobody translated: "for", "WAIST", Help group titles). Text composed at run time ("Thai label: " + value) is not covered by the
 exact-string translation and used to slip through (Home > Settings, Help "ถัดไป").
 Pages, languages and what to ignore are DATA in tools/visual/pages.json; the scan
 is tools/visual/probe.js, the same function the screenshot tool uses.
@@ -24,7 +24,7 @@ HERE = Path(F.CODE) / "tools" / "visual"
 
 DRIVER = """
 __PROBE__
-var ALLOW = __ALLOW__, PAGES = __PAGES__, LANGS = __LANGS__;
+var ALLOW = __ALLOW__, LALLOW = __LALLOW__, PAGES = __PAGES__, LANGS = __LANGS__;
 function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
 async function run(){
   for (var li = 0; li < LANGS.length; li++) {
@@ -42,6 +42,8 @@ async function run(){
           var r = visualProbe(f.contentDocument);
           var bad = r.thai.filter(function(s){ return !ALLOW.some(function(a){ return new RegExp(a).test(s); }); });
           qcMark("THAI~" + LANGS[li] + "~" + pg.id + (tabs[ti] ? "~" + ti : "") + "~" + bad.length + "~" + (bad[0] || "").replace(/[^\\u0E00-\\u0E7Fa-zA-Z0-9]/g, "_").slice(0, 24));
+          var lat = pg.latin === false ? [] : r.latin.filter(function(s){ return !LALLOW.some(function(a){ return new RegExp(a).test(s); }); });
+          qcMark("LATIN~" + LANGS[li] + "~" + pg.id + (tabs[ti] ? "~" + ti : "") + "~" + lat.length + "~" + (lat[0] || "").replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30));
           qcMark("STUCK~" + LANGS[li] + "~" + pg.id + "~" + r.stuck.length);
         } catch (e) { qcMark("ERR~" + pg.id + "~" + String(e).slice(0, 40).replace(/[^a-zA-Z0-9]/g, "_")); }
       }
@@ -61,14 +63,14 @@ def run(t):
     base, _main = F.start_hub()
     cfg = json.loads((HERE / "pages.json").read_text(encoding="utf-8"))
     pages = [{"id": p["id"], "url": p["url"], "wait": p.get("wait"),
-              "tabs": [None] + [s["steps"][0]["eval"] for s in p.get("states", [])
+              "latin": p.get("latin", True), "tabs": [None] + [s["steps"][0]["eval"] for s in p.get("states", [])
                                 if s.get("leak") and s["steps"] and "eval" in s["steps"][0]]}
              for p in cfg["pages"] if p.get("leak", True)]
     allow = cfg.get("thaiAllowed", [])
-    langs = [l for l in cfg["langs"] if l != "th"]
+    langs = list(cfg["langs"])       # en too: its Thai is checked; th/zh/ja: their English is
     drv = (DRIVER.replace("__PROBE__", (HERE / "probe.js").read_text(encoding="utf-8"))
            .replace("__PAGES__", json.dumps(pages)).replace("__LANGS__", json.dumps(langs))
-           .replace("__ALLOW__", json.dumps(allow)))
+           .replace("__ALLOW__", json.dumps(allow)).replace("__LALLOW__", json.dumps(cfg.get("latinAllowed", []))))
     browser.raw_page("<h1>wrapper</h1><script>" + drv + "</script>", base, seconds=240)
     marks = list(fake_serial.qc_marks)
     t.ok(any(m == "done" for m in marks), "the scan finished", marks[-3:])
@@ -78,7 +80,13 @@ def run(t):
     for m in thai:
         _, lang, pid = m.split("~")[:3]
         n = int(m.split("~")[-2])
-        t.ok(n == 0, "no Thai on %s in %s" % (pid, lang), m)
+        if lang != "th":
+            t.ok(n == 0, "no Thai on %s in %s" % (pid, lang), m)
+    for m in marks:
+        if m.startswith("LATIN~"):
+            _, lang, pid = m.split("~")[:3]
+            if lang != "en":     # English pages are English; Thai/Chinese/Japanese pages must not keep English UI words
+                t.ok(int(m.split("~")[-2]) == 0, "no leftover English UI text on %s in %s" % (pid, lang), m)
     for m in marks:
         if m.startswith("STUCK~"):
             _, lang, pid, n = m.split("~")

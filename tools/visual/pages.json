@@ -308,10 +308,20 @@
       }
      ]
     }
-   ]
+   ],
+   "latin": false
   }
  ],
  "thaiAllowed": [
   "^Sure!"
- ]
+ ],
+ "latinAllowed": [
+  "^(Nong Studio|Studio|Reconize|Mice Hub|Mice|Google Sheet|Wi-?Fi|USB|CPU|GPU|RAM|OK)$",
+  "^(far-)?nong(-[a-z]+)?$",
+  "^nong-far$",
+  "^(Kooo|Looo+ng\\w*|NONO|NookYung|SeiyngSung|VongSungKhwa|WonderWomen|all|all\\.yaml|all move|hello|my move|tangVongSungLeft|yakyai)$",
+  "^this PC$",
+  "^(or use the|view buttons|stays|pause|only where you want the robot to stand still\\.|monitor|live)$"
+ ],
+ "_latinAllowed_note": "the last pattern = KNOWN GAP: Studio sentences split by inline markup (<b>view buttons</b>) cannot be translated as a whole; remove it when the sentences are rewritten."
 }

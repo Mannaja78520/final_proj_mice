@@ -828,6 +828,23 @@
   "ใช้ GPU เมื่อพร้อม": "GPU 就绪时使用",
   "ค่ามีผลกับการโหลดงานครั้งถัดไป บางค่าเธรดต้องเปิดตัวช่วยเสียงใหม่ งานที่เปิดอยู่ยังใช้ค่าเดิม งบหน่วยความจำช่วยตรวจความพร้อมและเลือกวิธีโหลด ไม่ใช่เพดานการใช้ทั้งหมด": "设置在下次加载时生效。部分线程设置需要重新打开语音助手；已打开的任务仍使用旧值。内存预算用于检查就绪情况并选择加载方式，不是总用量的上限。",
   "GPU ยังไม่พร้อมหรือหน่วยความจำไม่พอ จึงใช้ CPU": "GPU 未就绪或内存不足，因此使用 CPU。",
-  "งบ RAM ไม่พอสำหรับโหลด AI ใหม่ ปรับหน่วยความจำสำรองหรือเลือกงานที่เล็กลง": "内存预算不足，无法加载新的 AI。请减少预留内存或选择更小的任务。"
+  "งบ RAM ไม่พอสำหรับโหลด AI ใหม่ ปรับหน่วยความจำสำรองหรือเลือกงานที่เล็กลง": "内存预算不足，无法加载新的 AI。请减少预留内存或选择更小的任务。",
+  "for": "给",
+  "not linked": "未加入分组",
+  "WAIST": "腰",
+  "SHRUG": "耸肩",
+  "this PC is": "此电脑是",
+  "Choose the modules you want to work together, then give them a group name. Leave out any module that is not yours.": "选择要一起工作的模块，然后给它们起一个组名。不要选不属于你的模块。",
+  "light, indigo. The face app's own colours": "浅色，靛蓝。与人脸应用相同的配色",
+  "Turn the waist when the person turns": "人转身时腰部跟随转动",
+  "Follow shoulder tilt": "跟随肩部倾斜",
+  "Learned camera checks": "已学习的摄像头检查",
+  "Use from": "使用来源",
+  "Repeat": "重复",
+  "USB direct": "USB 直连",
+  "Build it from a URDF": "从 URDF 构建",
+  "Rig setup": "骨架设置",
+  "This robot": "这台机器人",
+  "same USB port at the same time": "同时使用同一个 USB 端口"
   }
 }

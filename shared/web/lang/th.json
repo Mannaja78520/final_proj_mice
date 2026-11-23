@@ -619,6 +619,23 @@
     "A link to a device on your own network (a NAS, another PC) is refused until an admin allows it here. Links from the internet and picked files always work.": "ลิงก์ที่ชี้ไปอุปกรณ์ในเครือข่ายของคุณเอง (NAS หรือพีซีเครื่องอื่น) จะถูกปฏิเสธจนกว่าผู้ดูแลจะอนุญาตตรงนี้ ลิงก์จากอินเทอร์เน็ตและไฟล์ที่เลือกใช้ได้เสมอ",
     "Allow": "อนุญาต",
     "Remember this device on your network as a place videos may come from.": "จำอุปกรณ์นี้ในเครือข่ายของคุณไว้เป็นที่ที่วิดีโอมาได้",
-    "nas.local or 192.168.1.50": "nas.local หรือ 192.168.1.50"
+    "nas.local or 192.168.1.50": "nas.local หรือ 192.168.1.50",
+  "for": "ให้",
+  "not linked": "ยังไม่ได้เข้ากลุ่ม",
+  "WAIST": "เอว",
+  "SHRUG": "ยกไหล่",
+  "this PC is": "เครื่องนี้คือ",
+  "Choose the modules you want to work together, then give them a group name. Leave out any module that is not yours.": "เลือกโมดูลที่ต้องการให้ทำงานด้วยกัน แล้วตั้งชื่อกลุ่ม อย่าเลือกโมดูลที่ไม่ใช่ของคุณ",
+  "light, indigo. The face app's own colours": "สว่าง สีคราม สีเดียวกับแอปใบหน้า",
+  "Turn the waist when the person turns": "หมุนเอวตามเมื่อคนหมุนตัว",
+  "Follow shoulder tilt": "ตามการเอียงของไหล่",
+  "Learned camera checks": "ตรวจจากกล้องที่เรียนรู้แล้ว",
+  "Use from": "ใช้จาก",
+  "Repeat": "ทำซ้ำ",
+  "USB direct": "USB โดยตรง",
+  "Build it from a URDF": "สร้างจากไฟล์ URDF",
+  "Rig setup": "ตั้งค่าโครงหุ่น",
+  "This robot": "หุ่นตัวนี้",
+  "same USB port at the same time": "พอร์ต USB เดียวกันพร้อมกัน"
   }
 }
