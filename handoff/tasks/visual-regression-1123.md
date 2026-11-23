@@ -1,7 +1,7 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
 Owner: codex:11232254-6f5e
-Updated: 2026-11-23T23:16+07:00
+Updated: 2026-11-23T23:18+07:00
 Branch: codex/visual-regression-1123
 Last commit: this checkpoint
 Plan: A1123-2
@@ -11,7 +11,7 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 2, prepare a module-only draft PR from current main. Reuse the verified firmware and regression check from 51b2c93, add the module guidance to current Help and its packs, and regenerate Help. Audit the PR diff against main before opening it. Then run full QC on the exact PR tree.
+Item 2, full QC on draft PR #234 at `8fa77aa5f54e724d15e2e0399a4762aba32d3ae2` in private C: checkout. Confirm the shared slot is empty and claim it in BRIDGE. Run `python qc/run_qc.py --quiet --done-file <private-done-file>` on the frozen tree with the local simulator and build cache. Retain the full log and report failures, skips and exit code.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
@@ -26,10 +26,10 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 | shared/web/lang/help/th.json | Thai Help guidance for items 1 and 2 | done | lang check | 51b2c93 |
 | shared/web/lang/help/zh.json | Chinese Help guidance for items 1 and 2 | done | lang check | 51b2c93 |
 | shared/web/lang/help/ja.json | Japanese Help guidance for items 1 and 2 | done | lang check and Edge phone | 51b2c93 |
-| firmware/src/web/WebUI.h | Hide capability cards until status | done | 390 px Edge delayed status with nong and lift | 51b2c93 |
+| firmware/src/web/WebUI.h | Hide capability cards until status | done | 390 px Edge delayed status with nong and lift | 8fa77aa |
 | firmware/generated/web/ModuleUI.h | Regenerate all-types module page | done | gen_tables.py; 107.1 KB; 390 px Edge passed on generated per-type pages | uncommitted (ignored) |
-| qc/checks/check_board_page_motors_first.py | Assert capability cards start hidden | done | 11 fails at baseline, 15/15 after | 51b2c93 |
-| main_python/web/help/parts/modsite.html | Document connection and control visibility | done | Help rebuild and lang check | 51b2c93 |
+| qc/checks/check_board_page_motors_first.py | Assert capability cards start hidden | done | 11 fails at baseline, 15/15 after | 8fa77aa |
+| main_python/web/help/parts/modsite.html | Document connection and control visibility | done | Help rebuilt on latest main | 8fa77aa |
 
 ## Facts found
 - Item 2 baseline (module-before-caps.json): on the hub at 390 px, all eight control cards appeared before JavaScript and before the first nong or lift status. After status, only the correct card remained. applyTabs() permits data-cap values other than 0, including missing.
@@ -41,6 +41,7 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 - haveRobot() in Studio means "connected to a robot", not "3D ready".
 
 ## Done
+- Item 2 [draft PR #234](https://github.com/Mannaja78520/final_proj_mice/pull/234) contains only seven module files against main `b1c35dc0`, head `8fa77aa`. Help rebuilt with current main. Shared Help and th/ja/zh pack variants for item 2 are tracked at `8fa77aa`. Firmware inputs and the regression check are identical to the verified snapshot.
 - Item 2 builds: 12/12 PlatformIO environments passed at `e6f3b60` (8 production including S3, 4 simulator). Private evidence: `%TEMP%/mice-visual-1123-e6f3b60/firmware-build.log`.
 - Item 2 QEMU phone: 2/2 at 390 × 844 px using generated firmware HTML, CSS and JS with UART `PONG`/`INFO`. Both had zero visible capability controls or command requests while status was held, no sideways overflow, and touchscreen navigation between Files and Control after identification. Four screenshots inspected. Nong used its production image. Production Lift compiled but failed to reach `[boot] ready` in QEMU. Lift passed with `mice_lift_sim` and the byte-identical production page (SHA-256 `930d2c0426e3d692c257f3054eb43491da725a5c3298e4373ae8dca47446eb76`). The simulated limit fault left Stop available. Private evidence: `%TEMP%/mice-visual-1123-e6f3b60/phone/`. The HTTP bridge exercised UART status, without emulating WiFi or testing real hardware.
 - Item 2 source and Help patch: all eight control cards stay hidden before JavaScript and while the first reply is held. After release, the appropriate cards appear, matching each fixture. Private evidence: module-after-caps.json. Structural QC 4/15 before, 15/15 after.
