@@ -78,7 +78,8 @@ def main():
     targets = {HUB / "api_index.json": js, ROOT / "docs" / "HUB_API.md": md}
     if "--check" in sys.argv:
         stale = [t.name for t, v in targets.items()
-                 if not t.exists() or t.read_bytes() != v.encode()]
+                 if not t.exists() or t.read_bytes().replace(b"\r\n", b"\n") != v.encode()]
+        # A CRLF checkout (git autocrlf on Windows) differs from the generated LF file only in line endings: not stale.
         print("api index is current" if not stale else "STALE: %s - run python tools/api_index.py" % stale)
         return 1 if stale else 0
     for t, v in targets.items():
