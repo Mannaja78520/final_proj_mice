@@ -1565,6 +1565,8 @@
   "MICE — light strip": "MICE — 灯带",
   "this PC's camera is in use by another app (a browser tab, or an older MICE window that is still open), or unplugged - close it and try again": "本机摄像头正被其他程序占用（浏览器标签页，或仍开着的旧版 MICE 窗口），或已拔出——请关闭后重试",
   "cut servo power - the arms go limp": "切断舵机电源——手臂会软下来",
-  "pose editor + live 3D over this USB cable (shared — the module site can stay open too)": "通过这根 USB 线使用动作编辑器 + 实时 3D（共享——模块网站也可以同时开着）"
+  "pose editor + live 3D over this USB cable (shared — the module site can stay open too)": "通过这根 USB 线使用动作编辑器 + 实时 3D（共享——模块网站也可以同时开着）",
+  "No firmware has been built on this PC yet, so there is nothing to flash. Build it once, from the firmware folder:": "这台电脑上还没有构建固件，所以暂时没有可烧录的内容。请在 firmware 文件夹中构建一次：",
+  "It then appears here.": "之后它会显示在这里。"
  }
 }

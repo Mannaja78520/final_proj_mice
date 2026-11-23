@@ -1565,6 +1565,8 @@
   "MICE — light strip": "MICE — ライトストリップ",
   "this PC's camera is in use by another app (a browser tab, or an older MICE window that is still open), or unplugged - close it and try again": "このPCのカメラは他のアプリが使用中（ブラウザのタブ、または開いたままの古い MICE ウィンドウ）か、抜けています。閉じてからもう一度お試しください",
   "cut servo power - the arms go limp": "サーボの電源を切ります。腕がだらんと垂れます",
-  "pose editor + live 3D over this USB cable (shared — the module site can stay open too)": "この USB ケーブル経由のポーズエディタ + ライブ 3D（共有 — モジュールのサイトも開いたままにできます）"
+  "pose editor + live 3D over this USB cable (shared — the module site can stay open too)": "この USB ケーブル経由のポーズエディタ + ライブ 3D（共有 — モジュールのサイトも開いたままにできます）",
+  "No firmware has been built on this PC yet, so there is nothing to flash. Build it once, from the firmware folder:": "このPCにはまだファームウェアがビルドされていないため、書き込めるものがありません。firmware フォルダーで一度ビルドしてください：",
+  "It then appears here.": "その後、ここに表示されます。"
  }
 }

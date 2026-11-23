@@ -313,10 +313,11 @@
   }
  ],
  "thaiAllowed": [
-  "^Sure!"
+  "^Sure!",
+  "Tab S6 Lite"
  ],
  "latinAllowed": [
-  "^(Nong Studio|Studio|Reconize|Mice Hub|Mice|Google Sheet|Wi-?Fi|USB|CPU|GPU|RAM|OK)$",
+  "^(Nong Studio|Studio|Reconize|MICE Hub|MICE|Mice Hub|Mice|Google Sheet|Wi-?Fi|USB|CPU|GPU|RAM|OK)$",
   "^(far-)?nong(-[a-z]+)?$",
   "^nong-far$",
   "^(Kooo|Looo+ng\\w*|NONO|NookYung|SeiyngSung|VongSungKhwa|WonderWomen|all|all\\.yaml|all move|hello|my move|tangVongSungLeft|yakyai)$",
@@ -328,7 +329,13 @@
   "^Sources:$",
   "COMMANDS\\.md",
   "Reconize$",
-  "^qc[_a-z0-9 ]*$"
+  "^qc[_a-z0-9 ]*$",
+  "^FHD Camera$",
+  "\\bCUDA\\b",
+  "^(lift|cam|dummy|gacha|blank|nong|nong_far)$",
+  "\\b(Virtual|FHD) Camera\\b",
+  "^(admin|admin123|MiceHub\\.exe|sequences/\\.deleted|NAME\\.(yaml|json)|GPIO 15|/data/module\\.yaml|/music/\\*|WiFi|Midnight)$",
+  "^[A-Z][A-Z0-9?_]{2,}$"
  ],
  "_latinAllowed_note": "the last pattern = KNOWN GAP: Studio sentences split by inline markup (<b>view buttons</b>) cannot be translated as a whole; remove it when the sentences are rewritten.",
  "attrLeakBaseline": {
@@ -336,5 +343,7 @@
   "zh": 4,
   "ja": 2
  },
- "_attrLeakBaseline_note": "measured 2026-11-23 after translating the tooltips: th 1, zh 3, ja 1 (what is left is file names and dynamic 'delete X from the SD card') + 1 slack; lower it as tooltips get translated"
+ "_attrLeakBaseline_note": "measured 2026-11-23 after translating the tooltips: th 1, zh 3, ja 1 (what is left is file names and dynamic 'delete X from the SD card') + 1 slack; lower it as tooltips get translated",
+ "latinHelpCeiling": {"th": 68, "zh": 65, "ja": 65},
+ "_latinHelpCeiling_note": "measured 2026-11-24: English sentence pieces left in Help (split by inline markup) after allowing commands, file names and product words; +2 slack; lower it as Help sentences are rewritten"
 }

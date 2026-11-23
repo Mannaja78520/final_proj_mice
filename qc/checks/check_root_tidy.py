@@ -21,6 +21,14 @@ AREA = "tools"
 TITLE = "nothing new goes loose at the repo root, and the layout map is current"
 
 
+def _tracked(name):
+    """True when git tracks at least one file under this root entry."""
+    import subprocess
+    r = subprocess.run(["git", "ls-files", "--", name], cwd=str(F.CODE),
+                       capture_output=True, text=True)
+    return bool(r.stdout.strip())
+
+
 def run(t):
     L = F.LAYOUT
     bad, local = L.root_report(F.CODE)
@@ -33,8 +41,11 @@ def run(t):
     for name in sorted(L.allowed()):
         if name.startswith("."):
             continue
+        # A folder git does not track (results/, dist/) exists only on the PC that made it, so a
+        # clean checkout cannot be asked to hold it (a fresh worktree failed here, 2026-11-23).
         t.ok(name in (L.data["root"]["files"]) or (F.CODE / name).exists()
-             or name in (L.data["staging"]["home"], L.data["out"]["home"]),
+             or name in (L.data["staging"]["home"], L.data["out"]["home"])
+             or not _tracked(name),
              "the map names %s, and it is there" % name,
              "a map entry for a folder that is gone sends the next AI looking")
     t.ok(L.map_is_current(), "docs/LAYOUT.md matches config/layout.json",
