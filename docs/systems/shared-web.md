@@ -65,7 +65,7 @@ One stylesheet and theme set for every page (mice.css, themes).
 - [app-camera](app-camera.md)
 - [app-small](app-small.md)
 
-## Checks that test it (39)
+## Checks that test it (40)
 
 - `check_accounts`
 - `check_advanced`
@@ -100,6 +100,7 @@ One stylesheet and theme set for every page (mice.css, themes).
 - `check_responsive`
 - `check_stale_build`
 - `check_stream_audio`
+- `check_studio_dialogs`
 - `check_studio_theme`
 - `check_themes`
 - `check_tools_list`
@@ -107,4 +108,4 @@ One stylesheet and theme set for every page (mice.css, themes).
 - `check_unsaved_prompt`
 - `check_ux_audit_round2`
 
-Run them: `python qc/run_qc.py --no-build check_accounts check_advanced check_app_browser check_board_frame check_cam_panel check_cast_mix check_code_patches check_css_tokens check_danger check_design_system check_dev_tools check_faces_app check_hub_answers check_hub_auth check_language check_link_states check_login_anywhere check_mice_tabs check_no_data_loss check_no_rainbow check_old_browser check_onefile check_page_frame check_page_login check_page_squeeze check_page_version check_partner_launch check_pinned_mods check_resource_policy check_resource_policy_browser check_responsive check_stale_build check_stream_audio check_studio_theme check_themes check_tools_list check_ui_states check_unsaved_prompt check_ux_audit_round2`
+Run them: `python qc/run_qc.py --no-build check_accounts check_advanced check_app_browser check_board_frame check_cam_panel check_cast_mix check_code_patches check_css_tokens check_danger check_design_system check_dev_tools check_faces_app check_hub_answers check_hub_auth check_language check_link_states check_login_anywhere check_mice_tabs check_no_data_loss check_no_rainbow check_old_browser check_onefile check_page_frame check_page_login check_page_squeeze check_page_version check_partner_launch check_pinned_mods check_resource_policy check_resource_policy_browser check_responsive check_stale_build check_stream_audio check_studio_dialogs check_studio_theme check_themes check_tools_list check_ui_states check_unsaved_prompt check_ux_audit_round2`
