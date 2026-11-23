@@ -80,6 +80,11 @@ APP_DEFAULTS = {
     # so a new tool brings its own help link with it, like everything else in
     # this registry.
     "help": "",
+    # Running this app by itself, no hub (user 2026-11-23): `MiceHub.exe --alone <id>`
+    # answers on `alonePort`. `caps` = what it can DO for its neighbours
+    # (main_python/peers.py finds a neighbour by ability, not by name).
+    "alonePort": 0,
+    "caps": [],
 }
 
 

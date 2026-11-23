@@ -17,5 +17,8 @@
   "icon": "📷",
   "image": "/img/apps/camera.webp",
   "order": 15,
-  "help": "camera"
+  "help": "camera",
+  // Alone (no hub): MiceHub.exe --alone camera . What it can do for its neighbours: caps.
+  "alonePort": 8653,
+  "caps": ["camera"]
 }

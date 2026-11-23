@@ -1,0 +1,11 @@
+{
+  "id": "e3902f41ff07",
+  "time": "2026-11-23T04:17:05.073Z",
+  "text": "STUDIO FREEZE {\"gapMs\":1850,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":2,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":23,\"longTasks\":[{\"ms\":337,\"at\":7381},{\"ms\":117,\"at\":7719},{\"ms\":281,\"at\":7929},{\"ms\":428,\"at\":8353},{\"ms\":185,\"at\":8782},{\"ms\":56,\"at\":8973},{\"ms\":120,\"at\":9036},{\"ms\":1706,\"at\":9304},{\"ms\":148,\"at\":11010}],\"slowCalls\":[{\"u\":\"/api/dev/cmd?dev=usb%3ACOM99&c=STOP\",\"ms\":17,\"at\":9215},{\"u\":\"/api/play/stop\",\"ms\":8,\"at\":9269},{\"u\":\"/rig_default.js\",\"ms\":7,\"at\":9295},{\"u\":\"/api/dev/cmd?dev=usb%3ACOM99&c=STOP\",\"ms\":25,\"at\":9277},{\"u\":\"/api/play/stop\",\"ms\":1856,\"at\":9303},{\"u\":\"/api/rigcad\",\"ms\":1414,\"at\":9747},{\"u\":\"/api/rigcad\",\"ms\":1368,\"at\":9793},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res8%3D%7B%22look%22%3A%22rig%22%2C%2\",\"ms\":1367,\"at\":9794},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res9%3D%7B%22dots%22%3A%5B1%2C1%5D%2C\",\"ms\":673,\"at\":10489},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res7%3D%7B%22btn%22%3Atrue%2C%22label\",\"ms\":673,\"at\":10489},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res6%3D%7B%22btn%22%3Atrue%2C%22label\",\"ms\":673,\"at\":10489},{\"u\":\"/models/qc_bot6/urdf/qc_bot6.urdf\",\"ms\":155,\"at\":11010},{\"u\":\"/api/list?kind=models&deep=1\",\"ms\":160,\"at\":11006},{\"u\":\"/api/list?kind=models&deep=1\",\"ms\":159,\"at\":11006},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res11%3D%7B%22cadY%22%3A-270%2C%22bas\",\"ms\":159,\"at\":11006}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36"
+}

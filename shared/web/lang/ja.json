@@ -866,6 +866,8 @@
   "In use right now:": "現在の利用数：",
   "Use this camera for faces only through the switch above. Do not also pick the same camera inside Face_Regonize: a USB camera can be held by one program only, and a camera board allows one connection.": "このカメラを顔認識に使うのは上のスイッチだけにしてください。Face_Regonize の中で同じカメラをもう一度選ばないでください。USBカメラは1つのプログラムしか開けず、カメラボードも接続は1つだけです。",
   "No picture yet. Tick “live view” or press “Take a picture”.": "まだ映像がありません。「ライブ表示」にチェックするか「写真を撮る」を押してください。",
-  "Cameras found:": "見つかったカメラ："
+  "Cameras found:": "見つかったカメラ：",
+  "This app is not open in this window. Open the full Mice program to use every app together, or start this app by itself.": "このアプリはこのウィンドウでは開いていません。すべてのアプリを一緒に使うには Mice 全体を開くか、このアプリを単独で起動してください。",
+  "It is already open in its own window on this PC.": "このPCで、専用のウィンドウですでに開いています。"
  }
 }

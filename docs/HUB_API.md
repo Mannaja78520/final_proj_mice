@@ -85,6 +85,7 @@ A `-` in the table means the code has no comment for that URL yet.
 | GET | `/api/partners/health` | - | id | hub_api_apps.py |
 | GET | `/api/partners/start` | - | id | hub_api_apps.py |
 | GET | `/api/partners/version` | - | id | hub_api_apps.py |
+| GET | `/api/peers` | - | app, cap | hub_api_peers.py |
 | GET | `/api/pinout` | - | dev | main.py |
 | GET | `/api/play` | - | - | hub_api_play.py |
 | POST | `/api/play` | - | - | hub_api_play.py |
