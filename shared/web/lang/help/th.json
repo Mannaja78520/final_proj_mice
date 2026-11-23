@@ -1265,6 +1265,8 @@
   ", while the board is still running firmware that works, and only a good one causes the reboot;": ", ระหว่างที่บอร์ดยังใช้เฟิร์มแวร์ที่ทำงานได้ตามปกติ และจะรีบูตเฉพาะเมื่อเฟิร์มแวร์ใหม่ใช้งานได้เท่านั้น;",
   "SET WIFI2 <ssid> <pass>": "SET WIFI2 <ssid> <pass>",
   "The Problem reports tab shows the newest 40 reports and a button for older ones, so the page stays quick on a phone.": "แท็บรายงานปัญหาแสดง 40 รายงานล่าสุด และมีปุ่มสำหรับรายงานที่เก่ากว่า เพื่อให้หน้าเปิดเร็วบนมือถือ",
-  "Help — MICE": "วิธีใช้ — MICE"
+  "Help — MICE": "วิธีใช้ — MICE",
+  "The page waits for the board to answer before showing its controls.": "หน้าเว็บรอให้บอร์ดตอบก่อนแสดงตัวควบคุม",
+  "The page reads camera settings after it identifies a camera.": "หน้าจะอ่านการตั้งค่ากล้องเมื่อทราบว่าบอร์ดเป็นโมดูลกล้อง"
  }
 }

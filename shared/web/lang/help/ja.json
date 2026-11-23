@@ -1926,6 +1926,8 @@
   "FLASH ON|OFF": "FLASH ON|OFF",
   "3. เอวและยักไหล่ WAIST / SHRUG": "3. 腰と肩のすくめ WAIST / SHRUG",
   "The Problem reports tab shows the newest 40 reports and a button for older ones, so the page stays quick on a phone.": "問題報告タブは最新の40件を表示し、古いものはボタンで開きます。スマートフォンでも軽く動きます。",
-  "Help — MICE": "ヘルプ — MICE"
+  "Help — MICE": "ヘルプ — MICE",
+  "The page waits for the board to answer before showing its controls.": "ボードから応答が届くまで、操作ボタンは表示されません。",
+  "The page reads camera settings after it identifies a camera.": "カメラを識別してから、カメラの設定を読み込みます。"
  }
 }

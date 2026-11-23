@@ -52,6 +52,9 @@ def run(t):
     # ---- the panel exists, on the BOARD's page ------------------------
     t.contains(ui, "camGroups", "the module's own page has a settings panel")
     t.contains(ui, "CAM LIST", "and fills it from what the board reports")
+    t.contains(ui, "showCard('camCard',camera);", "only an identified camera shows camera controls")
+    t.contains(ui, "if(camera&&typeof camStatus==='function')camStatus(m);",
+               "only an identified camera reads its settings")
     t.contains(ui, "CAM AUTO", "with one control to put everything back")
 
     # ---- and it does NOT know the settings ---------------------------
