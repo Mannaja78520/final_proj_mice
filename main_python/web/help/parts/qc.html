@@ -32,7 +32,7 @@
        cycle, suspend/chain/speed behave, and the awkward states do not throw.
        <b>modsite</b> — the module site's tabs show one group at a time and the login gate
        still hides every config card until you are in.
-       <b>wifi</b> — a bad or absent network cannot stall the servo loop: the connect path
+       <code>wifi</code> — a bad or absent network cannot stall the servo loop: the connect path
        stays a polled state machine with timeouts, and nothing in it blocks.
        <b>transports</b> — the same command, an SD transfer and a pin-config round trip on
        USB/UART, RS485, direct Web Serial and WiFi, so a link cannot break unnoticed.

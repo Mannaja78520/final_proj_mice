@@ -40,7 +40,7 @@
   </div>
 
   <h3>这是哪种摄像头开发板？</h3>
-  <p>模块会在开机时自动识别自己的摄像头板：逐一尝试已知的接线配置，直到传感器回应，所以即使是不知道型号的仿制板，通常也能直接使用。支持经典 ESP32-CAM 板（AI-Thinker, ESP-EYE, M5Stack, TTGO T-Journal, WROVER）和 ESP32-S3 板（Freenove / ESP32-S3-EYE, XIAO S3 Sense, FireBeetle S3, S3-CAM），以及 OV2640、OV3660 和 OV5640 传感器。S3 板需要使用 S3 版固件；经典版和 S3 版固件都只会尝试与自身芯片类型相符的板子。如果你知道板子的型号，也可以手动选择，使用 <code>CAM BOARD &lt;name&gt;</code> (or <code>CAM BOARD AUTO</code>），然后重启模块。S3、WROVER 和 T-Journal 开发板的引脚对应关系来自厂商提供的表格，尚未在实物板上测试。</p>
+  <p>模块会在开机时自动识别自己的摄像头板：逐一尝试已知的接线配置，直到传感器回应，所以即使是不知道型号的仿制板，通常也能直接使用。支持经典 ESP32-CAM 板（AI-Thinker, ESP-EYE, M5Stack, TTGO T-Journal, WROVER）和 ESP32-S3 板（Freenove / ESP32-S3-EYE, XIAO S3 Sense, FireBeetle S3, S3-CAM），以及 OV2640、OV3660 和 OV5640 传感器。S3 板需要使用 S3 版固件；经典版和 S3 版固件都只会尝试与自身芯片类型相符的板子。如果你知道板子的型号，也可以手动选择，使用 <code>CAM BOARD &lt;name&gt;</code>（或 <code>CAM BOARD AUTO</code>），然后重启模块。S3、WROVER 和 T-Journal 开发板的引脚对应关系来自厂商提供的表格，尚未在实物板上测试。</p>
 
   <h3>多人可以同时观看</h3>
   <p>开发板本身一次只能被一个对象读取，这是硬件的限制，不是谁选择的：它只有一个帧缓冲区，取一帧会收回已借出的那一帧，所以两路流会互相撕坏对方的画面。因此中心保持 <b>一个</b> 与每台摄像头的连接，并由它向所有观看者供流。你可以在任意多个屏幕上打开此页面。</p>
