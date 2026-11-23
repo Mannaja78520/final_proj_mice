@@ -2,6 +2,8 @@
 
 Owner: claude:11230402-8826 (cloud thread, branch claude/project-thread-dyrzf2)
 Updated: 2026-11-23
+Branch: claude/project-thread-dyrzf2
+Last commit: see git log
 Plan: A57-1
 
 ## Goal
@@ -32,6 +34,8 @@ Full QC, then PR + merge + PC exe rebuild.
 - Camera claims live in <temp>/mice-peers/cam-<dev>.json (O_EXCL); a backlog-8 listener in a test made `answers()` time out: use listen(128).
 
 ## File status
+Baseline: 17f30180 (main)
+
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | `main_python/peers.py`, `alone.py`, `hub_api_peers.py` | new | done | check_alone_apps quick pass + sabotage 7/7 | this checkpoint |
