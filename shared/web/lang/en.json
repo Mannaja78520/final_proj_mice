@@ -251,6 +251,9 @@
   "เปิดแท็บไม่ได้ อนุญาตป๊อปอัปแล้วกดลองอีกครั้ง": "Could not open the tab. Allow pop-ups and try again",
   "พบเพลงที่ตรงกับงานกู้คืน ใช้เพลงนี้กับท่าที่แก้ค้างไว้หรือไม่?": "A song matching the recovered work was found. Use it with the moves you were still editing?",
   "OK — กู้เฉพาะเพลงและเก็บท่าปัจจุบันทั้งหมด": "OK — restore only the song and keep all current moves",
-  "Cancel — เปิดโปรเจกต์ตามปกติ": "Cancel — open the project as usual"
+  "Cancel — เปิดโปรเจกต์ตามปกติ": "Cancel — open the project as usual",
+  "เปิดงานที่ทำไว้ล่าสุด หุ่นเต้นพร้อมเพลง รายงาน และเครื่องมือที่ใช้งาน": "Open the most recent work: robot dances with music, reports and the tools used",
+  "ล็อกอินที่ด้านบนของหน้านี้เพื่อดูแอปในเครื่องนี้": "Log in at the top of this page to see the apps on this PC",
+  "ยังโหลดรายการแอปไม่ได้": "The app list could not be loaded yet"
  }
 }

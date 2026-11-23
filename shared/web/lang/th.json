@@ -1302,6 +1302,10 @@
   "OK sets them. Cancel keeps the lengths you have.": "ตกลง = ตั้งตามนี้ ยกเลิก = ใช้ความยาวเดิม",
   "Remove {}? They are logged out straight away.": "ลบ {} ใช่ไหม? เขาจะถูกออกจากระบบทันที",
   "Reset the rig to the factory defaults? (You haven't saved a default of your own — use “★ Save current as default” to keep your tuning.)": "รีเซ็ตหุ่นกลับเป็นค่าโรงงานไหม? (คุณยังไม่ได้บันทึกค่าเริ่มต้นของตัวเอง — ใช้ “★ Save current as default” เพื่อเก็บค่าที่ปรับไว้)",
+  "Help — Mice": "วิธีใช้ — Mice",
+  "TV Remote & Monitor — Mice": "รีโมตทีวีและมอนิเตอร์ — Mice",
+  "Cameras — Mice": "กล้อง — Mice",
+  "Mice — light strip": "Mice — แถบไฟ",
   "this PC's camera is in use by another app (a browser tab, or an older Mice window that is still open), or unplugged - close it and try again": "กล้องของเครื่องนี้ถูกโปรแกรมอื่นใช้อยู่ (แท็บเบราว์เซอร์ หรือหน้าต่าง Mice รุ่นเก่าที่ยังเปิดอยู่) หรือถอดสายอยู่ ปิดตัวนั้นแล้วลองใหม่"
  }
 }
