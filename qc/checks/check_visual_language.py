@@ -52,6 +52,20 @@ async function run(){
       f.remove();
     }
   }
+  // phone width: no page may scroll sideways (a hand cannot reach what sits past the edge)
+  localStorage.setItem("mice.lang", "en");
+  for (var qi = 0; qi < PAGES.length; qi++) {
+    var f2 = document.createElement("iframe");
+    f2.style.cssText = "width:390px;height:800px";
+    document.body.appendChild(f2);
+    f2.src = PAGES[qi].url;
+    await sleep(PAGES[qi].wait || 2500);
+    try {
+      var d2 = f2.contentDocument;
+      qcMark("PHONEW~" + PAGES[qi].id + "~" + (d2.documentElement.scrollWidth - 390));
+    } catch (e) { qcMark("ERR~phone~" + PAGES[qi].id); }
+    f2.remove();
+  }
   qcMark("done");
 }
 window.addEventListener("load", function(){ run(); });
@@ -99,6 +113,10 @@ def run(t):
     for lang, n in sorted(left.items()):
         if lang != "en":
             t.ok(n <= base_n.get(lang, 0), "English tooltips/placeholders left in %s: %d (ceiling %d, lower it when you translate)" % (lang, n, base_n.get(lang, 0)), left)
+    for m in marks:
+        if m.startswith("PHONEW~"):
+            _, pid, extra = m.split("~")
+            t.ok(int(extra) <= 2, "%s does not scroll sideways on a 390 px phone" % pid, m)
     for m in marks:
         if m.startswith("STUCK~"):
             _, lang, pid, n = m.split("~")
