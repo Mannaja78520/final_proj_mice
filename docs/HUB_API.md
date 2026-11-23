@@ -133,6 +133,7 @@ A `-` in the table means the code has no comment for that URL yet.
 | GET | `/api/video/fetch` | - | id | hub_api_studio.py |
 | POST | `/api/video/fetch` | - | - | hub_api_studio.py |
 | GET | `/api/video/file` | - | id, kind | hub_api_studio.py |
+| GET | `/api/video/lan` | - | - | hub_api_studio.py |
 | POST | `/api/video/put` | - | name | hub_api_studio.py |
 | POST | `/api/video/sound` | - | - | hub_api_studio.py |
 | GET | `/api/voice` | - | - | hub_api_apps.py |
