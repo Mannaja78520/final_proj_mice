@@ -23,9 +23,10 @@ WHAT THIS HOLDS, AND WHY EACH LINE EXISTS
     served with NO login (`main.py:3702-3715`), so a credentials file there is a
     credentials file published to the venue WiFi. A plan review caught that
     placement before it shipped; this is what stops it coming back.
-  * the camera app says what it really is: **ESP32 camera**. It only ever knew
-    ESP32-CAM boards - the page builds its list from modules whose `type` is
-    `cam` - so the old name promised a webcam it cannot show.
+  * the camera app says what it really is: **Cameras**. It was "ESP32 camera"
+    while it only knew ESP32-CAM boards; since 2026-11-23 its list is the hub's
+    GET /api/cameras (boards, this PC's webcams, added network cameras), so the
+    name no longer promises less than it shows.
 """
 import json
 import sys
@@ -135,8 +136,7 @@ def run(t):
          % leaks)
 
     # ---- the camera app is honest about what it is --------------------
-    t.ok(apps.get("camera", {}).get("name") == "ESP32 camera",
-         "the camera app says which camera it can actually show",
-         "it lists only modules whose type is cam, so the old name promised a "
-         "webcam it has never been able to open; got %r"
+    t.ok(apps.get("camera", {}).get("name") == "Cameras",
+         "the camera app is named for every camera it can show",
+         "its list is every board, webcam and added camera (cam_sources); got %r"
          % apps.get("camera", {}).get("name"))
