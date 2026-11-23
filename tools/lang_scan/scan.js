@@ -28,7 +28,7 @@ const grab = () => {
   return res;
 };
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch(process.env.PW_CHANNEL ? { channel: process.env.PW_CHANNEL } : {});
   const report = [];
   for (const lang of LANGS) {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });

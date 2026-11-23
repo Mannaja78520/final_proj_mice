@@ -484,6 +484,20 @@
   "ไม่เปลี่ยนหุ่น เป็นแค่การเลือกว่าลิงก์ไหนฮับยอมดึงวิดีโอมาให้": "Does not change the robot. It only chooses which links the hub will fetch a video from.",
   "คำอธิบายและไอคอน:": "Descriptions and icons:",
   "เขียนคำอธิบายแบบกว้างๆ ไม่ผูกกับฟีเจอร์ที่มีตอนนี้ เพราะแอปอาจเพิ่มเกมหรือฟังก์ชันภายหลัง ถ้าแอปไม่มีรูป Hub จะใช้ไอคอนการ์ตูนกลางให้ ขนาดและหน้าตาเท่ากันทุกการ์ด เขียนคำอธิบายเป็นภาษาไทย แล้วเพิ่มคำแปลลงใน": "Write descriptions in general terms, not tied to today's features, because an app may gain games or functions later. If an app has no picture, the hub uses its shared cartoon icon, so every card has the same look and size. Write the description in Thai, then add its translation to",
-  "ทุกภาษา": "for every language"
+  "ทุกภาษา": "for every language",
+  "และผลสุดท้ายจากบอร์ด": "and the final result from the board",
+  "แล้วเลือกคลิป หรือเลือกไฟล์": "Then choose a clip or a file",
+  "โฟลเดอร์บอกว่าเป็นแอปอะไรด้วยไฟล์": "This file tells you which app the folder belongs to:",
+  "โหมดไฟเลี้ยงและ Brownout Guard": "Power mode and Brownout Guard",
+  "ใช้เฉพาะชุดท่านี้ตอนเพลงเล่นเท่านั้น (ไฟล์เขียน": "Use this set of moves only while music is playing (written in the file as",
+  "ใช้แหล่งจ่ายไฟ 5V แยกเฉพาะสำหรับเซอร์โวมอเตอร์ อย่าใช้ไฟจากพอร์ต USB คอมพิวเตอร์": "Use a separate 5V power supply for the servo motors. Do not power them from your computer’s USB port.",
+  "ในการ์ด SD": "on the SD card",
+  "ใส่ของหลายชนิดปนกัน แล้วบอกจำนวนแต่ละชนิดตอนใส่ของ (": "Load a mix of different items, and specify how many of each type you’re adding (",
+  "ได้เลย ถ้าอยากจำกัดว่าขอชนิดไหนได้หรือปิดไว้ ให้เขียนชื่อโปรแกรมในตาราง Programs": "Yes. To limit which types can be requested or turn this off, enter the program name in the Programs table.",
+  "ไฟล์ที่ export จะมีบรรทัด": "The exported file will include the line",
+  "ไม่ต้องกดอะไร ทำงานเองกับทุกท่า: ชุดท่าใน Studio, ท่าจากวิดีโอ, ทางอ้อมที่ Studio หาให้, ท่าพูด, ท่าจาก RL และ Shows ถ้าข้อต่อยังไปทางเดิม แขนจะวิ่งผ่านคีย์เฟรมต่อเลยแทนที่จะหยุดทุกคีย์ ตรงที่ข้อต่อกลับทิศ (ท่าสะบัด) ตรงที่มีพัก (hold) และต้น/ท้ายยังหยุดตรงคีย์พอดี เวลาของทุกท่าไม่เปลี่ยน จึงยังตรงเพลง ปิด/เปิดแยกตามที่มาของท่าได้ในไฟล์": "No action needed. This works automatically with all moves: sets of moves in Studio, moves from videos, alternate paths found by Studio, speaking gestures, moves from RL, and Shows. If a joint keeps moving in the same direction, the arm continues through the keyframes instead of stopping at each one. It still stops exactly at the keyframe when a joint reverses direction (a flicking move), during pauses (hold), and at the start and end. The timing of every move stays the same, so everything stays in sync with the music. You can turn this on or off separately for each motion source in the file",
+  "ไม่เข้า git; อัปเดตใช้คำสั่ง": "Not included in git; update using the command",
+  "ไม่ใช่ผลสำเร็จสุดท้าย ดู": "This isn’t the final confirmation of success. See",
+  "← ก่อนหน้า (Previous)": "← Previous"
  }
 }
