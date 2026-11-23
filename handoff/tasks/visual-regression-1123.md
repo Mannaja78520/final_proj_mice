@@ -1,7 +1,7 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
 Owner: codex:11232254-6f5e
-Updated: 2026-11-23T23:49+07:00
+Updated: 2026-11-23T23:52+07:00
 Branch: codex/visual-regression-1123
 Last commit: this checkpoint
 Plan: A1123-2
@@ -11,7 +11,7 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 4 case 12, make Help search read the current localized topic text and ignore the Previous/Next labels. Add browser coverage for en/th/zh/ja and a late topic-title update. Regenerate Help and rerun the saved 390 px Edge baseline driver and the focused QC when possible.
+Item 4, run the focused Help QC on `2a9bf08` when the shared slot clears. In parallel with the wait, use the independent loopback fixture for case 20: give Nong and Lift one failed first status at 390 px, assert hidden capability cards and zero commands, then reload with successful identification. One replay, no firmware edits.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
@@ -30,8 +30,8 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 | firmware/generated/web/ModuleUI.h | Regenerate all-types module page | done | gen_tables.py; 107.1 KB; 390 px Edge passed on generated per-type pages | uncommitted (ignored) |
 | qc/checks/check_board_page_motors_first.py | Assert capability cards start hidden | done | 11 fails at baseline, 15/15 after | 8fa77aa |
 | main_python/web/help/parts/modsite.html | Document connection and control visibility | done | Help rebuilt on latest main | 8fa77aa |
-| main_python/web/help/parts/search.js | Search current Help topic text | pending | baseline reproduces in Edge | uncommitted |
-| qc/checks/check_help_topics.py | Guard localized and late Help text | pending | not run | uncommitted |
+| main_python/web/help/parts/search.js | Search current Help topic text | done | private Edge replay 4/4 | 2a9bf08 |
+| qc/checks/check_help_topics.py | Guard localized and late Help text | doing | syntax passed, official focused QC pending | 2a9bf08 |
 
 ## Facts found
 - Item 2 baseline (module-before-caps.json): on the hub at 390 px, all eight control cards appeared before JavaScript and before the first nong or lift status. After status, only the correct card remained. applyTabs() permits data-cap values other than 0, including missing.
@@ -43,6 +43,7 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 - haveRobot() in Studio means "connected to a robot", not "3D ready".
 
 ## Done
+- Item 4 case 12 commit `2a9bf08` searches current topic text and omits Previous/Next captions from matches. The same private Edge component replay passed 4/4 after the patch, including the normal empty result. Language catalog check and Help generation passed. Help source, page and th/ja/zh pack variants are also at `2a9bf08`. Evidence: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/after-navigator.log`.
 - Item 4 case 12 baseline: Edge 390 px found the displayed Module website title in all four languages, then failed to match the same title after a controlled late text update in all 4/4. The private fixture needed explicit navigator initialization. The existing full-QC Help topics check passed the ordinary first-load path. Evidence: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/before-navigator.log`.
 - Item 1 [draft PR #235](https://github.com/Mannaja78520/final_proj_mice/pull/235) isolates the prior screen-reader language fix. Language catalog check passed and the exact head `19b50be` passed 28/28 Japanese states at 390 px across four themes and seven pages. Private evidence: `%TEMP%/mice-visual-1123-e6f3b60/language-proof/phone-theme-check.json`. The other host QC process occupied the shared slot, so this replay used a private loopback Hub without a fake serial driver. Help and its three translated pack variants are also at `19b50be`.
 - Item 2 full QC finished on PR #234 head `8fa77aa`: 10,631 passed, 27 failed, exit 1 in 1,279.9 s. QEMU firmware 53/53, peripherals 24/24, RS485 bus 12/12 and census 4/4 passed. The stale API index check has byte-identical inputs and outputs on main. Other failures: local clone branch/results metadata, Reconize watcher startup, Help contrast, and remaining locale leakage on Home, Help and Camera. Private log: `%TEMP%/mice-visual-1123-e6f3b60/qc-module-full.log`. PR remains draft.
