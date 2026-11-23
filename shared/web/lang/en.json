@@ -248,6 +248,9 @@
   "ใส่โฟลเดอร์ของแอป หรือกด \"เลือกโฟลเดอร์…\"": "Type the app's folder, or press \"Choose folder…\"",
   "ไม่มีโหมดภาพนี้": "This picture mode is not available",
   "เปิดเกมไม่ได้ ลองอีกครั้ง": "Could not open the game. Try again",
-  "เปิดแท็บไม่ได้ อนุญาตป๊อปอัปแล้วกดลองอีกครั้ง": "Could not open the tab. Allow pop-ups and try again"
+  "เปิดแท็บไม่ได้ อนุญาตป๊อปอัปแล้วกดลองอีกครั้ง": "Could not open the tab. Allow pop-ups and try again",
+  "พบเพลงที่ตรงกับงานกู้คืน ใช้เพลงนี้กับท่าที่แก้ค้างไว้หรือไม่?": "A song matching the recovered work was found. Use it with the moves you were still editing?",
+  "OK — กู้เฉพาะเพลงและเก็บท่าปัจจุบันทั้งหมด": "OK — restore only the song and keep all current moves",
+  "Cancel — เปิดโปรเจกต์ตามปกติ": "Cancel — open the project as usual"
  }
 }

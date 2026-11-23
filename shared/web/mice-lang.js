@@ -178,7 +178,48 @@
       }
     } catch (err) { /* a link the browser cannot parse is left as it is */ }
   }, true);
-  window.MiceLang = {current: current, source: SOURCE};
+  // Browser dialogs (confirm / alert / prompt) are not in the page, so the observer never sees
+  // them: Studio's "Replace it?" question stayed Thai or English whatever language was picked
+  // (case review 2026-11-23). Translate the whole text, else line by line, keeping the line breaks.
+  // An entry whose key holds {} matches any text there ("Delete {}?"): the pieces come back in the
+  // translation's own {} slots, in order, so a dialog that names a file still translates.
+  var holes = null;
+  function pattern(line) {
+    if (!holes) {
+      holes = [];
+      for (var k in dict) {
+        if (Object.prototype.hasOwnProperty.call(dict, k) && dict[k] && k.indexOf("{}") >= 0) {
+          var re = new RegExp("^" + k.split("{}").map(function (x) { return x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }).join("(.+?)") + "$");
+          holes.push([re, dict[k]]);
+        }
+      }
+    }
+    var t = line.replace(/\s+/g, " ").trim();
+    for (var i = 0; i < holes.length; i++) {
+      var m = holes[i][0].exec(t);
+      if (m) { var n = 0; return holes[i][1].replace(/\{\}/g, function () { return m[++n] || ""; }); }
+    }
+    return null;
+  }
+  function say(text) {
+    if (typeof text !== "string" || !dict) return text;
+    var whole = lookup(text);
+    if (whole) return whole.to;
+    return text.split("\n").map(function (ln) {
+      var h = lookup(ln);
+      return h ? h.to : (pattern(ln) || ln);
+    }).join("\n");
+  }
+  ["confirm", "alert", "prompt"].forEach(function (name) {
+    var orig = window[name];
+    if (typeof orig !== "function") return;
+    window[name] = function (msg) {
+      var args = Array.prototype.slice.call(arguments);
+      args[0] = say(msg);
+      return orig.apply(window, args);
+    };
+  });
+  window.MiceLang = {current: current, source: SOURCE, say: say};
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
   else start();
 })();
