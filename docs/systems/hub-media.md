@@ -28,8 +28,9 @@ Camera relay and audio streaming to boards.
 - [hub](hub.md)
 - [hub-show](hub-show.md)
 
-## Checks that test it (9)
+## Checks that test it (10)
 
+- `check_alone_apps`
 - `check_cam_boards_data`
 - `check_cam_controls`
 - `check_cam_panel`
@@ -40,4 +41,4 @@ Camera relay and audio streaming to boards.
 - `check_pinout`
 - `check_stream_audio`
 
-Run them: `python qc/run_qc.py --no-build check_cam_boards_data check_cam_controls check_cam_panel check_cam_viewers check_camera check_camera_hub check_faces_app check_pinout check_stream_audio`
+Run them: `python qc/run_qc.py --no-build check_alone_apps check_cam_boards_data check_cam_controls check_cam_panel check_cam_viewers check_camera check_camera_hub check_faces_app check_pinout check_stream_audio`

@@ -36,6 +36,7 @@ route to a board reached more than one way.
 ## Used by
 
 - [hub](hub.md)
+- [hub-alone](hub-alone.md)
 - [hub-usb](hub-usb.md)
 - [hub-modules](hub-modules.md)
 

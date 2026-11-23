@@ -47,6 +47,7 @@ from urllib.parse import urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wsclient                                          # noqa: E402
 import rules                                             # noqa: E402
+import peers                                             # noqa: E402,F401  (rules puts main_python on the path)
 import friend_api                                        # noqa: E402
 from face_history import HistoryCursor, local_when        # noqa: E402
 
@@ -1030,15 +1031,18 @@ def main(argv=None):
     milestones = rules.Milestones(fired, state.greeter.post)
     Handler.state = state
     # Our own cameras, each asked of their /api/look once it exists (A13-2).
+    # No hub on this PC: read them from whichever program shows cameras (the
+    # Cameras app by itself, say) - the same pictures at the same addresses.
     state.look = (cfg or {}).get("look") or {}
     import look
+    cam_hub = peers.where(state.greeter.hub, "camera")
     for cam in state.look.get("cameras") or []:
         if cam.get("name") and cam.get("dev"):
             state.lookers.append(look.Looker(
-                state, cam["name"], look.hub_frames(state.greeter.hub, cam["dev"]),
+                state, cam["name"], look.hub_frames(cam_hub, cam["dev"]),
                 per_second=state.look.get("perSecond") or 4).start())
     # Cameras switched on for faces on the Cameras page (cam_sources).
-    look.sync(state, state.greeter.hub)
+    look.sync(state, cam_hub)
     if state.partners_error:
         print("[faces] %s" % state.partners_error)
     elif not state.partner():

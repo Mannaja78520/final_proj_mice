@@ -1658,11 +1658,16 @@ import hub_api_gacha  # noqa: E402
 hub_api_gacha.bind(sys.modules[__name__])
 import hub_api_cameras  # noqa: E402
 hub_api_cameras.bind(sys.modules[__name__])
+import hub_api_peers  # noqa: E402
+import alone  # noqa: E402
+import peers  # noqa: E402
+
+ALONE = [None]      # the AloneMode when started with --alone <app>, else None
 
 
 # ---------------------------------------------------------------- handler
 class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
-              hub_api_extensions.ExtensionRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_busmap.BusMapRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, hub_api_cameras.CamerasRoutes, BaseHTTPRequestHandler):
+              hub_api_extensions.ExtensionRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_busmap.BusMapRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, hub_api_cameras.CamerasRoutes, hub_api_peers.PeersRoutes, BaseHTTPRequestHandler):
     # HTTP/1.1, so a browser can KEEP ITS CONNECTION.
     #
     # BaseHTTPRequestHandler defaults to HTTP/1.0, which means every response
@@ -2199,6 +2204,15 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
             return self.send_err("POST only on /api/*", 405)
 
         # ---- static routing: hub at /, studio app at /studio/ ----
+        mode = ALONE[0]
+        if mode:
+            # started with --alone <app>: this window is that app (alone.py)
+            if path in ("/", "/hub"):
+                return self.send_redirect(mode.app["path"])
+            other = mode.other_app_page(path, registry.apps() if registry else [])
+            if other:
+                page, code = mode.landing_for(other)
+                return self.send_bytes(page.encode(), MIME[".html"], code)
         if path == "/" or path == "/hub":
             f = HUB_WEB / "hub.html"
             return self.send_bytes(f.read_bytes(), MIME[".html"])
@@ -2668,6 +2682,9 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
             return r
         r = self.api_apps(method, path, q)   # hub_api_apps.py
         if r is not hub_api_apps.NOT_MINE:
+            return r
+        r = self.api_peers(method, path, q)   # hub_api_peers.py
+        if r is not hub_api_peers.NOT_MINE:
             return r
 
         if path == "/api/scan":
@@ -3180,12 +3197,15 @@ def stop_running_hub():
 
 
 def main():
+    global PORT
     if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
         print("Mice Control Hub")
         print("Usage: python main.py [OPTIONS] or MiceHub.exe [OPTIONS]")
         print("")
         print("Options:")
         print("  --open <app_id>    Open a specific app directly (e.g. --open voice)")
+        print("  --alone <app_id>    Run ONE app by itself, no hub needed (e.g. --alone voice);")
+        print("                     it joins the other running apps by itself. --port <n> moves it")
         print("  --stop             Stop the running hub and everything it started")
         print("  --kill             Terminate running MiceHub process(es)")
         print("  -h, --help         Show this help message")
@@ -3223,7 +3243,13 @@ def main():
         return
     for d in (PROJECTS, SEQUENCES, MODELS):
         d.mkdir(parents=True, exist_ok=True)
+    mode = alone.AloneMode.from_args(sys.argv[1:], app_by_id if registry else (lambda _i: None))
+    ALONE[0] = mode
+    if mode:
+        PORT = mode.port
     path, show = open_target(sys.argv[1:])
+    if mode:
+        path, show = mode.app["path"], webbrowser.open
     # ONE HUB PER PORT. The listener sets SO_REUSEADDR (ThreadingHTTPServer
     # default), and on Windows that lets a second hub bind the SAME port -
     # connections then land on either process at random and half the pages
@@ -3269,7 +3295,9 @@ def main():
     own_name = "mice-%s.local" % re.sub(r"[^a-z0-9-]", "",
                                         socket.gethostname().lower())[:24]
     NAME_SERVER[0] = mdns.Responder(MDNS_NAME, lan_ip, fallback=own_name)
-    other = NAME_SERVER[0].taken()
+    # An app running alone does not claim the hub's name: the hub may start
+    # later on this PC and must find it free (alone.py).
+    other = None if mode else NAME_SERVER[0].taken()
     if other:
         print("  (%s is already answered by %s - taking %s instead)"
               % (MDNS_NAME, other, own_name))
@@ -3280,35 +3308,51 @@ def main():
         # minute later would take mice.local back when the other PC left. Two
         # paths, two different behaviours, and nothing saying so.
         NAME_SERVER[0].name = own_name
-    if NAME_SERVER[0].start():
+    if mode:
+        pass
+    elif NAME_SERVER[0].start():
         print("  by name       -> http://%s:%d/   (phones, Macs, Windows)"
               % (NAME_SERVER[0].name, PORT))
     else:
         print("  by name       -> not available:", NAME_SERVER[0].error)
     # ...and the short name, when port 80 is free to take.
-    if start_short_name():
+    if not mode and start_short_name():
         # The name this hub really answers to, not the one it wanted: after a
         # clash those differ, and printing the shared one told the operator to
         # type an address that reaches the OTHER machine.
         print("  short name    -> http://%s/   (no port to type)"
               % NAME_SERVER[0].name)
-    print("The hub finds all modules by itself; Nong Studio is at /studio/.")
+    if mode:
+        print("%s is running by itself (no hub needed) - other apps that run on this PC "
+              "are found and joined automatically." % mode.app["name"])
+    else:
+        print("The hub finds all modules by itself; Nong Studio is at /studio/.")
     print("Ctrl+C to stop.")
     threading.Timer(0.6, lambda: show(local.rstrip("/") + path)).start()
-    # warm the module scan so the hub page fills instantly
-    threading.Thread(target=scan_modules, daemon=True).start()
     threading.Thread(target=_usb_reaper, daemon=True).start()  # idle port release
-    threading.Thread(target=route_probe_loop, daemon=True).start()  # A26-79
-    threading.Thread(target=hub_appass.loop, daemon=True).start()  # PEERPASS
-    # Their page died with the last hub (it is our child); bring it back.
-    # The real hub only: a QC hub must never start the friend's programs.
-    if PORT == 8642 and not os.environ.get("MICE_HUB_AUTH"):
-        threading.Thread(target=resume_partners, daemon=True).start()
+    # Who else runs on this PC (peers.py). The hub says it can do everything
+    # its apps can; an app alone says what it can do.
+    if mode:
+        mode.announce()
+    elif registry:
+        peers.announce("hub", PORT, sorted({c for a in registry.apps() for c in a.get("caps") or []}),
+                       name="Mice hub")
+    if not mode:
+        # warm the module scan so the hub page fills instantly
+        threading.Thread(target=scan_modules, daemon=True).start()
+        threading.Thread(target=route_probe_loop, daemon=True).start()  # A26-79
+        threading.Thread(target=hub_appass.loop, daemon=True).start()  # PEERPASS
+        # Their page died with the last hub (it is our child); bring it back.
+        # The real hub only: a QC hub must never start the friend's programs.
+        if PORT == 8642 and not os.environ.get("MICE_HUB_AUTH"):
+            threading.Thread(target=resume_partners, daemon=True).start()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
         print("\nbye")
     finally:
+        peers.withdraw(mode.app["id"] if mode else "hub", PORT)
+        peers.release_all(PORT)
         SERVER[0] = None
         if not children_stay():
             stopped = children.CHILDREN.stop_all()

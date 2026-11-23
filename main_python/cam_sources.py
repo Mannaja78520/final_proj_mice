@@ -24,10 +24,12 @@ import os
 import re
 import secrets
 import threading
+import time
 import urllib.parse
 from pathlib import Path
 
 import cam_relay
+import peers
 
 _hub = None
 _lock = threading.Lock()
@@ -183,7 +185,7 @@ def relay_for(dev, pc_cfg=None):
     """(relay, why-not) for any camera that is read by the hub itself
     (pc: and cam:). A board (wifi:) is the caller's own path."""
     if dev.startswith("pc:"):
-        return cam_relay.pc_relay(pc_cfg or {}, dev[3:])
+        return _pc_or_peer(dev, pc_cfg or {})
     if dev.startswith("cam:"):
         src = next((s for s in load()["sources"] if s["id"] == dev[4:]), None)
         spec = (config().get("kinds") or {}).get(src["kind"]) if src else None
@@ -191,6 +193,30 @@ def relay_for(dev, pc_cfg=None):
             return None, "no camera is added with that name"
         return UrlCamRelay.get(dev, run=_expand(spec, src.get("value", ""))), ""
     return None, "not a camera the hub reads itself"
+
+
+_claims = {}          # dev -> (when, (mine, owner)): asking the folder every frame is waste
+
+
+def _pc_or_peer(dev, pc_cfg):
+    """This PC's webcam, opened by ONE program on the PC (user 2026-11-23).
+
+    Whoever asks first owns the camera (peers.claim_camera); a second Mice
+    program - the hub and Voice alone, two apps alone - reads the OWNER's
+    picture instead of opening the webcam again, which gives black frames."""
+    now = time.time()
+    when, got = _claims.get(dev, (0.0, None))
+    if not got or now - when > 5:
+        got = peers.claim_camera(dev, _hub.PORT)
+        _claims[dev] = (now, got)
+    mine, owner = got
+    if mine:
+        return cam_relay.pc_relay(pc_cfg, dev[3:])
+    spec = (config().get("kinds") or {}).get("link")
+    if not spec:
+        return None, "another Mice program has this camera open"
+    link = owner["url"].rstrip("/") + "/api/dev/cam.stream?dev=" + urllib.parse.quote(dev)
+    return UrlCamRelay.get(dev + "@peer", run=_expand(spec, link)), ""
 
 
 def is_hub_read(dev):

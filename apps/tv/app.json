@@ -4,5 +4,8 @@
   "icon": "📺",
   "image": "/img/apps/tv.webp",
   "order": 12,
-  "help": "tv"
+  "help": "tv",
+  // Alone (no hub): MiceHub.exe --alone tv . What it can do for its neighbours: caps.
+  "alonePort": 8655,
+  "caps": ["remote", "show"]
 }

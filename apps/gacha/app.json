@@ -10,5 +10,8 @@
   "icon": "🎁",
   "image": "/img/apps/gacha.webp",
   "order": 40,
-  "help": "gacha"
+  "help": "gacha",
+  // Alone (no hub): MiceHub.exe --alone gacha . What it can do for its neighbours: caps.
+  "alonePort": 8654,
+  "caps": ["prize"]
 }

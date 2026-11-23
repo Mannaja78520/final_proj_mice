@@ -49,19 +49,19 @@
    "all_unique": true
   },
   "24": {
-   "seconds": 38.2,
+   "seconds": 39.6,
    "all_unique": true
   },
   "64": {
-   "seconds": 61.4,
+   "seconds": 42.1,
    "all_unique": true
   },
   "128": {
-   "seconds": 85.4,
+   "seconds": 100.1,
    "all_unique": true
   },
   "247": {
-   "seconds": 166.0,
+   "seconds": 174.9,
    "all_unique": true
   }
  },

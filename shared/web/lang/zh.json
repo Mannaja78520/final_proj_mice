@@ -864,6 +864,8 @@
   "เปิด Cameras (แท็บใหม่)": "Open Cameras (new tab)",
   "guests take photos with a frame and stickers, and take them home": "来宾拍摄带相框和贴纸的照片，并带走照片",
   "In use right now:": "当前使用数：",
-  "Use this camera for faces only through the switch above. Do not also pick the same camera inside Face_Regonize: a USB camera can be held by one program only, and a camera board allows one connection.": "请只通过上面的开关让这个摄像头识别人脸，不要在 Face_Regonize 里再选同一个摄像头：USB 摄像头同一时间只能被一个程序占用，摄像头板也只允许一个连接。"
+  "Use this camera for faces only through the switch above. Do not also pick the same camera inside Face_Regonize: a USB camera can be held by one program only, and a camera board allows one connection.": "请只通过上面的开关让这个摄像头识别人脸，不要在 Face_Regonize 里再选同一个摄像头：USB 摄像头同一时间只能被一个程序占用，摄像头板也只允许一个连接。",
+  "This app is not open in this window. Open the full Mice program to use every app together, or start this app by itself.": "此应用没有在这个窗口中打开。打开完整的 Mice 程序可一起使用所有应用，或单独启动此应用。",
+  "It is already open in its own window on this PC.": "它已在这台电脑上自己的窗口中打开。"
  }
 }

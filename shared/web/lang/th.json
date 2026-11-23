@@ -548,7 +548,7 @@
   "👁 Open it": "👁 เปิดใช้งาน",
   "🔗 Is the rig following it?": "🔗 หุ่นทำตามหรือยัง?",
   "💬 What the rig says": "💬 สิ่งที่หุ่นพูด",
-  "Open it": "เปิดใช้งาน",
+  "Open it": "เปิด",
   "Reconize runs beside Mice on this PC. It watches the cameras and knows who is who; the rig follows it.": "Reconize ทำงานคู่กับ Mice บนเครื่องนี้ มันดูภาพจากกล้องแล้วรู้ว่าใครเป็นใคร หุ่นจะหันตามคนนั้น",
   "Check it is running": "เช็กว่าเปิดอยู่ไหม",
   "Reconize is not installed on this PC.": "เครื่องนี้ยังไม่ได้ติดตั้ง Reconize",
@@ -662,6 +662,8 @@
   "camera": "กล้อง",
   "guests take photos with a frame and stickers, and take them home": "แขกถ่ายภาพพร้อมกรอบและสติกเกอร์ แล้วรับภาพกลับไป",
   "In use right now:": "ใช้งานอยู่ตอนนี้:",
-  "Use this camera for faces only through the switch above. Do not also pick the same camera inside Face_Regonize: a USB camera can be held by one program only, and a camera board allows one connection.": "ให้ใช้กล้องตัวนี้จำใบหน้าผ่านสวิตช์ด้านบนเท่านั้น อย่าเลือกกล้องตัวเดียวกันในโปรแกรม Face_Regonize ซ้ำอีก เพราะกล้อง USB เปิดได้ทีละโปรแกรมเดียว และบอร์ดกล้องรับได้แค่หนึ่งการเชื่อมต่อ"
+  "Use this camera for faces only through the switch above. Do not also pick the same camera inside Face_Regonize: a USB camera can be held by one program only, and a camera board allows one connection.": "ให้ใช้กล้องตัวนี้จำใบหน้าผ่านสวิตช์ด้านบนเท่านั้น อย่าเลือกกล้องตัวเดียวกันในโปรแกรม Face_Regonize ซ้ำอีก เพราะกล้อง USB เปิดได้ทีละโปรแกรมเดียว และบอร์ดกล้องรับได้แค่หนึ่งการเชื่อมต่อ",
+  "This app is not open in this window. Open the full Mice program to use every app together, or start this app by itself.": "แอพนี้ไม่ได้เปิดในหน้าต่างนี้ เปิดโปรแกรม Mice เต็ม เพื่อใช้ทุกแอพร่วมกัน หรือเปิดแอพนี้แยกเดี่ยว",
+  "It is already open in its own window on this PC.": "แอพนี้เปิดอยู่ในหน้าต่างของมันเองบนเครื่องนี้แล้ว"
  }
 }

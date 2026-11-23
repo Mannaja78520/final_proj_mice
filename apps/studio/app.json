@@ -12,5 +12,8 @@
   "url": "/studio/",
   "entry": "index.html",
   "order": 10,
-  "help": "studio"
+  "help": "studio",
+  // Alone (no hub): MiceHub.exe --alone studio . What it can do for its neighbours: caps.
+  "alonePort": 8651,
+  "caps": ["show", "pose"]
 }

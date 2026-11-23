@@ -520,6 +520,16 @@
    "file": "hub_api_apps.py"
   },
   {
+   "path": "/api/peers",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "app",
+    "cap"
+   ],
+   "file": "hub_api_peers.py"
+  },
+  {
    "path": "/api/pinout",
    "method": "GET",
    "what": "",
