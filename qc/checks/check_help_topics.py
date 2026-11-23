@@ -64,6 +64,8 @@ window.addEventListener("load", async function(){
   try {
     var f = document.getElementById("f"), d = f.contentDocument, w = f.contentWindow;
     await qcWaitFor(() => d.querySelector(".sec-nav"), 10000);
+    // Each app's own Help is fetched after load and added to the page; read it only once it is there.
+    await qcWaitFor(() => d.querySelector("#faces .info-box p"), 10000);
     var visible = () => Array.from(d.querySelectorAll("main > section"))
       .filter(s => w.getComputedStyle(s).display !== "none").map(s => s.id).join(",");
     var q = d.getElementById("q");
