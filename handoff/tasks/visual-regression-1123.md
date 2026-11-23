@@ -1,7 +1,7 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
 Owner: codex:11232254-6f5e
-Updated: 2026-11-23T23:18+07:00
+Updated: 2026-11-23T23:41+07:00
 Branch: codex/visual-regression-1123
 Last commit: this checkpoint
 Plan: A1123-2
@@ -11,7 +11,7 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 2, full QC on draft PR #234 at `8fa77aa5f54e724d15e2e0399a4762aba32d3ae2` in private C: checkout. Confirm the shared slot is empty and claim it in BRIDGE. Run `python qc/run_qc.py --quiet --done-file <private-done-file>` on the frozen tree with the local simulator and build cache. Retain the full log and report failures, skips and exit code.
+Item 1, isolate the previously verified document language fix from 10019b4 on current main. Rebuild Help and run focused QC plus the 28 Japanese phone states against the new branch. Keep the comparison evidence and leave the branch for review if the full gate remains red.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
@@ -41,6 +41,7 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 - haveRobot() in Studio means "connected to a robot", not "3D ready".
 
 ## Done
+- Item 2 full QC finished on PR #234 head `8fa77aa`: 10,631 passed, 27 failed, exit 1 in 1,279.9 s. QEMU firmware 53/53, peripherals 24/24, RS485 bus 12/12 and census 4/4 passed. The stale API index check has byte-identical inputs and outputs on main. Other failures: local clone branch/results metadata, Reconize watcher startup, Help contrast, and remaining locale leakage on Home, Help and Camera. Private log: `%TEMP%/mice-visual-1123-e6f3b60/qc-module-full.log`. PR remains draft.
 - Item 2 [draft PR #234](https://github.com/Mannaja78520/final_proj_mice/pull/234) contains only seven module files against main `b1c35dc0`, head `8fa77aa`. Help rebuilt with current main. Shared Help and th/ja/zh pack variants for item 2 are tracked at `8fa77aa`. Firmware inputs and the regression check are identical to the verified snapshot.
 - Item 2 builds: 12/12 PlatformIO environments passed at `e6f3b60` (8 production including S3, 4 simulator). Private evidence: `%TEMP%/mice-visual-1123-e6f3b60/firmware-build.log`.
 - Item 2 QEMU phone: 2/2 at 390 × 844 px using generated firmware HTML, CSS and JS with UART `PONG`/`INFO`. Both had zero visible capability controls or command requests while status was held, no sideways overflow, and touchscreen navigation between Files and Control after identification. Four screenshots inspected. Nong used its production image. Production Lift compiled but failed to reach `[boot] ready` in QEMU. Lift passed with `mice_lift_sim` and the byte-identical production page (SHA-256 `930d2c0426e3d692c257f3054eb43491da725a5c3298e4373ae8dca47446eb76`). The simulated limit fault left Stop available. Private evidence: `%TEMP%/mice-visual-1123-e6f3b60/phone/`. The HTTP bridge exercised UART status, without emulating WiFi or testing real hardware.
@@ -59,6 +60,6 @@ Work in a branch off main, one PR per item, QC per CLAUDE.md (`python qc/run_qc.
 Stop rule: max 3 rounds per item; if stuck, write the theory in this file and take the next.
 
 ## Blocked
-- Full QC, independent review and promotion pending. The previous Hub/QC processes had exited at the last host check.
+- PR #234 merge and promotion await a green full gate and independent review.
 - Real URDF check needs the PC (E:\final_proj\mice\mice_system) to run tools/visual/urdf_numeric.py with MICE model.
 - PC leftover: E:\final_proj\mice\mice_sim_wt still holds a locked qemu-system-xtensa.exe (4 QEMU processes under that folder: PIDs seen 2026-11-23 11780, 32752, 48392, 53372). The PC refused Stop-Process/Remove-Item from a remote session; close those QEMU processes, delete the folder, then `git worktree prune` in mice_system. Low priority.
