@@ -14,13 +14,14 @@ TITLE = "module page: joint sliders are at least 100 px wide on a 390 px phone"
 SLOW = False
 
 DRIVER = """
+function ready(f){ return qcWaitFor(function(){ try { var d = f.contentDocument; return d.readyState === "complete" && d.body && d.body.innerText.length > 20; } catch (e) { return false; } }, 20000); }
 function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
 async function run(){
   var f = document.createElement("iframe");
   f.style.cssText = "width:390px;height:800px";
   document.body.appendChild(f);
   f.src = "/mod?dev=usb:COM99:67&name=nong-far";
-  await sleep(4000);
+  await ready(f); await sleep(1500);
   var d = f.contentDocument, ws = [];
   var rs = d.querySelectorAll("#jointRows input[type=range]");
   for (var i = 0; i < rs.length; i++) ws.push(Math.round(rs[i].getBoundingClientRect().width));

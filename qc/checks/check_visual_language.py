@@ -25,6 +25,7 @@ HERE = Path(F.CODE) / "tools" / "visual"
 DRIVER = """
 __PROBE__
 var ALLOW = __ALLOW__, LALLOW = __LALLOW__, PAGES = __PAGES__, LANGS = __LANGS__;
+function ready(f){ return qcWaitFor(function(){ try { var d = f.contentDocument; return d.readyState === "complete" && d.body && d.body.innerText.length > 20; } catch (e) { return false; } }, 20000); }
 function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
 async function run(){
   for (var li = 0; li < LANGS.length; li++) {
@@ -34,7 +35,7 @@ async function run(){
       f.style.cssText = "width:1200px;height:800px";
       document.body.appendChild(f);
       f.src = pg.url;
-      await sleep(pg.wait || 2500);
+      await ready(f); await sleep(pg.wait || 1500);
       var tabs = pg.tabs || [null];
       for (var ti = 0; ti < tabs.length; ti++) {
         try {
@@ -59,7 +60,7 @@ async function run(){
     f2.style.cssText = "width:390px;height:800px";
     document.body.appendChild(f2);
     f2.src = PAGES[qi].url;
-    await sleep(PAGES[qi].wait || 2500);
+    await ready(f2); await sleep(PAGES[qi].wait || 1500);
     try {
       var d2 = f2.contentDocument;
       qcMark("PHONEW~" + PAGES[qi].id + "~" + (d2.documentElement.scrollWidth - 390));

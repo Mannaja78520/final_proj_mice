@@ -1,0 +1,11 @@
+{
+  "id": "6b7981784899",
+  "time": "2026-11-23T04:31:21.259Z",
+  "text": "STUDIO FREEZE {\"gapMs\":2050,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":2,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":23,\"longTasks\":[{\"ms\":99,\"at\":6957},{\"ms\":139,\"at\":7056},{\"ms\":109,\"at\":7196},{\"ms\":276,\"at\":7307},{\"ms\":138,\"at\":7583},{\"ms\":233,\"at\":7777},{\"ms\":336,\"at\":8065},{\"ms\":109,\"at\":8402},{\"ms\":291,\"at\":8530},{\"ms\":1941,\"at\":8931},{\"ms\":126,\"at\":10873}],\"slowCalls\":[{\"u\":\"/api/play/stop\",\"ms\":23,\"at\":8823},{\"u\":\"/api/dev/cmd?dev=usb%3ACOM99&c=STOP\",\"ms\":37,\"at\":8846},{\"u\":\"/api/play/stop\",\"ms\":7,\"at\":8922},{\"u\":\"/rig_default.js\",\"ms\":8,\"at\":8923},{\"u\":\"/api/dev/cmd?dev=usb%3ACOM99&c=STOP\",\"ms\":2070,\"at\":8929},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res8%3D%7B%22look%22%3A%22rig%22%2C%2\",\"ms\":1264,\"at\":9737},{\"u\":\"/api/rigcad\",\"ms\":1265,\"at\":9736},{\"u\":\"/api/rigcad\",\"ms\":1272,\"at\":9730},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res9%3D%7B%22dots%22%3A%5B1%2C1%5D%2C\",\"ms\":347,\"at\":10655},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res6%3D%7B%22btn%22%3Atrue%2C%22label\",\"ms\":347,\"at\":10655},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res7%3D%7B%22btn%22%3Atrue%2C%22label\",\"ms\":347,\"at\":10656},{\"u\":\"/api/list?kind=models&deep=1\",\"ms\":134,\"at\":10869},{\"u\":\"/api/list?kind=models&deep=1\",\"ms\":136,\"at\":10870},{\"u\":\"/models/qc_bot6/urdf/qc_bot6.urdf\",\"ms\":133,\"at\":10873},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20ULOOK~res11%3D%7B%22cadY%22%3A-270%2C%22bas\",\"ms\":136,\"at\":10870}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36"
+}
