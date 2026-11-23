@@ -955,6 +955,7 @@
   "Choose a robot first": "先にロボットを選んでください",
   "NO ROBOT": "ロボットなし",
   "Connecting…": "接続中…",
-  "Looking for cameras… this takes a few seconds.": "カメラを探しています…数秒かかります。"
+  "Looking for cameras… this takes a few seconds.": "カメラを探しています…数秒かかります。",
+  "Show older reports": "古い報告をもっと見る"
  }
 }

@@ -1093,6 +1093,7 @@
   "Start here": "ここから始める",
   "Use it": "使う",
   "Build and set up": "組み立てと設定",
-  "When something is wrong": "困ったとき"
+  "When something is wrong": "困ったとき",
+  "The Problem reports tab shows the newest 40 reports and a button for older ones, so the page stays quick on a phone.": "問題報告タブは最新の40件を表示し、古いものはボタンで開きます。スマートフォンでも軽く動きます。"
  }
 }

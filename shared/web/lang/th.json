@@ -744,6 +744,7 @@
   "Choose a robot first": "เลือกหุ่นก่อน",
   "NO ROBOT": "ยังไม่มีหุ่น",
   "Connecting…": "กำลังเชื่อมต่อ…",
-  "Looking for cameras… this takes a few seconds.": "กำลังค้นหากล้อง… ใช้เวลาไม่กี่วินาที"
+  "Looking for cameras… this takes a few seconds.": "กำลังค้นหากล้อง… ใช้เวลาไม่กี่วินาที",
+  "Show older reports": "แสดงรายงานที่เก่ากว่า"
  }
 }

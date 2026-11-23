@@ -1114,7 +1114,23 @@ async function loadComplaints(){
       return;
     }
     el.innerHTML = '';
-    list.forEach(function(rep){
+    // 93 rows drawn at once on 2026-11-23 (most are automatic "stopped answering"
+    // notes), a page a phone has to scroll for a minute: show a screenful, ask for more.
+    var PAGE = 40, shown = 0;
+    function drawMore(){
+      var old = el.querySelector('.more-reports');
+      if(old) old.remove();
+      list.slice(shown, shown + PAGE).forEach(drawRow);
+      shown = Math.min(list.length, shown + PAGE);
+      if(shown < list.length){
+        var more = document.createElement('button');
+        more.className = 'secondary more-reports';
+        more.textContent = 'Show older reports';
+        more.onclick = drawMore;
+        el.appendChild(more);
+      }
+    }
+    function drawRow(rep){
       var row = document.createElement('div');
       row.className = 'mod';
       row.style.cursor = 'pointer';
@@ -1140,7 +1156,8 @@ async function loadComplaints(){
       open.onclick = function(){ openComplaintDetail(rep); };
       row.appendChild(open);
       el.appendChild(row);
-    });
+    }
+    drawMore();
   }catch(e){
     el.textContent = 'Failed to load: ' + Mice.Words.plain(e).says;
   }

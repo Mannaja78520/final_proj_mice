@@ -955,6 +955,7 @@
   "Choose a robot first": "请先选择机器人",
   "NO ROBOT": "没有机器人",
   "Connecting…": "正在连接…",
-  "Looking for cameras… this takes a few seconds.": "正在查找摄像头…需要几秒钟。"
+  "Looking for cameras… this takes a few seconds.": "正在查找摄像头…需要几秒钟。",
+  "Show older reports": "显示更早的报告"
  }
 }

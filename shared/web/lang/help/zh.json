@@ -1094,6 +1094,7 @@
   "Start here": "从这里开始",
   "Use it": "使用",
   "Build and set up": "搭建与设置",
-  "When something is wrong": "出问题时"
+  "When something is wrong": "出问题时",
+  "The Problem reports tab shows the newest 40 reports and a button for older ones, so the page stays quick on a phone.": "问题报告页签显示最新的 40 条报告，另有按钮查看更早的报告，这样手机上页面也很快。"
  }
 }
