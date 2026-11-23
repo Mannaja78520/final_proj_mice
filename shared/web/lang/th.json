@@ -1311,6 +1311,12 @@
   "MICE — light strip": "MICE — แถบไฟ",
   "this PC's camera is in use by another app (a browser tab, or an older MICE window that is still open), or unplugged - close it and try again": "กล้องของเครื่องนี้ถูกโปรแกรมอื่นใช้อยู่ (แท็บเบราว์เซอร์ หรือหน้าต่าง MICE รุ่นเก่าที่ยังเปิดอยู่) หรือถอดสายอยู่ ปิดตัวนั้นแล้วลองใหม่",
   "cut servo power - the arms go limp": "ตัดไฟเซอร์โว — แขนจะอ่อนปวกเปียก",
-  "pose editor + live 3D over this USB cable (shared — the module site can stay open too)": "ตัวแก้ท่า + 3D สดผ่านสาย USB นี้ (ใช้ร่วมกัน — เว็บของโมดูลเปิดค้างไว้ได้ด้วย)"
+  "pose editor + live 3D over this USB cable (shared — the module site can stay open too)": "ตัวแก้ท่า + 3D สดผ่านสาย USB นี้ (ใช้ร่วมกัน — เว็บของโมดูลเปิดค้างไว้ได้ด้วย)",
+  "No firmware has been built on this PC yet, so there is nothing to flash. Build it once, from the firmware folder:": "ยังไม่มีเฟิร์มแวร์ที่สร้างบนเครื่องนี้ จึงยังไม่มีอะไรให้แฟลช สร้างครั้งเดียวจากโฟลเดอร์ firmware:",
+  "It then appears here.": "แล้วมันจะขึ้นที่นี่",
+  "takes the cable for about a minute": "ใช้สายประมาณหนึ่งนาที",
+  "this board has no cable of its own, so the image goes out on the bus as ordinary commands — several minutes, and it keeps the firmware it has if anything goes wrong": "บอร์ดนี้ไม่มีสายของตัวเอง ภาพเฟิร์มแวร์จึงส่งผ่านบัสเป็นคำสั่งธรรมดา ใช้เวลาหลายนาที และถ้ามีอะไรผิดพลาด บอร์ดจะยังคงเฟิร์มแวร์เดิมไว้",
+  "sent to the spare slot — if it does not finish, the board keeps what it has": "ส่งไปยังช่องสำรอง ถ้าไม่เสร็จ บอร์ดจะยังคงของเดิมไว้",
+  "AI loaded": "AI โหลดแล้ว"
  }
 }

@@ -107,9 +107,11 @@ async function paintFirmware(){
   $('fwNoBuild').hidden = ready.length > 0;
   if (!ready.length) {
     const envs = images.map(function(i){ return i.env; }).join(' -e ');
-    $('fwNoBuild').innerHTML = 'No firmware has been built on this PC yet, so ' +
-      'there is nothing to flash. Build it once:<br><code>pio run -e ' +
-      esc(envs) + '</code><br>in <code>code/firmware</code>. It then appears here.';
+    // One sentence per <span>: the page translator matches whole strings, so a sentence
+    // glued to the command could not be translated (zh/ja showed English, 2026-11-23).
+    $('fwNoBuild').innerHTML = '<span>No firmware has been built on this PC yet, so ' +
+      'there is nothing to flash. Build it once, from the firmware folder:</span><br><code>pio run -e ' +
+      esc(envs) + '</code><br><span>It then appears here.</span>';
     // The list still renders below, so every type is visible with its own
     // build command rather than one line about the first of them.
   }
@@ -218,9 +220,7 @@ function fwTarget(img, board){
       ? ('the firmware is sent to ' + board.host +
          ', which writes it over its own cable — this PC never touches the board')
       : overBus
-        ? ('this board has no cable of its own, so the image goes out on the '
-           + 'bus as ordinary commands — several minutes, and it keeps the '
-           + 'firmware it has if anything goes wrong')
+        ? 'this board has no cable of its own, so the image goes out on the bus as ordinary commands — several minutes, and it keeps the firmware it has if anything goes wrong'
         : 'sent to the spare slot — if it does not finish, the board keeps what it has';
   go.onclick = function(){
     fwWrite(img, board, overCable, go, bar, say, far, overBus);
