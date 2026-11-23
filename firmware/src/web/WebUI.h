@@ -726,7 +726,8 @@ function render(){
   showCard('nongCard',has('joints'));
   showCard('rgbCard',has('rgb'));
   showCard('audCard',has('audio'));
-  showCard('camCard',has('camera'));
+  const camera=caps.length?has('camera'):st.type==='cam';
+  showCard('camCard',camera);
   showCard('dummyCard',has('pots'));
   showCard('dummyCal',has('pots'));
   showCard('gachaCard',has('dispense'));
@@ -753,7 +754,7 @@ function render(){
   if(typeof liftStatus==='function')liftStatus(m);
   if(typeof audioStatus==='function')audioStatus(m);
   if(typeof nongStatus==='function')nongStatus(m,has);
-  if(typeof camStatus==='function')camStatus(m);
+  if(camera&&typeof camStatus==='function')camStatus(m);
   if(typeof dummyStatus==='function')dummyStatus(m,has);
   if(typeof gachaStatus==='function')gachaStatus(m,has);
   if(st.seq)$('seqStat').textContent=st.seq.running?('running '+st.seq.file):'idle';
