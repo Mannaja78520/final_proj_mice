@@ -110,7 +110,7 @@
      "depends": ["shared-web"]},
 
     {"id": "shared-web", "summary": "One stylesheet and theme set for every page (mice.css, themes), and the page parts every hub page is built from (mice-ui.js; guide docs/web_style.md).",
-     "files": ["shared/", "tools/lang.py", "tools/pack_images.py", "tools/help_texts.py", "docs/LANGUAGES.md"],
+     "files": ["shared/", "tools/lang.py", "tools/lang_add.py", "tools/pack_images.py", "tools/help_texts.py", "docs/LANGUAGES.md"],
      "depends": []},
 
     {"id": "studio", "summary": "Nong Studio: pose editor, timeline, 3D monitor.",
@@ -207,7 +207,7 @@
 
     {"id": "qc", "summary": "The QC suite, its gate and the promotion tool.",
      "files": ["qc/", "promote.py", "tools/sabotage.py", "tools/sim_sweep.py", "tools/studio_sweep.py", "tools/many_boards_probe.py", "tools/helpers_probe.py", "tools/legacy_probe.py",
-      "tools/qemu_esp32.py", "tools/land.py", "tools/snapshot.py",
+      "tools/qemu_esp32.py", "tools/visual/", "tools/land.py", "tools/snapshot.py",
                "tools/save_code_patch.py", "tools/watch_main.py"],
      "depends": []},
 

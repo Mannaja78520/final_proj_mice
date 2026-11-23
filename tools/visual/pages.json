@@ -1,0 +1,340 @@
+{
+ "langs": [
+  "th",
+  "en",
+  "zh",
+  "ja"
+ ],
+ "themes": [
+  {
+   "id": "midnight"
+  },
+  {
+   "id": "daylight"
+  }
+ ],
+ "viewports": [
+  {
+   "id": "desk",
+   "w": 1440,
+   "h": 900
+  },
+  {
+   "id": "phone",
+   "w": 390,
+   "h": 844
+  }
+ ],
+ "pages": [
+  {
+   "id": "home",
+   "url": "/",
+   "full": true,
+   "states": [
+    {
+     "name": "tab-tools",
+     "steps": [
+      {
+       "eval": "showTab('tools')"
+      }
+     ],
+     "leak": true
+    },
+    {
+     "name": "tab-modules",
+     "steps": [
+      {
+       "eval": "showTab('modules')"
+      }
+     ],
+     "leak": true
+    },
+    {
+     "name": "tab-firmware",
+     "steps": [
+      {
+       "eval": "showTab('firmware')"
+      }
+     ],
+     "leak": true
+    },
+    {
+     "name": "tab-network",
+     "steps": [
+      {
+       "eval": "showTab('network')"
+      }
+     ],
+     "leak": true
+    },
+    {
+     "name": "tab-settings",
+     "steps": [
+      {
+       "eval": "showTab('settings')"
+      }
+     ],
+     "leak": true
+    },
+    {
+     "name": "tab-complaints",
+     "steps": [
+      {
+       "eval": "showTab('complaints')"
+      }
+     ],
+     "leak": true
+    }
+   ]
+  },
+  {
+   "id": "hub",
+   "url": "/hub"
+  },
+  {
+   "id": "help",
+   "url": "/help",
+   "full": true
+  },
+  {
+   "id": "studio",
+   "url": "/studio/",
+   "wait": 4000,
+   "states": [
+    {
+     "name": "tab-Seq",
+     "steps": [
+      {
+       "click": "#tabBtnSeq"
+      }
+     ],
+     "leak": true
+    },
+    {
+     "name": "tab-Video",
+     "steps": [
+      {
+       "click": "#tabBtnVideo"
+      }
+     ],
+     "leak": true
+    },
+    {
+     "name": "tab-Shows",
+     "steps": [
+      {
+       "click": "#tabBtnShows"
+      }
+     ],
+     "leak": true
+    },
+    {
+     "name": "tab-Robot",
+     "steps": [
+      {
+       "click": "#tabBtnRobot"
+      }
+     ],
+     "leak": true
+    },
+    {
+     "name": "tab-Setup",
+     "steps": [
+      {
+       "click": "#tabBtnSetup"
+      }
+     ],
+     "leak": true
+    },
+    {
+     "name": "view-top",
+     "steps": [
+      {
+       "eval": "setView('top')"
+      }
+     ],
+     "desktopOnly": true
+    },
+    {
+     "name": "view-left",
+     "steps": [
+      {
+       "eval": "setView('left')"
+      }
+     ],
+     "desktopOnly": true
+    },
+    {
+     "name": "view-front",
+     "steps": [
+      {
+       "eval": "setView('front')"
+      }
+     ],
+     "desktopOnly": true
+    },
+    {
+     "name": "view-right",
+     "steps": [
+      {
+       "eval": "setView('right')"
+      }
+     ],
+     "desktopOnly": true
+    },
+    {
+     "name": "view-back",
+     "steps": [
+      {
+       "eval": "setView('back')"
+      }
+     ],
+     "desktopOnly": true
+    },
+    {
+     "name": "view-bottom",
+     "steps": [
+      {
+       "eval": "setView('bottom')"
+      }
+     ],
+     "desktopOnly": true
+    },
+    {
+     "name": "cad-iso",
+     "steps": [
+      {
+       "eval": "setLook('urdf',true)",
+       "wait": 4000
+      },
+      {
+       "eval": "setView('iso')",
+       "wait": 800
+      }
+     ],
+     "desktopOnly": true
+    },
+    {
+     "name": "cad-front",
+     "steps": [
+      {
+       "eval": "setLook('urdf',true)",
+       "wait": 4000
+      },
+      {
+       "eval": "setView('front')",
+       "wait": 800
+      }
+     ],
+     "desktopOnly": true
+    },
+    {
+     "name": "cad-left",
+     "steps": [
+      {
+       "eval": "setLook('urdf',true)",
+       "wait": 4000
+      },
+      {
+       "eval": "setView('left')",
+       "wait": 800
+      }
+     ],
+     "desktopOnly": true
+    },
+    {
+     "name": "cad-right",
+     "steps": [
+      {
+       "eval": "setLook('urdf',true)",
+       "wait": 4000
+      },
+      {
+       "eval": "setView('right')",
+       "wait": 800
+      }
+     ],
+     "desktopOnly": true
+    },
+    {
+     "name": "cad-top",
+     "steps": [
+      {
+       "eval": "setLook('urdf',true)",
+       "wait": 4000
+      },
+      {
+       "eval": "setView('top')",
+       "wait": 800
+      }
+     ],
+     "desktopOnly": true
+    }
+   ]
+  },
+  {
+   "id": "tv",
+   "url": "/app/tv/"
+  },
+  {
+   "id": "camera",
+   "url": "/app/camera/"
+  },
+  {
+   "id": "voice",
+   "url": "/app/voice/"
+  },
+  {
+   "id": "gacha",
+   "url": "/app/gacha/"
+  },
+  {
+   "id": "module",
+   "url": "/mod?dev=usb:COM99:67&name=nong-far",
+   "states": [
+    {
+     "name": "tab2",
+     "steps": [
+      {
+       "eval": "document.querySelectorAll('.tabs .tab, [role=tab]')[1].click()"
+      }
+     ]
+    },
+    {
+     "name": "tab3",
+     "steps": [
+      {
+       "eval": "document.querySelectorAll('.tabs .tab, [role=tab]')[2].click()"
+      }
+     ]
+    }
+   ],
+   "latin": false
+  }
+ ],
+ "thaiAllowed": [
+  "^Sure!"
+ ],
+ "latinAllowed": [
+  "^(Nong Studio|Studio|Reconize|Mice Hub|Mice|Google Sheet|Wi-?Fi|USB|CPU|GPU|RAM|OK)$",
+  "^(far-)?nong(-[a-z]+)?$",
+  "^nong-far$",
+  "^(Kooo|Looo+ng\\w*|NONO|NookYung|SeiyngSung|VongSungKhwa|WonderWomen|all|all\\.yaml|all move|hello|my move|tangVongSungLeft|yakyai)$",
+  "^this PC$",
+  "^(or use the|view buttons|stays|pause|only where you want the robot to stand still\\.|monitor|live)$",
+  "\\.yaml$",
+  "(Nong Studio|All-Jao Games|Photobooth|Google Sheet)$",
+  "^[\u00b7\\s]*CPU\\b",
+  "^Sources:$",
+  "COMMANDS\\.md",
+  "Reconize$",
+  "^qc[_a-z0-9 ]*$"
+ ],
+ "_latinAllowed_note": "the last pattern = KNOWN GAP: Studio sentences split by inline markup (<b>view buttons</b>) cannot be translated as a whole; remove it when the sentences are rewritten.",
+ "attrLeakBaseline": {
+  "th": 34,
+  "zh": 36,
+  "ja": 36
+ },
+ "_attrLeakBaseline_note": "ceiling measured 2026-11-23 (26/29/29) + slack for content that loads late; lower it as tooltips get translated"
+}
