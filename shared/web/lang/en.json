@@ -200,6 +200,15 @@
   "โหลดเพลงนานเกินไป ลองเลือกไฟล์อีกครั้ง": "The music took too long to load. Choose the file again.",
   "ไฟล์นี้ไม่มีเพลงที่เปิดได้ เลือกไฟล์ท่าและเพลง .nong.json อีกครั้ง": "This file has no playable music. Choose a moves-and-music .nong.json file again.",
   "ไฟล์เพลงใหญ่เกิน 32 MB": "The music file is over 32 MB",
-  "❚❚ หยุดชั่วคราว": "❚❚ Pause"
+  "❚❚ หยุดชั่วคราว": "❚❚ Pause",
+  "เธรด": "threads",
+  "สมดุล": "Balanced",
+  "ประหยัด": "Economy",
+  "เร็วขึ้น": "Faster",
+  "ใช้ CPU": "Use CPU",
+  "ใช้ GPU เมื่อพร้อม": "Use GPU when ready",
+  "ค่ามีผลกับการโหลดงานครั้งถัดไป บางค่าเธรดต้องเปิดตัวช่วยเสียงใหม่ งานที่เปิดอยู่ยังใช้ค่าเดิม งบหน่วยความจำช่วยตรวจความพร้อมและเลือกวิธีโหลด ไม่ใช่เพดานการใช้ทั้งหมด": "Values apply to the next load. Some thread values need the voice helper reopened; work already open keeps its old values. The memory budget helps check readiness and pick how to load; it is not a ceiling on total use.",
+  "GPU ยังไม่พร้อมหรือหน่วยความจำไม่พอ จึงใช้ CPU": "The GPU is not ready or has too little memory, so the CPU is used.",
+  "งบ RAM ไม่พอสำหรับโหลด AI ใหม่ ปรับหน่วยความจำสำรองหรือเลือกงานที่เล็กลง": "Not enough RAM budget to load a new AI. Lower the reserved memory or pick a smaller job."
  }
 }
