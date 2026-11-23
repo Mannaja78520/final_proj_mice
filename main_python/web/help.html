@@ -201,7 +201,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
   background: var(--sunk);
 }
 .info-img {
-  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
   height: auto;
   display: block;
 }
@@ -293,10 +294,11 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 header.top{position:relative;padding-right:170px;min-height:150px}
 .hero-mouse{position:absolute;right:0;top:-6px;width:150px;height:150px;object-fit:contain}
 @media (max-width:640px){ header.top{padding-right:0} .hero-mouse{position:static;float:right;width:84px;height:84px;margin:0 0 var(--sp-2) var(--sp-3)} }
-/* A drawing that shows the hard step; text stays beside it, never inside it (Help text is
-   translated, a picture is not). */
+/* Real app captures use the same language and light/dark mode as this guide. */
 figure.pic{margin:var(--sp-4) 0;display:flex;gap:var(--sp-4);align-items:center;flex-wrap:wrap;
            background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-3)}
+figure.info-visual-wrapper{margin-inline:0}
+figure.pic[hidden]{display:none}
 figure.pic img{width:min(100%,320px);height:auto;border-radius:var(--r-md);display:block}
 figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
 .pics{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--sp-3)}
@@ -379,14 +381,14 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
   <div class="f" id="inPictures"><h4>The hard parts, in pictures</h4>
     <p>Eight steps people ask about most. Each picture shows one step.</p>
     <div class="pics">
-    <figure class="pic"><img class="pic-img" src="/img/help/usb.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Plug the board in with a USB cable. The hub finds it by itself in a few seconds.</figcaption></figure>
-    <figure class="pic"><img class="pic-img" src="/img/help/wifi.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Phone, laptop and robot must be on the same WiFi. If one is on another network, the hub cannot see it.</figcaption></figure>
-    <figure class="pic"><img class="pic-img" src="/img/help/flash.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Flashing puts new software on the board. Do not unplug the cable until the bar is full.</figcaption></figure>
-    <figure class="pic"><img class="pic-img" src="/img/help/pose.webp" alt="" width="320" height="240" loading="lazy"><figcaption>In Studio, drag a slider and the robot moves the same way. Go slowly the first time.</figcaption></figure>
-    <figure class="pic"><img class="pic-img" src="/img/help/timeline.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Put poses in a row on the timeline, add music, then press play. That is a show.</figcaption></figure>
-    <figure class="pic"><img class="pic-img" src="/img/help/qr.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Scan the QR code with your phone to open the same page there. No typing needed.</figcaption></figure>
-    <figure class="pic"><img class="pic-img" src="/img/help/stop.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Something wrong? Press the red STOP. Every robot stops where it is.</figcaption></figure>
-    <figure class="pic"><img class="pic-img" src="/img/help/camera.webp" alt="" width="320" height="240" loading="lazy"><figcaption>Wave at the camera board. The page shows what it sees, and finds a face when one is there.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" data-shot="hub-module-card" alt="" loading="lazy"><figcaption>Plug the board in with a USB cable. The hub finds it by itself in a few seconds.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" data-shot="hub-qr" alt="" loading="lazy"><figcaption>Phone, laptop and robot must be on the same WiFi. If one is on another network, the hub cannot see it.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" data-shot="hub-firmware-card" alt="" loading="lazy"><figcaption>Flashing puts new software on the board. Do not unplug the cable until the bar is full.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" data-shot="studio-sliders" data-shot-app="studio" alt="" loading="lazy"><figcaption>In Studio, drag a slider and the robot moves the same way. Go slowly the first time.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" data-shot="studio-timeline-bar" data-shot-app="studio" alt="" loading="lazy"><figcaption>Put poses in a row on the timeline, add music, then press play. That is a show.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" data-shot="hub-qr" alt="" loading="lazy"><figcaption>Scan the QR code with your phone to open the same page there. No typing needed.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" data-shot="hub-stop" alt="" loading="lazy"><figcaption>Something wrong? Press the red STOP. Every robot stops where it is.</figcaption></figure>
+    <figure class="pic"><img class="pic-img" data-shot="camera-preview-box" data-shot-app="camera" alt="" loading="lazy"><figcaption>Open Cameras, then turn on live view for the camera you want to check.</figcaption></figure>
     </div>
   </div>
   <div class="shead">
@@ -445,10 +447,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
       <span class="info-badge">Home &amp; Modules</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/hub-module-card.png" alt="Hub Module Card" class="info-img">
-      <div class="callout-pin" style="top: 25%; left: 30%;" title="1. โหมด USB Shared vs Exclusive">1</div>
-      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. รายการการ์ดโมดูลที่ค้นพบ">2</div>
-      <div class="callout-pin" style="top: 80%; left: 75%;" title="3. ปุ่มเปิดบอร์ด Open Module">3</div>
+      <img loading="lazy" decoding="async" data-shot="hub-module-card" alt="Hub Module Card" class="info-img">
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
@@ -483,7 +482,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
       <span class="info-badge">Tools</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/hub-tools-card.png" alt="Hub Tools Card" class="info-img">
+      <img loading="lazy" decoding="async" data-shot="hub-tools-card" alt="Hub Tools Card" class="info-img">
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
@@ -511,63 +510,16 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
     </div>
   </div>
 
-  <!-- SECTION 3: FIRMWARE FLASHING -->
   <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 3: แฟลชเฟิร์มแวร์ลงบอร์ด ESP32 (Firmware Flashing)</b>
-      <span class="info-badge">Firmware</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/hub-firmware-card.png" alt="Hub Firmware Flashing Card" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. เลือกไฟล์เฟิร์มแวร์ .bin">1</div>
-      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. เลือกพอร์ต COM หรือ RS485 Bus ID">2</div>
-      <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่ม Flash พร้อมแถบความคืบหน้า">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> เลือกไฟล์เฟิร์มแวร์ (.bin File)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดเลือกไฟล์เฟิร์มแวร์ที่คอมไพล์แล้ว เช่น <code>nong.bin</code> หรือ <code>gacha.bin</code></div>
-        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
-          Hub จะตรวจสอบความถูกต้องของ Header ไฟล์ เพื่อป้องกันการอัปโหลดเฟิร์มแวร์ผิดประเภทข้ามบอร์ด
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> แฟลชผ่านสาย RS485 หรือ USB</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกบอร์ดปลายทางแล้วกด <b>Flash firmware</b></div>
-        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
-          Hub จะส่งคำสั่งรีบูตบอร์ดเข้าโหมด Bootloader และเขียนโปรแกรมลงชิป ESP32 พร้อมแถบเปอร์เซ็นต์ความคืบหน้า
-        </div>
-      </div>
-    </div>
+    <div class="info-header"><b>อัปเดตเฟิร์มแวร์ของบอร์ด</b></div>
+    <figure class="info-visual-wrapper"><img data-shot="hub-firmware-card" alt="อัปเดตเฟิร์มแวร์ของบอร์ด" class="info-img"></figure>
+    <ol><li>เปิด Firmware แล้วเลือกเฟิร์มแวร์ที่เครื่องนี้สร้างไว้สำหรับบอร์ดชนิดนั้น หากยังไม่มีไฟล์ ให้ทำตามคำสั่ง build ที่แสดงในรายการ</li><li>เลือกบอร์ดปลายทางในแถวของเฟิร์มแวร์ แล้วตรวจชนิดบอร์ดและวิธีเชื่อมต่อในหน้าต่างยืนยันก่อนเริ่ม</li></ol>
   </div>
 
-  <!-- SECTION 4: NETWORK & PAIRING -->
   <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 4: การตั้งค่าเครือข่ายและการจับคู่โมดูล (Network &amp; Pairing)</b>
-      <span class="info-badge">Network</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/hub-network-card.png" alt="Hub Network Card" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. ตั้งชื่อและรหัสผ่าน WiFi บอร์ด">1</div>
-      <div class="callout-pin" style="top: 65%; left: 30%;" title="2. รหัสจับคู่ Peer Pairing Code">2</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ตั้งค่า WiFi ของสถานที่ (SSID &amp; Password)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์ชื่อ WiFi และรหัสผ่าน แล้วกดส่งเข้าทุกโมดูล</div>
-        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
-          บอร์ดทุกตัวจะเชื่อมต่อเข้ากับ WiFi ของสถานที่พร้อมกันโดยไม่ต้องนำสายมาเสียบตั้งทีละตัว
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> รหัสจับคู่ระหว่างโมดูล (Peer Pairing Code)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ป้อนรหัส 6 หลักเพื่อจับคู่โมดูลเข้ากลุ่มเดียวกัน</div>
-        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
-          โมดูลจะสื่อสารหากันเฉพาะในกลุ่มของตนเอง ป้องกันสัญญาณกวนข้ามบูธเมื่อมีหุ่นยนต์หลายตัวในงานเดียวกัน
-        </div>
-      </div>
-    </div>
+    <div class="info-header"><b>จับคู่ Hub สองเครื่อง</b></div>
+    <figure class="info-visual-wrapper"><img data-shot="hub-network-card" alt="จับคู่ Hub สองเครื่อง" class="info-img"></figure>
+    <ol><li>ในแท็บ Network กดแสดงรหัสให้เครื่องอื่นบน Hub เครื่องแรก</li><li>บน Hub เครื่องที่สอง กดฉันมีรหัสจากเครื่องอื่น แล้วกรอกที่อยู่และรหัสที่เครื่องแรกแสดง เพื่อใช้บัญชีเดียวกันทั้งสองเครื่อง</li></ol>
   </div>
 
   <!-- SECTION 5: SETTINGS & THEMES -->
@@ -577,9 +529,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
       <span class="info-badge">Settings</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/hub-settings-card.png" alt="Hub Settings Card" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. เลือกธีมสี Dark / Midnight / Light">1</div>
-      <div class="callout-pin" style="top: 60%; left: 30%;" title="2. ปุ่มคัดลอกบันทึก Diagnostics Bundle">2</div>
+      <img loading="lazy" decoding="async" data-shot="hub-settings-card" alt="Hub Settings Card" class="info-img">
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
@@ -605,6 +555,8 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
       </div>
     </div>
   </div>
+
+  <p>เมื่อเพิ่มหรือถอดแอปใน Tools คู่มือของแอปนั้นจะปรากฏหรือหายไปเมื่อเปิดหน้า Help อีกครั้ง</p>
 
   <div class="f"><h3>Finds modules on its own</h3>
     <p>Parallel scan of the whole local subnet, plus every COM port on the PC. Bluetooth
@@ -2048,14 +2000,8 @@ class HelpApps {
       copy.loading = "lazy";
       copy.decoding = "async";
       var shot = node.getAttribute("data-shot");
-      var legacy = node.getAttribute("src") || "";
-      if (shot && /^[a-z0-9][a-z0-9_-]*$/.test(shot)) {
-        this.shots.push({img: copy, base: context.url + "img/" + context.lang + "-", shot: shot});
-      } else if (/^\/(docs\/shots|img\/help)\/[\w.-]+\.(png|webp)$/.test(legacy)) {
-        copy.src = legacy;
-      } else {
-        return null;
-      }
+      if (!shot || !/^[a-z0-9][a-z0-9_-]*$/.test(shot)) return null;
+      this.addShot(copy, context.url + "img/", context.lang, shot);
     }
     for (var child of node.childNodes) {
       var safe = this.safeCopy(child, context);
@@ -2097,6 +2043,22 @@ class HelpApps {
     this.tasks.parentNode.hidden = false;
   }
 
+  addShot(img, url, lang, name) {
+    this.shots.push({img: img, base: url + lang + "-", shot: name});
+  }
+
+  loadHubShots(apps, lang) {
+    document.querySelectorAll("main img[data-shot]").forEach(img => {
+      var app = img.dataset.shotApp;
+      if (app && !apps.has(app)) {
+        img.closest("figure").hidden = true;
+        return;
+      }
+      var url = app ? "/api/help/apps/" + encodeURIComponent(app) + "/img/" : "/hubweb/help/img/";
+      this.addShot(img, url, lang, img.dataset.shot);
+    });
+  }
+
   updateShots() {
     var theme = document.documentElement.dataset.mode === "dark" ? "dark" : "light";
     this.shots.forEach(function(s) { s.img.src = s.base + theme + "-" + s.shot + ".webp"; });
@@ -2132,11 +2094,12 @@ class HelpApps {
 
   async load() {
     var groups = HELP_GROUPS.map(g => ({id: g.id, label: g.label, topics: g.topics.slice()}));
+    var lang = await this.language();
+    var installed = new Set();
     try {
       var response = await fetch("/api/help/apps", {cache: "no-store"});
       if (!response.ok) throw new Error("Help list unavailable");
       var result = await response.json();
-      var lang = await this.language();
       var sections = await Promise.all(result.apps.map(async app => {
         try { return await this.section(app, lang); }
         catch (e) { return null; }
@@ -2148,13 +2111,18 @@ class HelpApps {
         var slot = document.querySelector('[data-help-group="' + group.id + '"]');
         slot.parentNode.insertBefore(section, slot);
         this.addTask(app, lang);
+        installed.add(app.id);
         group.topics.push([app.anchor, app.title[lang]]);
       });
-      this.updateShots();
-      document.addEventListener("micemode", () => this.updateShots());
     } catch (e) {
       this.status.hidden = false;
     }
+    this.loadHubShots(installed, lang);
+    this.updateShots();
+    document.addEventListener("micemode", () => this.updateShots());
+    document.querySelectorAll('main a[href^="#"]').forEach(link => {
+      if (!document.getElementById(link.hash.slice(1))) link.removeAttribute("href");
+    });
     return groups;
   }
 }

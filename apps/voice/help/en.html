@@ -14,10 +14,7 @@
       <span class="info-badge">Chat &amp; STT</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/voice-chat-box.png" alt="Voice Chat Box" class="info-img">
-      <div class="callout-pin" style="top: 45%; left: 35%;" title="1. Question input box">1</div>
-      <div class="callout-pin" style="top: 45%; left: 65%;" title="2. Press to talk button (Speech-to-Text mic)">2</div>
-      <div class="callout-pin" style="top: 45%; left: 88%;" title="3. Ask button">3</div>
+      <img loading="lazy" decoding="async" data-shot="voice-chat-box" alt="Voice Chat Box" class="info-img">
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
@@ -37,42 +34,10 @@
     </div>
   </div>
 
-  <!-- SECTION 2: SPEAKERS & MANNERS -->
   <div class="info-box">
-    <div class="info-header">
-      <b>Point 2: speaker target, voice personality and the queue (Speakers, Manner &amp; Queue)</b>
-      <span class="info-badge">Speakers &amp; Manners</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/voice-settings-card.png" alt="Voice Settings Card" class="info-img">
-      <div class="callout-pin" style="top: 35%; left: 30%;" title="1. Speaker output selection">1</div>
-      <div class="callout-pin" style="top: 35%; left: 70%;" title="2. Voice style and personality">2</div>
-      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. 650ms Fast-Race system">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> Switching speakers (PC vs Robot Speaker)</div>
-        <div class="action-step"><b>How to set it:</b> Choose the target between <b>PC Speaker</b> or <b>Nong Robot Speaker</b></div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          • <b>PC Speaker:</b> Plays the sound through the main computer's speaker.<br>
-          • <b>Nong Speaker:</b> Streams the sound over WiFi into the I2S chip (PCM5102A/TPA3118) on the robot, while the head tilts to the rhythm of the speech.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> Speaking manner</div>
-        <div class="action-step"><b>How to set it:</b> Choose a style: normal, polite, playful (Sassy), or recited.</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          It adjusts the sentence endings automatically (such as จ้ะ, นะคะ, ครับ) and tunes the pitch, high or low, and the speed of speech to show that mood at once.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> Racing the voice speed (Fast-Race 650 ms)</div>
-        <div class="action-step"><b>How to set it:</b> Turn on Fast-Race in the voice settings</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          The system calls the cloud TTS first. If there is no reply after 650 ms, it switches to the offline voice on the machine at once, so the robot never stands frozen.
-        </div>
-      </div>
-    </div>
+    <div class="info-header"><b>Set up the speaking voice</b></div>
+    <figure class="info-visual-wrapper"><img data-shot="voice-settings-card" alt="Set up the speaking voice" class="info-img"></figure>
+    <ol><li>Open the Voice tab to choose the tone, speed, pitch and voice for each language. Save the settings once the voice sounds right.</li><li>Turn on Start replies sooner with a voice on this device to let the local voice answer when the primary voice is slow.</li><li>In Talk, use Sound here to hear replies in the browser, and use the Robot list to choose which robot should respond.</li></ol>
   </div>
 
   <div class="f"><h3>Ask the rig a question</h3>

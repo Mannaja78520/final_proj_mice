@@ -29,14 +29,8 @@ class HelpApps {
       copy.loading = "lazy";
       copy.decoding = "async";
       var shot = node.getAttribute("data-shot");
-      var legacy = node.getAttribute("src") || "";
-      if (shot && /^[a-z0-9][a-z0-9_-]*$/.test(shot)) {
-        this.shots.push({img: copy, base: context.url + "img/" + context.lang + "-", shot: shot});
-      } else if (/^\/(docs\/shots|img\/help)\/[\w.-]+\.(png|webp)$/.test(legacy)) {
-        copy.src = legacy;
-      } else {
-        return null;
-      }
+      if (!shot || !/^[a-z0-9][a-z0-9_-]*$/.test(shot)) return null;
+      this.addShot(copy, context.url + "img/", context.lang, shot);
     }
     for (var child of node.childNodes) {
       var safe = this.safeCopy(child, context);
@@ -78,6 +72,22 @@ class HelpApps {
     this.tasks.parentNode.hidden = false;
   }
 
+  addShot(img, url, lang, name) {
+    this.shots.push({img: img, base: url + lang + "-", shot: name});
+  }
+
+  loadHubShots(apps, lang) {
+    document.querySelectorAll("main img[data-shot]").forEach(img => {
+      var app = img.dataset.shotApp;
+      if (app && !apps.has(app)) {
+        img.closest("figure").hidden = true;
+        return;
+      }
+      var url = app ? "/api/help/apps/" + encodeURIComponent(app) + "/img/" : "/hubweb/help/img/";
+      this.addShot(img, url, lang, img.dataset.shot);
+    });
+  }
+
   updateShots() {
     var theme = document.documentElement.dataset.mode === "dark" ? "dark" : "light";
     this.shots.forEach(function(s) { s.img.src = s.base + theme + "-" + s.shot + ".webp"; });
@@ -113,11 +123,12 @@ class HelpApps {
 
   async load() {
     var groups = HELP_GROUPS.map(g => ({id: g.id, label: g.label, topics: g.topics.slice()}));
+    var lang = await this.language();
+    var installed = new Set();
     try {
       var response = await fetch("/api/help/apps", {cache: "no-store"});
       if (!response.ok) throw new Error("Help list unavailable");
       var result = await response.json();
-      var lang = await this.language();
       var sections = await Promise.all(result.apps.map(async app => {
         try { return await this.section(app, lang); }
         catch (e) { return null; }
@@ -129,13 +140,18 @@ class HelpApps {
         var slot = document.querySelector('[data-help-group="' + group.id + '"]');
         slot.parentNode.insertBefore(section, slot);
         this.addTask(app, lang);
+        installed.add(app.id);
         group.topics.push([app.anchor, app.title[lang]]);
       });
-      this.updateShots();
-      document.addEventListener("micemode", () => this.updateShots());
     } catch (e) {
       this.status.hidden = false;
     }
+    this.loadHubShots(installed, lang);
+    this.updateShots();
+    document.addEventListener("micemode", () => this.updateShots());
+    document.querySelectorAll('main a[href^="#"]').forEach(link => {
+      if (!document.getElementById(link.hash.slice(1))) link.removeAttribute("href");
+    });
     return groups;
   }
 }

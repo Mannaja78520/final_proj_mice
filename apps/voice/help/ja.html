@@ -14,10 +14,7 @@
       <span class="info-badge">チャットと音声認識</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/voice-chat-box.png" alt="音声チャットボックス" class="info-img">
-      <div class="callout-pin" style="top: 45%; left: 35%;" title="1. 質問入力欄">1</div>
-      <div class="callout-pin" style="top: 45%; left: 65%;" title="2. Press to talk ボタン（音声認識マイク）">2</div>
-      <div class="callout-pin" style="top: 45%; left: 88%;" title="3. Ask 送信ボタン">3</div>
+      <img loading="lazy" decoding="async" data-shot="voice-chat-box" alt="音声チャットボックス" class="info-img">
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
@@ -37,42 +34,10 @@
     </div>
   </div>
 
-  <!-- SECTION 2: SPEAKERS & MANNERS -->
   <div class="info-box">
-    <div class="info-header">
-      <b>ポイント 2：スピーカーの出力先、声の性格、キュー（スピーカー、話し方、キュー）</b>
-      <span class="info-badge">スピーカーと話し方</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/voice-settings-card.png" alt="音声設定カード" class="info-img">
-      <div class="callout-pin" style="top: 35%; left: 30%;" title="1. スピーカー出力先の選択">1</div>
-      <div class="callout-pin" style="top: 35%; left: 70%;" title="2. 声のスタイルとキャラクター設定">2</div>
-      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. 650ms Fast-Race システム">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> スピーカーの切り替え（PC とロボットのスピーカー）</div>
-        <div class="action-step"><b>設定方法：</b> 出力先を選びます： <b>PC スピーカー</b> または <b>Nong ロボットのスピーカー</b></div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          • <b>PC スピーカー：</b> メイン PC のスピーカーから音を出します。<br>
-          • <b>Nong スピーカー：</b> 音を WiFi 経由でロボット上の I2S チップ（PCM5102A/TPA3118）に流し、話すリズムに合わせて頭を傾けます。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> 話し方</div>
-        <div class="action-step"><b>設定方法：</b> スタイルを選びます：標準、丁寧、おどけた（生意気）、暗唱。</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          文末の言葉（จ้ะ、นะคะ、ครับ など）を自動で整え、声の高さと話す速さもその気分がすぐ出るように調整します。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> 音声の速さ競争（Fast-Race 650 ms）</div>
-        <div class="action-step"><b>設定方法：</b> 音声設定で Fast-Race をオンにします</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          システムはまずクラウド TTS を呼びます。650 ms たっても返事がなければ、すぐ端末内のオフライン音声に切り替わるので、ロボットが固まることはありません。
-        </div>
-      </div>
-    </div>
+    <div class="info-header"><b>話す声を設定する</b></div>
+    <figure class="info-visual-wrapper"><img data-shot="voice-settings-card" alt="話す声を設定する" class="info-img"></figure>
+    <ol><li>音声タブで言語ごとのトーン、速さ、ピッチ、声を選びます。声を確認してから設定を保存します。</li><li>主音声が遅いときに端末の音声で先に返答を始められる設定を有効にできます。</li><li>会話タブの「ここで音を出す」でブラウザーから音を聞けます。反応させるロボットは一覧から選びます。</li></ol>
   </div>
 
   <div class="f"><h3>設備に質問する</h3>

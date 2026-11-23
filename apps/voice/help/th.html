@@ -15,10 +15,7 @@
       <span class="info-badge">แชทและการฟังเสียง</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/voice-chat-box.png" alt="กล่องสนทนาด้วยเสียง" class="info-img">
-      <div class="callout-pin" style="top: 45%; left: 35%;" title="1. ช่องพิมพ์คำถาม">1</div>
-      <div class="callout-pin" style="top: 45%; left: 65%;" title="2. ปุ่ม Press to talk (ไมค์ STT)">2</div>
-      <div class="callout-pin" style="top: 45%; left: 88%;" title="3. ปุ่มส่งถาม Ask">3</div>
+      <img loading="lazy" decoding="async" data-shot="voice-chat-box" alt="กล่องสนทนาด้วยเสียง" class="info-img">
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
@@ -38,42 +35,10 @@
     </div>
   </div>
 
-  <!-- SECTION 2: SPEAKERS & MANNERS -->
   <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 2: ปลายทางลำโพง บุคลิกเสียง และระบบคิว (Speakers, Manner &amp; Queue)</b>
-      <span class="info-badge">ลำโพงและลักษณะการพูด</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/voice-settings-card.png" alt="การ์ดตั้งค่าเสียงพูด" class="info-img">
-      <div class="callout-pin" style="top: 35%; left: 30%;" title="1. เลือกปลายทางลำโพง">1</div>
-      <div class="callout-pin" style="top: 35%; left: 70%;" title="2. สไตล์และบุคลิกเสียง">2</div>
-      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. ระบบ Fast-Race 650ms">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> สลับลำโพง (PC vs Robot Speaker)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกปลายทางระหว่าง <b>ลำโพง PC</b> หรือ <b>ลำโพงหุ่น Nong</b></div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>ลำโพง PC:</b> เปล่งเสียงผ่านลำโพงของคอมพิวเตอร์หลัก<br>
-          • <b>ลำโพง Nong:</b> สตรีมเสียงผ่าน WiFi เข้าชิป I2S (PCM5102A/TPA3118) บนตัวหุ่น พร้อมขยับหัวเอียงตามจังหวะคำพูด
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> บุคลิกเสียงพูด (Speaking Manner)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกสไตล์: ปกติ, สุภาพ, ขี้เล่น (Sassy เจ๊), หรือท่องจำ</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ปรับแต่งคำลงท้ายอัตโนมัติ (เช่น จ้ะ, นะคะ, ครับ) พร้อมทั้งปรับแต่ง Pitch ความสูง-ต่ำ และความเร็วของเสียงพูดให้สะท้อนอารมณ์นั้นทันที
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> แข่งขันความเร็วเสียง (Fast-Race 650ms)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เปิดใช้งาน Fast-Race ในการตั้งค่าเสียง</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ระบบจะเรียก Cloud TTS ก่อน หากเกิน 650ms แล้วยังไม่ตอบกลับ จะสลับมาใช้เสียงพูด Offline ในเครื่องทันที หุ่นจะไม่ยืนนิ่งค้าง
-        </div>
-      </div>
-    </div>
+    <div class="info-header"><b>ตั้งค่าเสียงพูด</b></div>
+    <figure class="info-visual-wrapper"><img data-shot="voice-settings-card" alt="ตั้งค่าเสียงพูด" class="info-img"></figure>
+    <ol><li>เลือกแท็บ Voice เพื่อปรับน้ำเสียง ความเร็ว ระดับเสียงสูงต่ำ และเสียงที่จะใช้สำหรับแต่ละภาษา จากนั้นกดบันทึก</li><li>เลือกเริ่มตอบเร็วขึ้นด้วยเสียงบนอุปกรณ์นี้ หากต้องการให้ระบบใช้เสียงในเครื่องได้เมื่อเสียงหลักมาช้า</li><li>ในแท็บ Talk เปิดเสียงที่เครื่องนี้เพื่อฟังคำตอบผ่านเบราว์เซอร์ และเลือกหุ่นจากรายการ Robot</li></ol>
   </div>
 
   <div class="f"><h3>ถามหุ่นหนึ่งคำถาม</h3>

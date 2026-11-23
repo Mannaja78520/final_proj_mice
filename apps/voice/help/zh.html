@@ -14,10 +14,7 @@
       <span class="info-badge">聊天与语音识别</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/voice-chat-box.png" alt="语音聊天框" class="info-img">
-      <div class="callout-pin" style="top: 45%; left: 35%;" title="1. 提问输入框">1</div>
-      <div class="callout-pin" style="top: 45%; left: 65%;" title="2. Press to talk 按钮（语音输入麦克风）">2</div>
-      <div class="callout-pin" style="top: 45%; left: 88%;" title="3. Ask 提问按钮">3</div>
+      <img loading="lazy" decoding="async" data-shot="voice-chat-box" alt="语音聊天框" class="info-img">
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
@@ -37,42 +34,10 @@
     </div>
   </div>
 
-  <!-- SECTION 2: SPEAKERS & MANNERS -->
   <div class="info-box">
-    <div class="info-header">
-      <b>第 2 点：扬声器目标、声音个性和队列（扬声器、风格与队列）</b>
-      <span class="info-badge">扬声器与说话风格</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/voice-settings-card.png" alt="语音设置卡片" class="info-img">
-      <div class="callout-pin" style="top: 35%; left: 30%;" title="1. 选择扬声器输出">1</div>
-      <div class="callout-pin" style="top: 35%; left: 70%;" title="2. 声音风格与人设个性">2</div>
-      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. 650ms Fast-Race 快速响应系统">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> 切换扬声器（电脑与机器人扬声器）</div>
-        <div class="action-step"><b>如何设置：</b> 在以下两者之间选择目标： <b>电脑扬声器</b> 或 <b>Nong 机器人扬声器</b></div>
-        <div class="action-impact"><b>机器人会发生什么变化：</b>
-          • <b>电脑扬声器：</b> 通过主电脑的扬声器发出声音。<br>
-          • <b>Nong 扬声器：</b> 通过 WiFi 将声音传输到机器人上的 I2S 芯片（PCM5102A/TPA3118），同时头部随语速节奏倾斜。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> 说话风格</div>
-        <div class="action-step"><b>如何设置：</b> 选择风格：普通、礼貌、俏皮（泼辣）或背诵。</div>
-        <div class="action-impact"><b>机器人会发生什么变化：</b>
-          自动调整句尾语气词（如 จ้ะ、นะคะ、ครับ），并调整音调高低和语速，立即体现该情绪。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> 语音速度竞赛（快速竞赛 650 毫秒）</div>
-        <div class="action-step"><b>如何设置：</b> 在语音设置中开启快速竞赛</div>
-        <div class="action-impact"><b>机器人会发生什么变化：</b>
-          系统先调用云端 TTS。如果 650 毫秒后仍无回应，会立即切换为本机的离线语音，机器人不会呆立不动。
-        </div>
-      </div>
-    </div>
+    <div class="info-header"><b>设置说话声音</b></div>
+    <figure class="info-visual-wrapper"><img data-shot="voice-settings-card" alt="设置说话声音" class="info-img"></figure>
+    <ol><li>打开语音标签页，为各语言选择语气、语速、音高和声音。确认声音合适后保存设置。</li><li>开启使用此设备的声音更快开始回复，主要声音较慢时可使用本机声音。</li><li>在对话标签页，选择在此播放声音以在浏览器中听到回答，并从机器人列表中选择应答的机器人。</li></ol>
   </div>
 
   <div class="f"><h3>向设备提一个问题</h3>

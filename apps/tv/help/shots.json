@@ -1,0 +1,78 @@
+{
+  "tv-controls-box": {
+    "url": "/app/tv/",
+    "clip": ".tv-grid",
+    "ready": "#seqList button",
+    "steps": [
+      {
+        "click": "#btnModeMobile"
+      }
+    ],
+    "responses": {
+      "/api/list": {
+        "ok": true,
+        "files": [
+          "Welcome.yaml",
+          "Demo dance.yaml"
+        ]
+      },
+      "/api/modules": {
+        "ok": true,
+        "modules": []
+      },
+      "/api/play": {
+        "playing": false
+      }
+    }
+  },
+  "tv-gauges-box": {
+    "url": "/app/tv/",
+    "clip": "#cardJoints",
+    "ready": "#jval_0:text-is(\"88\u00b0\")",
+    "steps": [
+      {
+        "click": "#btnModeTech"
+      }
+    ],
+    "responses": {
+      "/api/modules": {
+        "ok": true,
+        "modules": [
+          {
+            "id": 1,
+            "name": "Nong",
+            "type": "nong",
+            "dev": "usb:COM99"
+          }
+        ]
+      },
+      "/api/dev/status": {
+        "type": "nong",
+        "module": {
+          "joints": [
+            88,
+            140,
+            100,
+            91,
+            92,
+            40,
+            100,
+            91,
+            90,
+            88
+          ]
+        }
+      },
+      "/api/list": {
+        "ok": true,
+        "files": [
+          "Welcome.yaml",
+          "Demo dance.yaml"
+        ]
+      },
+      "/api/play": {
+        "running": false
+      }
+    }
+  }
+}

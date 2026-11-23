@@ -1,0 +1,37 @@
+{
+  "camera-preview-box": {
+    "url": "/app/camera/",
+    "clip": ".card.cam",
+    "ready": ".card.cam",
+    "responses": {
+      "/api/cameras": {
+        "ok": true,
+        "cameras": [
+          {
+            "name": "ESP32-CAM",
+            "kind": "esp32",
+            "dev": "wifi:192.0.2.10",
+            "live": true,
+            "viewers": 0
+          }
+        ]
+      }
+    }
+  },
+  "camera-add-box": {
+    "url": "/app/camera/",
+    "clip": "#addBox",
+    "ready": "#addKind",
+    "steps": [
+      {
+        "click": "#addBtn"
+      }
+    ],
+    "responses": {
+      "/api/cameras": {
+        "ok": true,
+        "cameras": []
+      }
+    }
+  }
+}

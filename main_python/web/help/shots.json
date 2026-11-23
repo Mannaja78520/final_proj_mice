@@ -1,0 +1,79 @@
+{
+  "hub-module-card": {
+    "url": "/#modules",
+    "clip": ".card:has(#modFind)",
+    "ready": "#mods .mod",
+    "responses": {
+      "/api/modules": {
+        "ok": true,
+        "modules": [
+          {
+            "id": 1,
+            "name": "Nong",
+            "type": "nong",
+            "port": "COM99",
+            "caps": [
+              "motion",
+              "joints"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "hub-tools-card": {
+    "url": "/#tools",
+    "clip": "#tools",
+    "ready": "#tools:not([aria-busy='true'])"
+  },
+  "hub-firmware-card": {
+    "url": "/#firmware",
+    "clip": ".card:has(#fwStat)",
+    "ready": "#fwList .fwtype",
+    "responses": {
+      "/api/flash/images": {
+        "ok": true,
+        "esptool": true,
+        "images": [
+          {
+            "type": "nong",
+            "env": "mice_nong",
+            "bytes": 912000,
+            "ready": true,
+            "ota_ready": true
+          }
+        ]
+      }
+    }
+  },
+  "hub-network-card": {
+    "url": "/#network",
+    "clip": "#pairBox",
+    "ready": "#pairIdle"
+  },
+  "hub-settings-card": {
+    "url": "/#settings",
+    "clip": ".card:has(#themeGrid)",
+    "ready": "#themeGrid .themeCard"
+  },
+  "hub-stop": {
+    "url": "/#modules",
+    "ready": "#stopAll",
+    "clip": "header:has(#stopAll)"
+  },
+  "hub-qr": {
+    "url": "/#network",
+    "clip": ".card:has(#qrImg)",
+    "ready": "#qrImg",
+    "responses": {
+      "/api/mine": {
+        "host": "Example Hub",
+        "url": "http://192.0.2.20:8642/",
+        "name_url": "http://example-hub.local:8642/"
+      },
+      "/api/qr": {
+        "$qr": "http://192.0.2.20:8642/"
+      }
+    }
+  }
+}

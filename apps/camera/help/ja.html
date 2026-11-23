@@ -12,9 +12,7 @@
       <span class="info-badge">ライブ映像</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/camera-preview-box.png" alt="カメラのライブ映像パネル" class="info-img">
-      <div class="callout-pin" style="top: 40%; left: 50%;" title="1. ライブ映像プレビュー">1</div>
-      <div class="callout-pin" style="top: 85%; left: 50%;" title="2. WiFi 接続ステータス">2</div>
+      <img loading="lazy" decoding="async" data-shot="camera-preview-box" alt="カメラのライブ映像パネル" class="info-img">
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
@@ -34,34 +32,11 @@
     </div>
   </div>
 
-  <!-- SECTION 2: TUNING CONTROLS -->
   <div class="info-box">
-    <div class="info-header">
-      <b>ポイント 2：イメージセンサーの調整（露出、ゲイン、明るさ、コントラスト）</b>
-      <span class="info-badge">センサー調整</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/camera-tuning-box.png" alt="カメラ調整パネル" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 40%;" title="1. Brightness / Contrast スライダー">1</div>
-      <div class="callout-pin" style="top: 60%; left: 40%;" title="2. Auto / Manual Exposure 切替スイッチ">2</div>
-      <div class="callout-pin" style="top: 85%; left: 40%;" title="3. White Balance（ホワイトバランス）">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> 明るさとくっきり感の調整（明るさとコントラスト）</div>
-        <div class="action-step"><b>設定方法：</b> スライダーを -2 から +2 の間で動かします</div>
-        <div class="action-impact"><b>カメラの映像がどう変わるか：</b>
-          映像を明るくしたり暗くしたりし、奥行きを足して、顔のディテールがよりくっきり見えるようにします。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> 光と感度の調整（露出とゲイン）</div>
-        <div class="action-step"><b>設定方法：</b> 先に自動露出 / 自動ゲインをオフにすると、手動のバーを動かせます。</div>
-        <div class="action-impact"><b>カメラの映像がどう変わるか：</b>
-          照明の暗い展示室で映像が暗くなるのを防いだり、屋外での展示でまぶしさを抑えたりします。
-        </div>
-      </div>
-    </div>
+    <div class="info-header"><b>ネットワークカメラを追加する</b></div>
+    <figure class="info-visual-wrapper"><img data-shot="camera-add-box" alt="ネットワークカメラを追加する" class="info-img"></figure>
+    <p>カメラを追加を選択し、種類・名前・リンクを指定して追加します。</p>
+    <p>ESP32-CAM の画質を調整するには、カメラカードの設定を開きます。</p>
   </div>
 
   <h3>これはどのカメラボード？</h3>

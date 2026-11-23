@@ -1,0 +1,75 @@
+{
+  "studio-current": {
+    "url": "/studio/",
+    "ready": "#viewport canvas"
+  },
+  "studio-sliders": {
+    "url": "/studio/",
+    "clip": ".card:has(#sliders)",
+    "ready": "#sliders input",
+    "viewport": {
+      "width": 1440,
+      "height": 1400
+    }
+  },
+  "studio-timeline-bar": {
+    "url": "/studio/",
+    "clip": "#timeline",
+    "ready": "#tbTrack"
+  },
+  "studio-3d-model": {
+    "url": "/studio/",
+    "clip": "#viewport",
+    "ready": "#viewport canvas",
+    "steps": [
+      {
+        "eval": "viewCubeOpen()"
+      }
+    ]
+  },
+  "studio-tuning-card": {
+    "url": "/studio/",
+    "clip": ".card:has(#trimUI)",
+    "steps": [
+      {
+        "click": "#tabBtnSetup"
+      },
+      {
+        "click": ".card:has(#trimUI) h2"
+      }
+    ],
+    "ready": "#trimUI input:visible",
+    "viewport": {
+      "width": 1440,
+      "height": 1400
+    }
+  },
+  "studio-sequence-card": {
+    "url": "/studio/",
+    "clip": ".card:has(#seqList)",
+    "steps": [
+      {
+        "click": "#tabBtnSeq"
+      }
+    ],
+    "ready": "#seqList",
+    "viewport": {
+      "width": 1440,
+      "height": 1400
+    }
+  },
+  "studio-shows-card": {
+    "url": "/studio/",
+    "clip": ".card:has(#showList)",
+    "steps": [
+      {
+        "click": "#tabBtnShows"
+      }
+    ],
+    "ready": "#showList",
+    "viewport": {
+      "width": 1440,
+      "height": 1400
+    }
+  }
+}

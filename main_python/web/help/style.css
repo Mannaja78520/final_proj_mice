@@ -190,7 +190,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
   background: var(--sunk);
 }
 .info-img {
-  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
   height: auto;
   display: block;
 }
@@ -282,10 +283,11 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 header.top{position:relative;padding-right:170px;min-height:150px}
 .hero-mouse{position:absolute;right:0;top:-6px;width:150px;height:150px;object-fit:contain}
 @media (max-width:640px){ header.top{padding-right:0} .hero-mouse{position:static;float:right;width:84px;height:84px;margin:0 0 var(--sp-2) var(--sp-3)} }
-/* A drawing that shows the hard step; text stays beside it, never inside it (Help text is
-   translated, a picture is not). */
+/* Real app captures use the same language and light/dark mode as this guide. */
 figure.pic{margin:var(--sp-4) 0;display:flex;gap:var(--sp-4);align-items:center;flex-wrap:wrap;
            background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-3)}
+figure.info-visual-wrapper{margin-inline:0}
+figure.pic[hidden]{display:none}
 figure.pic img{width:min(100%,320px);height:auto;border-radius:var(--r-md);display:block}
 figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
 .pics{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--sp-3)}

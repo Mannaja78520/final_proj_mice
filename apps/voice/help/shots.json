@@ -1,0 +1,46 @@
+{
+  "voice-chat-box": {
+    "url": "/app/voice/",
+    "clip": "#ready",
+    "ready": "#q",
+    "responses": {
+      "/api/voice/health": {
+        "ok": true,
+        "parts": {
+          "stt": "ready",
+          "tts": "ready"
+        }
+      },
+      "/api/cameras": {
+        "ok": true,
+        "cameras": []
+      }
+    }
+  },
+  "voice-settings-card": {
+    "url": "/app/voice/",
+    "clip": ".card:has(#quickHead)",
+    "ready": "#fastDeviceVoice",
+    "steps": [
+      {
+        "wait": "#q"
+      },
+      {
+        "eval": "showTab('voice')"
+      }
+    ],
+    "responses": {
+      "/api/voice/health": {
+        "ok": true,
+        "parts": {
+          "stt": "ready",
+          "tts": "ready"
+        }
+      },
+      "/api/cameras": {
+        "ok": true,
+        "cameras": []
+      }
+    }
+  }
+}

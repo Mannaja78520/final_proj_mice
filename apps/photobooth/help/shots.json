@@ -1,0 +1,7 @@
+{
+  "photobooth-open": {
+    "url": "/app/photobooth/",
+    "clip": ".card:has(#boothBtn)",
+    "ready": "#boothBtn"
+  }
+}
