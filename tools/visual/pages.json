@@ -327,7 +327,8 @@
   "^[\u00b7\\s]*CPU\\b",
   "^Sources:$",
   "COMMANDS\\.md",
-  "Reconize$"
+  "Reconize$",
+  "^qc[_a-z0-9 ]*$"
  ],
  "_latinAllowed_note": "the last pattern = KNOWN GAP: Studio sentences split by inline markup (<b>view buttons</b>) cannot be translated as a whole; remove it when the sentences are rewritten.",
  "attrLeakBaseline": {
