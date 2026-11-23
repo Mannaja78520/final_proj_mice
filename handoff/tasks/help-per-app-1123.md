@@ -1,9 +1,9 @@
 # help-per-app-1123 — Help per app, dynamic in the hub, real screenshots
-Owner: gpt-codex (handed over from claude, user 2026-11-23: Claude near limit; Claude reviews after reset)
-Updated: 2026-11-23 10:45
+Owner: codex:11231744-055a
+Updated: 2026-11-23 17:45 +0700
 Branch: claude/project-thread-181856
-Last commit: (none yet - Claude only wrote this file)
-Plan: none (user ask 2026-11-23)
+Last commit: this checkpoint
+Plan: A1123-1 (system)
 
 ## Goal (user's words, 2026-11-23)
 Help pictures do not match the real apps. Each app ships its OWN Help (own folder + manifest,
@@ -57,7 +57,10 @@ Look at every screenshot yourself and compare with the step text. Have Gemini 4 
 PR as draft from this branch; merge own PR when QC green (standing approval cmsg_01R7BbYxaTb3Yv9YS3gQaaA3XEQcQQyoUgXwMT6wXgfeYv). Tell the user a MiceHub.exe rebuild is needed.
 
 ## Doing now
-Nothing started in code. Codex: take step 1.
+Step 1: establish isolated staging, then connect the installed-app registry, Hub routes, and Help loader. Prove Voice end to end in four languages.
+
+## Done
+- Read handoff and workflow. Branch baseline 12474a5. Protected local EXE, prompt and dist reports are outside the task.
 
 ## Next (in order)
 1. Registry + hub routes + loader in help template (one app, voice, end to end, 4 langs).
@@ -69,4 +72,4 @@ Nothing started in code. Codex: take step 1.
 ## File status
 | File | Change | State | Verification | Commit |
 |---|---|---|---|---|
-| handoff/tasks/help-per-app-1123.md | this task | written | n/a | pending |
+| handoff/tasks/help-per-app-1123.md | WIP progress | doing | baseline reconciled | this checkpoint |
