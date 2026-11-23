@@ -29,9 +29,10 @@ This PC's apps as extensions (A51-2): which apps are installed here and where, a
 
 - [hub](hub.md)
 
-## Checks that test it (2)
+## Checks that test it (3)
 
+- `check_alone_apps`
 - `check_api_index`
 - `check_extensions`
 
-Run them: `python qc/run_qc.py --no-build check_api_index check_extensions`
+Run them: `python qc/run_qc.py --no-build check_alone_apps check_api_index check_extensions`

@@ -1718,6 +1718,26 @@ function urdfSettle(base, warn) {
   applyPose();
   renderLookUI();
 }
+// The far end of a forearm point cloud (points from the elbow): the direction
+// to the middle of its farthest corners, and how far the part reaches that way.
+// Loops, not Math.max(...pts): a ~70k-point forearm overflowed the call stack
+// (RangeError), the tip was never measured and the hand sat at the elbow
+// (user 2026-11-23). Pure, so check_urdf_big_forearm feeds it 300k points.
+function urdfFarEnd(pts) {
+  let far = 0;
+  for (const v of pts) far = Math.max(far, v.length());
+  if (far < 1) return null;
+  // each corner once: an STL repeats a vertex in every triangle it touches
+  const end = new THREE.Vector3(), seen = new Set(); let n = 0;
+  pts.forEach(v => {
+    const key = v.toArray().map(x => Math.round(x * 100)).join();
+    if (v.length() > far * 0.97 && !seen.has(key)) { seen.add(key); end.add(v); n++; }
+  });
+  const dir = end.divideScalar(n).normalize();
+  let mm = -Infinity;
+  for (const v of pts) mm = Math.max(mm, v.dot(dir));
+  return { dir, mm };
+}
 // The hand's tip from the forearm part itself (tip "mesh"): the middle of its
 // far end from the elbow, and how far the part reaches that way. In the
 // forearm's own frame, so it holds at any pose.
@@ -1737,16 +1757,10 @@ function urdfMeshTip(side, arm) {
     for (let k = 0; k < pos.count; k += step) pts.push(new THREE.Vector3().fromBufferAttribute(pos, k).applyMatrix4(m4).sub(el));
   });
   if (!pts.length) return;
-  const far = Math.max(...pts.map(v => v.length()));
-  if (far < 1) return;
-  // each corner once: an STL repeats a vertex in every triangle it touches
-  const end = new THREE.Vector3(), seen = new Set(); let n = 0;
-  pts.forEach(v => {
-    const key = v.toArray().map(x => Math.round(x * 100)).join();
-    if (v.length() > far * 0.97 && !seen.has(key)) { seen.add(key); end.add(v); n++; }
-  });
-  const dir = end.divideScalar(n).normalize();
-  t.mm = Math.max(...pts.map(v => v.dot(dir)));
+  const end = urdfFarEnd(pts);
+  if (!end) return;
+  const dir = end.dir;
+  t.mm = end.mm;
   t.tipLocal = el.clone().addScaledVector(dir, t.mm);
   t.fromMesh = true;
   t.wrist.position.copy(t.tipLocal);
@@ -11874,12 +11888,14 @@ async function vidFetch() {
     return;
   }
   vidLinkBusy = true;
+  vidLanOffer("");
   $("vidFetchBtn").textContent = "■ Stop";
   $("vidTech").textContent = "";
   try {
     vidSay("Asking this PC to fetch the video…");
     let a = await Mice.Api.post("/api/video/fetch", { url });
     if (!a.ok) {
+      vidLanOffer(a.data && a.data.lanHost);
       vidSay(a.needLogin ? VID_LOGIN : "The link could not be fetched: " + a.says, true);
       $("vidTech").textContent = a.tech || "";
       return;
@@ -12059,6 +12075,58 @@ function vidApplySettings(s) {
   if (s.src && s.src.url) $("vidLink").value = s.src.url;
   if (s.src) vidSay("These moves were made from " + (s.src.url ? "a link: press Fetch to see it again."
     : "the file " + s.src.name + ": pick it again to see it."));
+}
+
+// ---- devices on the network that may give videos (user 2026-11-23) -----------
+// A link into the venue network is refused until an admin allows that device.
+// The refusal names the device, one button allows it; the list can be edited.
+let vidLanPending = "";
+function vidLanOffer(host) {
+  vidLanPending = host || "";
+  $("vidLanBox").hidden = !vidLanPending;
+  $("vidLanSay").textContent = vidLanPending ? "“" + vidLanPending + "” is a device on your network." : "";
+}
+async function vidLanChange(body) {
+  const a = await Mice.Api.post("/api/video/lan", body);
+  if (!a.ok) { vidSay(a.needLogin ? VID_LOGIN : a.says, true); return false; }
+  vidLanDraw(a.data.hosts || [], a.data.fixed || []);
+  return true;
+}
+async function vidLanAllow() {
+  if (!vidLanPending) return;
+  const host = vidLanPending;
+  if (await vidLanChange({ add: host })) {
+    vidLanOffer("");
+    vidSay("“" + host + "” is allowed. Press Fetch again.");
+  }
+}
+async function vidLanAddNow() {
+  const box = $("vidLanAdd");
+  if (!box.value.trim()) return;
+  if (await vidLanChange({ add: box.value.trim() })) { box.value = ""; vidSay("Allowed. Videos from that device can now be fetched."); }
+}
+async function vidLanLoad() {
+  const a = await Mice.Api.get("/api/video/lan");
+  if (a.ok) vidLanDraw(a.data.hosts || [], a.data.fixed || []);
+}
+function vidLanDraw(hosts, fixed) {
+  const box = $("vidLanItems");
+  box.textContent = "";
+  if (!hosts.length && !fixed.length) box.textContent = "No device allowed yet.";
+  fixed.forEach(h => {
+    const r = document.createElement("div");
+    r.textContent = h + " (set by the installer)";
+    box.appendChild(r);
+  });
+  hosts.forEach(h => {
+    const r = document.createElement("div");
+    const b = document.createElement("button");
+    b.textContent = "Remove";
+    b.onclick = () => vidLanChange({ remove: h });
+    r.appendChild(document.createTextNode(h + " "));
+    r.appendChild(b);
+    box.appendChild(r);
+  });
 }
 // --- dummy link ---
 // The dummy is a hand-posed copy of the robot: the same 10 joints, a pot on

@@ -115,6 +115,9 @@ CODE_GATED = {"/api/pair/claim"}
 # away the status the pages poll for, so only the writing half is gated.
 GATED_POST = {
     "/api/resources",
+    # adding, removing and choosing cameras (cam_sources): a camera link can
+    # carry a password, and what the face watcher reads is a privacy choice
+    "/api/cameras/add", "/api/cameras/remove", "/api/cameras/face",
     "/api/settings",      # GET reads the shared settings, POST writes them
     "/api/play",          # GET reports the show, POST starts it
     "/api/play/home",     # epoch-fenced selected-robot HOME
@@ -155,6 +158,8 @@ GATED_POST = {
     # A video fetched from a link onto this PC (A44-8): POST reaches the
     # internet and writes here, GET only says how far it has got.
     "/api/video/fetch",
+    # Which devices on the network a link may point at: it opens the hub to them.
+    "/api/video/lan",
     # A46-1: talk gestures played on a robot. Reading, planning and saving
     # the library are Studio tools (NEVER_GATED below); playing moves an arm.
     "/api/gestures/play",

@@ -1143,7 +1143,7 @@ async function loadComplaints(){
       row.dataset.keyboard = 'button';
       var open = document.createElement('button');
       open.className = 'linky';
-      open.textContent = 'open';
+      open.textContent = 'Open';
       open.title = 'Read the full report and reply';
       open.onclick = function(){ openComplaintDetail(rep); };
       row.appendChild(open);
@@ -1521,7 +1521,8 @@ async function paintQr(){
     const j = await fetch('/api/mine').then(x => x.json());
     const url = j.url || (location.protocol + '//' + location.host + '/');
     $('qrUrl').textContent = url;
-    $('qrName').textContent = j.host ? ('this PC is ' + j.host) : '';
+    // two text nodes: "this PC is" is translated as a whole text, the host name never is
+    $('qrName').textContent = ''; if (j.host) { const sp = document.createElement('span'); sp.textContent = 'this PC is'; $('qrName').appendChild(sp); $('qrName').appendChild(document.createTextNode(' ' + j.host)); }
     $('qrNameRow').hidden = !j.name_url;
     if (j.name_url) $('qrNameUrl').textContent = j.name_url;
     $('qrWhyNoName').hidden = !!j.name_url;
@@ -3774,7 +3775,12 @@ class ResourceSettingsView {
         input.value = data.settings[key]; label.appendChild(input); advanced.appendChild(label);
       });
       this.settings = data.settings;
-      document.getElementById('resourceSummary').textContent = 'ค่าที่จะใช้กับการโหลดใหม่: ' + data.effective.label + ' · ' + data.effective.device.toUpperCase() + ' · ' + data.effective.cpuThreads + ' เธรด · ' + data.effective.workers + ' งานแปล / งานฟังต่อโมเดล';
+      // Built from separate pieces, each its own text node: the language packs translate whole
+      // texts, so one string made of Thai + values stayed Thai in English (found 2026-11-23).
+      const sum = document.getElementById('resourceSummary'), eff = data.effective;
+      sum.textContent = '';
+      ['ค่าที่จะใช้กับการโหลดใหม่:', eff.label, ' · ' + eff.device.toUpperCase() + ' · ' + eff.cpuThreads, 'เธรด', ' · ' + eff.workers, 'งานแปล / งานฟังต่อโมเดล']
+        .forEach(txt => { const sp = document.createElement('span'); sp.textContent = txt; sum.appendChild(sp); sum.appendChild(document.createTextNode(' ')); });
       document.getElementById('resourceNotice').textContent = data.notice;
       document.getElementById('resourceStatus').textContent = data.effective.warning || 'พร้อมใช้กับการโหลดงานครั้งถัดไป';
       const client = window.MiceResources;

@@ -1,17 +1,17 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Camera — Mice</title>
+<title>Cameras — Mice</title>
 <link rel="stylesheet" href="/mice.css">
 <!--
-  THE CAMERA ON ITS OWN. Asked for 2026-08-21: *how to go to camera view while
-  not go to the module*. Watching a camera meant opening that board's whole
-  website and finding the Camera card on it — right when you are setting a
-  board up, wrong when you only want to see what it sees.
+  EVERY CAMERA ON ONE PAGE. Asked for 2026-08-21: *how to go to camera view
+  while not go to the module*, and 2026-11-23: *ESP32 cam and other cameras,
+  used together by recording, the face app and later a window for others*.
 
-  It lists every camera the hub can reach and shows them together. Several
-  people can have this open at once: the hub holds ONE connection per camera
-  and feeds every viewer from it (main_python/cam_relay.py).
+  The list is the hub's (GET /api/cameras): camera boards, this PC's webcams and
+  the network cameras people add here. Each camera is read ONCE by the hub and
+  every viewer - this page, the watch window, the face app - watches the hub
+  (main_python/cam_relay.py), so adding a viewer never costs the camera anything.
 -->
 <link rel="stylesheet" href="style.css">
 <body class="page">
@@ -20,14 +20,33 @@
 <header class="topbar">
   <h1>📷 Cameras</h1>
   <button onclick="load(true)">⟳ Look again</button>
+  <button onclick="cameraApp.toggleAdd()" id="addBtn">＋ Add a camera</button>
   <span class="mini" id="stat" aria-live="polite">looking…</span>
 </header>
 <!-- One login, every page (A25-5). -->
 <div class="card" id="loginHere" style="margin-bottom:var(--sp-4)"></div>
+
+<div class="card" id="addBox" hidden style="margin-bottom:var(--sp-4)">
+  <h2>Add a camera</h2>
+  <p class="mini">Camera boards and USB cameras on this PC show up by themselves. Add a camera
+    that is on your network, or try the demo camera.</p>
+  <div class="row">
+    <label>Kind <select id="addKind"></select></label>
+    <label>Name <input id="addName" maxlength="40" placeholder="Front door"></label>
+  </div>
+  <div class="row" id="addLinkRow">
+    <label style="flex:1">Link <input id="addLink" style="width:100%" placeholder="rtsp://camera-address/stream"></label>
+  </div>
+  <p class="mini" id="addHint"></p>
+  <div class="row"><button onclick="cameraApp.add()">Add</button>
+    <span class="mini" id="addSay" aria-live="polite"></span></div>
+</div>
+
+<div class="mini" id="looking">Looking for cameras… this takes a few seconds.</div>
 <div class="grid" id="cams"></div>
 <div class="mini" id="none" hidden>
-  No camera answered. A camera module has to be powered and on this network or
-  on a cable, and its type has to be cam.
+  No camera answered. A camera board has to be powered and on this network, a USB
+  camera plugged into this PC, or add a network camera with “Add a camera”.
 </div>
 
 <script src="/mice.js"></script>

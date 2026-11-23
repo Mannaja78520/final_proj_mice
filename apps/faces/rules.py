@@ -21,6 +21,7 @@ THE FOUR PROMISES, each one a check in qc/checks/check_faces_greet.py:
 import json
 import os
 import re
+import sys
 import threading
 import time
 import urllib.error
@@ -28,6 +29,14 @@ import urllib.request
 
 from datetime import datetime
 from pathlib import Path
+
+# Who else is running on this PC (main_python/peers.py). Without a hub the
+# greeting goes to whichever neighbour can speak (Voice by itself, say).
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "main_python"))
+try:
+    import peers
+except ImportError:                    # a copy of this folder on its own
+    peers = None
 
 HERE = Path(__file__).resolve().parent
 
@@ -202,7 +211,8 @@ class Greeter:
     def _post(self, greeting):
         """(state, why) from the hub's speaking queue."""
         body = json.dumps(dict(greeting, **{"from": "the face watcher"})).encode("utf-8")
-        req = urllib.request.Request(self.hub + "/api/speak", data=body,
+        base = peers.where(self.hub, "speak") if peers else self.hub
+        req = urllib.request.Request(base + "/api/speak", data=body,
                                      headers={"Content-Type": "application/json"})
         try:
             with urllib.request.urlopen(req, timeout=5) as r:

@@ -83,6 +83,7 @@ hub-support (+ hub_update.py), hub-studio, hub-modules, hub-media (+ hub_cam.py)
 
 - [hub-auth](hub-auth.md)
 - [hub-net](hub-net.md)
+- [hub-alone](hub-alone.md)
 - [hub-media](hub-media.md)
 - [hub-shows](hub-shows.md)
 - [fw-registry](fw-registry.md)

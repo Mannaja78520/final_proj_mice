@@ -54,7 +54,12 @@ class ResourceSettingsView {
         input.value = data.settings[key]; label.appendChild(input); advanced.appendChild(label);
       });
       this.settings = data.settings;
-      document.getElementById('resourceSummary').textContent = 'ค่าที่จะใช้กับการโหลดใหม่: ' + data.effective.label + ' · ' + data.effective.device.toUpperCase() + ' · ' + data.effective.cpuThreads + ' เธรด · ' + data.effective.workers + ' งานแปล / งานฟังต่อโมเดล';
+      // Built from separate pieces, each its own text node: the language packs translate whole
+      // texts, so one string made of Thai + values stayed Thai in English (found 2026-11-23).
+      const sum = document.getElementById('resourceSummary'), eff = data.effective;
+      sum.textContent = '';
+      ['ค่าที่จะใช้กับการโหลดใหม่:', eff.label, ' · ' + eff.device.toUpperCase() + ' · ' + eff.cpuThreads, 'เธรด', ' · ' + eff.workers, 'งานแปล / งานฟังต่อโมเดล']
+        .forEach(txt => { const sp = document.createElement('span'); sp.textContent = txt; sum.appendChild(sp); sum.appendChild(document.createTextNode(' ')); });
       document.getElementById('resourceNotice').textContent = data.notice;
       document.getElementById('resourceStatus').textContent = data.effective.warning || 'พร้อมใช้กับการโหลดงานครั้งถัดไป';
       const client = window.MiceResources;

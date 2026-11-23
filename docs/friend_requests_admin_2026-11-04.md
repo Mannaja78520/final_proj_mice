@@ -1,3 +1,5 @@
+> **แทนที่แล้วด้วย `docs/friend/friend_requests_all_2026-11-23.md` (ฉบับเดียวที่ส่งให้เพื่อน) — ไฟล์นี้เก็บเป็นหลักฐาน**
+
 # Asks for the friend: one admin story across the hub and the apps (2026-11-04)
 
 Read from their code (HEAD: Face_Regonize e8d4a22, Photobooth 858f0b6, All-Jao-Games f9e8ff4). We edit nothing of theirs.

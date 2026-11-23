@@ -1,9 +1,9 @@
 const {read,vm,context,loadClass,response,check,test,finish}=require('./usability_dom');
 (async()=>{
  await test('camera scan failures',async()=>{
-  const c=context(),a=loadClass(c,'apps/camera/app.js','CameraApp','window.cameraApp =');a.foundCams=new Map();
+  const c=context(),a=loadClass(c,'apps/camera/app.js','CameraApp','window.cameraApp =');a.cams=[];
   await a.load(false);check(c.el('none').hidden&&!c.el('stat').textContent.includes('found'),'camera complete failure does not say no cameras');
-  c.fetch=async()=>response({modules:[]});await a.load(false);check(!c.el('none').hidden,'camera genuine empty state stays available');
+  c.fetch=async()=>response({cameras:[]});await a.load(false);check(!c.el('none').hidden,'camera genuine empty state stays available');
  });
  await test('TV acknowledgements',async()=>{
   const c=context(),a=loadClass(c,'apps/tv/index.html','TVRemoteApp','const app =');a.activeDev='usb:COM99';a.modules=[{dev:a.activeDev}];a.poll=()=>{};

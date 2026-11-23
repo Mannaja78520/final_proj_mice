@@ -259,7 +259,8 @@ async function paintQr(){
     const j = await fetch('/api/mine').then(x => x.json());
     const url = j.url || (location.protocol + '//' + location.host + '/');
     $('qrUrl').textContent = url;
-    $('qrName').textContent = j.host ? ('this PC is ' + j.host) : '';
+    // two text nodes: "this PC is" is translated as a whole text, the host name never is
+    $('qrName').textContent = ''; if (j.host) { const sp = document.createElement('span'); sp.textContent = 'this PC is'; $('qrName').appendChild(sp); $('qrName').appendChild(document.createTextNode(' ' + j.host)); }
     $('qrNameRow').hidden = !j.name_url;
     if (j.name_url) $('qrNameUrl').textContent = j.name_url;
     $('qrWhyNoName').hidden = !!j.name_url;

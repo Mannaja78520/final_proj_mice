@@ -198,10 +198,12 @@ def run(t):
     cfg_path = F.CODE / "config" / "video_links.json"
     links = hub_video.Links(cfg_path, tmp / "cache")
     links.allow_local = True
+    links.lan_file = tmp / "video_lan.json"
     hub_api_studio.LINKS = links
     try:
         _hub_half(t, base, local, links, clip, cfg_path, tmp)
         _page_half(t, base, local + "clip.webm", links, main)
+        _lan_page_half(t, base, hub_video.Links(cfg_path, tmp / "cache3", lan_file=tmp / "video_lan2.json"), hub_api_studio)
     finally:
         hub_api_studio.LINKS = None
         srv.shutdown()
@@ -211,6 +213,7 @@ def run(t):
 
 
 def _hub_half(t, base, local, links, clip, cfg_path, tmp):
+    import hub_api_studio
     import hub_video
     body = json.dumps({"url": local + "clip.webm"}).encode()
     F.logout_qc()
@@ -237,6 +240,34 @@ def _hub_half(t, base, local, links, clip, cfg_path, tmp):
     code, _, raw = _req(base + "/api/video/fetch", json.dumps({"url": "ftp://x/y"}).encode(),
                         {"Content-Type": "application/json"})
     t.ok(code == 400 and b"https://" in raw, "a non-web link is refused in words", raw[:200])
+
+    # The admin allows a device from the screen (user 2026-11-23): refusal names it, a login
+    # is needed, the list survives, this PC / metadata / internet ranges can never be added.
+    lan = {"Content-Type": "application/json"}
+    refuse = hub_video.Links(cfg_path, tmp / "cache2", lan_file=tmp / "video_lan.json")
+    hub_api_studio.LINKS = refuse            # the page's own refusal path, no QC bypass
+    code, _, raw = _req(base + "/api/video/fetch", json.dumps({"url": "http://192.168.77.5/v.mp4"}).encode(), lan)
+    got = json.loads(raw or b"{}")
+    t.ok(code == 400 and got.get("lanHost") == "192.168.77.5" and "own network" in got.get("error", ""),
+         "a refused LAN link names the device so one button can allow it", raw[:200])
+    code, _, raw = _req(base + "/api/video/fetch", json.dumps({"url": "http://127.0.0.1:9/v.mp4"}).encode(), lan)
+    t.ok(code == 400 and not json.loads(raw).get("lanHost"), "this PC itself offers no Allow button", raw[:200])
+    F.logout_qc()
+    code, _, _ = _req(base + "/api/video/lan", json.dumps({"add": "192.168.77.5"}).encode(), lan)
+    t.ok(code == 401, "allowing a device needs a login", code)
+    F.login(base)
+    code, _, raw = _req(base + "/api/video/lan", json.dumps({"add": "http://192.168.77.5/v.mp4"}).encode(), lan)
+    t.ok(code == 200 and json.loads(raw)["hosts"] == ["192.168.77.5"],
+         "Allow this device keeps just the device, not the whole link", raw[:200])
+    t.ok(hub_video.Links(cfg_path, lan_file=tmp / "video_lan.json").lan_host_of("http://192.168.77.5/v.mp4") == ""
+         and hub_video.Links(cfg_path, lan_file=tmp / "video_lan.json").lan_host_of("http://192.168.77.6/v.mp4") == "192.168.77.6",
+         "the list is kept for a new hub run, and only that device is allowed")
+    for never in ("127.0.0.1", "localhost", "169.254.169.254", "8.8.8.8/24", "::1", "not a host!"):
+        code, _, raw = _req(base + "/api/video/lan", json.dumps({"add": never}).encode(), lan)
+        t.ok(code == 400, "%s can never be allowed" % never, raw[:200])
+    code, _, raw = _req(base + "/api/video/lan", json.dumps({"remove": "192.168.77.5"}).encode(), lan)
+    t.ok(code == 200 and json.loads(raw)["hosts"] == [], "a device can be taken off the list", raw[:200])
+    hub_api_studio.LINKS = links
 
     # a page goes to yt-dlp; with none on the PC the answer names the fix
     asked = []
@@ -278,7 +309,7 @@ def _hub_half(t, base, local, links, clip, cfg_path, tmp):
     for bad in ("http://127.0.0.1:9/a.mp4", "http://localhost/a.mp4", "http://192.168.1.1/a.mp4",
                 "http://169.254.169.254/latest/", "http://[::1]/a.mp4", "http://printer.local/a.mp4"):
         j, why = strict.start(bad)
-        t.ok(j is None and "internet" in why, "link %s is refused" % bad, why)
+        t.ok(j is None and ("internet" in why or "own network" in why), "link %s is refused" % bad, why)
     # a NAS on the venue LAN can be allowed by the admin; this PC and metadata never (2026-11-23)
     lan = hub_video.Links(cfg_path, tmp / "cache")
     lan.cfg["lanHosts"] = ["192.168.1.50", "10.0.0.0/24", "nas.local"]
@@ -287,7 +318,8 @@ def _hub_half(t, base, local, links, clip, cfg_path, tmp):
     for bad in ("http://192.168.1.51/a.mp4", "http://10.0.1.7/a.mp4", "http://127.0.0.1/a.mp4",
                 "http://169.254.169.254/x", "http://[::1]/x"):
         j, why = lan.start(bad)
-        t.ok(j is None and "internet" in why, "unlisted or never-allowed %s still refused" % bad, why)
+        t.ok(j is None and ("internet" in why or "own network" in why),
+             "unlisted or never-allowed %s still refused" % bad, why)
     fake.cfg["shares"] = [{"id": "qc", "label": "QC share", "match": re.escape(local) + r"share/([\w.]+)",
                            "direct": local + r"\1", "html": "SHARE IT WITH ANYONE"}]
     fake.run_ytdlp = lambda j: fake._fail(fake.jobs[j], "went to yt-dlp")
@@ -312,6 +344,54 @@ def _hub_half(t, base, local, links, clip, cfg_path, tmp):
     pid = json.loads(raw or b"{}").get("id", "")
     code2, _, back = _req(base + "/api/video/file?id=" + pid)
     t.ok(code == 200 and back == clip, "a picked file is kept on the hub for its sound", (code, code2))
+
+
+# The admin allows a LAN device with buttons, no JSON (user 2026-11-23). The hub refuses for
+# real here (no QC bypass); the page offers the button, keeps the device, lists it, drops it.
+LAN_DRIVER = """
+const wait = ms => new Promise(r => setTimeout(r, ms));
+function rep(k, v){ qcMark("VL~" + k + "=" + String(v).replace(/~/g, "_")); }
+async function until(f, ms){ const t = performance.now();
+  while (!f()) { if (performance.now() - t > ms) return false; await wait(100); } return true; }
+async function run(){
+  if (!await until(() => typeof vidPage === "function" && typeof haveRobot === "function" && haveRobot(), 25000)) {
+    rep("ERR", "the app never came up"); return; }
+  showTab("video"); await wait(400);
+  const box = () => document.getElementById("vidLanBox");
+  rep("hiddenAtFirst", box().hidden);
+  document.getElementById("vidLink").value = "http://192.168.77.5/v.mp4";
+  document.getElementById("vidFetchBtn").click();
+  rep("offered", await until(() => !box().hidden, 8000));
+  rep("says", document.getElementById("vidLanSay").textContent.includes("192.168.77.5"));
+  document.getElementById("vidLanAllow").click();
+  rep("allowed", await until(() => box().hidden, 8000));
+  const det = document.getElementById("vidLanList");
+  det.open = true; det.dispatchEvent(new Event("toggle"));
+  rep("listed", await until(() => document.getElementById("vidLanItems").textContent.includes("192.168.77.5"), 8000));
+  const rm = document.querySelector("#vidLanItems button");
+  rep("hasRemove", !!rm);
+  if (rm) rm.click();
+  rep("removed", await until(() => document.getElementById("vidLanItems").textContent.includes("No device"), 8000));
+  rep("end", 1);
+}
+run().catch(e => rep("ERR", e));
+"""
+
+
+def _lan_page_half(t, base, refuse, hub_api_studio):
+    if not browser.available():
+        t.give_up("headless Edge not found - the page half needs a real browser")
+    fake_serial.reset()
+    hub_api_studio.LINKS = refuse
+    browser.page(LAN_DRIVER, query="%s/studio/_qcdriver.html?dev=usb%%3A%s" % (base, fake_serial.PORT),
+                 seconds=60)
+    v = dict(m[3:].split("=", 1) for m in fake_serial.qc_marks if m.startswith("VL~") and "=" in m)
+    if not t.ok("ERR" not in v and "end" in v, "the allow-a-device page driver ran to the end", v.get("ERR", v)):
+        return
+    t.ok(v["hiddenAtFirst"] == "true", "the Allow button is not shown until a link is refused", v)
+    t.ok(v["offered"] == "true" and v["says"] == "true", "a refused LAN link names the device and offers Allow this device", v)
+    t.ok(v["allowed"] == "true" and v["listed"] == "true", "one press allows it and it shows in the list", v)
+    t.ok(v["hasRemove"] == "true" and v["removed"] == "true", "Remove takes the device off the list", v)
 
 
 def _page_half(t, base, link, links, main):

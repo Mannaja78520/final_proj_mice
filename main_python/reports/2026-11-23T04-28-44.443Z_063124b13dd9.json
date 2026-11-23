@@ -1,0 +1,11 @@
+{
+  "id": "063124b13dd9",
+  "time": "2026-11-23T04:28:44.443Z",
+  "text": "STUDIO FREEZE {\"gapMs\":1900,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":1,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":10,\"longTasks\":[{\"ms\":72,\"at\":1707},{\"ms\":171,\"at\":1914},{\"ms\":150,\"at\":2119},{\"ms\":92,\"at\":2410},{\"ms\":254,\"at\":2587},{\"ms\":54,\"at\":2958},{\"ms\":64,\"at\":3118},{\"ms\":390,\"at\":3247},{\"ms\":1827,\"at\":3674},{\"ms\":72,\"at\":5502}],\"slowCalls\":[{\"u\":\"/api/list?kind=sequences\",\"ms\":338,\"at\":787},{\"u\":\"/api/list?kind=models\",\"ms\":343,\"at\":788},{\"u\":\"/api/ports\",\"ms\":322,\"at\":810},{\"u\":\"/api/shows\",\"ms\":344,\"at\":788},{\"u\":\"/api/list?kind=sequences\",\"ms\":344,\"at\":788},{\"u\":\"/api/list?kind=projects\",\"ms\":346,\"at\":786},{\"u\":\"/api/ports\",\"ms\":322,\"at\":811},{\"u\":\"/api/login\",\"ms\":574,\"at\":1126},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=INFO\",\"ms\":389,\"at\":1312},{\"u\":\"/api/gestures\",\"ms\":83,\"at\":1699},{\"u\":\"/api/gestures\",\"ms\":49,\"at\":1782},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=LIMIT%3F\",\"ms\":51,\"at\":1780},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=FILES%20%2Fmoves\",\"ms\":105,\"at\":1781},{\"u\":\"/api/gestures\",\"ms\":118,\"at\":2292},{\"u\":\"/api/gestures/fit\",\"ms\":79,\"at\":5497}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36"
+}

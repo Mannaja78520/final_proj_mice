@@ -924,7 +924,7 @@ function renderNong(m){
     JN.forEach((n,i)=>{
       const r=document.createElement('div');r.className='row';
       const l=document.createElement('span');l.className='lbl';l.style.minWidth='130px';l.textContent=n;
-      const s=document.createElement('input');s.type='range';s.min=0;s.max=180;s.id='j'+i;
+      const s=document.createElement('input');s.type='range';s.min=0;s.max=180;s.id='j'+i;s.style.minWidth='150px'; /* phone: label+slider+box+now share a row; below 150px the slider shrank to a 38px stub (2026-11-23 screenshot review) */
       const v=document.createElement('input');v.type='number';v.min=0;v.max=180;v.id='jv'+i;v.style.width='70px';
       // sliders keep what YOU set - they are never overwritten while you work;
       // the "now" label shows the robot's real position

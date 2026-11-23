@@ -1,0 +1,12 @@
+{
+  "id": "36cc95fb1920",
+  "time": "2026-11-23T04:14:24.746Z",
+  "text": "STUDIO FREEZE {\"gapMs\":1833,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":1,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":9,\"longTasks\":[{\"ms\":87,\"at\":1858},{\"ms\":57,\"at\":1945},{\"ms\":451,\"at\":2003},{\"ms\":147,\"at\":2488},{\"ms\":81,\"at\":2750},{\"ms\":50,\"at\":2831},{\"ms\":152,\"at\":2882},{\"ms\":75,\"at\":3070},{\"ms\":168,\"at\":3198},{\"ms\":88,\"at\":3419},{\"ms\":1803,\"at\":3720}],\"slowCalls\":[{\"u\":\"/api/list?kind=projects\",\"ms\":362,\"at\":867},{\"u\":\"/api/list?kind=sequences\",\"ms\":362,\"at\":867},{\"u\":\"/api/shows\",\"ms\":362,\"at\":867},{\"u\":\"/api/list?kind=models\",\"ms\":362,\"at\":868},{\"u\":\"/api/ports\",\"ms\":342,\"at\":888},{\"u\":\"/api/list?kind=sequences\",\"ms\":363,\"at\":867},{\"u\":\"/api/ports\",\"ms\":341,\"at\":889},{\"u\":\"/api/gestures\",\"ms\":34,\"at\":1760},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=LIMIT%3F\",\"ms\":112,\"at\":1833},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=FILES%20%2Fmoves\",\"ms\":110,\"at\":1835},{\"u\":\"/api/voice/config\",\"ms\":141,\"at\":1862},{\"u\":\"/api/gestures\",\"ms\":79,\"at\":2671}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+  "text_en": "Sure! {\"label\": \"Point up high\", \"word\": \"ฟ้า\", \"keys\": [{\"R\": [0.2, 3, 0.4], \"palmR\": \"sideways\", \"t\": 99999, \"hold\": -5, \"x\": 1}]}"
+}

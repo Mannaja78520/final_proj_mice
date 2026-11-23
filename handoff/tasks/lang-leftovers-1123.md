@@ -20,7 +20,7 @@ Baseline: 2045752 (main)
 | `main_python/web/home/style.css`, `parts/tools.js` | one cartoon icon set, dark tile, accent Open | done | quick QC same as main; screenshot checked | 0542190, 0ab62cc |
 | `shared/web/mice-lang.js` | translate alt, title, textarea placeholders, late attributes | done | lang_scan clean on small pages | 0542190 |
 | `shared/web/lang/*.json`, `lang/help/*.json` | packs filled (small pages, Studio, Help) | Help in progress on PC | lang_scan | see PR #211 |
-| `tools/lang_scan/`, `tools/lang_add.py` | scan + batch add tools | done | ran on PC and cloud | see PR #211 |
+| `tools/lang_scan/`, `tools/lang_batch.py` | scan + batch add tools | done | ran on PC and cloud | see PR #211 |
 
 ## Facts found
 - Tools card name/blurb come from apps/*/app.json via /api/apps; Thai text is translated by key (shared/web/lang/*.json, whole text node). "ผลงานล่าสุด" is a local extension (not in repo).
