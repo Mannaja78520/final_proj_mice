@@ -1,7 +1,7 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
 Owner: codex:11232254-6f5e
-Updated: 2026-11-24T00:04+07:00
+Updated: 2026-11-24T00:05+07:00
 Branch: codex/visual-regression-1123
 Last commit: this checkpoint
 Plan: A1123-2
@@ -11,7 +11,7 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 4 final verification is queued behind external QC 44636. The queued job runs corrected Help QC at `bc8b43f`, then the 12-target build, phone replay and focused QEMU checks for module PR `6c298e1`. While the job waits, verify item 6's exact stale folder, process inventory and Git metadata.
+Item 4 final verification is queued behind external QC 44636. The queued job runs corrected Help QC at `bc8b43f`, then the 12-target build, phone replay and focused QEMU checks for module PR `6c298e1`.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
@@ -44,6 +44,7 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 - haveRobot() in Studio means "connected to a robot", not "3D ready".
 
 ## Done
+- Item 6 verified at 00:05 ICT on 2026-11-24. The exact `E:/final_proj/mice/mice_sim_wt` directory and Git entry were already absent. No QEMU process remained under that path. The dry run found nothing to prune and `git worktree prune --verbose` completed without removing entries. E: had 31.34 GiB free.
 - Item 4 case 12 [draft PR #236](https://github.com/Mannaja78520/final_proj_mice/pull/236) at `bc8b43f` has the source patch and one late-title assertion in the existing Help QC page. The standalone four-language Edge evidence covers the same stale-index failure.
 - Item 4 official Help run at `2a9bf08` scored 93 passed, 4 failed. Its original checks passed. The new driver observed an English late-title match but lost the empty-result assertion and timed out before subsequent iframe fixtures. Use the original test's loaded page for the late-title regression and retain the standalone multi-language evidence.
 - Item 4 case 20 follow-up pushed to module draft PR #234 at `6c298e1`. At 390 px all 4 fixtures hid controls and sent zero commands after an initial 503. Nong and Lift sent no camera command after identification. Current and legacy camera status each sent exactly one `CAM LIST` after identification. Evidence: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/case20-after.log`. Matching Help source, page and th/ja/zh packs updated.
@@ -66,10 +67,9 @@ Work in a branch off main, one PR per item, QC per CLAUDE.md (`python qc/run_qc.
 3. Claude completed fake-hub network loss coverage. Real cable/WiFi playback loss remains lab work (main 710bd52c).
 4. Remaining GPT list in PC `.local/visual_review/out/codex62_cases.md` (cases 2-7, 12-14, 16-23, 25, 29-31): pick those testable with the fake hub, one check each, fix bugs found. Skip 36-38 (real Android TV).
 5. Claude landed the tooltip ratchet in PR #231.
-6. PC cleanup (low): E:\final_proj\mice\mice_sim_wt has a locked qemu-system-xtensa.exe; stop the QEMU processes under that folder, delete it, `git worktree prune`.
+6. Done. Verified the stale folder, QEMU process paths and Git metadata are clear.
 Stop rule: max 3 rounds per item; if stuck, write the theory in this file and take the next.
 
 ## Blocked
 - PR #234 merge and promotion await a green full gate and independent review.
 - Real URDF check needs the PC (E:\final_proj\mice\mice_system) to run tools/visual/urdf_numeric.py with MICE model.
-- PC leftover: E:\final_proj\mice\mice_sim_wt still holds a locked qemu-system-xtensa.exe (4 QEMU processes under that folder: PIDs seen 2026-11-23 11780, 32752, 48392, 53372). The PC refused Stop-Process/Remove-Item from a remote session; close those QEMU processes, delete the folder, then `git worktree prune` in mice_system. Low priority.
