@@ -1913,6 +1913,7 @@
   "FLASH ON|OFF": "FLASH ON|OFF",
   "3. เอวและยักไหล่ WAIST / SHRUG": "3. 腰と肩のすくめ WAIST / SHRUG",
   "The Problem reports tab shows the newest 40 reports and a button for older ones, so the page stays quick on a phone.": "問題報告タブは最新の40件を表示し、古いものはボタンで開きます。スマートフォンでも軽く動きます。",
-  "Help — Mice": "ヘルプ — Mice"
+  "Help — Mice": "ヘルプ — Mice",
+  "Use the globe to change the page language. Screen readers follow the selected language.": "地球アイコンでページの言語を切り替えられます。スクリーンリーダーにも選んだ言語が伝わります。"
  }
 }
