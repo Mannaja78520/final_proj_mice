@@ -257,12 +257,12 @@
   <div class="f" id="alone"><h3>เปิดแอพทีละตัว ไม่ต้องเปิด Hub<span class="tag t-new">new</span></h3>
     <p>ทุกแอพเปิดใช้เดี่ยว ๆ ได้ ไม่ต้องรอ Hub และมีความสามารถเกือบเท่ากับเปิดผ่าน Hub ถ้ามีแอพอื่นเปิดอยู่บนเครื่องเดียวกัน แอพจะเจอกันเองและทำงานร่วมกันทันที ไม่ต้องตั้งค่า</p>
     <ul>
-      <li>เปิดเดี่ยว: เปิดโปรแกรม Mice ด้วยชื่อแอพ เช่น เสียง กล้อง ตู้รางวัล สตูดิโอ รีโมตทีวี หรือคู่มือ</li>
+      <li>เปิดเดี่ยว: ดับเบิลคลิกไฟล์ที่ชื่อเหมือนแอพในโฟลเดอร์ launchers เช่น Voice, Cameras, Prize machines, Nong Studio, TV Remote หรือ Features &amp; help หน้าของแอพจะเปิดขึ้นเอง ปิดหน้าต่างสีดำเพื่อหยุด</li>
       <li>เสียงกับการจดจำใบหน้า: แอพเสียงรู้ว่าใครยืนอยู่หน้ากล้องจาก Reconize และทักทายได้เอง ไม่ต้องผ่าน Hub</li>
       <li>เกมกับตู้รางวัล: เมื่อเปิดเกมผ่านแอพตู้รางวัลหรือ Hub คนชนะจะได้รางวัลจากตู้เอง</li>
       <li>กล้องหนึ่งตัวเปิดได้โดยโปรแกรมเดียว: โปรแกรมที่ขอก่อนเป็นเจ้าของ โปรแกรมอื่นดูภาพผ่านเจ้าของ ภาพจึงไม่ดำและกล้องไม่ถูกเปิดซ้ำ</li>
       <li>แอพของเพื่อน (Reconize, Photobooth, All-Jao Games) เปิดจากโฟลเดอร์ของมันเองได้เสมอ Hub แค่เชื่อมให้</li>
     </ul>
     <p>ถ้าเปิดหน้าของแอพอื่นในหน้าต่างของแอพเดี่ยว จะเห็นหน้าสั้น ๆ บอกว่าแอพนั้นยังไม่ได้เปิดที่นี่ หรือมีปุ่ม เปิด พาไปหน้าต่างที่แอพนั้นเปิดอยู่</p>
-    <p class="tech">Technical: <code>MiceHub.exe --alone voice</code> (also <code>camera</code>, <code>gacha</code>, <code>studio</code>, <code>tv</code>, <code>help</code>; <code>--port N</code> moves it; ports are <code>alonePort</code> in each <code>app.json</code>). Each running program writes <code>&lt;app&gt;-&lt;port&gt;.json</code> into <code>%TEMP%\mice-peers</code>; <code>GET /api/peers?cap=prize</code> lists them. A webcam claim is <code>cam-&lt;name&gt;.json</code> in the same folder.</p></div>
+    <p class="tech">Technical: starters are made by <code>python tools/make_launchers.py</code> into <code>main_python/launchers</code>. <code>MiceHub.exe --alone voice</code> (also <code>camera</code>, <code>gacha</code>, <code>studio</code>, <code>tv</code>, <code>help</code>; <code>--port N</code> moves it; ports are <code>alonePort</code> in each <code>app.json</code>). Each running program writes <code>&lt;app&gt;-&lt;port&gt;.json</code> into <code>%TEMP%\mice-peers</code>; <code>GET /api/peers?cap=prize</code> lists them. A webcam claim is <code>cam-&lt;name&gt;.json</code> in the same folder.</p></div>
 </section>

@@ -35,7 +35,7 @@
      "checks": ["check_extensions", "check_api_index"], "depends": ["hub-apps"]},
 
     {"id": "hub-alone", "summary": "Every app works alone (MiceHub.exe --alone <app>, own port) AND together: the peers folder (who runs on this PC, found by ability), one-owner camera claims, the plain 'not open here' page.",
-     "files": ["main_python/alone.py", "main_python/peers.py", "main_python/hub_api_peers.py", "docs/architecture/standalone-apps.md"],
+     "files": ["main_python/alone.py", "main_python/peers.py", "main_python/hub_api_peers.py", "tools/make_launchers.py", "main_python/launchers/*", "docs/architecture/standalone-apps.md"],
      "names": ["/api/peers", "--alone", "alonePort", "AloneMode", "claim_camera", "MICE_PEERS_DIR"],
      "checks": ["check_alone_apps"], "depends": ["hub-net"]},
 
