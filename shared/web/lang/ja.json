@@ -1531,6 +1531,7 @@
   "Reset the rig to the factory defaults? (You haven't saved a default of your own — use “★ Save current as default” to keep your tuning.)": "リグを工場出荷時の設定に戻しますか？（自分のデフォルトは未保存です。調整を残すには「★ Save current as default」を使ってください。）",
   "พบเพลงที่ตรงกับงานกู้คืน ใช้เพลงนี้กับท่าที่แก้ค้างไว้หรือไม่?": "復元した作業に合う曲が見つかりました。編集途中の動きに使いますか？",
   "OK — กู้เฉพาะเพลงและเก็บท่าปัจจุบันทั้งหมด": "OK — 曲だけ復元し、今の動きはすべて残す",
-  "Cancel — เปิดโปรเจกต์ตามปกติ": "キャンセル — 通常どおりプロジェクトを開く"
+  "Cancel — เปิดโปรเจกต์ตามปกติ": "キャンセル — 通常どおりプロジェクトを開く",
+  "this PC's camera is in use by another app (a browser tab, or an older Mice window that is still open), or unplugged - close it and try again": "このPCのカメラは他のアプリが使用中（ブラウザのタブ、または開いたままの古い Mice ウィンドウ）か、抜けています。閉じてからもう一度お試しください"
  }
 }
