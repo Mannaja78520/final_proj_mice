@@ -8460,3 +8460,453 @@ Continue from where you left off.
 </relay>
 </project_claude_message>
 
+
+### 2026-11-21 04:23
+<relay from="coordinator" session="session_019omLJiRADb7ASKMETVvZau" current-time="2026-11-20T21:23:47Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      In E:\final_proj\mice\mice_system: start the hub again so it is running when the user returns. Delete nothing. Make sure local main = origin/main (git fetch; if checked out on a branch, switch to main only if the working tree has no tracked changes). Run `python tools/systems.py build` only if it is quick; then start the hub detached (hidden window) the usual way: the existing dist\MiceHub.exe if it is current enough, else from source (`python main_python/main.py` or the project's documented start). Do not run PyInstaller. Confirm http://127.0.0.1:8642/ responds (HTTP 200) and report the one-line result plus how it was started.
+  </note>
+</relay>
+
+### 2026-11-21 14:45
+<wake reason="mention" current-time="2026-11-21T07:45:31Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA32XVgnSZLueB6hPafDHsYBV" sent-at="2026-11-21T07:31:22Z" mention="true">α╣üα╕Ñα╣ëα╕ºα╣Çα╕úα╕╖α╣êα╕¡α╕ç UX UI mainhub α╕½α╕úα╕╖α╕¡α╕¡α╕╖α╣êα╕Öα╣åα╕Öα╕╡α╣êα╣äα╕öα╣ëα╣üα╕üα╣ëα╕çα╕▓α╕Öα╕äα╕úα╕Üα╕½α╕íα╕öα╣üα╕Ñα╣ëα╕ºα╣äα╕íα╣êα╕íα╕╡α╕¬α╣êα╕ºα╕Öα╕ùα╕╡α╣êα╕ùα╕│α╣âα╕½α╣ëα╕èα╣ëα╕▓α╕íα╕╡α╕¡α╕äα╕┤α╣Çα╕ùα╕äα╕ùα╕╡α╣êα╕öα╕╡α╕¡α╕óα╕╣α╣êα╣üα╕Ñα╣ëα╕ºα╕½α╕úα╕¡α╣Çα╕¢α╣çα╕Ö OOP α╣üα╕üα╣ëα╕çα╣êα╕▓α╕óα╣üα╕Ñα╕░α╣Çα╕úα╣çα╕ºα╣üα╕Ñα╣ëα╕ºα╣âα╕èα╣êα╣äα╕½α╕íα╕íα╕╡α╕ºα╕┤α╕ÿα╕╡α╣âα╕½α╣ëα╣Çα╕úα╣çα╕ºα╕üα╕ºα╣êα╕▓α╕Öα╕╡α╣ëα╣äα╕½α╕íα╕ùα╕╕α╕üα╣éα╕¢α╕úα╣üα╕üα╕úα╕íα╕ùα╕╕α╕üα╕êα╕╕α╕öα╕ùα╕╕α╕üα╕¡α╕óα╣êα╕▓α╕çα╕üα╕▓α╕úα╣âα╕èα╣ë AI α╕òα╣êα╕▓α╕çα╣å α╕öα╣ëα╕ºα╕ó</message>
+  </project>
+</wake>
+
+
+### 2026-11-21 15:37
+<wake reason="mention" current-time="2026-11-21T08:37:41Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3RQxodBM6ALjhiSSnBqvyTH" sent-at="2026-11-21T07:37:24Z" mention="true">α╣Çα╕èα╣çα╕äα╕üα╕▓α╕úα╣Çα╕úα╕╡α╕óα╕çα╕½α╕Öα╣ëα╕▓α╕éα╕¡α╕ç mainhub α╕öα╣ëα╕ºα╕óα╕òα╕¡α╕Öα╕íα╕╡ firmware α╕íα╕▓α╕òα╣êα╕▓α╕çα╣å α╕¡α╕░</message>
+  </project>
+</wake>
+
+
+### 2026-11-21 15:38
+<relay from="coordinator" session="session_019omLJkc9oY9y877L4KWnSx" current-time="2026-11-21T08:38:29Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Do NOT change the hub list order: it is already fixed in PR #154 (branch claude/project-thread-yvuzk1: natural number sort, kind headings). Please do the PC speed/reconnect task now, as written earlier: fetch that branch into a worktree, run tools/bench/chaos_services.py, then friend apps read-only (8000/5173, kill/restart, how long until our faces service 8769 shows them again), Ollama kill/restart + cloud provider failure timing. No edits to friend repos, no deletes, no push to main, raw numbers into .local/experiments/2026-11-21_pc_speed/, report numbers plus friend-side issues.
+  </note>
+</relay>
+
+### 2026-11-21 18:18
+<wake reason="mention" current-time="2026-11-21T11:18:32Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA39KanxYyRPeUJ1gpQG4agQF" sent-at="2026-11-21T11:17:40Z" mention="true">merge #150 Mannaja78520/final_proj_mice#154
+
+
+
+α╕óα╕▒α╕çα╕ùα╕│α╕¬α╣êα╕ºα╕Öα╕¡α╕╖α╣êα╕Öα╕¡α╕óα╕╣α╣êα╕½α╕úα╕¡
+
+α╣üα╕Ñα╣ëα╕ºα╕Ñα╕¡α╕çα╣üα╕Üα╕Üα╣äα╕¡α╣êα╕òα╕▒α╕º wifi α╕ûα╣ëα╕▓α╣äα╕íα╣êα╕íα╕╡α╣äα╕íα╣êα╕íα╕╡α╕¡α╕░α╣äα╕úα╣Çα╕èα╕╖α╣êα╕¡α╕íα╕íα╕▒α╕Öα╕êα╕░α╣Çα╕èα╕╖α╣êα╕¡α╕íα╕üα╕▒α╕Öα╣Çα╕¡α╕çα╕ûα╣ëα╕▓α╕¡α╕óα╕╣α╣ê company α╣Çα╕öα╕╡α╕óα╕ºα╕üα╕▒α╕Öα╕¡α╕░α╣äα╕öα╣ëα╕üα╕╡α╣êα╕¡α╕▒α╕Öα╕Ñα╣êα╕íα╣äα╕½α╕íα╕çα╕▓α╕Öα╕ùα╕▒α╣ëα╕çα╕½α╕íα╕öα╣Çα╕¬α╕úα╣çα╕êα╣äα╕½α╕íα╕Öα╕┤
+
+
+
+
+α╕ùα╕╕α╕üα╣å α╕¡α╕óα╣êα╕▓α╕çα╕ùα╕╕α╕üα╣åα╕¬α╕┤α╣êα╕çα╣âα╕½α╣ëα╣üα╕Üα╕Üα╕äα╕Öα╕ùα╕╡α╣êα╣äα╕íα╣êα╕úα╕╣α╣ëα╣Çα╕úα╕╖α╣êα╕¡α╕çα╣éα╕¢α╕úα╣Çα╕êα╕äα╕íα╕▓α╕ùα╕öα╕¬α╕¡α╕Üα╣éα╕¢α╕úα╣üα╕üα╕úα╕íα╕ùα╕▒α╣ëα╕çα╕½α╕íα╕öα╣âα╕Öα╕ùα╕╕α╕üα╣éα╕¢α╕úα╣üα╕üα╕úα╕íα╣âα╕Ö mainhub α╣âα╕½α╣ëα╕½α╕Öα╣êα╕¡α╕óα╕úα╕ºα╕íα╣üα╕¡α╕₧α╣Çα╕₧α╕╖α╣êα╕¡α╕Öα╣üα╕Ñα╣ëα╕ºα╕Ñα╕┤α╕¬α╕¢α╕▒α╕ìα╕½α╕▓α╣üα╕Ñα╣ëα╕ºα╣üα╕üα╣ëα╣äα╕éα╣Çα╕Ñα╕óα╣âα╕½α╣ëα╕½α╕Öα╣êα╕¡α╕ó</message>
+  </project>
+</wake>
+
+
+### 2026-11-21 18:30
+<wake reason="mention" current-time="2026-11-21T11:30:00Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <thread ts="cmsg_01R7BbYxaTb3Yv9YS3gQaaA38b52TR3GsGRkfpCu97jX7B">
+      <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA37RHQVgQyJqcnmmusoQLfzw" sent-at="2026-11-21T11:29:45Z" mention="true">α╕ùα╕│α╣äα╕íα╣äα╕íα╣êα╕ùα╕│α╣âα╕Öα╕äα╕¡α╕íα╕êα╕│α╕Ñα╕¡α╕çα╕½α╕úα╕¡</message>
+    </thread>
+  </project>
+</wake>
+
+
+### 2026-11-21 18:30
+<wake reason="mention" current-time="2026-11-21T11:30:40Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <thread ts="cmsg_01R7BbYxaTb3Yv9YS3gQaaA32XVgnSZLueB6hPafDHsYBV">
+      <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA36qLCRVHy2ZVtWx7SKCSZyS" sent-at="2026-11-21T11:30:40Z" mention="true">merge α╕¡α╕Ñα╣ëα╕ºα╕êα╕▒α╕öα╕üα╕▓α╕ú</message>
+    </thread>
+  </project>
+</wake>
+
+
+### 2026-11-21 18:34
+<wake reason="mention" current-time="2026-11-21T11:34:09Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <thread ts="cmsg_01R7BbYxaTb3Yv9YS3gQaaA38b52TR3GsGRkfpCu97jX7B">
+      <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3BD6ErfTxG4fupQbEWkN1bW" sent-at="2026-11-21T11:34:09Z" mention="true">α╣Çα╕úα╕┤α╣êα╕íα╣üα╕Ñα╣ëα╕ºα╕äα╕úα╕▒α╕Ü α╕£α╕íα╕¬α╣êα╕çα╕çα╕▓α╕Öα╣âα╕½α╣ë session α╕Üα╕Ö PC α╕éα╕¡α╕çα╕äα╕╕α╕ô α╣âα╕½α╣ëα╕úα╕▒α╕Ö QEMU soak α╕ùα╕▒α╣ëα╕ç 4 α╕Üα╕¡α╕úα╣îα╕ö (α╕ºα╕▒α╕ö heap α╣üα╕Ñα╕░ stack α╕ùα╕╕α╕ü 30 α╕ºα╕┤α╕Öα╕▓α╕ùα╕╡), α╕ºα╕▒α╕ö heap α╕éα╕¡α╕ç Studio/Home/Voice α╣âα╕Ö Chrome α╕úα╕ºα╕íα╣éα╕½α╕íα╕ö Chrome 75, α╣üα╕Ñα╕░ soak voice/faces service α╕₧α╕úα╣ëα╕¡α╕íα╕úα╕▒α╕Ö QC α╕éα╕¡α╕ç PR #151 α╕ûα╣ëα╕▓α╣Çα╕êα╕¡ leak α╕êα╕░α╣üα╕üα╣ëα╕Üα╕Ö branch α╣Çα╕öα╕┤α╕íα╣üα╕Ñα╕░α╕úα╕▓α╕óα╕çα╕▓α╕Öα╕òα╕▒α╕ºα╣Çα╕Ñα╕éα╕üα╕Ñα╕▒α╕Üα╕íα╕▓α╕ùα╕╡α╣êα╕Öα╕╡α╣êα╕äα╕úα╕▒α╕Ü
+
+α╕äα╕ºα╕▓α╕íα╕äα╕╖α╕Üα╕½α╕Öα╣ëα╕▓: QC α╕éα╕¡α╕ç PR #151 α╕Üα╕Ö PC α╕£α╣êα╕▓α╕Öα╣üα╕Ñα╣ëα╕º (46 α╕£α╣êα╕▓α╕Ö 0 α╕Ñα╣ëα╕í α╕úα╕ºα╕íα╕üα╕▓α╕úα╕ºα╕▒α╕öα╕ºα╕çα╣üα╕½α╕ºα╕Ö Studio α╣âα╕Ö Chrome α╕êα╕úα╕┤α╕ç) α╕òα╕¡α╕Öα╕Öα╕╡α╣ëα╕üα╕│α╕Ñα╕▒α╕ç build firmware α╕êα╕│α╕Ñα╕¡α╕ç 4 α╕Üα╕¡α╕úα╣îα╕ö (nong, lift, gacha, dummy) α╣üα╕Ñα╣ëα╕ºα╕êα╕░ soak α╕Üα╕¡α╕úα╣îα╕öα╕Ñα╕░ 10 α╕Öα╕▓α╕ùα╕╡ α╕êα╕│α╕Ñα╕¡α╕ç QEMU α╕íα╕╡α╣üα╕äα╣ê 4 α╕òα╕▒α╕ºα╕Öα╕╡α╣ë α╣äα╕íα╣êα╕íα╕╡ cam/blank α╣üα╕Ñα╕░α╕ºα╕▒α╕öα╣äα╕öα╣ëα╣Çα╕ëα╕₧α╕▓α╕░ heap α╕üα╕▒α╕Ü stack α╕éα╕¡α╕ç loop task α╣äα╕íα╣êα╕äα╕úα╕Üα╕ùα╕╕α╕ü task α╕£α╕Ñα╕òα╕▒α╕ºα╣Çα╕Ñα╕éα╕êα╕░α╕úα╕▓α╕óα╕çα╕▓α╕Öα╕òα╕▓α╕íα╕íα╕▓α╕äα╕úα╕▒α╕Ü
+
+
+
+α╣Çα╕ùα╕¬α╕ùα╕╕α╕üα╕¡α╕óα╣êα╕▓α╕çα╣äα╕¢α╣Çα╕Ñα╕óα╣Çα╕¡α╕▓ cam α╣âα╕½α╣ëα╣âα╕èα╣ëα╣äα╕öα╣ëα╕üα╕▒α╕Üα╕ùα╕╕α╕üα╕üα╕Ñα╣ëα╕¡α╕çα╕öα╣ëα╕ºα╕óα╕Öα╕░α╣Çα╕¡α╕▓α╣üα╕Üα╕Üα╕úα╕¡α╕çα╕úα╕▒α╕Üα╕¡α╕▓α╕êα╕êα╕░α╣Çα╕¢α╣çα╕Ö cam s3 α╣äα╕öα╣ëα╕öα╣ëα╕ºα╕óα╣üα╕Üα╕Üα╣Çα╕Ñα╕╖α╕¡α╕üα╕üα╣çα╣äα╕öα╣ëα╕½α╕úα╕╖α╕¡α╕óα╕▒α╕çα╣äα╕çα╕üα╣çα╣äα╕öα╣ë auto α╕üα╣çα╣äα╕öα╣ëα╕ùα╕│α╣âα╕½α╣ëα╕úα╕¡α╕çα╕úα╕▒α╕Üα╣âα╕½α╣ëα╕½α╕íα╕öα╕¡α╕░</message>
+    </thread>
+  </project>
+</wake>
+
+
+### 2026-11-21 18:36
+<relay from="coordinator" session="session_019omLJj1ce8i9e5bevoxYqX" current-time="2026-11-21T11:36:12Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Another thread (camera) will build on your S3 cam work. Commit and push your cam_boards.json / gen_tables.py / CamModule.cpp / platformio.ini edits (chip field, S3 boards, mice_cam_s3) to claude/project-thread-xgdvmp as soon as the builds compile (WIP is fine) and tell me. Leave the CAM BOARD manual override and its tests to the camera thread.
+  </note>
+</relay>
+
+### 2026-11-21 18:38
+<relay from="coordinator" session="session_019omLJkc9oY9y877L4KWnSx" current-time="2026-11-21T11:38:11Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Thanks for the PC numbers. Next, carefully and without risking saved work: PR #154 (listen queue 256, bus census slots, hub list order, backup WiFi, faces reconnect cap 5 s, Ollama wait 15 s) is now merged into origin/main. 1) In E:\final_proj\mice\mice_system: `git status` and `git log origin/main..main --oneline | head` first. If local main can fast-forward to origin/main (`git pull --ff-only`) with NO uncommitted or unpushed work at risk, do it. If it cannot (diverged, uncommitted files, or the UX merge branch pc-merge-1121 is in progress), do NOT merge, rebase, reset or stash anything: tell me exactly why and stop. 2) Only after a clean fast-forward: restart the hub (python main_python/main.py, the same way it was running; leave voice/faces/friend apps as they are), then re-run `python tools/bench/chaos_services.py --pages-only --out .local/experiments/2026-11-21_pc_speed/after` and report the 200-client p95 and error counts per page (before: p95 ~2010 ms, 25-114 timeouts). 3) Also run the page crawl: `NODE_PATH=$(npm root -g) node tools/bench/page_crawl.js .local/experiments/2026-11-21_pc_speed/crawl.json http://127.0.0.1:8642 1280` and again with width 390 and send me any page with errors other than 401 while logged out, any sideways scroll, and anything showing raw technical words. Do not edit friend repos, do not delete, do not push.
+  </note>
+</relay>
+
+### 2026-11-21 18:38
+<relay from="coordinator" session="session_019omLJkc9oY9y877L4KWnSx" current-time="2026-11-21T11:38:23Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Small correction: tools/bench/page_crawl.js is not on main yet (it is on branch claude/relay-online-host, PR #155). Get it without switching your branch: `git fetch origin claude/relay-online-host` then `git show origin/claude/relay-online-host:tools/bench/page_crawl.js &gt; .local/experiments/2026-11-21_pc_speed/page_crawl.js` and run it from there. The same applies to nothing else; chaos_services.py --pages-only is already on main.
+  </note>
+</relay>
+
+### 2026-11-21 18:39
+<relay from="coordinator" session="session_019omLJkc9oY9y877L4KWnSx" current-time="2026-11-21T11:39:15Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Go with option (a): benchmark from a separate clean worktree of origin/main (git worktree add .claude\worktrees\main-bench origin/main --detach), run that hub on port 8650 (leave the real hub on 8642 alone, no restarts of anything running). chaos_services.py hard-codes HUB = http://127.0.0.1:8642: run a LOCAL COPY with 8642 replaced by 8650 (pages-only), do not edit the committed file. The worktree has no local configs; if the hub there needs a config file to start, copy only non-secret defaults, never faces_login or passwords. Then the page crawl (page_crawl.js via git show from origin/claude/relay-online-host) against 8650 at widths 1280 and 390. Report: 200-client p95 and error count per page (before: p95 ~2010 ms, 25-114 timeouts), and crawl findings other than logged-out 401s. When finished stop the 8650 hub and remove only the worktree you created (git worktree remove). Nothing else.
+  </note>
+</relay>
+
+### 2026-11-21 18:41
+<relay from="coordinator" session="session_019omLJj2HpPVULKgm8jjuqc" current-time="2026-11-21T11:41:37Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Measure only; change nothing in the main working tree, and do not restart the hub or touch other running tests. Use a git worktree of origin/main (fetch first; the old .claude/worktrees/ailat worktree can be reused after `git checkout --detach origin/main`). 1) Warm-up: unload the model (POST http://127.0.0.1:11435/api/generate {"model":"typhoon25-4b","keep_alive":0}), then run python -c to call local_ai.warm(prov, job) from apps/voice/local_ai.py for the ollama provider in config/voice_providers.json and time it; then run python tools/ai_latency.py --rounds 1 (the cold round should now be fast if warm-up worked; note it unloads first, so instead just time one short chat call right after warm()). 2) STT/answer latency: python apps/voice/bench/run_bench.py (it prints ms per part: recognise / answer) against the already-running voice helper if it is up on 8767, otherwise report that it is not up and skip. 3) TTS: python tools/voice_spark_test.py or time one Thai sentence for Edge via the voice helper /say if easy. Report raw numbers only, do not push or commit.
+  </note>
+</relay>
+
+### 2026-11-21 18:58
+<relay from="coordinator" session="session_019omLJj2HpPVULKgm8jjuqc" current-time="2026-11-21T11:58:15Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Diagnose why Edge TTS fails on this PC (voice helper /say returns "edge: NoAudioReceived"). Read-only on the main working tree; do not restart the hub or touch other running tests. Check: can this PC reach speech.platform.bing.com (Test-NetConnection 443)? `pip show edge-tts` version; in a temp folder run `python -m edge_tts --voice th-TH-NiwatNeural --text "α╕¬α╕ºα╕▒α╕¬α╕öα╕╡α╕äα╕úα╕▒α╕Ü" --write-media x.mp3` and report size/error; which voice name the helper uses (config/voice.json tts section). If a newer edge-tts fixes known NoAudioReceived errors (Microsoft token change), say so with the exact pip command, but do not install anything. Report raw results and the likely cause only.
+  </note>
+</relay>
+
+### 2026-11-21 19:25
+<relay from="coordinator" session="session_019omLJj1ce8i9e5bevoxYqX" current-time="2026-11-21T12:25:22Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Two follow-ups on the same branch. (1) Find which voice-service endpoint causes the ~2 GB RSS jump in the first minute (probe /voices, /services etc. one by one, RSS before/after each) and say whether it is a model load on first use or something repeating. (2) Run the full QC (`python qc/run_qc.py --quiet`, once) in the worktree and report failures versus clean main's env-only failures. Do not merge; report numbers.
+  </note>
+</relay>
+
+### 2026-11-21 23:03
+<relay from="coordinator" session="session_019omLJiHaJzsmWN4Zv7DypT" current-time="2026-11-21T16:02:55Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Update this PC to latest main and retest. Steps: 1) In E:\final_proj\mice\mice_system, back up main_python\known_hubs.json to .local\backup\known_hubs.json.bak (copy, do not delete anything). Check `git status`; if the checkout has local uncommitted work or unpushed commits, do NOT overwrite it: use a separate worktree/clone of origin/main (e.g. E:\final_proj\mice\wt_main_1121) and run the hub from there on port 8642 only if the existing hub is not running from the dirty checkout; tell me which you chose. 2) git fetch; fast-forward to origin/main (git pull --ff-only). Pull again later when I say #163 landed. 3) Restart the hub from source (python main_python\main.py), no PyInstaller. 4) Retest: open http://localhost:8642/ with Playwright Chromium at 1280px and 390px, language picker present and Thai by default, switch to English and back; pages /, /studio/, /help, /app/voice/, /app/gacha/, /app/tv/, /app/camera/ no console errors beyond missing hardware; save a project named in Thai via Studio or POST /api/save and load it back; Complaints tab shows freeze reports as sentences. 5) Chrome 75 check on the Android VM at E:\tv-sim if it can be started within a few minutes (home, studio, voice load and show the language picker); if not, say so. Report results, anything failing, and the exact git state. Do not edit friend repos. No board tests.
+  </note>
+</relay>
+
+### 2026-11-21 23:15
+<wake reason="mention" current-time="2026-11-21T16:04:07Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <thread ts="cmsg_01R7BbYxaTb3Yv9YS3gQaaA39KanxYyRPeUJ1gpQG4agQF">
+      <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3Vzk9mkYuPL6aPYMosV6NBR" sent-at="2026-11-21T16:04:07Z" mention="true">α╕ùα╕│</message>
+    </thread>
+  </project>
+</wake>
+
+
+### 2026-11-21 23:17
+<wake reason="mention" current-time="2026-11-21T16:05:23Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <thread ts="cmsg_01R7BbYxaTb3Yv9YS3gQaaA39KanxYyRPeUJ1gpQG4agQF">
+      <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3WNS9Dx522ghoqEWgHhq3CF" sent-at="2026-11-21T16:05:23Z" mention="true">build MiceHub.exe α╣Çα╕¡α╕çα╣äα╕öα╣ëα╣Çα╕Ñα╕óα╕½α╕Ñα╕▒α╕ç pull</message>
+    </thread>
+  </project>
+</wake>
+
+
+### 2026-11-22 11:28
+<wake reason="mention" current-time="2026-11-22T04:27:59Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <thread ts="cmsg_01R7BbYxaTb3Yv9YS3gQaaA39KanxYyRPeUJ1gpQG4agQF">
+      <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA35anVKY1r7ku3YgpogfzM9r" sent-at="2026-11-22T04:27:58Z" mention="true">mearge</message>
+    </thread>
+  </project>
+</wake>
+
+
+### 2026-11-22 11:28
+<wake reason="mention" current-time="2026-11-22T04:28:04Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <thread ts="cmsg_01R7BbYxaTb3Yv9YS3gQaaA39KanxYyRPeUJ1gpQG4agQF">
+      <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA34wnjNz5wpucbmyDzFMxEtg" sent-at="2026-11-22T04:28:04Z" mention="true">merge</message>
+    </thread>
+  </project>
+</wake>
+
+
+### 2026-11-22 11:29
+<wake reason="mention" current-time="2026-11-22T04:29:22Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <thread ts="cmsg_01R7BbYxaTb3Yv9YS3gQaaA39KanxYyRPeUJ1gpQG4agQF">
+      <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3MB75D1Ck8X5bnnX5Bawujp" sent-at="2026-11-22T04:29:22Z" mention="true">pull main α╕Ñα╣êα╕▓α╕¬α╕╕α╕ö α╣üα╕Ñα╣ëα╕º build exe α╣âα╕½α╕íα╣ê α╕ùα╕öα╕¬α╕¡α╕Ü α╕¬α╕│α╕úα╕¡α╕ç dist\MiceHub.exe α╣Çα╕üα╣êα╕▓ α╣üα╕Ñα╣ëα╕ºα╣üα╕ùα╕Öα╕ùα╕╡α╣ê α╕½α╣ëα╕▓α╕íα╣üα╕òα╕░α╕çα╕▓α╕Öα╕äα╣ëα╕▓α╕çα╣âα╕Ö mice_system</message>
+    </thread>
+  </project>
+</wake>
+
+
+### 2026-11-22 11:53
+<wake reason="mention" current-time="2026-11-22T04:53:02Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <thread ts="cmsg_01R7BbYxaTb3Yv9YS3gQaaA39KanxYyRPeUJ1gpQG4agQF">
+      <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3KVq6q4ea8NBP5aa6h5cVua" sent-at="2026-11-22T04:53:02Z" mention="true">pull main α╕Ñα╣êα╕▓α╕¬α╕╕α╕ö α╣üα╕Ñα╣ëα╕º build exe α╣âα╕½α╕íα╣ê α╕ùα╕öα╕¬α╕¡α╕Ü α╕¬α╕│α╕úα╕¡α╕ç exe α╣Çα╕üα╣êα╕▓ α╣üα╕Ñα╣ëα╕ºα╣üα╕ùα╕Öα╕ùα╕╡α╣ê</message>
+    </thread>
+  </project>
+</wake>
+
+
+### 2026-11-22 11:53
+<relay from="coordinator" session="session_019omLJiHaJzsmWN4Zv7DypT" current-time="2026-11-22T04:53:09Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      pull origin main α╕Ñα╣êα╕▓α╕¬α╕╕α╕ö (α╕íα╕╡ #176: α╣üα╕₧α╣çα╕üα╕áα╕▓α╕⌐α╕▓ zh/ja) α╣âα╕Ö worktree E:\final_proj\mice\wt_main_1121 α╣Çα╕ùα╣êα╕▓α╕Öα╕▒α╣ëα╕Ö α╕½α╣ëα╕▓α╕íα╣üα╕òα╕░α╕çα╕▓α╕Öα╕äα╣ëα╕▓α╕çα╣âα╕Ö mice_system. α╣üα╕Ñα╣ëα╕º build: python -m PyInstaller --clean --noconfirm MiceHub.spec. α╕¬α╕│α╕úα╕¡α╕ç dist\MiceHub.exe α╣üα╕Ñα╕░ main_python\MiceHub.exe α╣Çα╕üα╣êα╕▓α╣äα╕ºα╣ëα╣âα╕Ö mice_system\.local\backup (α╕èα╕╖α╣êα╕¡α╕íα╕╡α╕ºα╕▒α╕Öα╕ùα╕╡α╣ê) α╕üα╣êα╕¡α╕Öα╣üα╕ùα╕Öα╕ùα╕╡α╣ê. α╕úα╕▒α╕Ö exe α╣âα╕½α╕íα╣êα╕ùα╕╡α╣ê 8642 α╕ùα╕öα╕¬α╕¡α╕Üα╕½α╕Öα╣ëα╕▓α╕½α╕Ñα╕▒α╕ü 7 α╕½α╕Öα╣ëα╕▓ (/, /studio/, /help, /app/voice|gacha|tv|camera) α╕ùα╕╡α╣ê 390px α╣üα╕Ñα╕░ 1280px, α╕òα╕▒α╕ºα╣Çα╕Ñα╕╖α╕¡α╕üα╕áα╕▓α╕⌐α╕▓ th/en/zh/ja α╕¬α╕Ñα╕▒α╕Üα╣äα╕öα╣ëα╣üα╕Ñα╕░α╕êα╕│α╕äα╣êα╕▓α╕½α╕Ñα╕▒α╕ç reload, α╣äα╕íα╣êα╕íα╕╡ console error. α╕úα╕▓α╕óα╕çα╕▓α╕Öα╕£α╕Ñα╣Çα╕¢α╣çα╕Öα╣äα╕ùα╕óα╕¬α╕▒α╣ëα╕Öα╣å.
+  </note>
+</relay>
+
+### 2026-11-22 14:18
+<wake reason="mention" current-time="2026-11-22T07:18:39Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh" sent-at="2026-11-22T07:18:10Z" mention="true">main α╕éα╕¡α╕ç main hub α╕íα╕▒α╕Öα╕êα╕▒α╕öα╣Çα╕úα╕╡α╕óα╕çα╕½α╕Öα╣ëα╕▓α╕óα╕▒α╕çα╣äα╕çα╕¡α╕░α╣üα╕¢α╕Ñα╕üα╣å α╕òα╕▒α╕ºα╣Çα╕¢α╕Ñα╕╡α╣êα╕óα╕Öα╕áα╕▓α╕⌐α╕▓α╕íα╕▒α╕Öα╕äα╕ºα╕úα╕¡α╕óα╕╣α╣êα╕òα╕úα╕çα╕Öα╕▒α╣ëα╕Öα╕½α╕úα╕¡α╣âα╕Ö help α╣âα╕Öα╕½α╕Öα╣ëα╕▓α╕òα╣êα╕▓α╕çα╕üα╕▓α╕úα╕ùα╕│α╕çα╕▓α╕Öα╕òα╣êα╕▓α╕çα╣åα╕éα╕¡α╕ç α╣üα╕¡α╕₧α╕òα╣êα╕▓α╕çα╣å α╣âα╕èα╣ëα╕úα╕╣α╕¢α╣üα╕ùα╕Öα╕¬α╣êα╕ºα╕Öα╕ùα╕╡α╣êα╕óα╕▓α╕üα╣å α╣äα╕öα╣ëα╕Öα╕░ α╣üα╕Ñα╕░α╣âα╕Ö help α╣üα╕Üα╕Üα╕éα╕¡α╕ç project Tri-U α╣âα╕½α╣ë gpt α╣Çα╕êα╕Öα╕úα╕╣α╕¢α╣âα╕½α╣ëα╣üα╕Üα╕Üα╕Öα╣êα╕▓α╕úα╕▒α╕üα╣åα╕¡α╕░
+
+&#34;E:\Tri-U&#34;</message>
+  </project>
+</wake>
+
+
+### 2026-11-22 14:21
+<project_claude_message session="session_019omLJhenyz8RsBYkudrmCa" thread_id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+<relay from="coordinator" session="session_019omLJhenyz8RsBYkudrmCa" current-time="2026-11-22T07:21:51Z">
+  The messages below are picked by the coordinator session and not necessarily consecutive. User messages are copied verbatim by the server.
+  <cited id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA32GNbUT5az6A6WEgdPpqxh7" author="user" name="man" at="2026-11-22T07:20:46Z" where="timeline">
+      α╣éα╕ùα╕öα╣åα╣Çα╕£α╕Ñα╕¡α╕¢α╕┤α╕öα╕½α╕Ñα╕▓α╕óα╣å α╣üα╕¡α╕₧α╣äα╕¢ α╣üα╕Ñα╣ëα╕ºα╕üα╣çα╣Çα╕úα╕▓α╣äα╕öα╣ëα╣Çα╕¢α╕Ñα╕╡α╣êα╕óα╕Ö α╕¡α╕▓α╕äα╕┤α╣Çα╕ùα╕äα╕éα╕¡α╕çα╣éα╕¢α╕úα╣üα╕üα╕úα╕íα╣Çα╕úα╕▓α╕úα╕╢α╕¢α╣êα╕▓α╕ºα╕¡α╕░α╣Çα╕¢α╣çα╕Ö node α╣Çα╕¢α╣çα╕Öα╣äα╕úα╕çα╕╡α╣ëα╕½α╕úα╕╖α╕¡α╣Çα╕úα╕▓α╕¡α╕óα╕╣α╣êα╣üα╕Üα╕Üα╣Çα╕öα╕┤α╕íα╕òα╕¡α╕Öα╕Öα╕╡α╣ëα╕¡α╕░α╣äα╕úα╕ùα╕│α╣âα╕½α╣ëα╣Çα╕úα╣çα╕ºα╕¬α╕╕α╕öα╣üα╕Ñα╕░α╕íα╕╡α╕¢α╕▒α╕ìα╕½α╕▓α╕Öα╣ëα╕¡α╕ó
+  </cited>
+  <cited id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA38dKYsW6Q3GpnSAWUENhrkc" author="user" name="man" at="2026-11-22T07:21:44Z" where="timeline">
+      α╕êα╕▒α╕öα╕üα╕▓α╕úα╣Çα╕¡α╕çα╣Çα╕Ñα╕ó
+  </cited>
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      User accidentally closed several apps on the PC and says "α╕êα╕▒α╕öα╕üα╕▓α╕úα╣Çα╕¡α╕çα╣Çα╕Ñα╕ó" (attached, replying to my suggestion to reopen MiceHub.exe). Please start dist\MiceHub.exe (and Face_Regonize\Start Reconize.vbs if port 8000 is down), check hub 8642 and services come up, then continue your task.
+  </note>
+</relay>
+</project_claude_message>
+
+
+### 2026-11-22 14:25
+<project_claude_message session="session_019omLJhenyz8RsBYkudrmCa" thread_id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+<relay from="coordinator" session="session_019omLJhenyz8RsBYkudrmCa" current-time="2026-11-22T07:25:51Z">
+  The messages below are picked by the coordinator session and not necessarily consecutive. User messages are copied verbatim by the server.
+  <cited id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA34Fc1hL8WP1jxAS8ccKqEaf" author="user" name="man" at="2026-11-22T07:25:46Z" where="timeline">
+      α╕òα╕¡α╕Öα╕Öα╕╡α╣ëα╕ùα╕╡α╣êα╣Çα╕¢α╕Ñα╕╡α╣êα╕óα╕Öα╕áα╕▓α╕⌐α╕▓α╕¡α╕░α╕äα╕Öα╕êα╕░α╕úα╕╣α╣ëα╣äα╕öα╣ëα╣äα╕çα╕ºα╣êα╕▓α╕òα╕úα╕çα╕Öα╕▒α╣ëα╕Öα╕äα╕╖α╕¡α╕ùα╕╡α╣êα╣Çα╕¢α╕Ñα╕╡α╣êα╕óα╕Öα╕áα╕▓α╕⌐α╕▓α╕öα╣ëα╕ºα╕óα╕öα╕╣α╕óα╕▓α╕üα╕óα╕╕α╕Öα╕░
+  </cited>
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      User follow-up (attached): the current language switcher isn't recognizable as one. Make it obvious: globe icon + current language name in its own script (e.g. ≡ƒîÉ α╣äα╕ùα╕ó / English / Σ╕¡µûç / µùÑµ£¼Φ¬₧), standard top-right spot, same in every app.
+  </note>
+</relay>
+</project_claude_message>
+
+
+### 2026-11-22 14:34
+<project_claude_message session="session_019omLJhenyz8RsBYkudrmCa" thread_id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+<relay from="coordinator" session="session_019omLJhenyz8RsBYkudrmCa" current-time="2026-11-22T07:34:57Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Coordinator: project rule allows merge when failures equal main's env-only ones, so no need to ask the user. A cloud thread is opening+merging the PR for your branch. After it lands on main, pull, rebuild MiceHub.exe (backup old), restart and check the hub.
+  </note>
+</relay>
+</project_claude_message>
+
+
+### 2026-11-22 14:40
+<project_claude_message session="session_019omLJhenyz8RsBYkudrmCa" thread_id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+<relay from="coordinator" session="session_019omLJhenyz8RsBYkudrmCa" current-time="2026-11-22T07:39:59Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Coordinator: your branch merged as PR #186 (system map docs rebuilt). Pull main, rebuild MiceHub.exe (backup old), restart hub and check, if your session permits.
+  </note>
+</relay>
+</project_claude_message>
+
+
+### 2026-11-22 14:44
+<project_claude_message session="session_019omLJhenyz8RsBYkudrmCa" thread_id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+<relay from="coordinator" session="session_019omLJhenyz8RsBYkudrmCa" current-time="2026-11-22T07:44:15Z">
+  The messages below are picked by the coordinator session and not necessarily consecutive. User messages are copied verbatim by the server.
+  <cited id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3CoXdJPwovxjUhJztSVmhJ6" author="user" name="man" at="2026-11-22T07:42:23Z" where="timeline" attachments="1">
+      α╕öα╕╣α╕óα╕▓α╕üα╕¢α╣êα╕▓α╕ºα╕ûα╣ëα╕▓α╣Çα╕¢α╣çα╕Öα╕ÿα╕╡α╕íα╕öα╕│α╣üα╕Ñα╣ëα╕ºα╕öα╕╣
+  </cited>
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      User bug (attached message; screenshot shows it): in dark theme the language dropdown list shows near-white text on white background, unreadable (only the selected row is visible). Fix option colors for dark AND light themes (explicit background/color on select option, color-scheme), check Chrome 75, check every other select/dropdown in all apps for the same issue, push (cloud can open PR), rebuild exe.
+  </note>
+</relay>
+</project_claude_message>
+
+
+### 2026-11-22 14:47
+<project_claude_message session="session_019omLJhenyz8RsBYkudrmCa" thread_id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+<relay from="coordinator" session="session_019omLJhenyz8RsBYkudrmCa" current-time="2026-11-22T07:47:51Z">
+  The messages below are picked by the coordinator session and not necessarily consecutive. User messages are copied verbatim by the server.
+  <cited id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3JEBXv7bjQTLxVLR63R4hN5" author="user" name="man" at="2026-11-22T07:47:45Z" where="timeline">
+      α╕üα╕╣α╣Çα╕èα╕╖α╣êα╕¡α╣âα╕ê UXUI α╕íα╕╢α╕çα╣äα╕öα╣ëα╕¢α╕░α╣Çα╕Öα╕╡α╕óα╕üα╣âα╕½α╣ë gpt α╕èα╣êα╕ºα╕óα╣Çα╕Ñα╕óα╕Öα╕░
+  </cited>
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      User (attached) wants GPT to help with UX/UI. After the dropdown fix: screenshot every screen of every our app (hub, Studio, Voice, Faces, prize/gacha, TV, camera, Help, board page via sim) at 390px and 1280px, dark+light, and have GPT Codex review each as a non-technical user: concrete problems + fixes ranked. Save the report in the repo (docs/ux_review_gpt_2026-11-22.md), push, and let the audit thread "Audit every app screen for ease of use" apply fixes (it's working cloud-side; avoid editing same files).
+  </note>
+</relay>
+</project_claude_message>
+
+
+### 2026-11-22 14:48
+<project_claude_message session="session_019omLJhenyz8RsBYkudrmCa" thread_id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+<relay from="coordinator" session="session_019omLJhenyz8RsBYkudrmCa" current-time="2026-11-22T07:48:04Z">
+  The messages below are picked by the coordinator session and not necessarily consecutive. User messages are copied verbatim by the server.
+  <cited id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3FYBLFUcu43WWJgcZyKTCAL" author="user" name="man" at="2026-11-22T07:47:58Z" where="timeline">
+      gemini α╕öα╣ëα╕ºα╕óα╣âα╕½α╣ëα╕èα╣êα╕ºα╕óα╕üα╕╣α╣Çα╕Ñα╕ó
+  </cited>
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      User adds (attached): Gemini should review too. If Gemini CLI is installed and signed in on the PC, run the same screenshot UX review with it and add a Gemini section to the report. If it isn't available or needs sign-in/key, don't use user's accounts; just report what's missing.
+  </note>
+</relay>
+</project_claude_message>
+
+
+### 2026-11-22 15:01
+<project_claude_message session="session_019omLJhenyz8RsBYkudrmCa" thread_id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+<relay from="coordinator" session="session_019omLJhenyz8RsBYkudrmCa" current-time="2026-11-22T08:00:53Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Coordinator: PR #188 (hub now stops all child processes on exit; stop_hub.bat / MiceHub.exe --stop; voice no longer overlaps) is merged but only tested on Linux. When you next rebuild the exe, please also test on this real Windows PC: start hub, close it each way (window X, Ctrl+C, --stop), confirm no orphan voice/faces processes and ports free, restart cleanly.
+  </note>
+</relay>
+</project_claude_message>
+
+
+### 2026-11-22 15:16
+<project_claude_message session="session_019omLJhenyz8RsBYkudrmCa" thread_id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+<relay from="coordinator" session="session_019omLJhenyz8RsBYkudrmCa" current-time="2026-11-22T08:13:58Z">
+  The messages below are picked by the coordinator session and not necessarily consecutive. User messages are copied verbatim by the server.
+  <cited id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA31KJAJYo6qUAx3DfZY32r8a" author="user" name="man" at="2026-11-22T08:13:54Z" where="timeline">
+      Redesign hub layout and illustrate Help: α╕üα╕│α╕Ñα╕▒α╕çα╣üα╕üα╣ëα╕úα╕▓α╕óα╕üα╕▓α╕úα╕áα╕▓α╕⌐α╕▓α╕ùα╕╡α╣êα╕¡α╣êα╕▓α╕Öα╣äα╕íα╣êα╕¡α╕¡α╕üα╣âα╕Öα╕ÿα╕╡α╕íα╕öα╕│ α╣üα╕Ñα╣ëα╕ºα╣âα╕½α╣ë GPT α╕üα╕▒α╕Ü Gemini α╕öα╕╣α╕áα╕▓α╕₧α╕ùα╕╕α╕üα╕½α╕Öα╣ëα╕▓α╕êα╕¡
+      
+      α╣äα╕íα╣êα╣âα╕èα╣êα╣üα╕äα╣êα╕áα╕▓α╕⌐α╕▓ α╕úα╕ºα╕íα╕ûα╕╢α╕ç layout UXUI α╕òα╣êα╕▓α╕çα╣å α╕öα╣ëα╕ºα╕ó
+  </cited>
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      User clarifies (attached): GPT/Gemini review must cover full layout and UX/UI of every screen (placement, flow, readability, colors/contrast in dark+light, spacing, mobile), not just language. Make sure the review prompt asks for that.
+  </note>
+</relay>
+</project_claude_message>
+
+
+### 2026-11-22 15:19
+<project_claude_message session="session_019omLJhenyz8RsBYkudrmCa" thread_id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+<relay from="coordinator" session="session_019omLJhenyz8RsBYkudrmCa" current-time="2026-11-22T08:19:57Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Coordinator: audit thread can't see docs/ux_review_gpt_2026-11-22.md on main; tell it which branch it's on (or include it in claude/select-dark-1122). Also QC "Tools list" check went red on main after #186 (home redesign); please fix it in your next push.
+  </note>
+</relay>
+</project_claude_message>
+
+
+### 2026-11-22 15:38
+<wake reason="mention" current-time="2026-11-22T08:38:56Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <thread ts="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+      <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA35DE78vvqhro4kmR4joPYJZ" sent-at="2026-11-22T08:38:55Z" mention="true">α╕¡α╕Öα╕╕α╕ìα╕▓α╕òα╣âα╕½α╣ëα╕úα╕▒α╕Ö Gemini (agy) α╣üα╕Üα╕Üα╕éα╣ëα╕▓α╕íα╕üα╕▓α╕úα╕éα╕¡α╕¬α╕┤α╕ùα╕ÿα╕┤α╣î α╣Çα╕ëα╕₧α╕▓α╕░α╣éα╕ƒα╕Ñα╣Çα╕öα╕¡α╕úα╣îα╕áα╕▓α╕₧α╕úα╕╡α╕ºα╕┤α╕º</message>
+    </thread>
+  </project>
+  <system-note>If one quick read gets you the answer, just answer. Otherwise, before any other tool, instead of a reaction, send one `reply` of at most 20 words saying your first step without restating the message, so the person is not left waiting.</system-note>
+</wake>
+
+
+### 2026-11-22 15:49
+<project_claude_message session="session_019omLJhenyz8RsBYkudrmCa" thread_id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+<relay from="coordinator" session="session_019omLJhenyz8RsBYkudrmCa" current-time="2026-11-22T08:49:24Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Coordinator: main now has UX rounds 1-6 (#187-#196) incl. Gemini/GPT fixes. Please pull main, rebuild MiceHub.exe (backup old), restart, quick check at 390/1280 dark+light, and report.
+  </note>
+</relay>
+</project_claude_message>
+
+
+### 2026-11-22 17:25
+<project_claude_message session="session_019omLJhenyz8RsBYkudrmCa" thread_id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+<relay from="coordinator" session="session_019omLJhenyz8RsBYkudrmCa" current-time="2026-11-22T10:25:26Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Coordinator: Studio fixes #199-#202 merged (undo/redo, theme picker, overwrite warning, video import wording). Please pull main, rebuild MiceHub.exe (backup old), restart and quick-check Studio.
+  </note>
+</relay>
+</project_claude_message>
+
+
+### 2026-11-22 17:29
+<project_claude_message session="session_019omLJhenyz8RsBYkudrmCa" thread_id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LoHKX3DLxEa3ZkHjbQPZeh">
+<relay from="coordinator" session="session_019omLJhenyz8RsBYkudrmCa" current-time="2026-11-22T10:29:12Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Coordinator: #203 merged (mobile Stop/Help now on a solid bottom bar). Please pull main, rebuild exe (backup), restart, recheck Studio at 390px.
+  </note>
+</relay>
+</project_claude_message>
+
+
+### 2026-11-22 21:52
+<wake reason="mention" current-time="2026-11-22T14:52:16Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA345rixJiFCYoJnhuniVdifS" sent-at="2026-11-22T13:57:06Z" mention="true">α╣Çα╕ùα╕¬α╕ùα╕╕α╕üα╕¡α╕óα╣êα╕▓α╕çα╣âα╕½α╣ëα╕½α╕íα╕öα╕ùα╕╕α╕üα╣Çα╕äα╕¬α╕½α╕▓α╕Üα╕▒α╕üα╕½α╕▓α╕¡α╕░α╣äα╕úα╣âα╕½α╣ëα╕½α╕íα╕öα╕êα╕│α╕Ñα╕¡α╕çα╣âα╕½α╣ëα╕½α╕íα╕öα╕ùα╕╕α╕üα╣Çα╕½α╕òα╕╕α╕üα╕▓α╕úα╕ôα╣îα╣âα╕½α╣ë AI α╕½α╕Ñα╕▓α╕óα╣åα╕òα╕▒α╕ºα╕äα╕┤α╕öα╣Çα╕äα╕¬α╣üα╕Ñα╣ëα╕º discuss α╕üα╕▒α╕Öα╣âα╕½α╣ëα╕½α╕íα╕öα╕êα╕│α╕Ñα╕¡α╕çα╣âα╕½α╣ëα╕½α╕íα╕ö α╕öα╕╣ UXUI α╕üα╕úα╕ôα╕╡ α╕½α╕úα╕╖α╕¡α╕ùα╕╕α╕üα╣åα╕¡α╕óα╣êα╕▓α╕çα╕ùα╕╡α╣êα╣Çα╕¢α╣çα╕Öα╣äα╕¢α╣äα╕öα╣ëα╣Çα╕¡α╕▓α╣âα╕½α╣ëα╕½α╕íα╕ö</message>
+  </project>
+</wake>
+
+
+### 2026-11-22 23:13
+<relay from="coordinator" session="session_019omLJi5VHTdLqSv5UoH2BA" current-time="2026-11-22T16:13:31Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      PR #204 was just merged to main (7413a60). Pull main (git checkout main; git pull --ff-only; back up local-only files first: faces_login.json, dist/hub_password.txt, .local). Rebuild with `python -m PyInstaller --clean --noconfirm MiceHub.spec` (always the spec). Start the new MiceHub.exe, check http://127.0.0.1:8642/ returns 200 and /studio/ loads, then stop it. Report build time, exe size and any error. Do not touch the real projects or the hub password. Do not edit the friend repos.
+  </note>
+</relay>
+
+### 2026-11-22 23:14
+<relay from="coordinator" session="session_019omLJi5VHTdLqSv5UoH2BA" current-time="2026-11-22T16:14:44Z">
+  The note below was written by the coordinator session, a Claude session, not by your user.
+  <note>
+      Restore the hub that the rebuild stopped. In the MAIN checkout (E:\final_proj\mice\mice_system; do NOT switch its branch): copy its current dist\MiceHub.exe to .local\backup (timestamped name), then copy the freshly built exe from the worktree (.claude\worktrees\bridge-cse_019omLJhF8BYUiTSFfMG7uQu\dist\MiceHub.exe) over dist\MiceHub.exe in the main folder. Start it the way the hub is normally started (MiceHub.exe from the main folder), confirm http://127.0.0.1:8642/ answers 200 and /api/version works, and leave it running. Do not touch real projects or the hub password. Report the result briefly.
+  </note>
+</relay>
+
+### 2026-11-23 09:40
+<wake reason="mention" current-time="2026-11-23T02:39:53Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LdDkuSNDHjQ9STos36XMsa" sent-at="2026-11-23T02:35:46Z" mention="true">α╣äα╕íα╣êα╕úα╕▒α╕Üα╕Ñα╕┤α╕çα╕üα╣îα╕ºα╕┤α╕öα╕╡α╣éα╕¡α╕ùα╕╡α╣êα╕èα╕╡α╣ëα╕üα╕Ñα╕▒α╕Üα╣Çα╕éα╣ëα╕▓α╣Çα╕äα╕úα╕╖α╣êα╕¡α╕çα╣Çα╕úα╕▓α╣Çα╕¡α╕çα╕½α╕úα╕╖α╕¡α╕ºα╕çα╣üα╕Ñα╕Öα╣Çα╕öα╕╡α╕óα╕ºα╕üα╕▒α╕Ö
+α╕äα╕╖α╕¡α╕óα╕▒α╕çα╣äα╕çα╕äα╕╖α╕¡α╣âα╕èα╣ëα╣äα╕íα╣êα╣äα╕öα╣ëα╕½α╕úα╕╖α╕¡α╣üα╕üα╣ëα╣âα╕½α╣ëα╣âα╕èα╣ëα╣äα╕öα╣ë
+
+
+α╕«α╕▒α╕Üα╕¡α╕▓α╕êα╕éα╕╢α╣ëα╕Öα╕ºα╣êα╕▓α╣Çα╕ºα╕¡α╕úα╣îα╕èα╕▒α╕Öα╣Çα╕üα╣êα╕▓ α╣Çα╕₧α╕úα╕▓α╕░α╣éα╕ƒα╕Ñα╣Çα╕öα╕¡α╕úα╣îα╕½α╕Ñα╕▒α╕üα╕óα╕▒α╕çα╕¡α╕óα╕╣α╣êα╕Üα╕Öα╕çα╕▓α╕Öα╕¡α╕╡α╕üα╕èα╕┤α╣ëα╕Öα╕ùα╕╡α╣êα╕ùα╕│α╕äα╣ëα╕▓α╕çα╣äα╕ºα╣ë α╕₧α╕¡α╕çα╕▓α╕Öα╕Öα╕▒α╣ëα╕Öα╣Çα╕¬α╕úα╣çα╕ê α╕£α╕íα╕êα╕░ build α╣âα╕½α╕íα╣êα╕êα╕▓α╕ü main α╣âα╕½α╣ëα╕äα╕úα╕▒α╕Ü
+
+α╕çα╕▓α╕Öα╕¡α╕░α╣äα╕úα╕äα╣ëα╕▓α╕çα╕ùα╕│α╣âα╕½α╣ëα╕½α╕íα╕öα╣Çα╕Ñα╕ó</message>
+  </project>
+</wake>
+
