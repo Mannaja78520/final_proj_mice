@@ -1927,6 +1927,7 @@
   "FLASH ON|OFF": "FLASH ON|OFF",
   "3. เอวและยักไหล่ WAIST / SHRUG": "3. 腰部与耸肩 WAIST / SHRUG",
   "The Problem reports tab shows the newest 40 reports and a button for older ones, so the page stays quick on a phone.": "问题报告页签显示最新的 40 条报告，另有按钮查看更早的报告，这样手机上页面也很快。",
-  "Help — Mice": "帮助 — Mice"
+  "Help — Mice": "帮助 — Mice",
+  "The page waits for the board to answer before showing its controls.": "页面会等板卡响应后再显示控制项。"
  }
 }
