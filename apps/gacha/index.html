@@ -399,7 +399,7 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
     this.$("gMachine").innerHTML = '<option value="">any machine with that kind</option>' +
       this.S.machines.map(m => '<option value="' + this.esc(m.id) + '">' + this.esc(m.label || m.id) + '</option>').join("");
     this.$("evName").value = this.S.event.name || "";
-    this.$("evOpen").textContent = this.S.event.open ? "open" : "closed";
+    this.$("evOpen").textContent = this.S.event.open ? "Event is open" : "Event is closed";
     this.drawMachines(); this.drawItems(); this.drawMsgs();
     this.$("lowN").value = this.S.low_stock || 0;
     const live = this.S.machines.filter(m => !m.live.error).length;

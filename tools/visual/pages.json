@@ -321,7 +321,18 @@
   "^nong-far$",
   "^(Kooo|Looo+ng\\w*|NONO|NookYung|SeiyngSung|VongSungKhwa|WonderWomen|all|all\\.yaml|all move|hello|my move|tangVongSungLeft|yakyai)$",
   "^this PC$",
-  "^(or use the|view buttons|stays|pause|only where you want the robot to stand still\\.|monitor|live)$"
+  "^(or use the|view buttons|stays|pause|only where you want the robot to stand still\\.|monitor|live)$",
+  "\\.yaml$",
+  "(Nong Studio|All-Jao Games|Photobooth|Google Sheet)$",
+  "^[\u00b7\\s]*CPU\\b",
+  "^Sources:$",
+  "COMMANDS\\.md",
+  "Reconize$"
  ],
- "_latinAllowed_note": "the last pattern = KNOWN GAP: Studio sentences split by inline markup (<b>view buttons</b>) cannot be translated as a whole; remove it when the sentences are rewritten."
+ "_latinAllowed_note": "the last pattern = KNOWN GAP: Studio sentences split by inline markup (<b>view buttons</b>) cannot be translated as a whole; remove it when the sentences are rewritten.",
+ "attrLeakBaseline": {
+  "th": 26,
+  "zh": 29,
+  "ja": 29
+ }
 }

@@ -44,6 +44,8 @@ async function run(){
           qcMark("THAI~" + LANGS[li] + "~" + pg.id + (tabs[ti] ? "~" + ti : "") + "~" + bad.length + "~" + (bad[0] || "").replace(/[^\\u0E00-\\u0E7Fa-zA-Z0-9]/g, "_").slice(0, 24));
           var lat = pg.latin === false ? [] : r.latin.filter(function(s){ return !LALLOW.some(function(a){ return new RegExp(a).test(s); }); });
           qcMark("LATIN~" + LANGS[li] + "~" + pg.id + (tabs[ti] ? "~" + ti : "") + "~" + lat.length + "~" + (lat[0] || "").replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30));
+          var at = r.attr.filter(function(s){ return !LALLOW.some(function(a){ return new RegExp(a).test(s.replace(/^[a-z-]+: /, "")); }); });
+          qcMark("ATTR~" + LANGS[li] + "~" + pg.id + "~" + at.length);
           qcMark("STUCK~" + LANGS[li] + "~" + pg.id + "~" + r.stuck.length);
         } catch (e) { qcMark("ERR~" + pg.id + "~" + String(e).slice(0, 40).replace(/[^a-zA-Z0-9]/g, "_")); }
       }
@@ -87,6 +89,16 @@ def run(t):
             _, lang, pid = m.split("~")[:3]
             if lang != "en":     # English pages are English; Thai/Chinese/Japanese pages must not keep English UI words
                 t.ok(int(m.split("~")[-2]) == 0, "no leftover English UI text on %s in %s" % (pid, lang), m)
+    # Tooltips / placeholders / labels still in English. Not zero yet (long tooltips): a RATCHET, so it can only go down.
+    left = {}
+    for m in marks:
+        if m.startswith("ATTR~"):
+            _, lang, pid, n = m.split("~")
+            left[lang] = left.get(lang, 0) + int(n)
+    base_n = cfg.get("attrLeakBaseline", {})
+    for lang, n in sorted(left.items()):
+        if lang != "en":
+            t.ok(n <= base_n.get(lang, 0), "English tooltips/placeholders left in %s: %d (ceiling %d, lower it when you translate)" % (lang, n, base_n.get(lang, 0)), left)
     for m in marks:
         if m.startswith("STUCK~"):
             _, lang, pid, n = m.split("~")
