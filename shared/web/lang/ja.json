@@ -1560,6 +1560,8 @@
   "TV Remote & Monitor — Mice": "TVリモコンとモニター — Mice",
   "Cameras — Mice": "カメラ — Mice",
   "Mice — light strip": "Mice — ライトストリップ",
-  "this PC's camera is in use by another app (a browser tab, or an older Mice window that is still open), or unplugged - close it and try again": "このPCのカメラは他のアプリが使用中（ブラウザのタブ、または開いたままの古い Mice ウィンドウ）か、抜けています。閉じてからもう一度お試しください"
+  "this PC's camera is in use by another app (a browser tab, or an older Mice window that is still open), or unplugged - close it and try again": "このPCのカメラは他のアプリが使用中（ブラウザのタブ、または開いたままの古い Mice ウィンドウ）か、抜けています。閉じてからもう一度お試しください",
+  "cut servo power - the arms go limp": "サーボの電源を切ります。腕がだらんと垂れます",
+  "pose editor + live 3D over this USB cable (shared — the module site can stay open too)": "この USB ケーブル経由のポーズエディタ + ライブ 3D（共有 — モジュールのサイトも開いたままにできます）"
  }
 }

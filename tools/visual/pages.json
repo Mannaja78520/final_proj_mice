@@ -332,9 +332,9 @@
  ],
  "_latinAllowed_note": "the last pattern = KNOWN GAP: Studio sentences split by inline markup (<b>view buttons</b>) cannot be translated as a whole; remove it when the sentences are rewritten.",
  "attrLeakBaseline": {
-  "th": 34,
-  "zh": 36,
-  "ja": 36
+  "th": 2,
+  "zh": 4,
+  "ja": 2
  },
- "_attrLeakBaseline_note": "ceiling measured 2026-11-23 (26/29/29) + slack for content that loads late; lower it as tooltips get translated"
+ "_attrLeakBaseline_note": "measured 2026-11-23 after translating the tooltips: th 1, zh 3, ja 1 (what is left is file names and dynamic 'delete X from the SD card') + 1 slack; lower it as tooltips get translated"
 }
