@@ -1,7 +1,7 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
 Owner: codex:11232254-6f5e
-Updated: 2026-11-23T23:52+07:00
+Updated: 2026-11-23T23:57+07:00
 Branch: codex/visual-regression-1123
 Last commit: this checkpoint
 Plan: A1123-2
@@ -11,7 +11,7 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 4, run the focused Help QC on `2a9bf08` when the shared slot clears. In parallel with the wait, use the independent loopback fixture for case 20: give Nong and Lift one failed first status at 390 px, assert hidden capability cards and zero commands, then reload with successful identification. One replay, no firmware edits.
+Item 4, finish the focused Help QC on `2a9bf08` when the shared slot clears. Case 20 found `CAM LIST` before identification on Nong/Lift. Add a camera capability guard to the module PR, document it and extend its static camera QC. Use one failed-status browser replay on Nong/Lift/Cam and one cached 12-target rebuild plus QEMU checks after the other QC slot clears.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
@@ -43,6 +43,7 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 - haveRobot() in Studio means "connected to a robot", not "3D ready".
 
 ## Done
+- Item 4 case 20 baseline: Edge 390 px with a simulated 503 kept all capability cards hidden, then showed the correct Nong or Lift card after successful reload. Both boards received one startup `CAM LIST` before identification. Treat the command count as the assertion and ignore the probe's stale footer. Private log: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/case20-wire.log`.
 - Item 4 case 12 commit `2a9bf08` searches current topic text and omits Previous/Next captions from matches. The same private Edge component replay passed 4/4 after the patch, including the normal empty result. Language catalog check and Help generation passed. Help source, page and th/ja/zh pack variants are also at `2a9bf08`. Evidence: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/after-navigator.log`.
 - Item 4 case 12 baseline: Edge 390 px found the displayed Module website title in all four languages, then failed to match the same title after a controlled late text update in all 4/4. The private fixture needed explicit navigator initialization. The existing full-QC Help topics check passed the ordinary first-load path. Evidence: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/before-navigator.log`.
 - Item 1 [draft PR #235](https://github.com/Mannaja78520/final_proj_mice/pull/235) isolates the prior screen-reader language fix. Language catalog check passed and the exact head `19b50be` passed 28/28 Japanese states at 390 px across four themes and seven pages. Private evidence: `%TEMP%/mice-visual-1123-e6f3b60/language-proof/phone-theme-check.json`. The other host QC process occupied the shared slot, so this replay used a private loopback Hub without a fake serial driver. Help and its three translated pack variants are also at `19b50be`.
