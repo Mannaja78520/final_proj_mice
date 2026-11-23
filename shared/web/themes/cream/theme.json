@@ -6,7 +6,12 @@
     "zh": "奶油",
     "ja": "クリーム"
   },
-  "note": "light, warm ivory paper with burgundy. The Help page look",
+  "note": {
+    "en": "light, warm ivory paper with burgundy. The Help page look",
+    "th": "สว่าง กระดาษสีครีมอุ่นๆ กับสีเบอร์กันดี เหมือนหน้า Help",
+    "zh": "浅色，温暖的奶油纸色配酒红色，和帮助页一样",
+    "ja": "ライト。あたたかいクリーム色にえんじ色。ヘルプと同じ見た目"
+  },
   "mode": "light",
   "author": "Mice",
   "version": 1,

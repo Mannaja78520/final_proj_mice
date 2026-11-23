@@ -6,7 +6,12 @@
     "zh": "云朵",
     "ja": "くもりぞら"
   },
-  "note": "light, soft pastel sky with little clouds",
+  "note": {
+    "en": "light, soft pastel sky with little clouds",
+    "th": "สว่าง ท้องฟ้าพาสเทลนุ่มๆ มีก้อนเมฆน่ารัก",
+    "zh": "浅色，柔和的粉彩天空与小云朵",
+    "ja": "ライト。やわらかいパステルの空と小さな雲"
+  },
   "mode": "light",
   "author": "Mice",
   "version": 1,

@@ -757,6 +757,13 @@
   "Installed. Press Use to switch to it.": "ติดตั้งแล้ว กด ใช้ เพื่อเปลี่ยนไปใช้ธีมนี้",
   "Removed.": "ลบแล้ว",
   "Log in first to change themes.": "ต้องเข้าสู่ระบบก่อนจึงจะเปลี่ยนธีมได้",
-  "That did not work.": "ทำไม่สำเร็จ"
+  "That did not work.": "ทำไม่สำเร็จ",
+  "Midnight": "เที่ยงคืน",
+  "Carnival": "คาร์นิวัล",
+  "Daylight": "กลางวัน",
+  "Reconize": "Reconize",
+  "the dark one. Stays the default: a bright screen spills light into the show area": "แบบมืด เป็นค่าเริ่มต้น เพราะหน้าจอสว่างจะส่องแสงเข้าพื้นที่แสดง",
+  "dark, with colour. For when the hall is dark and the rig is not": "มืดและมีสีสัน สำหรับตอนที่ฮอลล์มืดแต่หุ่นสว่าง",
+  "light. For a bright room, or a screen with sun on it": "สว่าง สำหรับห้องสว่างหรือหน้าจอที่โดนแดด"
  }
 }

@@ -6,7 +6,12 @@
     "zh": "极光",
     "ja": "オーロラ"
   },
-  "note": "dark, deep night sky with green and violet glow",
+  "note": {
+    "en": "dark, deep night sky with green and violet glow",
+    "th": "มืด ท้องฟ้ายามค่ำคืนมีแสงสีเขียวและม่วง",
+    "zh": "深色，深邃夜空与绿紫色光芒",
+    "ja": "ダーク。緑と紫に光る深い夜空"
+  },
   "mode": "dark",
   "author": "Mice",
   "version": 1,

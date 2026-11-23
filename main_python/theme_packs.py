@@ -101,6 +101,9 @@ class ThemePacks:
             cfg["name"] = name = {"en": name}
         if not isinstance(name, dict) or not str(name.get("en", "")).strip():
             raise ThemePackError("name needs at least an English name")
+        if isinstance(cfg.get("note"), dict):
+            if not str(cfg["note"].get("en", "")).strip():
+                raise ThemePackError("note needs an English text")
         if cfg.get("mode") not in ("light", "dark"):
             raise ThemePackError('mode must be "light" or "dark"')
         colors = cfg.get("colors")
@@ -155,7 +158,8 @@ class ThemePacks:
         for c in self.all():
             sel = ':root[data-theme="%s"]' % c["id"]
             en = c["name"]["en"].replace('"', "'")
-            note = str(c.get("note", "")).replace('"', "'")
+            note = c.get("note", "")
+            note = str(note.get("en", "") if isinstance(note, dict) else note).replace('"', "'")
             body = ['--theme-name:"%s";' % en, '--theme-note:"%s";' % note,
                     '--theme-mode:"%s";' % c["mode"]]
             body += ["--%s:%s;" % (k, c["colors"][k]) for k in REQUIRED + OPTIONAL]

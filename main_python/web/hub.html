@@ -3821,6 +3821,7 @@ class ThemeGallery {
     this.load();
   }
   lang() { try { return localStorage.getItem('mice.lang') || 'en'; } catch (e) { return 'en'; } }
+  noteOf(t) { const n = t.note; return (n && typeof n === 'object') ? (n[this.lang()] || n.en || '') : (n || ''); }
   label(t) { const n = t.name || {}; return n[this.lang()] || n.en || t.id; }
   // Colours of a theme read from its own stylesheet block: the picture on the card is the
   // real thing, for the four built-in CSS themes and for packs alike.
@@ -3844,7 +3845,7 @@ class ThemeGallery {
     const meta = {}; packs.forEach(t => { meta[t.id] = t; });
     this.list = (window.miceTheme ? miceTheme.list() : []).map(t => {
       const c = this.sheetColors(t.id), m = meta[t.id];
-      return {id: t.id, name: m ? m.name : {en: t.name}, note: t.note, mode: c.mode || 'light',
+      return {id: t.id, name: m ? m.name : {en: t.name}, note: m ? m.note : t.note, mode: c.mode || 'light',
               source: m ? m.source : 'css', colors: c};
     });
     this.paint();
@@ -3873,7 +3874,7 @@ class ThemeGallery {
     name.appendChild(tag);
     const note = document.createElement('div');
     note.className = 'mini';
-    note.textContent = t.note || '';
+    note.textContent = this.noteOf(t);
     const row = document.createElement('div');
     row.className = 'row';
     const use = document.createElement('button');

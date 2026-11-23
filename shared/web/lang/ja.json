@@ -968,6 +968,13 @@
   "Installed. Press Use to switch to it.": "インストールしました。「使う」で切り替えられます。",
   "Removed.": "削除しました。",
   "Log in first to change themes.": "テーマを変えるには先にログインしてください。",
-  "That did not work.": "うまくいきませんでした。"
+  "That did not work.": "うまくいきませんでした。",
+  "Midnight": "ミッドナイト",
+  "Carnival": "カーニバル",
+  "Daylight": "デイライト",
+  "Reconize": "Reconize",
+  "the dark one. Stays the default: a bright screen spills light into the show area": "ダーク。標準のまま：明るい画面は演出エリアに光がもれるため",
+  "dark, with colour. For when the hall is dark and the rig is not": "ダークでカラフル。会場は暗く、ロボットは明るいときに",
+  "light. For a bright room, or a screen with sun on it": "ライト。明るい部屋や、日が当たる画面に"
  }
 }

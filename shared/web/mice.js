@@ -66,6 +66,7 @@ class MiceThemeManager {
   // "light" or "dark" as the theme declares it (--theme-mode), kept on <html>
   // as data-mode so pages and picture sets can match it.
   mode() {
+    if (typeof getComputedStyle !== "function") return "light";   // QC's bare stub of the page
     var m = (getComputedStyle(document.documentElement).getPropertyValue("--theme-mode") || "").replace(/["'\s]/g, "");
     if (m !== "light" && m !== "dark") m = /dark/.test(getComputedStyle(document.documentElement).colorScheme || "") ? "dark" : "light";
     if (document.documentElement.getAttribute("data-mode") !== m) {

@@ -968,6 +968,13 @@
   "Installed. Press Use to switch to it.": "已安装。按“使用”切换到它。",
   "Removed.": "已移除。",
   "Log in first to change themes.": "请先登录再更改主题。",
-  "That did not work.": "没有成功。"
+  "That did not work.": "没有成功。",
+  "Midnight": "午夜",
+  "Carnival": "嘉年华",
+  "Daylight": "日光",
+  "Reconize": "Reconize",
+  "the dark one. Stays the default: a bright screen spills light into the show area": "深色。保持为默认：明亮的屏幕会把光漏进演出区域",
+  "dark, with colour. For when the hall is dark and the rig is not": "深色，色彩丰富。适用于场馆昏暗而设备明亮时",
+  "light. For a bright room, or a screen with sun on it": "浅色。适用于明亮的房间，或被阳光照到的屏幕"
  }
 }
