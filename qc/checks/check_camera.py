@@ -293,8 +293,11 @@ def run(t):
     t.eq(unguarded, [], "every mention of CamModule is behind a build guard")
     ui = (F.FIRMWARE / "src/web/WebUI.h").read_text(encoding="utf-8", errors="replace")
     t.contains(ui, "<!--#type cam-->", "the camera card is marked for cam builds only")
-    t.contains(ui, "showCard('camCard',has('camera'))",
-               "and shown by capability like every other card")
+    # 2026-11-23: the card is still shown by capability; a board that has not answered yet
+    # (no caps) is judged by its type, so the page can ask for camera settings only after it knows.
+    t.contains(ui, "const camera=caps.length?has('camera'):st.type==='cam'",
+               "the camera card is decided by capability (or the type before the first answer)")
+    t.contains(ui, "showCard('camCard',camera)", "and shown by that, like every other card")
 
     # ---- the picture must follow the page's transport ---------------
     # The hub serves this same page for a module it reaches over WiFi or a
