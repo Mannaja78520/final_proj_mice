@@ -152,8 +152,11 @@ async function setComplaintStatus(id, status){
 // Lost with a duplicate-closeReport cleanup on 2026-08-25 and restored from
 // patch 0003: closeReport() first so a complaint's retitled heading never
 // leaks onto a fresh report.
+var reportOpener = null;   // who opened it, so closing hands the keyboard back there
 function openReport(){
+  var from = document.activeElement;
   closeReport();
+  reportOpener = from && from !== document.body ? from : null;
   var m = document.getElementById('reportModal');
   if(!m) return;
   m.hidden = false;
@@ -162,7 +165,10 @@ function openReport(){
 }
 function closeReport(){
   var m = document.getElementById('reportModal');
+  var wasOpen = m && !m.hidden;
   if(m) m.hidden = true;
+  if(wasOpen && reportOpener && reportOpener.focus) reportOpener.focus();
+  reportOpener = null;
   // complaint detail retitles the modal - without this reset the next
   // report opens under yesterday's heading
   var title = document.getElementById('reportTitle');
