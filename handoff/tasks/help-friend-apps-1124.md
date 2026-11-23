@@ -1,7 +1,7 @@
 # help-friend-apps-1124 — Detailed in-app Help (real screenshots) for All-Jao, Reconize, Photobooth
-Owner: gpt-codex (Claude reviews). Branch: claude/project-thread-181856 (fast-forwarded to main + this task)
-Updated: 2026-11-23 23:40
-Last commit: (none)
+Owner: codex:11240637-1d82 (Claude reviews). Branch: claude/project-thread-181856
+Updated: 2026-11-24 06:37 +0700
+Last commit: 7f8b1b3 (baseline)
 
 ## Goal (user, 2026-11-23 23:34, Thai)
 "Game app, Reconize: put pictures from the REAL app into their Help too. I said detailed Help, not only
@@ -50,7 +50,16 @@ person they name) uploads it. If you ever must touch it: back up first.
 5. Update this file + push a WIP commit after EVERY step. Report in Thai to the user at the end.
 
 ## Doing now
-Not started.
+Step 1: inspect the three running apps and record screens, languages, themes and safe test states.
+
+## Done
+- Read handoff, task and project workflow. Clean task tree at 7f8b1b3.
+
+## Next
+- Inventory live screens, then build the screenshot recipes.
+
+## Blocked
+- None confirmed yet.
 
 ## Facts found
 - PR #233 (merged) made per-app Help: apps/<id>/help, hub_api_help.py, check_app_help.
@@ -59,4 +68,4 @@ Not started.
 ## File status
 | File | Change | State | Verification | Commit |
 |---|---|---|---|---|
-| handoff/tasks/help-friend-apps-1124.md | new task | written | n/a | pending |
+| handoff/tasks/help-friend-apps-1124.md | claim and next step | active | diff inspected | this checkpoint |
