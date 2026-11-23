@@ -4,7 +4,7 @@
     <span class="where tech">code/firmware · runs on every ESP32</span>
     <h2>Firmware core — shared by all module types</h2>
     <p>One shared core, one build per module type. Nothing about wiring or identity
-       is compiled in — only which module the board <em>is</em>.</p>
+       is compiled in — only which module the board is.</p>
   </div>
 
   <!-- Infographic: ESP32 Hardware Wiring & Configuration -->
@@ -50,7 +50,7 @@
        its RGB strip, its MP3 support and its web cards, with only a JavaScript check
        keeping them off the screen. That was 74.9% of the chip's flash on every board.
        A nong build is now 65.5% and does not contain the lift's page at all: the wrong
-       controls are <b>absent</b>, not hidden, so no script bug can show them. The room
+       controls are absent, not hidden, so no script bug can show them. The room
        this frees is what makes flashing over WiFi (which needs two copies of the
        firmware on the chip) possible later.</p>
     <p>The source stays shared. One marker says which module type a card, a command or a
@@ -174,10 +174,10 @@
   <div class="f"><h3>Clicking a move previews it at that move's speed<span class="tag t-new">fixed</span></h3>
     <p>With a sequence set to 40 or 60&nbsp;deg/s, clicking a move in the timeline still snapped
        the arm across at full speed. Two different jobs were sharing one path.</p>
-    <p>Dragging a slider should <b>follow your hand</b>, so the pose is sent with a time measured
+    <p>Dragging a slider should follow your hand, so the pose is sent with a time measured
        from the link's own round trip &mdash; deliberately quick. Clicking a move is not that: it
        should travel the way the move travels in the show, or what you are previewing is not what
-       will happen. Now it carries that move's own time, taken from the <i>played</i> timeline, so
+       will happen. Now it carries that move's own time, taken from the played timeline, so
        a move after a suspended keyframe gets its re-timed value rather than the number stored
        against it.</p>
     <p>QC checks the time that actually reached the module, not the editor's opinion of it
@@ -199,7 +199,7 @@
        title to hide or show it, like the extra cards in <b>Pose</b>. <b>Setup</b> opens as a short
        list of titles; Studio remembers which cards you left open.</p></div>
   <div class="f"><h3>The real robot's body and servos, from the STEP file<span class="tag t-new">new</span></h3>
-    <p>In <b>Setup ▸ rig</b>, pick <b>use a measured body…</b> ▸ <b>Nong, measured from the STEP
+    <p><b>In Setup ▸ rig</b>, pick <b>use a measured body…</b> ▸ <b>Nong, measured from the STEP
        file</b>. The sizes change at once. Studio then shows the servos and gears the STEP file
        says the robot has and asks before using them, because they replace your own settings.
        The shrug is a 4-bar linkage: its servo turns 2.38° for each 1° of shrug, and ±16° of
@@ -216,9 +216,9 @@
        and scrolls inside itself when it holds more than fits. With the line selected, the arrow
        keys change it too; double-click the line to put it back to its own size.</p></div>
   <div class="f"><h3>Clicking a move while the show plays is safe<span class="tag t-new">fixed</span></h3>
-    <p>Clicking a move during Play used to send the show back to the pose <i>before</i> it and
+    <p>Clicking a move during Play used to send the show back to the pose before it and
        replay the move &mdash; a sudden swing that can hit something or break a servo.</p>
-    <p>Now a click during Play stops the show, moves the arm from where it <b>is</b> to the pose
+    <p>Now a click during Play stops the show, moves the arm from where it is to the pose
        you clicked at the show's speed, and then carries on with the next move. Nothing goes
        backwards. Jumping along the time bar also moves the arm at the show's speed, never at
        slider speed.</p></div>
@@ -274,7 +274,7 @@
        plain GPIO; it says nothing about what level the line settles at. On a pin with an
        internal pull-up the line then sits <b>high</b>, and a servo watching a permanently high
        line holds its position instead of going limp.</p>
-    <p>SHRUG is on <b>GPIO&nbsp;15</b>, a strapping pin the ESP32 pulls up at reset. The other
+    <p>SHRUG is on <code>GPIO&nbsp;15</code>, a strapping pin the ESP32 pulls up at reset. The other
        nine happened to settle low, so they appeared to work. <code>RELAX</code> now drives
        every servo line low itself &mdash; saying &ldquo;no pulses&rdquo; rather than hoping
        &mdash; which is correct on every pin, not only the lucky ones.</p>
@@ -326,7 +326,7 @@
        PC press <b>Find PCs</b>, pick it from the list, press <b>Get</b>. The search looks for
        other MICE hubs on the same network, so no address has to be typed &mdash; though you
        can type one if the search cannot see it.</p>
-    <p>The transfer goes <i>through</i> your own hub rather than straight from the browser: a
+    <p>The transfer goes through your own hub rather than straight from the browser: a
        page served by one hub is not allowed to read another hub's response, so the hub does
        the fetching and hands it back. Sequences and projects are deliberately not included
        &mdash; those are already files on the hub. Neither is the zero-calibration login,
@@ -349,7 +349,7 @@
   <div class="f"><h3>Only one thing drives the servos at a time<span class="tag t-new">fixed</span></h3>
     <p>The module keeps a sequence and plays it on its own clock &mdash; that is what lets a
        show survive this page closing. But it meant the module could still be running when you
-       came back, and pressing Play then had the browser streaming poses <i>as well</i>: two
+       came back, and pressing Play then had the browser streaming poses as well: two
        clocks on one robot, the arm fighting itself. Worse, Stop only stopped the browser, so
        the servos kept moving from the module's own sequence.</p>
     <p>Play, Pause and scrubbing now all stop the module first. Taking control takes it
@@ -388,9 +388,8 @@
        They used to hold <b>six copies</b> of it, each one commented &ldquo;the shared design
        system&rdquo; and none of them shared &mdash; they had already drifted into three
        different corner-radius scales and four names for the same grey caption.</p>
-    <p>Every page links it at <code>/mice.css</code>. The <b>board serves that same URL
-       itself</b>: the stylesheet is compiled into the firmware, so a module looks the same
-       whether you reach it over WiFi or through the hub over USB. QC fails if a page declares
+    <p>Every page links it at <code>/mice.css</code>. The board serves that same URL itself: the stylesheet is compiled into the firmware,
+       so a module looks the same whether you reach it over WiFi or through the hub over USB. QC fails if a page declares
        its own tokens, hardcodes a colour that is already a token, forgets the link, or if the
        copy in the board's flash is not byte for byte the shared file.</p>
     <p>Dark stays the permanent default: the show area is kept dark and a bright screen spills
@@ -398,7 +397,7 @@
   <div class="f"><h3>Flashing says which board, and which PC<span class="tag t-new">new</span></h3>
     <p>Overwriting firmware cannot be undone from this screen, it takes about a minute, and
        the board is usually in someone's hands across the room. The old question named a COM
-       port or an IP address &mdash; neither tells you <em>which</em> of the boards in the room
+       port or an IP address &mdash; neither tells you which of the boards in the room
        you are about to overwrite.</p>
     <p>The confirm now names the <b>board</b> (its name, its id and the type it runs now),
        <b>what it will become</b> and whether that is a change, <b>how it is reached</b>
@@ -411,8 +410,8 @@
        started would be worse than no confirm at all.</p></div>
   <div class="f"><h3>The hub asks for a password before it does anything<span class="tag t-new">new</span></h3>
     <p>The hub listens on every network connection so a phone on the same WiFi can reach it.
-       Until now that also meant <b>anyone</b> on that WiFi could drive the servos or reflash
-       a board. Now anything that <em>changes</em> something needs a login.</p>
+       Until now that also meant anyone on that WiFi could drive the servos or reflash
+       a board. Now anything that changes something needs a login.</p>
     <p><b>Looking stays free.</b> The module list, the status of every board, this help page
        and the pages themselves all work with no password &mdash; someone checking whether a
        board is alive should never meet a password box.</p>
@@ -434,9 +433,9 @@
        <i>Sign in to use this</i>, pointing at the page's one login box. Sign in and the
        cards come back in place, on the same screen &mdash; you are never sent to another
        page to find a password box.</p>
-    <p><b>This is not the lock.</b> The lock is the list above, and it is on the hub: the
+    <p>This is not the lock. The lock is the list above, and it is on the hub: the
        robot does not move for anybody who has not signed in, whatever a page shows. The box
-       decides what you <em>see</em>, so a card nobody marked is a card that still refuses
+       decides what you see, so a card nobody marked is a card that still refuses
        when pressed.</p>
     <p>Which pages open freely, and which cards ask first, is one file:
        <b>config/page_access.json</b>. The words on the box are in it too, so they can be
@@ -495,8 +494,8 @@
        drives this for real &mdash; it loads the hub, breaks the scan endpoint, and fails if the
        list blanks, if the data is not marked stale, or if there is no way to retry.</p></div>
   <div class="f"><h3>Groups: which modules are allowed to link<span class="tag t-new">new</span></h3>
-    <p>A module belongs to a <b>group</b> &mdash; your installation. Its own hotspot password is
-       <i>derived</i> from the group name, so every module in one group shares it automatically
+    <p>A module belongs to a group &mdash; your installation. Its own hotspot password is
+       derived from the group name, so every module in one group shares it automatically
        and nothing has to be typed twice.</p>
     <p>That is what makes automatic linking safe. With no venue WiFi a grouped module scans,
        finds a neighbour's hotspot and joins it <b>without ever having met it</b>, because the
@@ -509,7 +508,7 @@
   <div class="f"><h3>A module's own WiFi password, and changing it<span class="tag t-new">new</span></h3>
     <p>Every module raises its own WiFi, named after the module. To get in the first time the
        password is <b>12345678</b> (a module in a group uses the group's password instead). Then
-       open <b>http://192.168.4.1/</b> and log in.</p>
+       open <code>http://192.168.4.1/</code> and log in.</p>
     <p>Choose your own with <code>APPASS &lt;password&gt;</code> (8 to 63 characters, no spaces);
        <code>APPASS CLEAR</code> goes back to the default. <code>APPASS</code> alone says which
        one is in use.</p>
@@ -518,7 +517,7 @@
        its group-mates (<code>PEERPASS &lt;wifi&gt; &lt;password&gt;</code>,
        <code>PEERPASS CLEAR</code> forgets them). A module in no group is never given any.</p></div>
   <div class="f"><h3>Talking from a phone: sound straight to the robot<span class="tag t-new">new</span></h3>
-    <p>Join the robot's own WiFi, open <b>http://192.168.4.1/</b>, log in, and in the speaker card
+    <p>Join the robot's own WiFi, open <code>http://192.168.4.1/</code>, log in, and in the speaker card
        tick <b>song</b> (pick a file on the phone), <b>microphone</b>, or both, then press
        <b>Send sound to the robot</b>. Each switch works while it plays, so the song keeps going
        while the microphone comes and goes. No hub and no PC are needed.</p>
@@ -540,12 +539,12 @@
        own hotspot unable to find any of the others. Found by pulling a module's USB cable and
        running it from a charger. Grouped modules now recognise each other on a cold start.</p></div>
   <div class="f"><h3>A weak link moves to a stronger neighbour<span class="tag t-new">new</span></h3>
-    <p>Falling back only when WiFi <i>fails</i> misses the case that actually hurts at a
+    <p>Falling back only when WiFi fails misses the case that actually hurts at a
        venue: a module far from the router still connects, just badly &mdash; commands arrive
        late and the show stutters. Signal strength is now checked too. If the show network is
        weak and a neighbouring module's hotspot is clearly stronger, the module joins the
        neighbour and is reached through it.</p>
-    <p>It comes back once the show network is <b>properly</b> good again, not merely less bad.
+    <p>It comes back once the show network is properly good again, not merely less bad.
        The two thresholds are deliberately different: with a single one, a module sitting near
        the boundary flips between networks forever, dropping its link each time &mdash; which
        at a show looks exactly like the robot randomly freezing.</p>
@@ -566,9 +565,8 @@
        them under the cable and each one gets its normal buttons &mdash; its website, Nong
        Studio, file upload, sequences &mdash; even though your PC has no route to it at all.</p>
     <p>Internally the hub addresses them as <code>usb:COM11@nong</code>: over this cable,
-       then through it to the module named <code>nong</code>. It is a <b>name</b>, not an
-       address, so it keeps working when the hotspot hands out a different one. Nothing else
-       in any page changed &mdash; only the device string.</p>
+       then through it to the module named <code>nong</code>. It is a name, not an address, so it keeps
+       working when the hotspot hands out a different one. Nothing else in any page changed &mdash; only the device string.</p>
     <p>The same form works over WiFi (<code>wifi:10.0.0.5@nong</code>) when the module you
        can see is the one with the good signal.</p></div>
   <div class="f"><h3>Reach a module through another module<span class="tag t-new">new</span></h3>
@@ -582,7 +580,7 @@
     <p>It is the same shape as the RS485 bridge (<code>#3 GOTO 2</code>) — one command in,
        one reply line out — so the hub's device routing and the module website's console
        needed no changes at all.</p>
-    <p>It is for <b>finding and configuring</b> a module, not for driving one during a show:
+    <p>It is for finding and configuring a module, not for driving one during a show:
        it waits up to 800&nbsp;ms for the far module, so it answers <code>ERR busy</code>
        rather than reach through while this module is mid-move and stop a joint dead. In a
        show, address the module directly or use RS485.</p></div>

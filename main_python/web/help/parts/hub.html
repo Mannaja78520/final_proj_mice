@@ -205,7 +205,7 @@
   <div class="f"><h3>Rebuilding or stopping MICE Hub<span class="tag t-new">new</span></h3>
     <p>To rebuild the single-file executable from source:
        <code>python -m PyInstaller --clean MiceHub.spec</code></p>
-    <p>If <code>MiceHub.exe</code> is running, the build automatically terminates it to avoid
+    <p><code>MiceHub.exe</code> is automatically stopped before building to avoid
        <code>PermissionError: [WinError 5] Access is denied</code>. You can also stop running instances manually with:
        <code>taskkill /F /IM MiceHub.exe</code> (or <code>python main.py --kill</code>).</p></div>
 

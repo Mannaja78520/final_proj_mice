@@ -40,6 +40,9 @@ async function run(){
       for (var ti = 0; ti < tabs.length; ti++) {
         try {
           if (tabs[ti]) { f.contentWindow.eval(tabs[ti]); await sleep(700); }
+          // The Help topic view can hide guides until a reader selects them.
+          if (pg.id === "help") f.contentDocument.querySelectorAll("main > section.pv-off")
+            .forEach(function(section){ section.classList.remove("pv-off"); });
           var r = visualProbe(f.contentDocument);
           var bad = r.thai.filter(function(s){ return !ALLOW.some(function(a){ return new RegExp(a).test(s); }); });
           qcMark("THAI~" + LANGS[li] + "~" + pg.id + (tabs[ti] ? "~" + ti : "") + "~" + bad.length + "~" + (bad[0] || "").replace(/[^\\u0E00-\\u0E7Fa-zA-Z0-9]/g, "_").slice(0, 24));
@@ -103,11 +106,8 @@ def run(t):
         if m.startswith("LATIN~"):
             _, lang, pid = m.split("~")[:3]
             if lang != "en":     # English pages are English; Thai/Chinese/Japanese pages must not keep English UI words
-                # Help: sentences split by inline markup are still English (a RATCHET like the
-                # tooltips below: it can only go down). Every other page must be at zero.
-                ceil = cfg.get("latinHelpCeiling", {}).get(lang, 0) if pid == "help" else 0
                 n = int(m.split("~")[-2])
-                t.ok(n <= ceil, "no leftover English UI text on %s in %s%s" % (pid, lang, " (ceiling %d)" % ceil if ceil else ""), m)
+                t.ok(n == 0, "no leftover English UI text on %s in %s" % (pid, lang), m)
     # Tooltips / placeholders / labels still in English. Not zero yet (long tooltips): a RATCHET, so it can only go down.
     left = {}
     for m in marks:

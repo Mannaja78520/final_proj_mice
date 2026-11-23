@@ -343,7 +343,5 @@
   "zh": 4,
   "ja": 2
  },
- "_attrLeakBaseline_note": "measured 2026-11-23 after translating the tooltips: th 1, zh 3, ja 1 (what is left is file names and dynamic 'delete X from the SD card') + 1 slack; lower it as tooltips get translated",
- "latinHelpCeiling": {"th": 68, "zh": 65, "ja": 65},
- "_latinHelpCeiling_note": "measured 2026-11-24: English sentence pieces left in Help (split by inline markup) after allowing commands, file names and product words; +2 slack; lower it as Help sentences are rewritten"
+ "_attrLeakBaseline_note": "measured 2026-11-23 after translating the tooltips: th 1, zh 3, ja 1 (what is left is file names and dynamic 'delete X from the SD card') + 1 slack; lower it as tooltips get translated"
 }
