@@ -204,6 +204,13 @@ def _pc_or_peer(dev, pc_cfg):
     Whoever asks first owns the camera (peers.claim_camera); a second Mice
     program - the hub and Voice alone, two apps alone - reads the OWNER's
     picture instead of opening the webcam again, which gives black frames."""
+    if dev == "pc:":
+        # "the first webcam": claim it under its real name, or this and the
+        # named form of the same camera would be two claims and two opens
+        # (PC test 2026-11-23: Cameras alone, then the hub = 503 for both).
+        names = cam_relay.pc_devices(pc_cfg)
+        if names:
+            dev = "pc:" + names[0]
     now = time.time()
     when, got = _claims.get(dev, (0.0, None))
     if not got or now - when > 5:
