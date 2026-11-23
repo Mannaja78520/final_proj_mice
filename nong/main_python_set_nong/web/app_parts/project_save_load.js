@@ -219,7 +219,19 @@ function setAskUnsaved(on) {
   try { localStorage.setItem(ASK_UNSAVED_KEY, on ? "1" : "0"); }
   catch (e) { /* kept for this visit only */ }
 }
-function cleanName(v) { return (v || "").trim().replace(/[^\w.-]+/g, "_"); }
+// The robot's SD card and the saved files take plain ASCII names. A Thai (or Chinese, Japanese)
+// name used to collapse to "_", so two different names silently met on one file (found
+// 2026-11-23). Letters that cannot be kept now add a short fixed code of the typed name, so the
+// same name always gives the same file and different names never meet: "ท่าเต้น" -> "move_1c9f3a".
+function cleanName(v) {
+  const typed = (v || "").trim();
+  const ascii = typed.replace(/[^\w.-]+/g, "_");
+  if (!/[^\u0000-\u007f]/.test(typed.replace(/[\u0300-\u036f\u200b-\u200d\ufe0f]/g, ""))) return ascii;
+  let h = 2166136261;                                  // FNV-1a over the typed name
+  for (let i = 0; i < typed.length; i++) { h ^= typed.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  const keep = ascii.replace(/_+/g, "_").replace(/^_|_$/g, "");
+  return (/[A-Za-z0-9]/.test(keep) ? keep : "move") + "_" + ("000000" + (h >>> 8).toString(16)).slice(-6);
+}
 function setWorkName(v) {
   const n = cleanName(v);
   if ($("projName")) $("projName").value = n;

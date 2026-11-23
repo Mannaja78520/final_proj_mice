@@ -36,7 +36,7 @@ The hub's routes for Nong Studio's files, shared settings and the list of other 
 
 - [hub](hub.md)
 
-## Checks that test it (59)
+## Checks that test it (60)
 
 - `check_gesture_legs`
 - `check_gesture_make`
@@ -82,6 +82,7 @@ The hub's routes for Nong Studio's files, shared settings and the list of other 
 - `check_studio_resume`
 - `check_studio_rs485_dongle`
 - `check_studio_tabs`
+- `check_studio_thai_names`
 - `check_studio_thai_strings`
 - `check_studio_theme`
 - `check_studio_two_tabs`

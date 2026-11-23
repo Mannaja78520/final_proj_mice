@@ -384,7 +384,7 @@ async function talkAddFromBar() {
   if (!name) { talkSay("Give the gesture a name first."); return; }
   const K = playKeys();
   if (K.length < 1) { talkSay("Put at least one move on the time bar first."); return; }
-  const id = "mine_" + name.toLowerCase().replace(/[^\w]+/g, "_");
+  const id = "mine_" + cleanName(name).toLowerCase().replace(/[^\w]+/g, "_");
   await talkSave({ gestures: { [id]: { label: name, mine: true,
     words: { any: $("talkNewWords").value.split(",").map(s => s.trim()).filter(Boolean) },
     keys: K.map(k => ({ pose: k.pose.map(v => Math.round(v * 10) / 10), t: Math.round(k.t || 400), hold: Math.round(k.hold || 0) })) } } });
