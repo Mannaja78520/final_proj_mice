@@ -46,12 +46,15 @@ def _sniff(head):
     return ""
 
 
-def _is_local_host(host):
+def _is_local_host(host, allow=()):
     """True for localhost and for addresses on this PC or a private network.
 
     A pasted link makes the hub fetch it. Without this, a logged-in page could
     be pointed at 127.0.0.1, the router, or a cloud metadata address
     (2026-11-22 sweep). Names are resolved, so a name that points inside counts.
+    `allow` (config `lanHosts`, user 2026-11-23: a video on a NAS) names hosts or
+    networks on the LAN that stay usable. Only private LAN addresses can be
+    allowed: this PC itself, link-local (cloud metadata) and the rest never.
     """
     import ipaddress
     import socket
@@ -60,14 +63,36 @@ def _is_local_host(host):
     try:
         addrs = {ipaddress.ip_address(host)}
     except ValueError:
-        if host.lower() == "localhost" or host.lower().endswith(".local"):
+        if host.lower() == "localhost":
             return True
         try:
             addrs = {ipaddress.ip_address(i[4][0]) for i in socket.getaddrinfo(host, None)}
         except OSError:
-            return False        # no DNS: the fetch itself will say so
-    return any(a.is_loopback or a.is_private or a.is_link_local or a.is_reserved
-               or a.is_unspecified or a.is_multicast for a in addrs)
+            # no DNS: a .local name is the LAN's own unless the admin listed it
+            return host.lower().endswith(".local") and not _lan_allowed(host, set(), allow)
+    if any(a.is_loopback or a.is_link_local or a.is_reserved
+           or a.is_unspecified or a.is_multicast for a in addrs):
+        return True
+    if any(a.is_private for a in addrs):
+        return not _lan_allowed(host, addrs, allow)
+    return False
+
+
+def _lan_allowed(host, addrs, allow):
+    """The host's name is listed, or every address it has is inside a listed network."""
+    import ipaddress
+    nets = []
+    for entry in allow or ():
+        entry = str(entry).strip().lower()
+        if not entry:
+            continue
+        if entry == host.lower():
+            return True
+        try:
+            nets.append(ipaddress.ip_network(entry, strict=False))
+        except ValueError:
+            pass
+    return bool(addrs) and all(any(a in n for n in nets) for a in addrs)
 
 
 class Links:
@@ -100,8 +125,9 @@ class Links:
         p = urllib.parse.urlparse(url)
         if p.scheme not in ("http", "https") or not p.netloc:
             return None, "That is not a web link. Paste one that starts with https://"
-        if not self.allow_local and _is_local_host(p.hostname):
-            return None, "That link points at this PC or your own network. Paste a link from the internet."
+        if not self.allow_local and _is_local_host(p.hostname, self.cfg.get("lanHosts")):
+            return None, ("That link points at this PC or your own network. Paste a link from the internet, "
+                          "or ask the admin to allow this device (Help: Moves from a video).")
         with self.lock:
             for jid, j in self.jobs.items():
                 if j["url"] == url and j["state"] in ("working", "done") and \
