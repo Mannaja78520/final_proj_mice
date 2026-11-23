@@ -48,6 +48,8 @@ body{padding:14px;max-width:1100px;margin:0 auto}
 /* The look comes from mice.css now. .mtab stays as a NAME — scripts and QC
    select on it — but it no longer describes a second kind of tab. */
 #modTabs{margin:0 0 var(--sp-3)}
+/* Capability cards start closed, including before the script at the end runs. */
+.card[data-cap="0"]{display:none}
 @media(max-width:720px){.tab{font-size:13px}}
 /* the one big number on the page: what the module is doing right now */
 .stage{font-size:52px;font-weight:700;text-align:center;line-height:1.1}
@@ -215,7 +217,7 @@ a.peer:hover{border-color:var(--acc)}
   </div>
 
 <!--#type lift-->
-  <div class="card" data-tab="control" id="liftCard">
+  <div class="card" data-tab="control" id="liftCard" data-cap="0">
     <h2>Lift</h2>
     <div id="liftFault" class="banner err" role="alert" hidden>
       The lift stopped because it found a problem. Check the mechanism and the switches, then clear the fault.
@@ -242,7 +244,7 @@ a.peer:hover{border-color:var(--acc)}
     </div>
   </div>
 
-  <div class="card" data-tab="control" id="rgbCard">
+  <div class="card" data-tab="control" id="rgbCard" data-cap="0">
     <h2>Light strip</h2>
     <div class="row"><span class="lbl">Color</span>
       <input type="color" id="rgbc" value="#0050ff" onchange="sendRgb()">
@@ -262,7 +264,7 @@ a.peer:hover{border-color:var(--acc)}
 <!--#end-->
 
 <!--#type nong-->
-  <div class="card" data-tab="control" id="nongCard" style="grid-column:1/-1">
+  <div class="card" data-tab="control" id="nongCard" data-cap="0" style="grid-column:1/-1">
     <h2>Move the arms</h2>
     <div class="row">
       <span class="lbl">Mode</span>
@@ -367,7 +369,7 @@ a.peer:hover{border-color:var(--acc)}
        showCard() hides it on boards whose caps have no audio. It sits
        BELOW the arm and lift controls on purpose: the first thing on
        Move it should be the robot, not the music (user, 2026-09-07). -->
-  <div class="card" data-tab="control" id="audCard">
+  <div class="card" data-tab="control" id="audCard" data-cap="0">
     <h2>Speaker</h2>
     <div class="row">
       <select id="musicSel" style="flex:1"></select>
@@ -410,14 +412,14 @@ a.peer:hover{border-color:var(--acc)}
 
 
 <!--#type dummy-->
-  <div class="card" data-tab="control" id="dummyCard" style="grid-column:1/-1">
+  <div class="card" data-tab="control" id="dummyCard" data-cap="0" style="grid-column:1/-1">
     <h2>Dummy pose</h2>
     <div class="statline">bend the dummy by hand: each joint shows the angle it would send to the robot.
       Nong Studio reads these to pose the 3D model or the real robot.</div>
     <div id="dummyRows"></div>
     <div class="statline" id="dummyStat"></div>
   </div>
-  <div class="card setupCard" data-tab="setup" id="dummyCal" style="grid-column:1/-1;display:none">
+  <div class="card setupCard" data-tab="setup" id="dummyCal" data-cap="0" style="grid-column:1/-1;display:none">
     <h2>Dummy calibration</h2>
     <div class="statline">hold the dummy in the robot's start pose and press <b>Start pose here</b>
       (or one joint's <b>90&deg; here</b>). <b>Turn</b> flips a pot fitted the other way round;
@@ -447,7 +449,7 @@ a.peer:hover{border-color:var(--acc)}
 <!--#end-->
 
 <!--#type gacha-->
-  <div class="card" data-tab="control" id="gachaCard" style="grid-column:1/-1">
+  <div class="card" data-tab="control" id="gachaCard" data-cap="0" style="grid-column:1/-1">
     <h2>Prize dispenser</h2>
     <div class="statline" id="gaNow" aria-live="polite">waiting for the board</div>
     <div class="row">
@@ -477,7 +479,7 @@ a.peer:hover{border-color:var(--acc)}
     <div class="row"><span class="lbl">Last prize</span><span id="gaLast">-</span></div>
     <div class="statline" id="gaStat" aria-live="polite"></div>
   </div>
-  <div class="card" data-tab="control" id="gachaEvent" style="grid-column:1/-1">
+  <div class="card" data-tab="control" id="gachaEvent" data-cap="0" style="grid-column:1/-1">
     <h2>Event and balls</h2>
     <div class="row"><span class="lbl">Event name</span>
       <input id="gaEvent" maxlength="40" placeholder="e.g. Open House day 1" style="flex:1">
@@ -498,7 +500,7 @@ a.peer:hover{border-color:var(--acc)}
       <button onclick="gaCmd('GSTOCK ADD '+($('gaStockN').value||0))">Add this many</button>
       <button onclick="gaCmd('GSTOCK OFF')">Do not count</button></div>
   </div>
-  <div class="card setupCard" data-tab="setup" id="gachaCfg" style="grid-column:1/-1;display:none">
+  <div class="card setupCard" data-tab="setup" id="gachaCfg" data-cap="0" style="grid-column:1/-1;display:none">
     <h2>Prize dispenser settings</h2>
     <div class="statline">turn one pocket at a time and count how many pockets it takes for the ball to fall:
       that number is <b>Pockets until it falls</b>. Magnets must be a whole number per pocket.</div>
@@ -508,7 +510,7 @@ a.peer:hover{border-color:var(--acc)}
 <!--#end-->
 
 <!--#type cam-->
-  <div class="card" data-tab="control" id="camCard" style="grid-column:1/-1">
+  <div class="card" data-tab="control" id="camCard" data-cap="0" style="grid-column:1/-1">
     <h2>Camera</h2>
     <div class="row">
       <button class="primary" id="camShotBtn" onclick="camShot()">&#128247; Take a picture</button>
