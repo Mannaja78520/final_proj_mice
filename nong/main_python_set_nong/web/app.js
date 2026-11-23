@@ -1718,6 +1718,26 @@ function urdfSettle(base, warn) {
   applyPose();
   renderLookUI();
 }
+// The far end of a forearm point cloud (points from the elbow): the direction
+// to the middle of its farthest corners, and how far the part reaches that way.
+// Loops, not Math.max(...pts): a ~70k-point forearm overflowed the call stack
+// (RangeError), the tip was never measured and the hand sat at the elbow
+// (user 2026-11-23). Pure, so check_urdf_big_forearm feeds it 300k points.
+function urdfFarEnd(pts) {
+  let far = 0;
+  for (const v of pts) far = Math.max(far, v.length());
+  if (far < 1) return null;
+  // each corner once: an STL repeats a vertex in every triangle it touches
+  const end = new THREE.Vector3(), seen = new Set(); let n = 0;
+  pts.forEach(v => {
+    const key = v.toArray().map(x => Math.round(x * 100)).join();
+    if (v.length() > far * 0.97 && !seen.has(key)) { seen.add(key); end.add(v); n++; }
+  });
+  const dir = end.divideScalar(n).normalize();
+  let mm = -Infinity;
+  for (const v of pts) mm = Math.max(mm, v.dot(dir));
+  return { dir, mm };
+}
 // The hand's tip from the forearm part itself (tip "mesh"): the middle of its
 // far end from the elbow, and how far the part reaches that way. In the
 // forearm's own frame, so it holds at any pose.
@@ -1737,16 +1757,10 @@ function urdfMeshTip(side, arm) {
     for (let k = 0; k < pos.count; k += step) pts.push(new THREE.Vector3().fromBufferAttribute(pos, k).applyMatrix4(m4).sub(el));
   });
   if (!pts.length) return;
-  const far = Math.max(...pts.map(v => v.length()));
-  if (far < 1) return;
-  // each corner once: an STL repeats a vertex in every triangle it touches
-  const end = new THREE.Vector3(), seen = new Set(); let n = 0;
-  pts.forEach(v => {
-    const key = v.toArray().map(x => Math.round(x * 100)).join();
-    if (v.length() > far * 0.97 && !seen.has(key)) { seen.add(key); end.add(v); n++; }
-  });
-  const dir = end.divideScalar(n).normalize();
-  t.mm = Math.max(...pts.map(v => v.dot(dir)));
+  const end = urdfFarEnd(pts);
+  if (!end) return;
+  const dir = end.dir;
+  t.mm = end.mm;
   t.tipLocal = el.clone().addScaledVector(dir, t.mm);
   t.fromMesh = true;
   t.wrist.position.copy(t.tipLocal);

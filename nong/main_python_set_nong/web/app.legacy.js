@@ -1589,6 +1589,25 @@ function urdfSettle(base, warn) {
   applyPose();
   renderLookUI();
 }
+function urdfFarEnd(pts) {
+  let far = 0;
+  for (const v of pts) far = Math.max(far, v.length());
+  if (far < 1) return null;
+  const end = new THREE.Vector3(), seen = /* @__PURE__ */ new Set();
+  let n = 0;
+  pts.forEach((v) => {
+    const key = v.toArray().map((x) => Math.round(x * 100)).join();
+    if (v.length() > far * 0.97 && !seen.has(key)) {
+      seen.add(key);
+      end.add(v);
+      n++;
+    }
+  });
+  const dir = end.divideScalar(n).normalize();
+  let mm = -Infinity;
+  for (const v of pts) mm = Math.max(mm, v.dot(dir));
+  return { dir, mm };
+}
 function urdfMeshTip(side, arm) {
   const t = urdfTip[side];
   t.fromMesh = false;
@@ -1606,20 +1625,10 @@ function urdfMeshTip(side, arm) {
     for (let k = 0; k < pos.count; k += step) pts.push(new THREE.Vector3().fromBufferAttribute(pos, k).applyMatrix4(m4).sub(el));
   });
   if (!pts.length) return;
-  const far = Math.max(...pts.map((v) => v.length()));
-  if (far < 1) return;
-  const end = new THREE.Vector3(), seen = /* @__PURE__ */ new Set();
-  let n = 0;
-  pts.forEach((v) => {
-    const key = v.toArray().map((x) => Math.round(x * 100)).join();
-    if (v.length() > far * 0.97 && !seen.has(key)) {
-      seen.add(key);
-      end.add(v);
-      n++;
-    }
-  });
-  const dir = end.divideScalar(n).normalize();
-  t.mm = Math.max(...pts.map((v) => v.dot(dir)));
+  const end = urdfFarEnd(pts);
+  if (!end) return;
+  const dir = end.dir;
+  t.mm = end.mm;
   t.tipLocal = el.clone().addScaledVector(dir, t.mm);
   t.fromMesh = true;
   t.wrist.position.copy(t.tipLocal);
