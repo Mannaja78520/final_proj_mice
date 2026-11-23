@@ -1,7 +1,7 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
 Owner: codex:11232254-6f5e
-Updated: 2026-11-24T00:08+07:00
+Updated: 2026-11-24T00:12+07:00
 Branch: codex/visual-regression-1123
 Last commit: this checkpoint
 Plan: A1123-2
@@ -11,28 +11,28 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 4 final module verification is running. The corrected Help check at `bc8b43f` passed. Wait for the C: 12-target build, phone replay and focused module/QEMU checks for PR #234 head `6c298e1`.
+Checkpoint ready. Three draft PRs are open, the selected case 12 and 20 replays and focused checks passed, and item 6 is clear. Build and QC processes have exited.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| handoff/tasks/visual-regression-1123.md | Item 1 evidence and item 2 start | doing | staged diff audited | this checkpoint |
+| handoff/tasks/visual-regression-1123.md | Evidence, draft PR heads and remaining cases | done | staged diff audited | this checkpoint |
 | shared/web/mice-lang.js | Publish applied language on the document | done | Edge 28/28 phone cases at PR head | 19b50be |
 | qc/checks/check_dialog_language.py | Assert exact root language | done | isolated Edge failed twice at baseline; 11/11 after on original snapshot | 19b50be |
-| main_python/web/help/parts/bytask.html | Screen reader language guidance | done | web build and lang check | 19b50be |
-| main_python/web/help.html | Rebuilt Help for items 1 and 2 | done | web build and lang check | 51b2c93 |
-| shared/web/lang/help/th.json | Thai Help guidance for items 1 and 2 | done | lang check | 51b2c93 |
-| shared/web/lang/help/zh.json | Chinese Help guidance for items 1 and 2 | done | lang check | 51b2c93 |
-| shared/web/lang/help/ja.json | Japanese Help guidance for items 1 and 2 | done | lang check and Edge phone | 51b2c93 |
-| firmware/src/web/WebUI.h | Wait for status before cards and camera settings request | doing | 390 px Edge initial failure and recovery 4/4, rebuild pending | 6c298e1 |
+| main_python/web/help/parts/bytask.html | Screen-reader and localized search guidance in separate PRs | done | web build and language catalog check | 19b50be, 2a9bf08 |
+| main_python/web/help.html | Rebuilt Help for items 1, 2 and 4 | done | web build and language catalog check | 19b50be, 6c298e1, 2a9bf08 |
+| shared/web/lang/help/th.json | Thai Help guidance | done | language catalog check | 19b50be, 6c298e1, 2a9bf08 |
+| shared/web/lang/help/zh.json | Chinese Help guidance | done | language catalog check | 19b50be, 6c298e1, 2a9bf08 |
+| shared/web/lang/help/ja.json | Japanese Help guidance | done | language catalog check and Edge phone | 19b50be, 6c298e1, 2a9bf08 |
+| firmware/src/web/WebUI.h | Wait for status before cards and camera settings request | done | Edge failure/recovery 4/4, firmware 12/12, QEMU phone 2/2, focused QC 147/147 | 6c298e1 |
 | firmware/generated/web/ModuleUI.h | Regenerate all-types module page | done | gen_tables.py; 107.2 KB; 390 px Edge all-types 4/4 | uncommitted (ignored) |
 | qc/checks/check_board_page_motors_first.py | Assert capability cards start hidden | done | 11 fails at baseline, 15/15 after | 8fa77aa |
-| main_python/web/help/parts/modsite.html | Document connection and control visibility | done | Help rebuilt on latest main | 8fa77aa |
+| main_python/web/help/parts/modsite.html | Document control and camera settings visibility | done | Help build and language catalog check | 6c298e1 |
 | main_python/web/help/parts/search.js | Search current Help topic text | done | private Edge replay 4/4 | 2a9bf08 |
 | qc/checks/check_help_topics.py | Guard late Help text in the original browser fixture | done | focused QC 24/24 | bc8b43f |
-| qc/checks/check_cam_panel.py | Assert card and settings use the same camera capability | doing | official focused QC pending | 6c298e1 |
+| qc/checks/check_cam_panel.py | Assert card and settings use the same camera capability | done | focused module/QEMU QC 147/147 combined | 6c298e1 |
 
 ## Facts found
 - Item 2 baseline (module-before-caps.json): on the hub at 390 px, all eight control cards appeared before JavaScript and before the first nong or lift status. After status, only the correct card remained. applyTabs() permits data-cap values other than 0, including missing.
@@ -44,6 +44,7 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 - haveRobot() in Studio means "connected to a robot", not "3D ready".
 
 ## Done
+- Final PR #234 head `6c298e1` built all 12 PlatformIO targets on C:, passed both QEMU 390 px touch walkthroughs, and passed 147/147 focused module/QEMU assertions. Final Nong and Lift screenshots inspected. Private evidence: `%TEMP%/mice-visual-1123-e6f3b60/firmware-case20-build.log`, `phone-case20/` and `qc-case20.log`.
 - Item 4 case 12 corrected official Help QC passed 24/24 on `bc8b43f` in 15.9 s. Private log: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/help-final-qc.log`.
 - Item 6 verified at 00:05 ICT on 2026-11-24. The exact `E:/final_proj/mice/mice_sim_wt` directory and Git entry were already absent. No QEMU process remained under that path. The dry run found nothing to prune and `git worktree prune --verbose` completed without removing entries. E: had 31.34 GiB free.
 - Item 4 case 12 [draft PR #236](https://github.com/Mannaja78520/final_proj_mice/pull/236) at `bc8b43f` has the source patch and one late-title assertion in the existing Help QC page. The standalone four-language Edge evidence covers the same stale-index failure.
@@ -58,19 +59,20 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 - Item 2 builds: 12/12 PlatformIO environments passed at `e6f3b60` (8 production including S3, 4 simulator). Private evidence: `%TEMP%/mice-visual-1123-e6f3b60/firmware-build.log`.
 - Item 2 QEMU phone: 2/2 at 390 × 844 px using generated firmware HTML, CSS and JS with UART `PONG`/`INFO`. Both had zero visible capability controls or command requests while status was held, no sideways overflow, and touchscreen navigation between Files and Control after identification. Four screenshots inspected. Nong used its production image. Production Lift compiled but failed to reach `[boot] ready` in QEMU. Lift passed with `mice_lift_sim` and the byte-identical production page (SHA-256 `930d2c0426e3d692c257f3054eb43491da725a5c3298e4373ae8dca47446eb76`). The simulated limit fault left Stop available. Private evidence: `%TEMP%/mice-visual-1123-e6f3b60/phone/`. The HTTP bridge exercised UART status, without emulating WiFi or testing real hardware.
 - Item 2 source and Help patch: all eight control cards stay hidden before JavaScript and while the first reply is held. After release, the appropriate cards appear, matching each fixture. Private evidence: module-after-caps.json. Structural QC 4/15 before, 15/15 after.
-- Item 1: compared the Japanese matrix, reviewed the largest changes and fixed the document language for screen readers. WIP retained for full QC and review before PR/merge.
+- Item 1: compared the Japanese matrix, reviewed the largest changes and fixed the document language for screen readers.
 - PR #215, #217 (visual tool, phone/theme/contrast fixes), #219 (reports paging, Esc closes Report box, Studio texts translate), #220 (blank/negative number boxes). Each has a QC check proven by breaking it.
 - Old-vs-new screenshots compared: desktop dark/light and zh desktop+phone (old build was untranslated; new is fine). ja and carnival/indigo not compared.
 
 ## Next (handed to GPT Codex 2026-11-23, user: Claude is near its limit; Claude reviews after reset)
 Work in a branch off main, one PR per item, QC per CLAUDE.md (`python qc/run_qc.py --quiet <checks>`, full QC once before merge), every fix needs a check proven by breaking the fix. Merge per standing approval (cmsg_01R7BbYxaTb3Yv9YS3gQaaA3XEQcQQyoUgXwMT6wXgfeYv). Never edit friend repos.
-2. Module page (/mod, firmware/src/web/WebUI.h, generated firmware/generated/web/ModuleUI.h): for ~100 ms-seconds before the board answers, Lift controls (Up/Down/Stop) AND nong controls show together on a nong (found 2026-11-23: all cards visible until applyTabs runs). Hide capability cards until identified. FIRMWARE RULE: needs the ESP32 QEMU sim incl. phone-width walkthrough before merge (`tools/qemu_esp32.py`), cloud has no pio.
+1. Screen-reader language fix is draft #235. Full gate and independent review remain before merge.
+2. Module page is draft #234. Review and obtain green full QC on final head `6c298e1` after the baseline and test-environment failures are resolved. The prior full gate ran on `8fa77aa`.
 3. Claude completed fake-hub network loss coverage. Real cable/WiFi playback loss remains lab work (main 710bd52c).
-4. Remaining GPT list in PC `.local/visual_review/out/codex62_cases.md` (cases 2-7, 12-14, 16-23, 25, 29-31): pick those testable with the fake hub, one check each, fix bugs found. Skip 36-38 (real Android TV).
+4. Cases 12 and 20 were selected and fixed. The remaining listed cases (2-7, 13-14, 16-19, 21-23, 25, 29-31) still need targeted runs. Start with case 2 in the fake Hub, a short landscape Studio walkthrough using actual hit targets below the fixed bar. Cases 36-38 remain real Android TV work.
 5. Claude landed the tooltip ratchet in PR #231.
 6. Done. Verified the stale folder, QEMU process paths and Git metadata are clear.
 Stop rule: max 3 rounds per item; if stuck, write the theory in this file and take the next.
 
 ## Blocked
-- PR #234 merge and promotion await a green full gate and independent review.
-- Real URDF check needs the PC (E:\final_proj\mice\mice_system) to run tools/visual/urdf_numeric.py with MICE model.
+- Draft PRs #234, #235 and #236 await a green full gate and independent review. No promotion or hardware test performed.
+- The numeric review with the real CAD and `tools/visual/urdf_numeric.py` remains open.
