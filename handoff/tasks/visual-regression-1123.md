@@ -1,7 +1,7 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
 Owner: codex:11232254-6f5e
-Updated: 2026-11-24T00:00+07:00
+Updated: 2026-11-24T00:02+07:00
 Branch: codex/visual-regression-1123
 Last commit: this checkpoint
 Plan: A1123-2
@@ -11,7 +11,7 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 4, verify case 20 final module PR head `6c298e1`. Use the C: cached 12-target rebuild and focused module and QEMU checks after the case 12 gate releases the shared slot. Retain the separate full-QC result at the original PR head `8fa77aa`.
+Item 4, replace the case 12 multi-frame QC driver with an assertion in the existing Help page. The four-language standalone replay remains valid. Then run focused Help QC, rebuild module PR `6c298e1` on C:, and repeat module phone and targeted QEMU checks when external QC process 44636 exits.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
@@ -44,6 +44,7 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 - haveRobot() in Studio means "connected to a robot", not "3D ready".
 
 ## Done
+- Item 4 official Help run at `2a9bf08` scored 93 passed, 4 failed. Its original checks passed. The new driver observed an English late-title match but lost the empty-result assertion and timed out before subsequent iframe fixtures. Use the original test's loaded page for the late-title regression and retain the standalone multi-language evidence.
 - Item 4 case 20 follow-up pushed to module draft PR #234 at `6c298e1`. At 390 px all 4 fixtures hid controls and sent zero commands after an initial 503. Nong and Lift sent no camera command after identification. Current and legacy camera status each sent exactly one `CAM LIST` after identification. Evidence: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/case20-after.log`. Matching Help source, page and th/ja/zh packs updated.
 - Item 4 case 20 baseline: Edge 390 px with a simulated 503 kept all capability cards hidden, then showed the correct Nong or Lift card after successful reload. Both boards received one startup `CAM LIST` before identification. Treat the command count as the assertion and ignore the probe's stale footer. Private log: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/case20-wire.log`.
 - Item 4 case 12 commit `2a9bf08` searches current topic text and omits Previous/Next captions from matches. The same private Edge component replay passed 4/4 after the patch, including the normal empty result. Language catalog check and Help generation passed. Help source, page and th/ja/zh pack variants are also at `2a9bf08`. Evidence: `%TEMP%/mice-visual-1123-e6f3b60/help-search-proof/after-navigator.log`.
