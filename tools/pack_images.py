@@ -2,7 +2,7 @@
 
   python tools/pack_images.py <folder with the big PNGs>
 
-  mascot.png       -> img/mascot.webp          white background made transparent, 360 px high
+  mascot.png       -> img/mascot.webp          transparent image, 360 px high
   icon_<id>.png    -> img/apps/<id>.webp       128 px, rounded corners cut out
   help_<name>.png  -> img/help/<name>.webp     640 px wide
 
@@ -19,8 +19,9 @@ OUT = Path(__file__).resolve().parent.parent / "shared" / "web" / "img"
 
 def mascot(src):
     im = Image.open(src).convert("RGBA")
-    ImageDraw.floodfill(im, (0, 0), (255, 255, 255, 0), thresh=28)
-    ImageDraw.floodfill(im, (im.width - 1, 0), (255, 255, 255, 0), thresh=28)
+    if im.getextrema()[3][0] == 255:
+        ImageDraw.floodfill(im, (0, 0), (255, 255, 255, 0), thresh=28)
+        ImageDraw.floodfill(im, (im.width - 1, 0), (255, 255, 255, 0), thresh=28)
     h = 360
     im = im.resize((round(im.width * h / im.height), h), Image.LANCZOS)
     im.save(OUT / "mascot.webp", "WEBP", quality=82, method=6)

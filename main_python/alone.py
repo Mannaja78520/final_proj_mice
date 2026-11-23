@@ -37,7 +37,7 @@ PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 NOT_HERE = "This app is not open in this window."
 RUNNING = "It is already open in its own window on this PC."
 OPEN_IT = "Open it"
-HOW = "Open the full Mice program to use every app together, or start this app by itself."
+HOW = "Open the full MICE program to use every app together, or start this app by itself."
 
 
 def arg(argv, name):

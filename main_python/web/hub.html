@@ -5,7 +5,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mice Control Hub</title>
+<title>MICE Control Hub</title>
 <link rel="stylesheet" href="/mice.css">
 <link rel="stylesheet" href="/img-dark.css">
 <script src="/mice.js"></script>
@@ -95,7 +95,7 @@
 /* The head's own buttons, kept together at the right: STOP first, where a
    hand finds it, and full width on a phone so it cannot be missed. */
 .topbar h1{display:flex;align-items:center;gap:var(--sp-3)}
-.brand-mouse{width:40px;height:40px;object-fit:contain;flex:0 0 auto}
+.brand-mascot{width:40px;height:40px;object-fit:contain;flex:0 0 auto}
 .home-acts{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;order:3;flex-basis:100%}
 .home-acts button{white-space:nowrap}
 #stopAll{font-weight:700;letter-spacing:.02em}
@@ -253,7 +253,7 @@
      in the tab row: neither swaps a card in place, and as the 8th and 9th
      "tabs" they wrapped the row onto a second line at 1280 px (2026-10-14). -->
 <header class="topbar" data-home="none">
-  <h1><img class="brand-mouse" src="/img/mascot.webp" alt="" width="40" height="40">Mice Control Hub</h1>
+  <h1><img class="brand-mascot" src="/img/mascot.webp" alt="" width="40" height="40">MICE Control Hub</h1>
   <span class="home-acts">
     <button class="danger" id="stopAll" onclick="stopEverything()"
             title="Stop the show and every board this hub can reach">⏹ STOP</button>
@@ -612,6 +612,12 @@
       page: addresses, cable ports and signal strengths — what you need
       the moment something is wrong, and noise the rest of the time. Names, types
       and module numbers are always shown.</div>
+  </div>
+
+  <div class="card" data-tab="settings" style="grid-column:1/-1">
+    <h2>About MICE</h2>
+    <p>MICE stands for Meetings, Incentives, Conferences and Exhibitions.</p>
+    <p>MICE helps you run robots and interactive tools at events.</p>
   </div>
 
   <div class="card" data-tab="modules" style="grid-column:1/-1">

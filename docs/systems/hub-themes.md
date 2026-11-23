@@ -24,11 +24,12 @@ Theme packs (2026-11-23): colours + pictures installed like extensions, light/da
 
 - nothing
 
-## Checks that test it (4)
+## Checks that test it (5)
 
 - `check_dark_images`
+- `check_rebrand`
 - `check_theme_contrast`
 - `check_theme_packs`
 - `check_themes`
 
-Run them: `python qc/run_qc.py --no-build check_dark_images check_theme_contrast check_theme_packs check_themes`
+Run them: `python qc/run_qc.py --no-build check_dark_images check_rebrand check_theme_contrast check_theme_packs check_themes`

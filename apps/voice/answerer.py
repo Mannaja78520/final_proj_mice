@@ -413,34 +413,34 @@ class Answerer:
                         (scenario and re.search(r'(กลอน|บทกลอน|กาพย์|โคลง|ฉันท์|กวี|verse|poem|poetry)', scenario, re.I)))
 
         if lang == "en":
-            system = ("You are the Mice robot assistant. "
+            system = ("You are the MICE robot assistant. "
                       "Style: Caveman — direct, plain-spoken, concise. Zero filler words. Absolutely NO emojis. Maximum 1 short sentence.\n"
                       + scenario_hint
                       + person_hint
                       + ("\nRelevant FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                      + "Always follow the created FAQ answers as closely as possible, never deviate off-topic. If question matches or relates to FAQ, answer from it. Otherwise answer directly in 1 short sentence as the Mice robot. NEVER invent a password, price, time, floor, place or EVENT that is not in the FAQ above - say you do not know, and to ask a member of staff.")
+                      + "Always follow the created FAQ answers as closely as possible, never deviate off-topic. If question matches or relates to FAQ, answer from it. Otherwise answer directly in 1 short sentence as the MICE robot. NEVER invent a password, price, time, floor, place or EVENT that is not in the FAQ above - say you do not know, and to ask a member of staff.")
         elif lang == "ja":
-            system = ("あなたはMiceロボットです。\n"
+            system = ("あなたはMICEロボットです。\n"
                       "スタイル：簡潔、直接的、絵文字なし。最大1文で短く答えてください。\n"
                       + scenario_hint
                       + person_hint
                       + ("\n関連FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                      + "作成されたFAQ回答にできる限り忠実に従い、脱線しないでください。FAQに関連していればそれに従い、それ以外はMiceロボットとして1文で簡潔に答えてください。FAQにないパスワード・料金・時間・場所・イベントを作り出さないでください。分からない場合は分からないと答えてください。")
+                      + "作成されたFAQ回答にできる限り忠実に従い、脱線しないでください。FAQに関連していればそれに従い、それ以外はMICEロボットとして1文で簡潔に答えてください。FAQにないパスワード・料金・時間・場所・イベントを作り出さないでください。分からない場合は分からないと答えてください。")
         elif lang == "zh":
-            system = ("你是Mice机器人助手。\n"
+            system = ("你是MICE机器人助手。\n"
                       "风格：简明扼要、直接清晰、绝不使用表情符号。最多1句简短回答。\n"
                       + scenario_hint
                       + person_hint
                       + ("\n相关FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                      + "请尽可能紧密依据所给的FAQ答案回答，切勿偏离主题。如果问题与FAQ相关则按FAQ回答，否则作为Mice机器人用1句简短回答。不要编造FAQ中没有的密码、价格、时间、地点或活动；不知道就说不知道，请询问工作人员。")
+                      + "请尽可能紧密依据所给的FAQ答案回答，切勿偏离主题。如果问题与FAQ相关则按FAQ回答，否则作为MICE机器人用1句简短回答。不要编造FAQ中没有的密码、价格、时间、地点或活动；不知道就说不知道，请询问工作人员。")
         elif lang == "ko":
-            system = ("You are the Mice robot assistant. Answer ONLY in Korean, in one short polite sentence, no emojis.\n"
+            system = ("You are the MICE robot assistant. Answer ONLY in Korean, in one short polite sentence, no emojis.\n"
                       + scenario_hint
                       + person_hint
                       + ("\nRelevant FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
                       + "Follow the FAQ answers closely. NEVER invent a password, price, time, floor, place or event that is not in the FAQ above - say in Korean that you do not know and to ask a member of staff.")
         elif is_verse and lang == "th":
-            system = ("คุณคือหุ่นยนต์ Mice เมื่อผู้ใช้ขอให้อ่านหรือท่องบทกลอน จงท่องบทกลอนภาษาไทยที่ไพเราะ 1 บท (4 วรรค) แบ่งบรรทัดละวรรค ห้ามปฏิเสธ ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
+            system = ("คุณคือหุ่นยนต์ MICE เมื่อผู้ใช้ขอให้อ่านหรือท่องบทกลอน จงท่องบทกลอนภาษาไทยที่ไพเราะ 1 บท (4 วรรค) แบ่งบรรทัดละวรรค ห้ามปฏิเสธ ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
                       + scenario_hint
                       + person_hint)
         else:
@@ -452,13 +452,13 @@ class Answerer:
             keep, me, wording = self.manner_answer("th")
             not_end = " ".join(p for p in ("ครับ", "ค่ะ", "คะ", "จ้า") if p != keep)
             not_me = " หรือ ".join(p for p in ("ผม", "ฉัน", "ดิฉัน") if p != me)
-            system = ("คุณคือหุ่นยนต์ Mice ให้ข้อมูลบริการและสถานที่ จงตอบเป็นภาษาไทยเท่านั้น สั้นๆ ตรงประเด็น 1 ประโยคจบในตัว ห้ามตอบเป็นภาษาอังกฤษหรือภาษาอื่น ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
+            system = ("คุณคือหุ่นยนต์ MICE ให้ข้อมูลบริการและสถานที่ จงตอบเป็นภาษาไทยเท่านั้น สั้นๆ ตรงประเด็น 1 ประโยคจบในตัว ห้ามตอบเป็นภาษาอังกฤษหรือภาษาอื่น ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
                       + ("ลงท้ายประโยคด้วยคำว่า '%s' เสมอ ห้ามใช้คำลงท้ายอื่น เช่น %s และเรียกตัวเองว่า '%s' เสมอ ห้ามใช้ %s เพราะคุณเป็นหุ่นยนต์ตัวเดียวและต้องพูดด้วยน้ำเสียงเดียวกันทุกประโยค\n" % (keep, not_end, me, not_me))
                       + ((wording + "\n") if wording else "")
                       + scenario_hint
                       + person_hint
                       + ("\nFAQ ที่เกี่ยวข้อง:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                      + "จงตอบโดยยึดตามข้อมูลคำตอบที่สร้างไว้ (FAQ) ให้ใกล้เคียงที่สุดเสมอ หากคำถามเกี่ยวข้องกับ FAQ ให้ตอบตามนั้น หากไม่ตรงให้ตอบสั้นๆ ในฐานะหุ่นยนต์ Mice 1 ประโยคเป็นภาษาไทย ห้ามแต่งรหัสผ่าน ราคา เวลา ชั้น สถานที่ หรือกิจกรรม/ข่าวที่ไม่มีใน FAQ ถ้าไม่รู้ให้บอกว่าไม่ทราบและให้สอบถามเจ้าหน้าที่")
+                      + "จงตอบโดยยึดตามข้อมูลคำตอบที่สร้างไว้ (FAQ) ให้ใกล้เคียงที่สุดเสมอ หากคำถามเกี่ยวข้องกับ FAQ ให้ตอบตามนั้น หากไม่ตรงให้ตอบสั้นๆ ในฐานะหุ่นยนต์ MICE 1 ประโยคเป็นภาษาไทย ห้ามแต่งรหัสผ่าน ราคา เวลา ชั้น สถานที่ หรือกิจกรรม/ข่าวที่ไม่มีใน FAQ ถ้าไม่รู้ให้บอกว่าไม่ทราบและให้สอบถามเจ้าหน้าที่")
         # ROOM TO FINISH A SENTENCE, per language. 32 tokens was chosen for
         # speed and is fine for English; Thai costs two to four tokens per
         # word, so the same budget stopped Thai answers in the middle of a

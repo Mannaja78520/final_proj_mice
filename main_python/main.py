@@ -3222,7 +3222,7 @@ def stop_running_hub():
 def main():
     global PORT
     if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
-        print("Mice Control Hub")
+        print("MICE Control Hub")
         print("Usage: python main.py [OPTIONS] or MiceHub.exe [OPTIONS]")
         print("")
         print("Options:")

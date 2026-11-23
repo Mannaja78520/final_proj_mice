@@ -21,7 +21,8 @@ import registry                                    # noqa: E402
 
 OUT = ROOT / "main_python" / "launchers"
 TEXT = ("@echo off\r\n"
-        "rem Starts %(name)s by itself - no hub needed. Other Mice apps that are open\r\n"
+        "title MICE\r\n"
+        "rem Starts %(name)s by itself - no hub needed. Other MICE apps that are open\r\n"
         "rem on this PC are found automatically. Close this window to stop it.\r\n"
         "cd /d \"%%~dp0..\"\r\n"
         "if exist ..\\dist\\MiceHub.exe (..\\dist\\MiceHub.exe --alone %(id)s) else (python main.py --alone %(id)s)\r\n"

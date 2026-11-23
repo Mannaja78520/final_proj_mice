@@ -853,7 +853,7 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
     hdr.className = "hdr";
     const lbl = document.createElement("span");
     lbl.className = "role";
-    lbl.textContent = "Rig / Mice:";
+    lbl.textContent = "Rig / MICE:";
     hdr.appendChild(lbl);
     if (meta.source || meta.flag) {
       const badge = document.createElement("span");
@@ -2490,10 +2490,10 @@ static langName(code){
 
 // ---- Voice: how it sounds -------------------------------------------
 static SAMPLES = {
-  th: "สวัสดีครับ ผมคือหุ่นยนต์น้อง Mice",
-  en: "Hello, I am the Mice robot",
-  ja: "こんにちは、マイスロボットです",
-  zh: "你好，我是 Mice 机器人"
+  th: "สวัสดีครับ ผมคือหุ่นยนต์น้อง MICE",
+  en: "Hello, I am the MICE robot",
+  ja: "こんにちは、MICE ロボットです",
+  zh: "你好，我是 MICE 机器人"
 };
 
   fillVoice(){

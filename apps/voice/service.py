@@ -380,13 +380,13 @@ class Brain(FaceLink, Translator, Listener, Speaker, Faq, LocalLlm, Answerer):
         text = SPECIAL_RE.sub("", THINK_RE.sub("", text or ""))
         text = EMOJI_RE.sub("", text)
         # Safeguard: enforce strict robot persona against rare analyst/role hallucination
-        text = re.sub(r'นักวิเคราะห์\s*Mice', 'หุ่นยนต์ Mice', text)
-        text = re.sub(r'นักวิเคราะห์', 'หุ่นยนต์ Mice', text)
+        text = re.sub(r'นักวิเคราะห์\s*(?i:MICE)', 'หุ่นยนต์ MICE', text)
+        text = re.sub(r'นักวิเคราะห์', 'หุ่นยนต์ MICE', text)
         text = re.sub(r'ยินดีที่จะรับครับ', 'ยินดีต้อนรับครับ', text)
-        text = re.sub(r'ขออภัยที่ทำให้คุณรู้สึกผิดหวัง.*', 'ขออภัยครับ ผมคือหุ่นยนต์ Mice มีอะไรให้ช่วยไหมครับ', text)
-        text = re.sub(r'(ฉัน|ผม)เป็นโปรแกรมคอมพิวเตอร์.*', 'ผมคือหุ่นยนต์ Mice ยินดีให้บริการครับ', text)
-        text = re.sub(r'I(?:\'m| am) called Mouse.*', 'ผมคือหุ่นยนต์ Mice ครับ มีอะไรให้ช่วยไหมครับ', text, flags=re.I)
-        text = re.sub(r'I(?:\'m| am) (?:the )?Mice robot.*', 'ผมคือหุ่นยนต์ Mice ครับ ยินดีให้บริการครับ', text, flags=re.I)
+        text = re.sub(r'ขออภัยที่ทำให้คุณรู้สึกผิดหวัง.*', 'ขออภัยครับ ผมคือหุ่นยนต์ MICE มีอะไรให้ช่วยไหมครับ', text)
+        text = re.sub(r'(ฉัน|ผม)เป็นโปรแกรมคอมพิวเตอร์.*', 'ผมคือหุ่นยนต์ MICE ยินดีให้บริการครับ', text)
+        text = re.sub(r'I(?:\'m| am) called Mouse.*', 'ผมคือหุ่นยนต์ MICE ครับ มีอะไรให้ช่วยไหมครับ', text, flags=re.I)
+        text = re.sub(r'I(?:\'m| am) (?:the )?MICE robot.*', 'ผมคือหุ่นยนต์ MICE ครับ ยินดีให้บริการครับ', text, flags=re.I)
         # Safeguard: if model refuses with small-model canned disclaimer on poems/verse
         text = re.sub(r'.*(?:ไม่มีความสามารถ|ไม่สามารถ).*(?:อ่าน|เขียน|แต่ง).*(?:กลอน|บทกลอน|กวี|บทกวี|บทเพลง).*',
                       'แล้วสอนว่าอย่าไว้ใจมนุษย์\nมันแสนสุดลึกล้ำเหลือกำหนด\nถึงเถาวัลย์พันเกี่ยวที่เลี้ยวลด\nก็ไม่คดเหมือนหนึ่งในน้ำใจคน', text)

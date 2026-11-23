@@ -1,7 +1,7 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Reconize — Mice</title>
+<title>Reconize — MICE</title>
 <link rel="stylesheet" href="/mice.css">
 <script src="/mice.js"></script>
 <script src="/mice-ui.js"></script>
@@ -65,7 +65,7 @@ p.warn{color:var(--warn)}
 <div class="tabbed"><nav id="tabs"></nav><div>
 <div class="card" data-tab="open">
   <h2>Open it</h2>
-  <p class="mini" id="whatIs">Reconize runs beside Mice on this PC. It watches the
+  <p class="mini" id="whatIs">Reconize runs beside MICE on this PC. It watches the
     cameras and knows who is who; the rig follows it.</p>
   <div class="row">
     <button class="primary" id="openBtn" onclick="recon.open('open', this).then(w => w && showFrame(w))">Open Reconize</button>
@@ -176,7 +176,7 @@ async function startBoth(){
   st.textContent = "starting Reconize and the rig's watcher…";
   const a = await Mice.Api.post("/api/faces/start");
   const got = a.data;
-  if (a.needLogin) st.textContent = "Starting it needs the PC that runs Mice, or signing in on the hub page first.";
+  if (a.needLogin) st.textContent = "Starting it needs the PC that runs MICE, or signing in on the hub page first.";
   else if (a.status === 0) st.textContent = a.says;
   else if (got.watcherError) st.textContent = got.watcherError;
   else if (got.reconize && !got.reconize.ok)

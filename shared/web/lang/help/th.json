@@ -49,7 +49,7 @@
   "Works on any screen": "ใช้ได้กับทุกหน้าจอ",
   "The hub, the module website, Nong Studio and this page all lay out for phones, tablets and large monitors, with bigger touch targets on a touchscreen. Studio stacks the 3D view above its panel below 860px instead of squeezing both, and on a phone its view buttons (Top, Front, 3D…) fold behind one": "Hub เว็บของโมดูล Nong Studio และหน้านี้จัดเลย์เอาต์ให้มือถือ แท็บเล็ต และจอใหญ่ พร้อมจุดสัมผัสที่ใหญ่ขึ้นบนจอสัมผัส Studio ซ้อนมุมมอง 3D ไว้เหนือแผงต่ำกว่า 860px แทนการบีบทั้งสอง และบนมือถือปุ่มมุมมอง (Top, Front, 3D…) จะพับไว้หลัง",
   "button.": "ปุ่ม",
-  "Rebuilding or stopping MiceHub": "การสร้างใหม่หรือหยุด MiceHub",
+  "Rebuilding or stopping MICE Hub": "การสร้างใหม่หรือหยุดฮับ MICE",
   "To rebuild the single-file executable from source:": "สร้างไฟล์ปฏิบัติการไฟล์เดียวจากซอร์ส:",
   "If is running, the build automatically terminates it to avoid . You can also stop running instances manually with: (or ).": "ถ้า กำลังรันอยู่ การสร้างจะสั่งปิดมันเองเพื่อหลีกเลี่ยง คุณยังหยุดอินสแตนซ์ที่รันอยู่ด้วยมือได้ด้วย: (หรือ )",
   "Show API: includes . A participating caller supplies with its next play request; Stop changes the epoch and rejects older stamped requests, including ones arriving later. Legacy unstamped requests that have not entered the player when Stop finishes remain outside this transport-order guarantee. requires login and an integer , and shares the cancellation fence. Ambiguous HOME dispatch retains device ownership until acknowledged Stop; confirmed historical devices are released. Stop responses expose plus fresh and ; an unresolved worker or refused/missing STOP prevents confirmed success.": "Show API: รวม ผู้เรียกที่ร่วมใช้ส่ง มากับคำขอเล่นครั้งถัดไป Stop เปลี่ยน epoch และปฏิเสธคำขอที่ประทับเวลาเก่ากว่า รวมถึงที่มาถึงทีหลัง คำขอแบบเก่าที่ไม่มีตราประทับและยังไม่เข้าตัวเล่นเมื่อ Stop เสร็จ จะอยู่นอกการรับประกันลำดับการส่งนี้ ต้องล็อกอินและต้องมีจำนวนเต็ม และใช้เครื่องกั้นการยกเลิกร่วมกัน การส่ง HOME ที่กำกวมจะคงความเป็นเจ้าของอุปกรณ์ไว้จนกว่า Stop จะได้รับการยืนยัน อุปกรณ์ในอดีตที่ยืนยันแล้วจะถูกปล่อย การตอบของ Stop แสดง พร้อม และ ใหม่ worker ที่ยังค้างหรือ STOP ที่ถูกปฏิเสธ/หายไปจะทำให้ไม่ถือว่าสำเร็จ",
@@ -129,7 +129,7 @@
   "Titles for particular people": "คำเรียกเฉพาะบุคคล",
   "Mini-Games": "มินิเกม",
   "No hub sign-in needed on this PC": "ไม่ต้องล็อกอิน Hub บน PC เครื่องนี้",
-  "The games have their own login, so opening them on the PC that runs Mice asks for nothing. Opened from another device on the network, the hub asks you to sign in first, so nobody on the venue WiFi can start programs on this PC.": "เกมมีล็อกอินของตัวเอง การเปิดบน PC ที่รัน Mice จึงไม่ถามอะไร เมื่อเปิดจากอุปกรณ์อื่นในเครือข่าย Hub จะขอให้ล็อกอินก่อน เพื่อไม่ให้ใครบน WiFi ของสถานที่เริ่มโปรแกรมบน PC เครื่องนี้ได้",
+  "The games have their own login, so opening them on the PC that runs MICE asks for nothing. Opened from another device on the network, the hub asks you to sign in first, so nobody on the venue WiFi can start programs on this PC.": "เกมมีล็อกอินของตัวเอง การเปิดบน PC ที่รัน MICE จึงไม่ถามอะไร เมื่อเปิดจากอุปกรณ์อื่นในเครือข่าย Hub จะขอให้ล็อกอินก่อน เพื่อไม่ให้ใครบน WiFi ของสถานที่เริ่มโปรแกรมบน PC เครื่องนี้ได้",
   "A win gives a real prize": "ชนะแล้วได้ของจริง",
   "Played inside the hub, a win in the wheel, claw, quiz or memory game can make a prize machine give a prize and tells the player where to collect it. Which result gives what is set on": "เล่นภายใน Hub แล้ว ชัยชนะในวงล้อ ตู้คีบ ควิซ หรือเกมจับคู่ทำให้ตู้ของรางวัลแจกของได้ และบอกผู้เล่นว่าไปรับที่ไหน ผลแบบไหนได้อะไร ตั้งที่",
   "▸ Games that give a prize. For the quiz, fill": "▸ เกมที่แจกของรางวัล สำหรับควิซ ให้กรอก",
@@ -366,7 +366,7 @@
   "Views": "มุมมอง",
   "opens the Top / Front / 3D buttons so they do not cover the robot.": "เปิดปุ่ม Top / Front / 3D เพื่อไม่ให้บังหุ่น",
   "The app pages (Cameras, Voice, Reconize, Photobooth, All-Jao) ask the hub whether their program is running, so they say the right thing on a phone too.": "หน้าแอป (กล้อง Voice Reconize Photobooth All-Jao) ถามฮับว่าโปรแกรมของมันรันอยู่หรือไม่ จึงบอกสิ่งที่ถูกต้องบนมือถือด้วย",
-  "Mice opens in the Reconize look. For a dark hall, choose Midnight in the hub’s Settings.": "Mice เปิดด้วยหน้าตา Reconize สำหรับฮอลล์มืด ให้เลือก Midnight ในการตั้งค่าของ Hub",
+  "MICE opens in the Reconize look. For a dark hall, choose Midnight in the hub’s Settings.": "MICE เปิดด้วยหน้าตา Reconize สำหรับฮอลล์มืด ให้เลือก Midnight ในการตั้งค่าของ Hub",
   "Firmware core": "แกนเฟิร์มแวร์",
   "Watching a camera on any screen, setting up how it looks, and knowing who it recognises.": "ดูกล้องบนจอใดก็ได้ ตั้งค่าว่าภาพออกมาเป็นอย่างไร และรู้ว่ามันจำใครได้",
   "Accounts and passwords": "บัญชีและรหัสผ่าน",
@@ -817,7 +817,7 @@
   "CFG travel_timeout_ms <ms>": "CFG travel_timeout_ms <ms>",
   ". The phone warns once about the certificate, because the robot made it itself; choose to continue. Type the robot's login there and press": ". โทรศัพท์จะแจ้งเตือนเรื่องใบรับรองครั้งหนึ่ง เพราะหุ่นยนต์สร้างใบรับรองเอง ให้เลือกดำเนินการต่อ จากนั้นกรอกข้อมูลเข้าสู่ระบบของหุ่นยนต์บนหน้านั้นแล้วกด",
   "SET ID <1..254>": "SET ID <1..254>",
-  ". The search looks for other mice hubs on the same network, so no address has to be typed — though you can type one if the search cannot see it.": ". ระบบจะค้นหาฮับ mice อื่น ๆ ในเครือข่ายเดียวกัน คุณจึงไม่ต้องพิมพ์ที่อยู่เอง แต่ถ้าค้นหาไม่พบก็พิมพ์ที่อยู่ได้",
+  ". The search looks for other MICE hubs on the same network, so no address has to be typed — though you can type one if the search cannot see it.": ". ระบบจะค้นหาฮับ MICE อื่น ๆ ในเครือข่ายเดียวกัน คุณจึงไม่ต้องพิมพ์ที่อยู่เอง แต่ถ้าค้นหาไม่พบก็พิมพ์ที่อยู่ได้",
   "The hub, this help page, the RGB page, Nong Studio and the module's own website read their colours, radii and spacing from": "ฮับ หน้าช่วยเหลือนี้ หน้า RGB, Nong Studio และเว็บไซต์ของโมดูล ใช้ค่าสี ความโค้งมนของมุม และระยะห่างจาก",
   "= no pot on that joint": "= ข้อต่อนั้นไม่มีตัววัดตำแหน่งแบบหมุน",
   "lists what a module can see, and": "แสดงเครือข่ายที่โมดูลตรวจพบ และ",
@@ -1170,7 +1170,7 @@
   "(frame rate Hz),": "(อัตราเฟรม หน่วย Hz),",
   "Presets via": "ใช้พรีเซ็ตผ่าน",
   "ERR busy": "ERR busy",
-  "Mice Hub": "Mice Hub",
+  "MICE Hub": "MICE Hub",
   "PIN? | PIN VALID | PIN | PIN CLEAR": "PIN? | PIN VALID | PIN | PIN CLEAR",
   "shows the state;": "แสดงสถานะ;",
   "reads back what the robot is set to. Setting it does not move the arm; press": "อ่านค่าที่หุ่นยนต์ตั้งไว้อยู่กลับมา การตั้งค่านี้ไม่ได้ทำให้แขนขยับ ให้กด",
@@ -1265,6 +1265,6 @@
   ", while the board is still running firmware that works, and only a good one causes the reboot;": ", ระหว่างที่บอร์ดยังใช้เฟิร์มแวร์ที่ทำงานได้ตามปกติ และจะรีบูตเฉพาะเมื่อเฟิร์มแวร์ใหม่ใช้งานได้เท่านั้น;",
   "SET WIFI2 <ssid> <pass>": "SET WIFI2 <ssid> <pass>",
   "The Problem reports tab shows the newest 40 reports and a button for older ones, so the page stays quick on a phone.": "แท็บรายงานปัญหาแสดง 40 รายงานล่าสุด และมีปุ่มสำหรับรายงานที่เก่ากว่า เพื่อให้หน้าเปิดเร็วบนมือถือ",
-  "Help — Mice": "วิธีใช้ — Mice"
+  "Help — MICE": "วิธีใช้ — MICE"
  }
 }

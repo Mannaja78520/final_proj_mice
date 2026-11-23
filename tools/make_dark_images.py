@@ -78,8 +78,18 @@ def dark_help(src):
     return im
 
 
+def dark_mascot(src):
+    """Cool the mascot highlights for dark themes while keeping its silhouette."""
+    im = Image.open(src).convert("RGBA")
+    shaded = Image.blend(im.convert("RGB"), Image.new("RGB", im.size, "#42648e"), 0.16)
+    shaded.putalpha(im.getchannel("A"))
+    return shaded
+
+
 def main():
-    rules = []
+    mascot = ROOT / "img" / "mascot.webp"
+    dark_mascot(mascot).save(mascot.with_name("mascot-dark.webp"), "WEBP", quality=90, method=6)
+    rules = ["/img/mascot"]
     for sub, fn in (("apps", dark_icon), ("help", dark_help)):
         for f in sorted((ROOT / "img" / sub).glob("*.webp")):
             if f.name.endswith("-dark.webp") or (sub == "apps" and f.stem == "help"):

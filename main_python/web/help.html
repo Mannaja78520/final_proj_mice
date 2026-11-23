@@ -3,7 +3,7 @@
      there, never help.html. How: docs/web_style.md -->
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Help — Mice</title>
+<title>Help — MICE</title>
 <link rel="stylesheet" href="/mice.css">
 <link rel="stylesheet" href="/img-dark.css">
 <script src="/mice.js"></script>
@@ -292,8 +292,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 .brand-mouse{width:40px;height:40px;object-fit:contain;vertical-align:middle;margin-right:var(--sp-2)}
 .topbar h1{display:flex;align-items:center}
 header.top{position:relative;padding-right:170px;min-height:150px}
-.hero-mouse{position:absolute;right:0;top:-6px;width:150px;height:150px;object-fit:contain}
-@media (max-width:640px){ header.top{padding-right:0} .hero-mouse{position:static;float:right;width:84px;height:84px;margin:0 0 var(--sp-2) var(--sp-3)} }
+.hero-mascot{position:absolute;right:0;top:-6px;width:150px;height:150px;object-fit:contain}
+@media (max-width:640px){ header.top{padding-right:0} .hero-mascot{position:static;float:right;width:84px;height:84px;margin:0 0 var(--sp-2) var(--sp-3)} }
 /* Real app captures use the same language and light/dark mode as this guide. */
 figure.pic{margin:var(--sp-4) 0;display:flex;gap:var(--sp-4);align-items:center;flex-wrap:wrap;
            background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-3)}
@@ -313,7 +313,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
      technical switch last. Help used to keep both inside its sidebar, where a
      phone scrolled them away with the rest of the list. -->
 <header class="topbar">
-  <h1><img class="brand-mouse" src="/img/mascot.webp" alt="" width="40" height="40">Help</h1>
+  <h1><img class="brand-mascot" src="/img/mascot.webp" alt="" width="40" height="40">Help</h1>
   <span class="sub">A friendly guide to your robot rig</span>
 </header>
 
@@ -325,7 +325,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
 
 <main>
 <header class="top">
-  <img class="hero-mouse" src="/img/mascot.webp" alt="" width="150" height="150">
+  <img class="hero-mascot" src="/img/mascot.webp" alt="" width="150" height="150">
   <h2>A little help with your rig</h2>
   <p>Start with what you want to do. Find your modules, shape a movement,
      or bring a show to life. The complete reference is here when you need it.</p>
@@ -376,7 +376,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
        Top / Front / 3D buttons so they do not cover the robot.</p>
     <p>The app pages (Cameras, Voice, Reconize, Photobooth, All-Jao) ask the hub whether
        their program is running, so they say the right thing on a phone too.</p>
-    <p>Mice opens in the Reconize look. For a dark hall, choose Midnight in the hub’s Settings.</p>
+    <p>MICE opens in the Reconize look. For a dark hall, choose Midnight in the hub’s Settings.</p>
   </div>
   <div class="f" id="inPictures"><h4>The hard parts, in pictures</h4>
     <div class="pics">
@@ -404,7 +404,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
          <a href="#modsite">Module website</a></p></div>
     <div class="f"><h3>Run the robot</h3>
       <p>Day to day: find the modules, drive them, flash new firmware.</p>
-      <p><a href="#hub">Mice Hub</a></p></div>
+      <p><a href="#hub">MICE Hub</a></p></div>
     <div class="f"><h3>Manage sign-ins</h3>
       <p>Set up user accounts and passwords for the Hub.</p>
       <p><a href="#accounts">Accounts and passwords</a></p></div>
@@ -429,7 +429,9 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
   <p><b>ภาษา:</b> ทุกหน้ามีช่องเลือกภาษาข้างสวิตช์ "แสดงรายละเอียดทางเทคนิค" ค่าเริ่มต้นเป็นไทย ข้อความที่ยังไม่มีคำแปลจะแสดงเป็นอังกฤษ เพิ่มภาษาใหม่ได้โดยวางไฟล์ <code>shared/web/lang/&lt;รหัส&gt;.json</code> หนึ่งไฟล์ (ชื่อภาษา + คู่ข้อความอังกฤษ → คำแปล) ไม่ต้องแก้โค้ด</p>
   <div class="shead">
     <span class="where tech">code/main_python · MiceHub.exe · port 8642</span>
-    <h2>Mice Hub — ศูนย์กลางควบคุมและปรับแต่งทุกระบบ</h2>
+    <h2>MICE Hub — ศูนย์กลางควบคุมและปรับแต่งทุกระบบ</h2>
+    <p>MICE stands for Meetings, Incentives, Conferences and Exhibitions.</p>
+    <p>MICE helps you run robots and interactive tools at events.</p>
     <p>โปรแกรมเซิร์ฟเวอร์หลักของระบบ ค้นหาโมดูลและบอร์ด ESP32 ทุกตัวบนเครือข่ายและพอร์ต USB อัตโนมัติ
        พร้อมเป็นตัวกลางแชร์พอร์ตและกระจายคำสั่งให้กับทุกแอปพลิเคชัน</p>
   </div>
@@ -623,7 +625,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
   <div class="f"><h3>Stopping everything on any PC<span class="tag t-new">new</span></h3>
     <p>Close the hub with stop_hub.bat, or press Ctrl+C, or just close its window: the voice helper, the face helper and the friends’ apps the hub started stop with it, so the next start on any PC begins clean with nothing left running in the background. The hub on another PC needs no setup: it finds the apps next to it and a free address by itself.</p>
     <p class="tech">Technical: <code>MiceHub.exe --stop</code> (or <code>python main.py --stop</code>) asks the running hub to quit; <code>POST /api/quit</code> works only from the hub’s own PC. Keep helpers running across hub restarts with <code>"stopWithHub": false</code> in <code>config/children.json</code>.</p></div>
-  <div class="f"><h3>Rebuilding or stopping MiceHub<span class="tag t-new">new</span></h3>
+  <div class="f"><h3>Rebuilding or stopping MICE Hub<span class="tag t-new">new</span></h3>
     <p>To rebuild the single-file executable from source:
        <code>python -m PyInstaller --clean MiceHub.spec</code></p>
     <p>If <code>MiceHub.exe</code> is running, the build automatically terminates it to avoid
@@ -1086,7 +1088,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
        applied straight away and kept in that browser's cache.</p>
     <p><b>Over the network:</b> on the PC that has the setup press <b>Share</b>; on the other
        PC press <b>Find PCs</b>, pick it from the list, press <b>Get</b>. The search looks for
-       other mice hubs on the same network, so no address has to be typed &mdash; though you
+       other MICE hubs on the same network, so no address has to be typed &mdash; though you
        can type one if the search cannot see it.</p>
     <p>The transfer goes <i>through</i> your own hub rather than straight from the browser: a
        page served by one hub is not allowed to read another hub's response, so the hub does
@@ -1794,7 +1796,7 @@ figure.pic figcaption{flex:1 1 220px;font-size:15px;line-height:1.55}
 const HELP_GROUPS = [
   {id: "start", label: "Start here", topics: [["bytask", "Start with a task"]]},
   {id: "use", label: "Use it", topics: [
-    ["hub", "Mice Hub"], ["modsite", "A module's own page"], ["accounts", "Accounts"]]},
+    ["hub", "MICE Hub"], ["modsite", "A module's own page"], ["accounts", "Accounts"]]},
   {id: "build", label: "Build and set up", topics: [
     ["firmware", "Board setup"], ["lift", "Lift module"], ["nong", "Nong module"]]},
   {id: "wrong", label: "When something is wrong", topics: [
