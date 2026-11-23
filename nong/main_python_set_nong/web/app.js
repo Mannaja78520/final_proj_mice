@@ -11874,12 +11874,14 @@ async function vidFetch() {
     return;
   }
   vidLinkBusy = true;
+  vidLanOffer("");
   $("vidFetchBtn").textContent = "■ Stop";
   $("vidTech").textContent = "";
   try {
     vidSay("Asking this PC to fetch the video…");
     let a = await Mice.Api.post("/api/video/fetch", { url });
     if (!a.ok) {
+      vidLanOffer(a.data && a.data.lanHost);
       vidSay(a.needLogin ? VID_LOGIN : "The link could not be fetched: " + a.says, true);
       $("vidTech").textContent = a.tech || "";
       return;
@@ -12059,6 +12061,58 @@ function vidApplySettings(s) {
   if (s.src && s.src.url) $("vidLink").value = s.src.url;
   if (s.src) vidSay("These moves were made from " + (s.src.url ? "a link: press Fetch to see it again."
     : "the file " + s.src.name + ": pick it again to see it."));
+}
+
+// ---- devices on the network that may give videos (user 2026-11-23) -----------
+// A link into the venue network is refused until an admin allows that device.
+// The refusal names the device, one button allows it; the list can be edited.
+let vidLanPending = "";
+function vidLanOffer(host) {
+  vidLanPending = host || "";
+  $("vidLanBox").hidden = !vidLanPending;
+  $("vidLanSay").textContent = vidLanPending ? "“" + vidLanPending + "” is a device on your network." : "";
+}
+async function vidLanChange(body) {
+  const a = await Mice.Api.post("/api/video/lan", body);
+  if (!a.ok) { vidSay(a.needLogin ? VID_LOGIN : a.says, true); return false; }
+  vidLanDraw(a.data.hosts || [], a.data.fixed || []);
+  return true;
+}
+async function vidLanAllow() {
+  if (!vidLanPending) return;
+  const host = vidLanPending;
+  if (await vidLanChange({ add: host })) {
+    vidLanOffer("");
+    vidSay("“" + host + "” is allowed. Press Fetch again.");
+  }
+}
+async function vidLanAddNow() {
+  const box = $("vidLanAdd");
+  if (!box.value.trim()) return;
+  if (await vidLanChange({ add: box.value.trim() })) { box.value = ""; vidSay("Allowed. Videos from that device can now be fetched."); }
+}
+async function vidLanLoad() {
+  const a = await Mice.Api.get("/api/video/lan");
+  if (a.ok) vidLanDraw(a.data.hosts || [], a.data.fixed || []);
+}
+function vidLanDraw(hosts, fixed) {
+  const box = $("vidLanItems");
+  box.textContent = "";
+  if (!hosts.length && !fixed.length) box.textContent = "No device allowed yet.";
+  fixed.forEach(h => {
+    const r = document.createElement("div");
+    r.textContent = h + " (set by the installer)";
+    box.appendChild(r);
+  });
+  hosts.forEach(h => {
+    const r = document.createElement("div");
+    const b = document.createElement("button");
+    b.textContent = "Remove";
+    b.onclick = () => vidLanChange({ remove: h });
+    r.appendChild(document.createTextNode(h + " "));
+    r.appendChild(b);
+    box.appendChild(r);
+  });
 }
 // --- dummy link ---
 // The dummy is a hand-posed copy of the robot: the same 10 joints, a pot on
