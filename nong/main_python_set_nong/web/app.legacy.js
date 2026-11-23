@@ -3832,7 +3832,10 @@ function renderSliders() {
       };
       slider.onchange = () => poseChanged(false);
       num.onchange = () => {
-        pose[i] = clampJ(i, +num.value);
+        const typed = num.value.trim() === "" ? NaN : +num.value;
+        if (Number.isFinite(typed)) pose[i] = clampJ(i, typed);
+        _lastVal[i] = NaN;
+        num.value = Math.round(pose[i] * 10) / 10;
         poseChanged(false);
       };
       row.append(name, slider, num);
@@ -5046,7 +5049,11 @@ function renderTimeline() {
     tIn.title = (i === 0 ? "entry time from wherever the robot is (ms)" : "time from previous keyframe (ms)") + ` — minimum ${kmin} ms, set by ${lim ? lim.why : "the 80 ms floor"}; longer is always allowed. Typing one PINS it: editing the pose afterwards will not re-time this move.`;
     if (k.tset) tIn.classList.add("pinned");
     tIn.onchange = () => {
-      const want = Math.round(+tIn.value || 0);
+      if (tIn.value.trim() === "" || !Number.isFinite(+tIn.value)) {
+        renderTimeline();
+        return;
+      }
+      const want = Math.round(+tIn.value);
       k.t = Math.max(kmin, want);
       delete k.dps;
       pinTime(i);

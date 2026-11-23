@@ -313,7 +313,9 @@ function renderTimeline() {
               + "afterwards will not re-time this move.";
     if (k.tset) tIn.classList.add("pinned");
     tIn.onchange = () => {
-      const want = Math.round(+tIn.value || 0);
+      // an emptied box leaves the move as it was; it used to mean "0 ms" and pinned the minimum
+      if (tIn.value.trim() === "" || !Number.isFinite(+tIn.value)) { renderTimeline(); return; }
+      const want = Math.round(+tIn.value);
       k.t = Math.max(kmin, want);
       delete k.dps;
       pinTime(i);             // typed BY HAND: nothing automatic may replace it
