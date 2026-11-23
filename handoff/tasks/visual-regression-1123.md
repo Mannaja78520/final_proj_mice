@@ -1,7 +1,7 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
 Owner: codex:11232030-35b8
-Updated: 2026-11-23T20:47+07:00
+Updated: 2026-11-23T20:48+07:00
 Branch: codex/visual-regression-1123
 Last commit: this checkpoint
 Plan: none (user ask 2026-11-23: "ได้เช็คทั้งหมดแล้วจริงปะ ทำไมยังเหลือพังอีกเยอะ")
@@ -11,7 +11,7 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 2, round 1: verify suppression in the full module page at 390 px while GET /api/status stays pending. Hypothesis: capability cards start allowed because their data-cap attributes are missing. One delayed-status baseline run, then one focused patch and browser rerun. Build touched firmware and verify in QEMU before any merge.
+Item 2, round 1: verify suppression in the full module page at 390 px while GET /api/status stays pending. Hypothesis: capability cards start allowed because their data-cap attributes are missing. Baseline reproduced: eight controls painted before JavaScript and while status was held. Mark all cards managed by showCard() as unavailable at first paint, add a structural QC check, update localized Help, then replay the same two fixtures. Build touched firmware and verify in QEMU before any merge.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
@@ -32,6 +32,7 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 | main_python/web/help/parts/modsite.html | Document connection and control visibility | pending | not run | uncommitted |
 
 ## Facts found
+- Item 2 baseline (module-before-caps.json): on the hub at 390 px, all eight control cards appeared before JavaScript and before the first nong or lift status. After status, only the correct card remained. applyTabs() permits data-cap values other than 0, including missing.
 - Edge 157, current 06db461a, 390 ? 844: Home, Help, Studio, TV, Camera, Voice, and Gacha selected all four themes correctly and stayed at 390 px. Japanese titles appeared, but root language was en or empty in all 28 cases. Private evidence: .local/visual-regression-1123/phone-theme-check.json.
 - Item 1 evidence (private): .local/visual-regression-1123/fast-comparison.txt and review-desk.jpg / review-phone.jpg. Edge 157 compared 220 Japanese states per SHA (390/1440, Midnight/Daylight/Indigo/Carnival). Zero capture exceptions, horizontal overflow, or corner-stuck popups. Largest desktop dark deltas: Help art/locale (46.8%), different/paged report data (40.7%), Settings locale (31.0%). Largest light deltas: CAD/grid bounds and viewport shift (up to 14.7% on desktop), firmware inventory and localized module/Settings cards on phones (up to 27.2%). Mobile Studio now scrolls the selected tab into view; narrow landscape/content reachability remains item 4. Module capture is a no-device fixture and CAD assembly fragments exist in both revisions.
 - Item 1 follow-up: .local/visual-regression-1123/locale-after.log and phone-theme-after.json. Before patch the new assertion failed for th and zh; after patch 11/11 isolated browser assertions and 28/28 Japanese phone checks passed. Help rebuilt and locale packs validated.
