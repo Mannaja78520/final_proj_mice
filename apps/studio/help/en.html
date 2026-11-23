@@ -45,41 +45,7 @@
     <div class="info-visual-wrapper">
       <img loading="lazy" decoding="async" data-shot="studio-sliders" alt="Joint Sliders Panel" class="info-img">
     </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> Left arm sliders (L_SH_P, L_SH_R, L_EL_P, L_EL_R)</div>
-        <div class="action-step"><b>How to set it:</b> Drag a slider or type an angle (the range set for that joint; HOME and the zero point may differ).</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          • <b>L_SH_P / L_SH_R:</b> The left shoulder bends forward and back (Pitch) and swings out and in (Roll).<br>
-          • <b>L_EL_P / L_EL_R:</b> The left elbow bends and the forearm twists.<br>
-          The servo turns to the real angle at once, with limits so it never hits the robot's frame.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> Right arm sliders (R_SH_P, R_SH_R, R_EL_P, R_EL_R)</div>
-        <div class="action-step"><b>How to set it:</b> Drag a slider or press the <b>Mirror</b> button to copy the pose from the left arm</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          Controls the right arm's 4 axes independently. If you press Mirror, the right arm opens into a pose symmetric to the left arm at once. Good for a wai greeting, folded arms or raising both hands together.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> Waist and shrug sliders (WAIST &amp; SHRUG)</div>
-        <div class="action-step"><b>How to set it:</b> WAIST turns left-right / SHRUG adjusts the 4-bar linkage</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          • <b>WAIST:</b> The waist twists so the robot can look to the side, ±30°.<br>
-          • <b>SHRUG:</b> The shoulder beam tilts, one side up and the other down, 26° in total, imitating a human shrug.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> Safety shortcut buttons (Home / Relax / Zero Lock)</div>
-        <div class="action-step"><b>How to set it:</b> Click the Home, Relax or Zero Lock button below</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          • <b>Home:</b> Returns to the set HOME pose. Each joint's angle may not be 90°; check the actual pose and the saved values.<br>
-          • <b>Relax:</b> Stops sending the servo control pulses; it does not cut the power supply, and how much holding force is released depends on the servo.<br>
-          • <b>Zero Lock:</b> Locks the zero-point coordinates so no one moves the position by accident.
-        </div>
-      </div>
-    </div>
+    <ol><li>Move the joint sliders on the Pose tab and watch the 3D preview.</li><li>Use Neutral pose to reset the preview. Mirror L↔R swaps sides. Mirror front↔back flips each arm&#x27;s reach without swapping arms.</li></ol>
   </div>
 
   <!-- SUB-SECTION 2: TIMELINE & KEYFRAMES -->
@@ -132,29 +98,7 @@
     <div class="info-visual-wrapper">
       <img loading="lazy" decoding="async" data-shot="studio-3d-model" alt="3D Model Canvas" class="info-img">
     </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> Axis control rings (Gizmo Rings)</div>
-        <div class="action-step"><b>How to set it:</b> Click a joint and coloured rings appear: red (Pitch), green (Roll), blue (Yaw). Click and drag</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          to turn that joint directly along its axis, which makes it easier to judge the angle than moving a slider.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> Inverse hand drag (Shift+Drag IK Solver)</div>
-        <div class="action-step"><b>How to set it:</b> Press the <b>Hold Shift</b> then click and drag the wrist ball (🟢 Wrist)</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          The system works out the shoulder and elbow angles together on all 4 axes automatically, so you can make the robot's hand point at a target in 3D space at once.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> True view switching (Orthographic Plane Views)</div>
-        <div class="action-step"><b>How to set it:</b> Press the <b>Front</b>, <b>Top</b> or <b>Side</b></div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          Switches the camera to a parallel-projection view (no perspective distortion), which helps you set both arms perfectly straight and level.
-        </div>
-      </div>
-    </div>
+    <ol><li>Use Top, Left, Front, Right, Back or Bottom to see the model from that direction. Select 3D to orbit.</li><li>On the Pose tab, drag a joint in the preview or use its slider.</li></ol>
   </div>
 
   <!-- SUB-SECTION 4: CALIBRATION & SERVO OFFSET -->
@@ -169,29 +113,7 @@
     <div class="info-visual-wrapper">
       <img loading="lazy" decoding="async" data-shot="studio-tuning-card" alt="Tuning &amp; Calibration Card" class="info-img">
     </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> Gear offset (Servo Offset Nudge)</div>
-        <div class="action-step"><b>How to set it:</b> Press the <b>-</b> or <b>+</b> Adjust 0.5° at a time, or press 0 to reset</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          Fixes the case where the servo horn meshes with the gear at the wrong position, so the arm can be made perfectly straight. The offset is saved to the NVS memory on the robot and is not lost when switched off.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> Safety limits (Joint Safety Limits)</div>
-        <div class="action-step"><b>How to set it:</b> Set the Min (for example 15°) and Max (for example 165°) of each joint</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          The real robot and Studio will never turn past these limits, which stops an arm folding into the torso or a servo jamming until the power sags (Brownout Guard).
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> Shrug calibration table (4-Bar Shrug Curve)</div>
-        <div class="action-step"><b>How to set it:</b> Enter the real lift distance (mm) against the shrug servo angle</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          The shrug beam moves according to the real mechanics of the 4-bar linkage, so the shoulder rises realistically and naturally.
-        </div>
-      </div>
-    </div>
+    <ol><li>Open Setup, then expand Servo offset. Use − or + to nudge a joint by 0.5°, enter an offset, or choose 0 for that joint.</li><li>Joint limits and the shrug curve are in the separate Rig setup card on the same tab.</li></ol>
   </div>
 
   <!-- SUB-SECTION 5: SEQUENCE CHAIN -->
@@ -203,85 +125,7 @@
     <div class="info-visual-wrapper">
       <img loading="lazy" decoding="async" data-shot="studio-sequence-card" alt="Sequence Manager Card" class="info-img">
     </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> Sequence files (YAML Sequence Files)</div>
-        <div class="action-step"><b>How to set it:</b> Choose a file from the dropdown <b>Open saved YAML…</b> or press <b>Save</b></div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          Loads a sequence you designed earlier back into the timeline to edit, or sends the file to the robot's SD card.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> Speed multiplier (Sequence Speed Multiplier)</div>
-        <div class="action-step"><b>How to set it:</b> Set the speed to 0.5x, 1.0x or 1.5x</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          Speeds up or slows down the whole sequence as you wish, while keeping the original rhythm ratios intact.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> Automatic sequence chaining (Sequence Chain)</div>
-        <div class="action-step"><b>How to set it:</b> Enter the next file name in the box <b>Chain</b> for example <code>wave.yaml</code></div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          When the robot finishes the current pose it starts the next one at once, with no new command needed, so a long show can run continuously.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> Speed while dancing to music (Speed limit with music)</div>
-        <div class="action-step"><b>How to set it:</b> In the card <b>Timing</b> the box <b>Speed limit with music</b> (only for sequences that have music) enter °/second. Leave it empty = use the robot's own value, 0 = as fast as the servo can go. Under the box it says which move cannot keep up with the music and by how many seconds it falls behind. Press the move name to go and edit, cut or change it.</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          Use this set of moves only while music is playing (written in the file as <code>pace: music N</code> The robot receives it as <code>PACE MUSIC N</code>) When the song ends, STOP is pressed, or the robot restarts, it resets to its default Peak speed limit (60°/s) every time. Collision checks, joint limits, and hand clearance still operate at the new speed. When testing on the actual robot, start with a low value and increase gradually.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">5</span> See whether the real servos can keep up (Play like the real servos)</div>
-        <div class="action-step"><b>How to set it:</b> Tick <b>Play like the real servos</b> in the Timing card and press Play. The robot in the picture moves slower than planned, like the real servos. A move the servo cannot keep up with has a dashed edge on the time bar (yellow = slightly slow, red = very slow). Each joint's delay and acceleration can be set in Setup &gt; rig (delay ms, speed-up °/s²).</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          It does not change the robot; it is only an on-screen check. The delay values are estimates until measured on a real robot. The physics simulator (tools/nong_sim) uses the same values.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">6</span> Smooth moves with no jerk (through keyframes without stopping)</div>
-        <div class="action-step"><b>How to set it:</b> No action needed. This works automatically with all moves: sets of moves in Studio, moves from videos, alternate paths found by Studio, speaking gestures, moves from RL, and Shows. If a joint keeps moving in the same direction, the arm continues through the keyframes instead of stopping at each one. It still stops exactly at the keyframe when a joint reverses direction (a flicking move), during pauses (hold), and at the start and end. The timing of every move stays the same, so everything stays in sync with the music. You can turn this on or off separately for each motion source in the file <code>motion_smooth.json</code> (sources) Motion files created outside Studio (such as RL) use <code>python tools/smooth_sequence.py ไฟล์.yaml</code> Smoothing will never make movements jerkier than before: any keyframe where the curved path would be jerkier than stopping at each key is automatically slowed down (<code>jerkGuard</code>) For RL motions compressed from 50 frames per second, the arm passes through each keyframe at the original speed and stays on the checked collision-free path (<code>followDensePath</code>)</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          The exported file will include the line <code>pass:</code> before the motion (its starting and ending speed). Robots with the updated firmware receive it as a command <code>PASS</code> Older robots skip this line and play the classic way (pausing at every keyframe). Studio checks for collisions along the smoothed path using the same safety distance. If a curved motion causes a collision, it falls back to stopping at keyframes along the pre-checked straight path. The robot also performs its own safety check: if movement is too fast for the servos or timing is stretched, it reverts to the classic way. In 4 cheer routines, mid-motion pauses dropped from 226–429 to just 35–101 stops (not yet tested on the physical robot).
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">7</span> Undo / Redo (a wrong tap does not lose your work)</div>
-        <div class="action-step"><b>How to set it:</b> Press ↶ Undo in the time bar (beside the zoom buttons), or Ctrl+Z, to take back the last change, for example a keyframe deleted by mistake. Press ↷ Redo or Ctrl+Y to put it back. You can go back many steps. Dragging or typing a value in one go counts as one step. Opening a file or a show starts a fresh history.</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          The robot does not change. Only the poses on the timeline on screen go back. If you already saved to the robot, save to the robot again.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">8</span> Change the screen colours (dark mode)</div>
-        <div class="action-step"><b>How to set it:</b> Pick a colour set from the box in the top bar of Studio. Midnight is the dark mode and is easier on the eyes for long sessions. The 3D view changes its background too. It is the same colour set as the other Hub pages, so a choice made anywhere applies everywhere.</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          The robot and your move files do not change. Only the colours of the screen on this computer.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">9</span> Save asks before replacing a name (two tabs cannot overwrite each other)</div>
-        <div class="action-step"><b>How to set it:</b> When you press Save, Studio asks the hub whether that name is already taken. If another tab or another person has just saved this name, a window asks whether to replace it. Press Cancel and type a new name to keep both files.</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          The robot does not change. The old file is left alone if you press Cancel.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">10</span> A video with hardly any person (said in words)</div>
-        <div class="action-step"><b>How to set it:</b> After Make moves, if Studio can see a person in less than a quarter of the video, it first says "I could hardly see a person in this video" and suggests a video where the whole person, arms included, is in the picture. The detailed numbers (short reversals, uncertain moments) are behind Show technical details.</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          The robot does not change. This is only a message to help you decide before putting moves on the time bar.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">11</span> Video links on the venue network (for example a NAS)</div>
-        <div class="action-step"><b>How to set it:</b> Internet links and picked files work as usual. A link to a device on your network (a NAS or another PC) is refused first, for safety. 1) Log in on the Robot tab. 2) Paste the device's video link into “Or a link” and press Fetch. 3) When it says the link is a device on your network, press “Allow this device”. 4) Press Fetch again. To see or undo the list, open “Devices on my network that may give videos” under the link box; you can also type a name or address (for example nas.local or 192.168.1.50) or press Remove. This PC itself and cloud addresses are always refused and cannot be allowed.</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          Does not change the robot. It only chooses which devices the hub will fetch a video from. The list is kept on this PC only.
-        </div>
-      </div>
-    </div>
+    <ol><li>In Sequence, choose a saved YAML and use Load for editing to open its moves in the timeline.</li><li>Use Play saved to preview it. Enter the next move in Then run, or leave it empty to stop at the end.</li></ol>
   </div>
 
   <!-- SUB-SECTION 6: SHOWS & MUSIC -->
@@ -293,29 +137,7 @@
     <div class="info-visual-wrapper">
       <img loading="lazy" decoding="async" data-shot="studio-shows-card" alt="Shows &amp; Music Card" class="info-img">
     </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> Attach the show music (Show Music Sync)</div>
-        <div class="action-step"><b>How to set it:</b> Select music file from <code>/music/song.mp3</code> on the SD card</div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          The music and the robot's moves start together exactly on the beat, and the system turns the sound off automatically when you press Stop.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> Pause intervals</div>
-        <div class="action-step"><b>How to set it:</b> Set a pause time between moves, for example <code>pause: 2.0s</code></div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          The robot holds a graceful pose for the set time before it starts the next move.
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> Send the show to the board (Save to robot)</div>
-        <div class="action-step"><b>How to set it:</b> Press the <b>💾 Save to robot</b></div>
-        <div class="action-impact"><b>What changes on the robot:</b>
-          The show is saved to the robot's own SD card, so the robot can power on and perform the show by itself without a computer attached.
-        </div>
-      </div>
-    </div>
+    <ol><li>In Shows, choose a saved show or select New. Add saved sequences in the order you want them to run.</li><li>Choose a Music track or use From PC. The Between fields set transition speed and minimum time. Use Show on the time bar to preview the order.</li></ol>
   </div>
 
   <!-- SUB-SECTION 7: MOVES WHILE TALKING (A46-1, A46-4) -->

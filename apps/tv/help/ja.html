@@ -47,25 +47,14 @@
     <div class="info-visual-wrapper">
       <img loading="lazy" decoding="async" data-shot="tv-gauges-box" alt="TVメーターパネル" class="info-img">
     </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> CSS ライトゲージ</div>
-        <div class="action-step"><b>設定方法：</b> サーボの実際の角度に合わせて動く青緑のレベルバーを見ます。</div>
-        <div class="action-impact"><b>システムの仕組み：</b>
-          軽い CSS ゲージで 10 個すべてのサーボの実際の位置を表示し、200 ms ごとに更新します。テレビの GPU も CPU も圧迫しません。
-        </div>
-      </div>
-    </div>
+    <p><b>関節モニター</b> サーボモニターを選び、ロボットを選択します。各バーにはロボットが報告した角度が表示されます。</p>
   </div>
 
   <div class="f"><h3>分離アーキテクチャ：どうやってテレビの固まりを防ぐのか？</h3>
     <p>以前の構成では、スマートテレビや古いスマートフォンのブラウザーで 3D ページ（Three.js）を開くと、WebGL のシェーダーをコンパイルして 1 秒 60 回の計算ループを回す必要があり、スマートテレビのプロセッサーはそれに向いていないため、テレビのブラウザーが勝手に閉じたり本体が固まったりしました。</p></div>
-  <!-- SECTION 3: DUAL-MODE CONTROLLER -->
   <div class="info-box">
-    <div class="info-header">
-      <b>ポイント 3：2 つのモードの切り替え（スマホリモコンとステージ表示）</b>
-      <span class="info-badge">2 つのモード</span>
-    </div>
+    <div class="info-header"><b>表示モードを選ぶ</b></div>
+    <p>スマートフォンリモコン、ステージ表示、サーボモニター</p>
     <div class="action-impact-grid">
       <div class="action-card">
         <div class="action-card-title"><span class="num">1</span> 📱 スマホリモコンのモード</div>

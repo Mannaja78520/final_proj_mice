@@ -17,28 +17,13 @@
     <div class="info-visual-wrapper">
       <img loading="lazy" decoding="async" data-shot="voice-chat-box" alt="กล่องสนทนาด้วยเสียง" class="info-img">
     </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> กล่องพิมพ์คำถาม (Question Input)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์คำถามหรือข้อความที่ต้องการให้หุ่นยนต์ตอบ</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          ระบบจะประมวลผลค้นหาคำตอบในชีตกิจกรรมก่อน (0.2 วิ) หากไม่พบจะส่งต่อให้ Cloud AI (Gemini / Groq) ช่วยตอบ
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> พูดใส่ไมค์ (Press to talk STT)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>กดเพื่อพูด</b> แล้วพูด (ไทย/อังกฤษ/จีน/ญี่ปุ่น)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          แปลงเสียงสดจากไมโครโฟนเป็นข้อความลงในช่องถามทันที พร้อมแก้คำเพี้ยนตามดิกชันนารีใน <code>config/voice.json</code>
-        </div>
-      </div>
-    </div>
+    <ol><li>ในแท็บ Talk พิมพ์คำถามแล้วกดถาม หรือกดปุ่มพูดเพื่อใช้ไมค์</li></ol>
   </div>
 
   <div class="info-box">
     <div class="info-header"><b>ตั้งค่าเสียงพูด</b></div>
     <figure class="info-visual-wrapper"><img data-shot="voice-settings-card" alt="ตั้งค่าเสียงพูด" class="info-img"></figure>
-    <ol><li>เลือกแท็บ Voice เพื่อปรับน้ำเสียง ความเร็ว ระดับเสียงสูงต่ำ และเสียงที่จะใช้สำหรับแต่ละภาษา จากนั้นกดบันทึก</li><li>เลือกเริ่มตอบเร็วขึ้นด้วยเสียงบนอุปกรณ์นี้ หากต้องการให้ระบบใช้เสียงในเครื่องได้เมื่อเสียงหลักมาช้า</li><li>ในแท็บ Talk เปิดเสียงที่เครื่องนี้เพื่อฟังคำตอบผ่านเบราว์เซอร์ และเลือกหุ่นจากรายการ Robot</li></ol>
+    <ol><li>เปิดแท็บ Voice แล้วเลือกน้ำเสียงกับความเร็ว เลือกเสียงสำหรับแต่ละภาษา ปรับความเร็วและระดับเสียงสูงต่ำด้านล่าง แล้วกดบันทึกเสียง</li><li>เลือกเริ่มตอบเร็วขึ้นด้วยเสียงบนอุปกรณ์นี้ หากต้องการให้ระบบใช้เสียงในเครื่องได้เมื่อเสียงหลักมาช้า</li><li>ในแท็บ Talk เปิดเสียงที่เครื่องนี้เพื่อฟังคำตอบผ่านเบราว์เซอร์ และเลือกหุ่นจากรายการ Robot</li></ol>
   </div>
 
   <div class="f"><h3>ถามหุ่นหนึ่งคำถาม</h3>

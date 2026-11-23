@@ -5,12 +5,17 @@
   },
   "studio-sliders": {
     "url": "/studio/",
-    "clip": ".card:has(#sliders)",
+    "clip": ".card:has(#sliders).floating",
     "ready": "#sliders input",
     "viewport": {
       "width": 1440,
       "height": 1400
-    }
+    },
+    "steps": [
+      {
+        "eval": "panelFloat(document.querySelector('.card:has(#sliders)'), {x:64,y:64,w:520}, false)"
+      }
+    ]
   },
   "studio-timeline-bar": {
     "url": "/studio/",
@@ -29,13 +34,16 @@
   },
   "studio-tuning-card": {
     "url": "/studio/",
-    "clip": ".card:has(#trimUI)",
+    "clip": ".card:has(#trimUI).floating",
     "steps": [
       {
         "click": "#tabBtnSetup"
       },
       {
         "click": ".card:has(#trimUI) h2"
+      },
+      {
+        "eval": "panelFloat(document.querySelector('.card:has(#trimUI)'), {x:64,y:64,w:520}, false)"
       }
     ],
     "ready": "#trimUI input:visible",
@@ -60,10 +68,13 @@
   },
   "studio-shows-card": {
     "url": "/studio/",
-    "clip": ".card:has(#showList)",
+    "clip": ".card:has(#showList).floating",
     "steps": [
       {
         "click": "#tabBtnShows"
+      },
+      {
+        "eval": "panelFloat(document.querySelector('.card:has(#showList)'), {x:64,y:64,w:520}, false)"
       }
     ],
     "ready": "#showList",

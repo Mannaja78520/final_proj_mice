@@ -1,7 +1,6 @@
 {
   "gacha-tabs": {
     "url": "/app/gacha/",
-    "clip": ".tabbed",
-    "ready": "#gItem"
+    "ready": ".preset-card button"
   }
 }

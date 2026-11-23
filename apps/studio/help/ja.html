@@ -45,41 +45,7 @@
     <div class="info-visual-wrapper">
       <img loading="lazy" decoding="async" data-shot="studio-sliders" alt="関節調整スライダーパネル" class="info-img">
     </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> 左腕のスライダー（L_SH_P、L_SH_R、L_EL_P、L_EL_R）</div>
-        <div class="action-step"><b>設定方法：</b> スライダーをドラッグするか角度を入力します（その関節に設定された範囲。HOME とゼロ点は異なる場合があります）。</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          • <b>L_SH_P / L_SH_R:</b> 左肩が前後に曲がり（ピッチ）、外と内に開閉します（ロール）。<br>
-          • <b>L_EL_P / L_EL_R:</b> 左肘が曲がり、前腕がねじれます。<br>
-          サーボはすぐに実際の角度まで回り、ロボットのフレームにぶつからないよう制限されます。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> 右腕のスライダー（R_SH_P、R_SH_R、R_EL_P、R_EL_R）</div>
-        <div class="action-step"><b>設定方法：</b> スライダーをドラッグするか、次のボタンを押します： <b>ミラー</b> 左腕のポーズをコピーします</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          右腕の 4 軸を独立して操作します。「ミラー」を押すと、右腕がすぐ左腕と対称のポーズになります。合掌のあいさつ、腕組み、両手を同時に上げるポーズに便利です。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> 腰とすくめのスライダー（WAIST と SHRUG）</div>
-        <div class="action-step"><b>設定方法：</b> WAIST は左右に回転、SHRUG は 4 節リンクを調整</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          • <b>ウエスト：</b> 腰をひねって横を向けます（±30°）。<br>
-          • <b>すくめ：</b> 肩のビームが傾き、片側が上がり反対側が下がります（合計 26°）。人間の肩すくめを真似ています。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> 安全ショートカットボタン（Home / Relax / Zero Lock）</div>
-        <div class="action-step"><b>設定方法：</b> 下の Home、Relax、Zero Lock ボタンをクリックします</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          • <b>ホーム：</b> 設定した HOME ポーズに戻ります。各関節の角度は 90° とは限りません。実際のポーズと保存された値を確認してください。<br>
-          • <b>リラックス：</b> サーボの制御パルスの送信を止めます。電源は切りません。保持力がどれだけ抜けるかはサーボによります。<br>
-          • <b>ゼロ固定：</b> ゼロ点の座標を固定し、うっかり位置を動かされないようにします。
-        </div>
-      </div>
-    </div>
+    <ol><li>ポーズタブで関節のスライダーを動かし、3D プレビューを確認します。</li><li>中立ポーズでプレビューを元に戻します。左右反転で腕の側を入れ替え、前後反転で同じ腕の伸ばす方向を逆にします。</li></ol>
   </div>
 
   <!-- SUB-SECTION 2: TIMELINE & KEYFRAMES -->
@@ -132,29 +98,7 @@
     <div class="info-visual-wrapper">
       <img loading="lazy" decoding="async" data-shot="studio-3d-model" alt="3D モデルキャンバス" class="info-img">
     </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> 軸のコントロールリング（ギズモリング）</div>
-        <div class="action-step"><b>設定方法：</b> 関節をクリックすると色付きのリングが出ます：赤（ピッチ）、緑（ロール）、青（ヨー）。クリックしてドラッグすると</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          その関節を軸に沿って直接回せます。スライダーを動かすより角度の見当をつけやすくなります。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> 手のインバースドラッグ（Shift+ドラッグ IK ソルバー）</div>
-        <div class="action-step"><b>設定方法：</b> 押すと <b>Shift を押し続けて</b> 手首のボール（🟢 Wrist）をクリックしてドラッグします</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          システムが肩と肘の 4 軸の角度をまとめて自動で計算するので、ロボットの手を 3D 空間の目標にすぐ向けられます。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> 正投影ビューの切り替え（正投影の平面ビュー）</div>
-        <div class="action-step"><b>設定方法：</b> 押すと <b>前</b>, <b>上</b> または <b>横</b></div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          カメラを平行投影ビュー（遠近のゆがみなし）に切り替えるので、両腕をまっすぐ同じ高さに合わせられます。
-        </div>
-      </div>
-    </div>
+    <ol><li>上、左、前、右、後ろ、下から見たい方向を選びます。3D を選ぶと周囲を回転できます。</li><li>ポーズタブでプレビューの関節をドラッグするか、対応するスライダーを使います。</li></ol>
   </div>
 
   <!-- SUB-SECTION 4: CALIBRATION & SERVO OFFSET -->
@@ -169,29 +113,7 @@
     <div class="info-visual-wrapper">
       <img loading="lazy" decoding="async" data-shot="studio-tuning-card" alt="調整・キャリブレーションカード" class="info-img">
     </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ギアのオフセット（サーボオフセット微調整）</div>
-        <div class="action-step"><b>設定方法：</b> 押すと <b>-</b> または <b>+</b> 0.5° ずつ調整、または 0 でリセット</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          サーボホーンがギアと違う位置でかみ合ってしまう問題を直し、腕を完全にまっすぐにできます。オフセットはロボットの NVS メモリに保存され、電源を切っても失われません。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> 安全リミット（関節の安全リミット）</div>
-        <div class="action-step"><b>設定方法：</b> 各関節の最小値（例：15°）と最大値（例：165°）を設定します</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          実際のロボットも Studio も、このリミットを超えて回りません。腕が胴体に折れ込んだり、サーボが詰まって電源が落ちたりするのを防ぎます（ブラウンアウトガード）。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> すくめのキャリブレーション表（4 節すくめ曲線）</div>
-        <div class="action-step"><b>設定方法：</b> 実際の持ち上げ距離（mm）をすくめサーボの角度に対応させて入力します</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          すくめのビームは本物の 4 節リンクの力学どおりに動くので、肩が現実的で自然に上がります。
-        </div>
-      </div>
-    </div>
+    <ol><li>セットアップでサーボのオフセットを開きます。− と + で 0.5°ずつ調整するか、値を直接入力します。0 でその関節の値を消せます。</li><li>関節の可動範囲と肩すくめのカーブは、同じタブの別のリグ設定カードにあります。</li></ol>
   </div>
 
   <!-- SUB-SECTION 5: SEQUENCE CHAIN -->
@@ -203,85 +125,7 @@
     <div class="info-visual-wrapper">
       <img loading="lazy" decoding="async" data-shot="studio-sequence-card" alt="シーケンス管理カード" class="info-img">
     </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> シーケンスファイル（YAML シーケンスファイル）</div>
-        <div class="action-step"><b>設定方法：</b> ドロップダウンからファイルを選びます <b>保存した YAML を開く…</b> または押します： <b>保存</b></div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          以前作ったシーケンスをタイムラインに読み込んで編集するか、ファイルをロボットの SD カードに送ります。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> 速度の倍率（シーケンス速度倍率）</div>
-        <div class="action-step"><b>設定方法：</b> 速度を 0.5x、1.0x、1.5x に設定します</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          シーケンス全体を好きなように速くしたり遅くしたりでき、元のリズムの比率はそのまま保たれます。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> シーケンスの自動連結（シーケンスチェーン）</div>
-        <div class="action-step"><b>設定方法：</b> 欄に次のファイル名を入れます： <b>チェーン</b> 例： <code>wave.yaml</code></div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          ロボットは今のポーズが終わるとすぐ次を始め、新しいコマンドは不要なので、長いショーも途切れず続けられます。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> 音楽に合わせて踊るときの速度（音楽時の速度制限）</div>
-        <div class="action-step"><b>設定方法：</b> カード <b>タイミング</b> の欄 <b>音楽時の速度制限</b> （音楽のあるシーケンスのみ）°/秒 を入力します。空欄 = ロボット自身の値、0 = サーボが出せる最速。欄の下に、どの動きが音楽に間に合わないか、何秒遅れるかが表示されます。動きの名前を押すと、その動きを直したり、切ったり、変えたりできます。</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          音楽の再生中だけ、この動作セットを使います (ファイル内の表記は <code>pace: music N</code> ロボット側の認識： <code>PACE MUSIC N</code>）曲の終了時、STOP を押した時、または再起動時、ロボットは毎回元の Peak speed limit（60°/秒）に戻ります。新しい速度でも衝突検知、関節可動域、手の安全距離のチェックは有効なままです。実機で試す際は、低い値から始めて徐々に上げてください。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">5</span> 実際のサーボが追いつけるか確認する（実際のサーボのように再生）</div>
-        <div class="action-step"><b>設定方法：</b> チェックを入れます： <b>実際のサーボのように再生</b> のタイミングカードで、再生を押します。画面のロボットが、実際のサーボのように計画より遅く動きます。サーボが追いつけない動きにはタイムバーに破線の縁が付きます（黄 = 少し遅い、赤 = かなり遅い）。各関節の遅れと加速は セットアップ &gt; リグ（delay ms、speed-up °/s²）で調整できます。</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          ロボットは変わらず、画面上の確認だけです。実際のロボットで測るまで、遅れの値は推定です。物理シミュレーター（tools/nong_sim）も同じ値を使います。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">6</span> カクつかないなめらかな動き（止まらずにキーフレームを通過）</div>
-        <div class="action-step"><b>設定方法：</b> 操作は不要です。Studio の動作セット、動画から作った動作、Studio が見つけた迂回ルート、話すときの動作、RL の動作、Shows など、すべての動作に自動で適用されます。関節が同じ方向に動き続ける場合、アームは各キーフレームで止まらず、そのまま通過します。関節が逆方向に動き始める箇所（振り払う動作）、一時停止（hold）がある箇所、動作の最初と最後では、キーフレームの位置で正確に止まります。どの動作もタイミングは変わらないので、音楽との同期も保たれます。ファイル内で、動作の作成元ごとにオン・オフを切り替えられます <code>motion_smooth.json</code> (sources) Studio の外部で作成されたモーションファイル（RL など）が使用する <code>python tools/smooth_sequence.py ไฟล์.yaml</code> スムージング処理によって動作が従来よりぎこちなくなることは決してありません。各キーで一時停止するよりカーブの揺れが大きくなるキーフレームは、自動的に速度が抑えられます（<code>jerkGuard</code>）毎秒 50 回の詳細な動きから圧縮された RL モーションでは、アームは元の動作速度で各キーを通過し、衝突チェック済みの元の軌道を維持します（<code>followDensePath</code>)</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          書き出したファイルには、次の行が含まれます <code>pass:</code> モーション前（その動作の開始速度と終了速度）。新ファームウェアを書き込んだロボットはこれをコマンドとして受け取ります <code>PASS</code> 旧型ロボットはこの行をスキップして従来通り動作します（各キーで一時停止）。Studio は同じ安全マージンを用いて、スムージング後の軌道上で衝突チェックを行います。カーブによって衝突が発生する場合は、チェック済みの直線軌道に沿ってキー位置で一時停止する動作にフォールバックします。ロボット自身も二重チェックを行い、サーボの許容速度を超えたり時間が引き延ばされた場合は従来通り動作します。4組のチアダンス動作では、途中の停止回数が 226〜429 回から 35〜101 回へと大幅に減少しました（実機での検証は未実施）。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">7</span> 元に戻す / やり直し（押し間違えても作品は消えません）</div>
-        <div class="action-step"><b>設定方法：</b> タイムバー（ズームボタンの横）の ↶ Undo、または Ctrl+Z で、直前の変更（たとえば間違えて消したキーフレーム）を取り消せます。↷ Redo または Ctrl+Y で元に戻します。何段階でもさかのぼれます。ドラッグや入力を続けた操作は1段階にまとめます。ファイルやショーを開くと履歴は新しくなります。</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          ロボットは変わりません。画面上のタイムラインのポーズだけが戻ります。すでにロボットへ保存した場合は、もう一度保存してください。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">8</span> 画面の色を変える（ダークモード）</div>
-        <div class="action-step"><b>設定方法：</b> Studio の上部バーにある色の選択ボックスから配色を選びます。Midnight がダークモードで、長時間の作業でも目が疲れにくくなります。3D 表示の背景色も一緒に変わります。Hub の他のページと同じ配色なので、どこで選んでもすべてのページに反映されます。</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          ロボットや動きのファイルは変わりません。このパソコンの画面の色だけが変わります。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">9</span> 同じ名前は上書き前に確認（2つのタブで上書きし合わない）</div>
-        <div class="action-step"><b>設定方法：</b> Save を押すと、Studio はその名前がすでに使われていないかを Hub に確認します。別のタブや別の人が直前に同じ名前で保存していた場合は、置き換えるかどうかを尋ねるウィンドウが出ます。キャンセルして新しい名前を付ければ、両方のファイルを残せます。</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          ロボットは変わりません。キャンセルすれば、元のファイルはそのまま残ります。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">10</span> ほとんど人が映っていない動画（言葉で伝える）</div>
-        <div class="action-step"><b>設定方法：</b> Make moves のあと、動画の4分の1未満でしか人が見えない場合、Studio はまず「この動画ではほとんど人が見えませんでした」と伝え、腕を含む全身が映る動画を勧めます。細かい数字（短い反転、不確かな瞬間）は Show technical details の中にあります。</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          ロボットは変わりません。動きをタイムバーに置く前の判断を助けるメッセージです。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">11</span> 会場ネットワーク内の動画リンク(例: NAS)</div>
-        <div class="action-step"><b>設定方法：</b> インターネットのリンクと選んだファイルは通常どおり使えます。ネットワーク上のデバイス(NASや別のPC)へのリンクは、安全のため最初は拒否されます。1) ロボットタブでログインします。2) そのデバイスの動画リンクを「またはリンク」に貼り付けて取得を押します。3)「ネットワーク上のデバイスです」と出たら「このデバイスを許可」を押します。4) もう一度取得を押します。一覧の確認や取り消しは、リンク欄の下の「動画を提供できる自分のネットワーク上のデバイス」を開きます。名前やアドレス(例: nas.local または 192.168.1.50)を自分で入力することも、削除を押すこともできます。このPC自身とクラウドのアドレスは常に拒否され、許可できません。</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          ロボットは変わりません。ハブがどのデバイスから動画を取得するかを選ぶだけです。一覧はこのPCにだけ保存されます。
-        </div>
-      </div>
-    </div>
+    <ol><li>シーケンスタブで保存した YAML を選び、編集用に読み込んでタイムラインに開きます。</li><li>保存した動きはプレビューできます。次の動きは「次に実行」で指定し、空欄のままにすると最後で停止します。</li></ol>
   </div>
 
   <!-- SUB-SECTION 6: SHOWS & MUSIC -->
@@ -293,29 +137,7 @@
     <div class="info-visual-wrapper">
       <img loading="lazy" decoding="async" data-shot="studio-shows-card" alt="ショーと音楽のカード" class="info-img">
     </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ショーの音楽を付ける（ショー音楽の同期）</div>
-        <div class="action-step"><b>設定方法：</b> 次の場所から音楽ファイルを選択： <code>/music/song.mp3</code> SD カード内</div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          音楽とロボットの動きがぴったり拍に合わせて同時に始まり、停止を押すとシステムが自動で音を止めます。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> 停止の間隔</div>
-        <div class="action-step"><b>設定方法：</b> 動きの間の停止時間を決めます。例： <code>pause: 2.0s</code></div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          ロボットは決めた時間だけ美しいポーズで止まってから、次の動きを始めます。
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> ショーをボードに送る（ロボットに保存）</div>
-        <div class="action-step"><b>設定方法：</b> 押すと <b>💾 ロボットに保存</b></div>
-        <div class="action-impact"><b>ロボットに起こること：</b>
-          ショーはロボット自身の SD カードに保存されるので、PC をつながなくても、ロボットは電源を入れて自分でショーを演じられます。
-        </div>
-      </div>
-    </div>
+    <ol><li>ショータブで保存したショーを選ぶか新規作成し、保存済みのシーケンスを再生順に追加します。</li><li>音楽を選ぶか、PC から取り込みます。シーケンス間の速度と最短時間を設定できます。順序はタイムバーで確認できます。</li></ol>
   </div>
 
   <!-- SUB-SECTION 7: MOVES WHILE TALKING (A46-1, A46-4) -->
