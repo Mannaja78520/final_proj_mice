@@ -2289,6 +2289,9 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
             if icon.is_file():
                 return self.send_bytes(icon.read_bytes(), "image/x-icon")
             return self.send_bytes(b"", "image/x-icon", code=204)
+        if path == "/img-dark.css":       # dark-theme pictures (tools/make_dark_images.py); hub pages only, not the board flash
+            f = SHARED_WEB / "img-dark.css"
+            return self.send_bytes(f.read_bytes() if f.is_file() else b"", MIME[".css"])
         if path == "/mice.css":
             # One design system for every surface. This route must stay ABOVE
             # the studio fallback below, which would otherwise look for the
