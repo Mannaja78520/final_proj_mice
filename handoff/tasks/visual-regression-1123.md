@@ -11,7 +11,7 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 2, resume after E: filled. Preserve the completed nong compile and UART-backed 390 px walkthrough evidence. Finish the missing builds from this snapshot with private C: scratch, then use the lift generated page and real emulated UART status for the second phone walkthrough. Budget one resumed build and one walkthrough per board type, with one retry for a diagnosed environment failure.
+Item 2, finish the C: build matrix and retry the Lift phone walkthrough with `mice_lift_sim`. Check that its generated page is byte-identical to the production Lift page, then use its UART INFO response. One retry after the production Lift image failed to reach the QEMU boot-ready marker.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
@@ -41,6 +41,7 @@ Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 - haveRobot() in Studio means "connected to a robot", not "3D ready".
 
 ## Done
+- Item 2 resumed at `e6f3b60`. C: builds so far passed Nong, Lift, and ESP32-CAM. Edge passed 390 px Nong with the compiled page/assets, no controls or commands before status, UART `PONG`/`INFO`, no sideways overflow, and touch switching between Files and Control. Private C: evidence in `%TEMP%/mice-visual-1123-e6f3b60/phone/walkthrough.log` and `qemu-nong-*.png`. Production Lift compiled but failed to reach `[boot] ready` in QEMU.
 - Item 2 source and Help patch: all eight control cards stay hidden before JavaScript and while the first reply is held. After release, only nong or lift appears, matching each fixture. Private evidence: module-after-caps.json. Structural QC 4/15 before, 15/15 after. Firmware build and QEMU pending.
 - Item 1: compared the Japanese matrix, reviewed the largest changes and fixed the document language for screen readers. WIP retained for full QC and review before PR/merge.
 - PR #215, #217 (visual tool, phone/theme/contrast fixes), #219 (reports paging, Esc closes Report box, Studio texts translate), #220 (blank/negative number boxes). Each has a QC check proven by breaking it.
