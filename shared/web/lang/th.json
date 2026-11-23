@@ -662,6 +662,8 @@
   "camera": "กล้อง",
   "guests take photos with a frame and stickers, and take them home": "แขกถ่ายภาพพร้อมกรอบและสติกเกอร์ แล้วรับภาพกลับไป",
   "In use right now:": "ใช้งานอยู่ตอนนี้:",
-  "Use this camera for faces only through the switch above. Do not also pick the same camera inside Face_Regonize: a USB camera can be held by one program only, and a camera board allows one connection.": "ให้ใช้กล้องตัวนี้จำใบหน้าผ่านสวิตช์ด้านบนเท่านั้น อย่าเลือกกล้องตัวเดียวกันในโปรแกรม Face_Regonize ซ้ำอีก เพราะกล้อง USB เปิดได้ทีละโปรแกรมเดียว และบอร์ดกล้องรับได้แค่หนึ่งการเชื่อมต่อ"
+  "Use this camera for faces only through the switch above. Do not also pick the same camera inside Face_Regonize: a USB camera can be held by one program only, and a camera board allows one connection.": "ให้ใช้กล้องตัวนี้จำใบหน้าผ่านสวิตช์ด้านบนเท่านั้น อย่าเลือกกล้องตัวเดียวกันในโปรแกรม Face_Regonize ซ้ำอีก เพราะกล้อง USB เปิดได้ทีละโปรแกรมเดียว และบอร์ดกล้องรับได้แค่หนึ่งการเชื่อมต่อ",
+  "No picture yet. Tick “live view” or press “Take a picture”.": "ยังไม่มีภาพ ติ๊ก “ดูสด” หรือกด “ถ่ายภาพ”",
+  "Cameras found:": "พบกล้อง:"
  }
 }

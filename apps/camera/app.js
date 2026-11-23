@@ -95,7 +95,7 @@ class CameraApp extends (window.Mice && window.Mice.App ? window.Mice.App : Obje
     box.querySelectorAll('input[type=checkbox][data-live]:checked').forEach(c => live.add(c.dataset.dev));
     box.innerHTML = '';
     this.$('none').hidden = this.cams.length > 0;
-    this.$('stat').textContent = this.cams.length ? (this.cams.length + ' found') : '';
+    this.$('stat').innerHTML = this.cams.length ? ('<span>Cameras found:</span> ' + this.cams.length) : '';
     this.cams.forEach(c => box.appendChild(this.createCard(c, live.has(c.dev))));
   }
 
@@ -109,7 +109,8 @@ class CameraApp extends (window.Mice && window.Mice.App ? window.Mice.App : Obje
     const watching = c.viewers ? c.viewers + ' watching' : '';
     d.innerHTML =
       `<h2>${this.esc(c.name)} <span class="kind">${this.esc(kind)}</span></h2>` +
-      `<img class="shot" alt="the view from ${this.esc(c.name)}">` +
+      `<div class="shotbox"><img class="shot" hidden alt="the view from ${this.esc(c.name)}">` +
+      `<div class="ph shot">No picture yet. Tick “live view” or press “Take a picture”.</div></div>` +
       `<div class="row" style="margin-top:var(--sp-2)">` +
         `<label><input type="checkbox" data-live="1" data-dev="${this.esc(dev)}"> live view</label>` +
         `<button class="shotbtn">📷 Take a picture</button>` +
@@ -130,7 +131,7 @@ class CameraApp extends (window.Mice && window.Mice.App ? window.Mice.App : Obje
   }
 
   bind(card, c, live, wasLive) {
-    const img = card.querySelector('.shot'), say = card.querySelector('.say');
+    const img = card.querySelector('img.shot'), ph = card.querySelector('.ph'), say = card.querySelector('.say');
     const url = p => '/api/dev/' + p + '?dev=' + encodeURIComponent(c.dev);
     const shot = card.querySelector('.shotbtn'), box = card.querySelector('[data-live]');
     shot.disabled = box.disabled = !live;
@@ -138,16 +139,18 @@ class CameraApp extends (window.Mice && window.Mice.App ? window.Mice.App : Obje
 
     shot.onclick = () => {
       say.textContent = 'taking…';
-      img.onerror = () => { say.textContent = 'no picture — is the camera plugged in?'; };
-      img.onload = () => { say.textContent = ''; };
+      img.onerror = () => { say.textContent = 'no picture — is the camera plugged in?'; img.hidden = true; ph.hidden = false; };
+      img.onload = () => { say.textContent = ''; img.hidden = false; ph.hidden = true; };
       img.src = url('cam.jpg') + '&t=' + Date.now();
     };
 
     const start = () => {
       say.textContent = 'live';
+      img.onload = () => { img.hidden = false; ph.hidden = true; };
       img.onerror = () => {
         say.textContent = 'the live view stopped — the camera stopped answering';
         box.checked = false;
+        img.hidden = true; ph.hidden = false;
       };
       img.src = url('cam.stream') + '&t=' + Date.now();
     };
@@ -155,6 +158,7 @@ class CameraApp extends (window.Mice && window.Mice.App ? window.Mice.App : Obje
       if (box.checked) start();
       else {
         img.removeAttribute('src');      // dropping the src closes the connection
+        img.hidden = true; ph.hidden = false;
         say.textContent = '';
       }
     };
