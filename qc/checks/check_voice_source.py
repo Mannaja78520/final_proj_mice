@@ -110,7 +110,7 @@ vm.runInContext(fs.readFileSync(process.argv[1],'utf8'),context);
  // Try plays what is ON SCREEN, before saving: its speed rides along.
  nodes.get('mainLang').value='en'; nodes.get('ttsRate').value='-10%'; let spoken;
  app.speak=(...args)=>{spoken=args;}; context.tryVoice();
- assert.equal(JSON.stringify(spoken),JSON.stringify(['Hello, I am the Mice robot','en',{speed:'-10%',pitch:'+0Hz'}]));
+ assert.equal(JSON.stringify(spoken),JSON.stringify(['Hello, I am the MICE robot','en',{speed:'-10%',pitch:'+0Hz'}]));
  console.log('voice source regression passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
 """
