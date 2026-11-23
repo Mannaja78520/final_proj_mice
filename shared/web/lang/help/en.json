@@ -481,6 +481,9 @@
   "ชื่อโปรเจกต์ใช้ตัวอักษรไทยและอังกฤษ ตัวเลข เว้นวรรค _ - และ . ได้ แต่ใช้อีโมจิ / \\ : หรือชื่อที่ Windows สงวนไว้ (เช่น con, nul, com1) ไม่ได้ ระบบจะบอกด้วยข้อความธรรมดาและไม่บันทึกทับงานเดิม": "A project name may use Thai and English letters, numbers, spaces and _ - . but not emoji, / \\ :, or names Windows reserves (such as con, nul, com1). The page says so in plain words and nothing already saved is overwritten.",
   "ลิงก์วิดีโอในวงแลน (เช่น NAS)": "Video links on the venue network (for example a NAS)",
   "ลิงก์จากอินเทอร์เน็ตและการอัปโหลดไฟล์ใช้ได้ตามปกติ ลิงก์ที่ชี้เข้าเครื่องนี้หรือเครือข่ายในสถานที่จะถูกปฏิเสธเพื่อความปลอดภัย ถ้าวิดีโออยู่บนอุปกรณ์ในวงแลน เช่น NAS ให้ผู้ดูแลใส่ชื่อหรือเลขที่อยู่ของอุปกรณ์นั้นใน lanHosts ของไฟล์ config/video_links.json แล้วเปิดฮับใหม่ เครื่องนี้เองและที่อยู่ระบบคลาวด์ยังถูกปฏิเสธเสมอ": "Internet links and file upload work as usual. A link that points at this PC or the venue network is refused for safety. If the video sits on a device on the LAN, such as a NAS, the admin adds that device's name or address to lanHosts in config/video_links.json and restarts the hub. This PC itself and cloud addresses are always refused.",
-  "ไม่เปลี่ยนหุ่น เป็นแค่การเลือกว่าลิงก์ไหนฮับยอมดึงวิดีโอมาให้": "Does not change the robot. It only chooses which links the hub will fetch a video from."
+  "ไม่เปลี่ยนหุ่น เป็นแค่การเลือกว่าลิงก์ไหนฮับยอมดึงวิดีโอมาให้": "Does not change the robot. It only chooses which links the hub will fetch a video from.",
+  "คำอธิบายและไอคอน:": "Descriptions and icons:",
+  "เขียนคำอธิบายแบบกว้างๆ ไม่ผูกกับฟีเจอร์ที่มีตอนนี้ เพราะแอปอาจเพิ่มเกมหรือฟังก์ชันภายหลัง ถ้าแอปไม่มีรูป Hub จะใช้ไอคอนการ์ตูนกลางให้ ขนาดและหน้าตาเท่ากันทุกการ์ด เขียนคำอธิบายเป็นภาษาไทย แล้วเพิ่มคำแปลลงใน": "Write descriptions in general terms, not tied to today's features, because an app may gain games or functions later. If an app has no picture, the hub uses its shared cartoon icon, so every card has the same look and size. Write the description in Thai, then add its translation to",
+  "ทุกภาษา": "for every language"
  }
 }
