@@ -1,11 +1,12 @@
 """Add translations to the language packs in one step.
 
-    python tools/lang_add.py batch.json [--help] [--force]
-    --help writes the Help page packs (shared/web/lang/help/) instead of the main ones.
+    python tools/lang_add.py batch.json
 
 batch.json = [{"src": "<text as the page carries it>", "th": "...", "en": "...", "zh": "...", "ja": "..."}, ...]
 A Thai source text is a key of en/zh/ja; an English source text is a key of th/zh/ja
 (see docs/LANGUAGES.md). Existing non-empty entries are kept unless --force.
+--help writes to shared/web/lang/help/<code>.json (Help page strings) instead of the main packs;
+a missing pack file is created.
 """
 import json
 import sys
@@ -20,9 +21,13 @@ def is_thai(t):
 
 def main(argv):
     force = "--force" in argv
-    base = LANG / "help" if "--help" in argv else LANG      # Help texts live in lang/help/<code>.json
+    lang_dir = LANG / "help" if "--help" in argv else LANG
+    lang_dir.mkdir(parents=True, exist_ok=True)
     items = json.loads(Path([a for a in argv[1:] if not a.startswith("--")][0]).read_text(encoding="utf-8"))
-    packs = {c: json.loads((LANG / (c + ".json")).read_text(encoding="utf-8")) for c in ("th", "en", "zh", "ja")}
+    packs = {}
+    for c in ("th", "en", "zh", "ja"):
+        f = lang_dir / (c + ".json")
+        packs[c] = json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {"name": c, "strings": {}}
     added = 0
     for it in items:
         src = it["src"]
@@ -39,7 +44,8 @@ def main(argv):
                 s[src] = val
                 added += 1
     for code, p in packs.items():
-        (base / (code + ".json")).write_text(json.dumps(p, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        # write_bytes: write_text would turn LF into CRLF on Windows
+        (lang_dir / (code + ".json")).write_bytes((json.dumps(p, ensure_ascii=False, indent=1) + "\n").encode("utf-8"))
     print("added/updated %d entries" % added)
 
 
