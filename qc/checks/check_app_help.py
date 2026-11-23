@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 import sys
 from tempfile import TemporaryDirectory
+from urllib.request import urlopen
 
 import qc as F
 
@@ -114,6 +115,18 @@ def install_round_trip(t, base, langs):
         t.eq(F.get(url + "en.html")[0], 404, "removed extension's Help URL no longer serves its text")
 
 
+def served_images(t, base):
+    examples = (
+        ("/hubweb/help/img/", F.CODE / "main_python/web/help/img"),
+        ("/api/help/apps/voice/img/", F.CODE / "apps/voice/help/img"),
+    )
+    for prefix, folder in examples:
+        sample = next(iter(sorted(folder.glob("*.webp"))))
+        with urlopen(base + prefix + sample.name, timeout=10) as response:
+            t.eq(response.headers.get_content_type(), "image/webp", f"{prefix} serves the WebP media type")
+            t.eq(response.read() == sample.read_bytes(), True, f"{prefix} serves the checked-in bytes")
+
+
 def run(t):
     sys.path.insert(0, str(F.CODE / "main_python"))
     sys.path.insert(0, str(F.CODE / "tools"))
@@ -127,4 +140,5 @@ def run(t):
     guides = app_ids(base)
     t.ok({"studio", "voice"} <= guides.keys() <= shown,
          "Hub Help shows the installed apps with guides", sorted(guides))
+    served_images(t, base)
     install_round_trip(t, base, hub_api_help.LANGS)

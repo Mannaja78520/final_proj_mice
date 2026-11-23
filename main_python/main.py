@@ -371,6 +371,7 @@ MIME = {
     ".yaml": "text/yaml; charset=utf-8",
     ".stl": "application/octet-stream",
     ".png": "image/png",
+    ".webp": "image/webp",
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
     ".bmp": "image/bmp",
