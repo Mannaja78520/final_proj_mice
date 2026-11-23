@@ -181,10 +181,12 @@ class CameraApp extends (window.Mice && window.Mice.App ? window.Mice.App : Obje
       `</div>` +
       `<div class="row">` +
         `<label><input type="checkbox" class="face"> Recognise faces with this camera</label>` +
+        `<span class="mini">In use right now:</span> <b>${c.viewers || 0}</b>` +
         (c.kind === 'esp32' ? `<a href="/mod?dev=${enc}">settings</a>` : '') +
         (c.removable ? `<button class="secondary rm">Remove</button>` : '') +
       `</div>` +
       `<div class="mini say"></div>` +
+      (c.kind === 'usb' || c.kind === 'esp32' ? `<div class="mini">Use this camera for faces only through the switch above. Do not also pick the same camera inside Face_Regonize: a USB camera can be held by one program only, and a camera board allows one connection.</div>` : '') +
       (live ? '' : `<div class="mini">Reachable only on a cable. Pictures need WiFi — a JPEG does not fit down a command line. Put this camera on the network to see it here; its settings still work over the cable.</div>`) +
       `<div class="mini tech">${this.esc(dev)} · ${this.esc(c.where || '')}${watching ? ' · ' + this.esc(watching) : ''}<br>Link for other programs: <code>${this.esc(streamUrl)}</code></div>`;
     this.bind(d, c, live, wasLive);

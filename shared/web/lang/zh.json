@@ -862,6 +862,8 @@
   "camera": "摄像头",
   "ดูกล้องทุกตัวในที่เดียว ทั้งกล้องบนบอร์ด กล้อง USB และกล้องเครือข่าย แชร์ให้หลายหน้าจอพร้อมกัน": "See every camera in one place: camera boards, USB and network cameras, shared to many screens at once",
   "เปิด Cameras (แท็บใหม่)": "Open Cameras (new tab)",
-  "guests take photos with a frame and stickers, and take them home": "来宾拍摄带相框和贴纸的照片，并带走照片"
+  "guests take photos with a frame and stickers, and take them home": "来宾拍摄带相框和贴纸的照片，并带走照片",
+  "In use right now:": "当前使用数：",
+  "Use this camera for faces only through the switch above. Do not also pick the same camera inside Face_Regonize: a USB camera can be held by one program only, and a camera board allows one connection.": "请只通过上面的开关让这个摄像头识别人脸，不要在 Face_Regonize 里再选同一个摄像头：USB 摄像头同一时间只能被一个程序占用，摄像头板也只允许一个连接。"
  }
 }
