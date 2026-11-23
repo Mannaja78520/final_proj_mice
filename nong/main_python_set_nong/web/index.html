@@ -381,6 +381,18 @@
         <button id="vidFetchBtn" onclick="vidFetch()"
                 title="This PC fetches the video from the link, then Studio reads it like a file.">Fetch</button>
       </div>
+      <div class="row" id="vidLanBox" hidden><span class="mini" id="vidLanSay"></span>
+        <button id="vidLanAllow" onclick="vidLanAllow()"
+                title="Remember this device on your network as a place videos may come from.">Allow this device</button></div>
+      <details class="disclosure" id="vidLanList" ontoggle="if (this.open) vidLanLoad()">
+        <summary>Devices on my network that may give videos</summary>
+        <p class="mini">A link to a device on your own network (a NAS, another PC) is refused until an admin
+          allows it here. Links from the internet and picked files always work.</p>
+        <div id="vidLanItems" class="mini"></div>
+        <div class="row"><input type="text" id="vidLanAdd" style="flex:1;min-width:0"
+               placeholder="nas.local or 192.168.1.50" onkeydown="if (event.key === 'Enter') vidLanAddNow()">
+          <button id="vidLanAddBtn" onclick="vidLanAddNow()">Allow</button></div>
+      </details>
       <div class="row"><label class="lbl" for="vidDetail">Pose detail</label>
         <select id="vidDetail" style="flex:1" onchange="vidRemake('pick')"
                 title="Every move eases to a stop. More moves follow the video more closely; fewer moves flow more smoothly."></select>

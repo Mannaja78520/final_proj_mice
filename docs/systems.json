@@ -89,8 +89,9 @@
      "depends": []},
 
     {"id": "hub-media", "summary": "Camera relay, camera board pinouts, and audio streaming to boards.",
-     "files": ["main_python/cam_relay.py", "main_python/stream_audio.py", "main_python/hub_cam.py"],
-     "names": ["cam_pinout", "cam_boards", "/api/pinout"],
+     "files": ["main_python/cam_relay.py", "main_python/stream_audio.py", "main_python/hub_cam.py",
+               "main_python/cam_sources.py", "main_python/hub_api_cameras.py", "config/cameras.json"],
+     "names": ["cam_pinout", "cam_boards", "/api/pinout", "/api/cameras", "cam_sources"],
      "checks": ["check_cam*", "check_pinout*"],
      "depends": []},
 
@@ -153,6 +154,7 @@
 
     {"id": "app-camera", "summary": "Camera viewer app.",
      "files": ["apps/camera/"],
+     "checks": ["check_camera_hub"],
      "depends": ["shared-web"]},
 
     {"id": "app-small", "summary": "Small apps: help, All-Jao, Photobooth, TV Remote.",

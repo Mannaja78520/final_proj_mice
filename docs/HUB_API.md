@@ -24,6 +24,10 @@ A `-` in the table means the code has no comment for that URL yet.
 | GET | `/api/app` | - | - | hub_api_support.py |
 | GET | `/api/app/version` | - | - | hub_api_support.py |
 | GET | `/api/apps` | - | - | hub_api_apps.py |
+| GET | `/api/cameras` | - | face | hub_api_cameras.py |
+| GET | `/api/cameras/add` | - | - | hub_api_cameras.py |
+| GET | `/api/cameras/kinds` | - | - | hub_api_cameras.py |
+| GET | `/api/cameras/remove` | - | - | hub_api_cameras.py |
 | GET | `/api/diag` | - | - | hub_api_support.py |
 | POST | `/api/export` | - | - | main.py |
 | GET | `/api/extensions` | - | - | hub_api_extensions.py |
@@ -133,6 +137,7 @@ A `-` in the table means the code has no comment for that URL yet.
 | GET | `/api/video/fetch` | - | id | hub_api_studio.py |
 | POST | `/api/video/fetch` | - | - | hub_api_studio.py |
 | GET | `/api/video/file` | - | id, kind | hub_api_studio.py |
+| GET | `/api/video/lan` | - | - | hub_api_studio.py |
 | POST | `/api/video/put` | - | name | hub_api_studio.py |
 | POST | `/api/video/sound` | - | - | hub_api_studio.py |
 | GET | `/api/voice` | - | - | hub_api_apps.py |

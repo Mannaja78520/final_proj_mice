@@ -46,36 +46,61 @@ def _sniff(head):
     return ""
 
 
-def _is_local_host(host, allow=()):
-    """True for localhost and for addresses on this PC or a private network.
+def host_kind(host, allow=()):
+    """Where a link's host lives: "ok" (the internet, or a listed LAN device),
+    "lan" (a private network device nobody allowed yet) or "never" (this PC,
+    cloud metadata and the like: never allowed).
 
     A pasted link makes the hub fetch it. Without this, a logged-in page could
     be pointed at 127.0.0.1, the router, or a cloud metadata address
     (2026-11-22 sweep). Names are resolved, so a name that points inside counts.
-    `allow` (config `lanHosts`, user 2026-11-23: a video on a NAS) names hosts or
-    networks on the LAN that stay usable. Only private LAN addresses can be
-    allowed: this PC itself, link-local (cloud metadata) and the rest never.
+    `allow` (config `lanHosts` + the admin's own list, user 2026-11-23: a video
+    on a NAS) names hosts or networks on the LAN that stay usable.
     """
     import ipaddress
     import socket
     if not host:
-        return True
+        return "never"
     try:
         addrs = {ipaddress.ip_address(host)}
     except ValueError:
         if host.lower() == "localhost":
-            return True
+            return "never"
         try:
             addrs = {ipaddress.ip_address(i[4][0]) for i in socket.getaddrinfo(host, None)}
         except OSError:
             # no DNS: a .local name is the LAN's own unless the admin listed it
-            return host.lower().endswith(".local") and not _lan_allowed(host, set(), allow)
+            if host.lower().endswith(".local") and not _lan_allowed(host, set(), allow):
+                return "lan"
+            return "ok"
     if any(a.is_loopback or a.is_link_local or a.is_reserved
            or a.is_unspecified or a.is_multicast for a in addrs):
-        return True
+        return "never"
     if any(a.is_private for a in addrs):
-        return not _lan_allowed(host, addrs, allow)
-    return False
+        return "ok" if _lan_allowed(host, addrs, allow) else "lan"
+    return "ok"
+
+
+def _is_local_host(host, allow=()):
+    return host_kind(host, allow) != "ok"
+
+
+def clean_lan_entry(text):
+    """A device name, address or network as the list keeps it, or "" if it is none.
+    A pasted link is cut down to its host."""
+    import ipaddress
+    t = str(text or "").strip().lower()
+    if "://" in t:
+        t = urllib.parse.urlparse(t).hostname or ""
+    t = t.strip("[]")
+    if not t:
+        return ""
+    try:
+        n = ipaddress.ip_network(t, strict=False)
+        return str(n.network_address) if n.num_addresses == 1 else str(n)
+    except ValueError:
+        pass
+    return t if re.fullmatch(r"[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*", t) else ""
 
 
 def _lan_allowed(host, addrs, allow):
@@ -96,7 +121,7 @@ def _lan_allowed(host, addrs, allow):
 
 
 class Links:
-    def __init__(self, cfg_path, folder=None):
+    def __init__(self, cfg_path, folder=None, lan_file=None):
         self.cfg = json.loads(Path(cfg_path).read_text(encoding="utf-8"))
         self.dir = Path(folder or Path(tempfile.gettempdir()) / "mice_video")
         self.jobs = {}
@@ -106,6 +131,63 @@ class Links:
         self.run_ytdlp = self._run_ytdlp
         # QC only: its stand-in web server lives on 127.0.0.1
         self.allow_local = False
+        # the devices the admin allowed from the screen: this PC's own file, never in git
+        self.lan_file = Path(lan_file) if lan_file else None
+
+    # ---- devices on the network the admin allowed -----------------------
+    def lan_saved(self):
+        try:
+            d = json.loads(self.lan_file.read_text(encoding="utf-8"))
+            return [e for e in d.get("hosts", []) if isinstance(e, str)]
+        except (OSError, ValueError, AttributeError):
+            return []
+
+    def lan_all(self):
+        return list(self.cfg.get("lanHosts") or []) + self.lan_saved()
+
+    def lan_host_of(self, url):
+        """The host a refused link pointed at, if it is a LAN device an admin could allow."""
+        h = urllib.parse.urlparse((url or "").strip()).hostname
+        return h if h and host_kind(h, self.lan_all()) == "lan" else ""
+
+    def _lan_write(self, hosts):
+        if not self.lan_file:
+            return False
+        self.lan_file.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.lan_file.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"hosts": hosts}, indent=1), encoding="utf-8")
+        os.replace(tmp, self.lan_file)
+        return True
+
+    def lan_add(self, text):
+        """(ok, words). Only a name or address on a private network can be allowed."""
+        e = clean_lan_entry(text)
+        if not e:
+            return False, "That is not a device name or address. Type something like nas.local or 192.168.1.50."
+        kind = host_kind(e.split("/")[0], [e])
+        if kind == "never":
+            return False, "This PC itself and cloud addresses can never be allowed."
+        try:
+            import ipaddress
+            if "/" in e and not ipaddress.ip_network(e, strict=False).is_private:
+                return False, "Only devices on your own network can be allowed, not internet addresses."
+        except ValueError:
+            pass
+        with self.lock:
+            hosts = self.lan_saved()
+            if e not in hosts:
+                hosts.append(e)
+            if not self._lan_write(hosts):
+                return False, "This PC could not keep the list."
+        return True, e
+
+    def lan_remove(self, text):
+        e = clean_lan_entry(text) or str(text or "").strip().lower()
+        with self.lock:
+            hosts = self.lan_saved()
+            if e not in hosts:
+                return False
+            return self._lan_write([h for h in hosts if h != e])
 
     # ---- words ---------------------------------------------------------
     def say(self, tech):
@@ -125,9 +207,13 @@ class Links:
         p = urllib.parse.urlparse(url)
         if p.scheme not in ("http", "https") or not p.netloc:
             return None, "That is not a web link. Paste one that starts with https://"
-        if not self.allow_local and _is_local_host(p.hostname, self.cfg.get("lanHosts")):
-            return None, ("That link points at this PC or your own network. Paste a link from the internet, "
-                          "or ask the admin to allow this device (Help: Moves from a video).")
+        if not self.allow_local:
+            kind = host_kind(p.hostname, self.lan_all())
+            if kind == "lan":
+                return None, ("That link is a device on your own network. An admin can allow it "
+                              "(Allow this device), then it works like any link.")
+            if kind == "never":
+                return None, "That link points at this PC itself. Paste a link from the internet or from a device on your network."
         with self.lock:
             for jid, j in self.jobs.items():
                 if j["url"] == url and j["state"] in ("working", "done") and \
