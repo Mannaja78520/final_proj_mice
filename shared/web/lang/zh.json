@@ -1552,6 +1552,7 @@
   "Reset the rig to the factory defaults? (You haven't saved a default of your own — use “★ Save current as default” to keep your tuning.)": "要把机器人恢复为出厂默认吗？（你还没有保存自己的默认值——用“★ Save current as default”保留你的调整。）",
   "พบเพลงที่ตรงกับงานกู้คืน ใช้เพลงนี้กับท่าที่แก้ค้างไว้หรือไม่?": "找到了与恢复的工作匹配的音乐。要把它用于尚未保存的动作吗？",
   "OK — กู้เฉพาะเพลงและเก็บท่าปัจจุบันทั้งหมด": "确定 — 只恢复音乐，保留当前所有动作",
-  "Cancel — เปิดโปรเจกต์ตามปกติ": "取消 — 照常打开项目"
+  "Cancel — เปิดโปรเจกต์ตามปกติ": "取消 — 照常打开项目",
+  "this PC's camera is in use by another app (a browser tab, or an older Mice window that is still open), or unplugged - close it and try again": "本机摄像头正被其他程序占用（浏览器标签页，或仍开着的旧版 Mice 窗口），或已拔出——请关闭后重试"
  }
 }
