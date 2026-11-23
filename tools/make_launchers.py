@@ -7,8 +7,9 @@
 One file per app that has an `alonePort` in its app.json, named with the app's
 own name ("Voice.bat", "Prize machines.bat") so a non-engineer sees words, not
 flags. A new app with an alonePort gets its launcher from this script, no code.
-Each one runs MiceHub.exe beside main_python (or python main.py when the exe is
-not built) with `--alone <id>`; the program opens the app's page by itself.
+Each one runs dist\\MiceHub.exe (the freshly built one; the old tracked copy in
+main_python does not know --alone and opened the whole hub on the PC, 2026-11-23)
+or python main.py when the exe is not built with `--alone <id>`; the program opens the app's page by itself.
 """
 import re
 import sys
@@ -23,7 +24,7 @@ TEXT = ("@echo off\r\n"
         "rem Starts %(name)s by itself - no hub needed. Other Mice apps that are open\r\n"
         "rem on this PC are found automatically. Close this window to stop it.\r\n"
         "cd /d \"%%~dp0..\"\r\n"
-        "if exist MiceHub.exe (MiceHub.exe --alone %(id)s) else (python main.py --alone %(id)s)\r\n"
+        "if exist ..\\dist\\MiceHub.exe (..\\dist\\MiceHub.exe --alone %(id)s) else (python main.py --alone %(id)s)\r\n"
         "pause\r\n")
 
 
