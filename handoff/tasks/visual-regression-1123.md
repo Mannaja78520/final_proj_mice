@@ -31,10 +31,13 @@ Baseline: ed5bd89
 - haveRobot() in Studio means "connected to a robot", not "3D ready".
 
 ## Done
-- see File status
+- PR #215, #217 (visual tool, phone/theme/contrast fixes), #219 (reports paging, Esc closes Report box, Studio texts translate), #220 (blank/negative number boxes). Each has a QC check proven by breaking it.
+- Old-vs-new screenshots compared: desktop dark/light and zh desktop+phone (old build was untranslated; new is fine). ja and carnival/indigo not compared.
 
 ## Next
-1. Finish reading screenshots; Codex/Gemini review; fix; full QC; PR.
+1. More cases from handoff of GPT/Gemini list (PC .local/visual_review/out/codex62_cases.md): double-tap Save, slow load vs newer selection, network loss during playback, dropdowns near edges, theme flash on reload.
+2. Tooltip ratchet (pages.json attrLeakBaseline) still ~34: translate more tooltips.
 
 ## Blocked
 - Real URDF check needs the PC (E:\final_proj\mice\mice_system) to run tools/visual/urdf_numeric.py with MICE model.
+- PC leftover: E:\final_proj\mice\mice_sim_wt still holds a locked qemu-system-xtensa.exe (4 QEMU processes under that folder: PIDs seen 2026-11-23 11780, 32752, 48392, 53372). The PC refused Stop-Process/Remove-Item from a remote session; close those QEMU processes, delete the folder, then `git worktree prune` in mice_system. Low priority.
