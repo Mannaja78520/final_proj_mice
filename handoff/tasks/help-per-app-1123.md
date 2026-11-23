@@ -1,6 +1,6 @@
 # help-per-app-1123 — Help per app, dynamic in the hub, real screenshots
 Owner: codex:11231744-055a
-Updated: 2026-11-23 17:45 +0700
+Updated: 2026-11-23 17:51 +07:00
 Branch: claude/project-thread-181856
 Last commit: this checkpoint
 Plan: A1123-1 (system)
@@ -39,6 +39,7 @@ each matching its step text. Reply to the user in Thai.
   then `python tools/systems.py build`. Do not hardcode lists; one source.
 
 ## Facts found (Claude, 2026-11-23)
+- main_python/main.py hub_apps already applies extension/partner visibility. The Help API reads manifest_dir (independent of the app page root), and the Help client loads the selected language before creating sidebar/search.
 - Help = main_python/web/help/{index.template.html,style.css,parts/*.html,parts/topics.js,parts/search.js}
   built into main_python/web/help.html. Texts are Thai; other languages come from
   shared/web/lang/help/<code>.json keyed by Thai text (almost complete for the app parts).
@@ -57,9 +58,10 @@ Look at every screenshot yourself and compare with the step text. Have Gemini 4 
 PR as draft from this branch; merge own PR when QC green (standing approval cmsg_01R7BbYxaTb3Yv9YS3gQaaA3XEQcQQyoUgXwMT6wXgfeYv). Tell the user a MiceHub.exe rebuild is needed.
 
 ## Doing now
-Step 1: establish isolated staging, then connect the installed-app registry, Hub routes, and Help loader. Prove Voice end to end in four languages.
+Step 2: migrate the remaining app guides and add Photobooth. Keep links and sidebar/search working from the installed-app list.
 
 ## Done
+- Step 1: real Hub HTTP handler and Edge rendered Voice at /help#voice in th/en/zh/ja, with active sidebar link and navigation. API index and system map verify. Shared fake Hub is in use by another task, so full QC is pending.
 - Read handoff and workflow. Branch baseline 12474a5. Protected local EXE, prompt and dist reports are outside the task.
 
 ## Next (in order)
@@ -72,4 +74,29 @@ Step 1: establish isolated staging, then connect the installed-app registry, Hub
 ## File status
 | File | Change | State | Verification | Commit |
 |---|---|---|---|---|
-| handoff/tasks/help-per-app-1123.md | WIP progress | doing | baseline reconciled | this checkpoint |
+| apps/voice/help/en.html | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| apps/voice/help/help.json | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| apps/voice/help/ja.html | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| apps/voice/help/th.html | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| apps/voice/help/zh.html | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| docs/help_map.json | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| docs/HUB_API.md | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| docs/systems.json | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| docs/systems/agents.md | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| docs/systems/app-voice.md | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| docs/systems/hub-web.md | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| docs/systems/qc.md | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| docs/systems/shared-web.md | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| handoff/tasks/help-per-app-1123.md | updated | doing | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| main_python/api_index.json | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| main_python/extensions.py | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| main_python/hub_api_help.py | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| main_python/main.py | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| main_python/web/help.html | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| main_python/web/help/index.template.html | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| main_python/web/help/parts/apps.js | added | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| main_python/web/help/parts/search.js | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| main_python/web/help/parts/topics.js | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| main_python/web/help/parts/voice.html | updated | removed | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| tools/registry.py | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |
+| tools/web_build.json | updated | written | Voice Edge smoke, system map and build passed; full QC pending | this checkpoint |

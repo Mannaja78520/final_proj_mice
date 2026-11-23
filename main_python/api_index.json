@@ -361,6 +361,13 @@
    "file": "hub_api_studio.py"
   },
   {
+   "path": "/api/help/apps",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_help.py"
+  },
+  {
    "path": "/api/hubs",
    "method": "GET",
    "what": "",

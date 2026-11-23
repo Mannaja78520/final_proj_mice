@@ -66,6 +66,7 @@ A `-` in the table means the code has no comment for that URL yet.
 | GET | `/api/gacha/stock` | - | game, source | hub_api_gacha.py |
 | GET | `/api/gacha/voice` | - | - | hub_api_gacha.py |
 | GET | `/api/gestures` | - | - | hub_api_studio.py |
+| GET | `/api/help/apps` | - | - | hub_api_help.py |
 | GET | `/api/hubs` | - | force | hub_api_studio.py |
 | GET | `/api/list` | studio: | deep, kind | hub_api_studio.py |
 | GET | `/api/load` | - | name | hub_api_studio.py |

@@ -1,0 +1,16 @@
+{
+  "title": {
+    "th": "Voice",
+    "en": "Voice",
+    "zh": "语音",
+    "ja": "音声"
+  },
+  "summary": {
+    "th": "ถามและฟังคำตอบ",
+    "en": "Ask questions and hear answers",
+    "zh": "提问并收听回答",
+    "ja": "質問して回答を聞く"
+  },
+  "group": "use",
+  "order": 40
+}

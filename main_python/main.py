@@ -1617,6 +1617,7 @@ flasher = Flasher()
 # Groups of api() routes, one file per area (A26-93). Handler inherits them.
 import hub_api_apps  # noqa: E402
 hub_api_apps.bind(sys.modules[__name__])
+import hub_api_help  # noqa: E402
 import hub_api_extensions  # noqa: E402
 hub_api_extensions.bind(sys.modules[__name__])
 import hub_api_themes  # noqa: E402
@@ -1673,7 +1674,7 @@ ALONE = [None]      # the AloneMode when started with --alone <app>, else None
 
 
 # ---------------------------------------------------------------- handler
-class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
+class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes, hub_api_help.HelpRoutes,
               hub_api_extensions.ExtensionRoutes, hub_api_themes.ThemeRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_busmap.BusMapRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, hub_api_cameras.CamerasRoutes, hub_api_peers.PeersRoutes, BaseHTTPRequestHandler):
     # HTTP/1.1, so a browser can KEEP ITS CONNECTION.
     #
@@ -1691,6 +1692,8 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
     # that cannot have a length is the camera stream, and it says
     # `Connection: close` for itself.
     protocol_version = "HTTP/1.1"
+    app_help = hub_api_help.AppHelp(sys.modules[__name__])
+
     def send_bytes(self, data: bytes, ctype="application/json", code=200,
                    headers=()):
         # Keep-alive trap: a POST body nobody read stays on the socket and is
@@ -2694,6 +2697,9 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
             return r
         r = self.api_extensions(method, path, q)   # hub_api_extensions.py
         if r is not hub_api_extensions.NOT_MINE:
+            return r
+        r = self.api_help(method, path, q)
+        if r is not hub_api_help.NOT_MINE:
             return r
         r = self.api_apps(method, path, q)   # hub_api_apps.py
         if r is not hub_api_apps.NOT_MINE:

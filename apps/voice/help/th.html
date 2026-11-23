@@ -1,7 +1,7 @@
 <section id="voice">
   <p class="mini">Voice และตัวสร้างเสียงแบบมีอารมณ์ที่ Hub จัดการ ใช้ค่าประสิทธิภาพของเครื่อง Hub ร่วมกัน การฟังหลัก การฟังเฉพาะภาษา และการกลับมาใช้ CPU ใช้งบเธรดและงานพร้อมกันเดียวกัน โมเดลที่เปิดอยู่จะเก็บค่าเดิมไว้ งานแปลจากหลายคำขอใช้ชุดงานเดียวกัน บางค่าเธรดต้องเปิดตัวช่วยเสียงใหม่ สถานะ Voice แสดงรุ่นค่าที่โหลดและแจ้งเมื่อมีค่ารอใช้ครั้งถัดไป โดยไม่เปลี่ยนโมเดล ตัวละคร หรือบริการที่คุณเลือกไว้</p>
   <div class="shead">
-    <span class="where tech">code/apps/voice · served at /app/voice/</span>
+    <span class="where tech">code/apps/voice · เปิดได้ที่ /app/voice/</span>
     <h2>🎤 Voice — สนทนาและสั่งงานด้วยเสียงพูด</h2>
     <p>ระบบถาม-ตอบอัจฉริยะ (Q&amp;A) และแปลงข้อความเป็นเสียงพูด (Text-to-Speech)
        พร้อมการสลับไปมาระหว่างลำโพงบนคอมพิวเตอร์ และลำโพงติดตัวหุ่นยนต์ Nong อย่างราบรื่น</p>
@@ -12,10 +12,10 @@
   <div class="info-box">
     <div class="info-header">
       <b>จุดที่ 1: กล่องถาม-ตอบและการพิมพ์/พูด (Q&amp;A Chat &amp; Speech Input)</b>
-      <span class="info-badge">Chat &amp; STT</span>
+      <span class="info-badge">แชทและการฟังเสียง</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/voice-chat-box.png" alt="Voice Chat Box" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/voice-chat-box.png" alt="กล่องสนทนาด้วยเสียง" class="info-img">
       <div class="callout-pin" style="top: 45%; left: 35%;" title="1. ช่องพิมพ์คำถาม">1</div>
       <div class="callout-pin" style="top: 45%; left: 65%;" title="2. ปุ่ม Press to talk (ไมค์ STT)">2</div>
       <div class="callout-pin" style="top: 45%; left: 88%;" title="3. ปุ่มส่งถาม Ask">3</div>
@@ -30,7 +30,7 @@
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">2</span> พูดใส่ไมค์ (Press to talk STT)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Press to talk</b> แล้วพูด (ไทย/อังกฤษ/จีน/ญี่ปุ่น)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>กดเพื่อพูด</b> แล้วพูด (ไทย/อังกฤษ/จีน/ญี่ปุ่น)</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           แปลงเสียงสดจากไมโครโฟนเป็นข้อความลงในช่องถามทันที พร้อมแก้คำเพี้ยนตามดิกชันนารีใน <code>config/voice.json</code>
         </div>
@@ -42,10 +42,10 @@
   <div class="info-box">
     <div class="info-header">
       <b>จุดที่ 2: ปลายทางลำโพง บุคลิกเสียง และระบบคิว (Speakers, Manner &amp; Queue)</b>
-      <span class="info-badge">Speakers &amp; Manners</span>
+      <span class="info-badge">ลำโพงและลักษณะการพูด</span>
     </div>
     <div class="info-visual-wrapper">
-      <img loading="lazy" decoding="async" src="/docs/shots/voice-settings-card.png" alt="Voice Settings Card" class="info-img">
+      <img loading="lazy" decoding="async" src="/docs/shots/voice-settings-card.png" alt="การ์ดตั้งค่าเสียงพูด" class="info-img">
       <div class="callout-pin" style="top: 35%; left: 30%;" title="1. เลือกปลายทางลำโพง">1</div>
       <div class="callout-pin" style="top: 35%; left: 70%;" title="2. สไตล์และบุคลิกเสียง">2</div>
       <div class="callout-pin" style="top: 75%; left: 50%;" title="3. ระบบ Fast-Race 650ms">3</div>
@@ -53,10 +53,10 @@
     <div class="action-impact-grid">
       <div class="action-card">
         <div class="action-card-title"><span class="num">1</span> สลับลำโพง (PC vs Robot Speaker)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกปลายทางระหว่าง <b>PC Speaker</b> หรือ <b>Nong Robot Speaker</b></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกปลายทางระหว่าง <b>ลำโพง PC</b> หรือ <b>ลำโพงหุ่น Nong</b></div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>PC Speaker:</b> เปล่งเสียงผ่านลำโพงของคอมพิวเตอร์หลัก<br>
-          • <b>Nong Speaker:</b> สตรีมเสียงผ่าน WiFi เข้าชิป I2S (PCM5102A/TPA3118) บนตัวหุ่น พร้อมขยับหัวเอียงตามจังหวะคำพูด
+          • <b>ลำโพง PC:</b> เปล่งเสียงผ่านลำโพงของคอมพิวเตอร์หลัก<br>
+          • <b>ลำโพง Nong:</b> สตรีมเสียงผ่าน WiFi เข้าชิป I2S (PCM5102A/TPA3118) บนตัวหุ่น พร้อมขยับหัวเอียงตามจังหวะคำพูด
         </div>
       </div>
       <div class="action-card">
@@ -76,45 +76,24 @@
     </div>
   </div>
 
-  <div class="f"><h3>Ask the rig a question</h3>
-    <p>The Voice app in the Tools list: type a question, the rig answers. The
-       answers come from a helper program that runs on this PC next to the
-       hub (the hub itself never carries an AI — it only passes the question
-       along and the answer back).</p></div>
-  <div class="f"><h3>The helper starts by itself<span class="tag t-new">new</span></h3>
-    <p>If the helper is not running, the hub starts it the moment anything
-       needs a voice: opening the Voice app, a line the rig must say, or a talk
-       gesture in Studio. The Voice page shows <b>starting the voice helper…</b>
-       with the seconds counting; a question asked meanwhile waits and is then
-       answered. If startup takes too long, the page says why. The hub keeps
-       the same helper while it is still running, so another request cannot
-       open a second copy. A late healthy reply lets the app continue; a
-       helper that has stopped can be started again. If it cannot start,
-       the page says why (its last lines are
-       behind the technical switch, the full log is in
-       <code>.local/voice/helper.log</code>). Which Python it uses and how long
-       it may take are in <code>config/voice_helper.json</code>.</p></div>
-  <div class="f"><h3>Speak instead of typing<span class="tag t-new">new</span></h3>
-    <p>The Voice page has a <b>Press to talk</b> button: press it, speak, press
-       again to stop, and your words appear in the box ready to send. The
-       listening runs on this PC too. Which languages it hears — and the words
-       each language gets wrong often — live in <code>config/voice.json</code>;
-       adding a language in <code>config/voice.json</code> (<code>tts.voices</code> / <code>stt.languages</code>) automatically adds its column and translation target in the Answers sheet and script detector. Use a plain code such as <code>ko</code>. The detector reads the alphabet, not the exact language: French, German, Spanish or Vietnamese questions land in the English column, and kanji with no kana lands in Chinese.</p></div>
-  <div class="f"><h3>One voice at a time<span class="tag t-new">new</span></h3>
-    <p>If you press Try or ask a new question while an answer is still playing, the old answer stops first, so two voices never talk over each other. If the voice helper does not answer within a minute, the page says so and you can try again instead of waiting for ever. Leaving the page stops its voice.</p></div>
-  <div class="f"><h3>The rig speaks one thing at a time<span class="tag t-new">new</span></h3>
-    <p>Everything the rig says goes through <b>one queue</b> on the hub: a
-       greeting, an answer from this page spoken through a robot, a message
-       from another program on this PC. So two of them never talk over each
-       other. Something that arrives while the rig is talking either
-       <b>waits its turn</b> or is <b>skipped</b> — whoever asked chooses — and
-       a greeting that waited too long is dropped, because the person has
-       walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p></div>
+  <div class="f"><h3>ถามหุ่นหนึ่งคำถาม</h3>
+    <p>แอป Voice ในรายการเครื่องมือ: พิมพ์คำถาม หุ่นตอบ คำตอบมาจากโปรแกรมช่วยที่รันบน PC เครื่องนี้ข้างๆ Hub (ตัว Hub เองไม่แบก AI — แค่ส่งคำถามต่อและส่งคำตอบกลับ)</p></div>
+  <div class="f"><h3>ตัวช่วยเริ่มเอง<span class="tag t-new">ใหม่</span></h3>
+    <p>ถ้าตัวช่วยไม่ได้รันอยู่ Hub จะเริ่มมันทันทีที่มีอะไรต้องใช้เสียง: การเปิดแอป Voice ประโยคที่หุ่นต้องพูด หรือท่าพูดใน Studio หน้า Voice แสดง <b>กำลังเริ่มตัวช่วยเสียง…</b>
+       พร้อมตัวเลขนับวินาที หากมีการส่งคำขอเข้ามาในระหว่างนี้ ระบบจะรอไว้ก่อนแล้วจึงตอบกลับ หากการเริ่มระบบใช้เวลานานเกินไป หน้าเว็บจะแจ้งเหตุผลให้ทราบ ตัว hub จะยังคงใช้ helper ตัวเดิมตราบใดที่ยังทำงานอยู่ คำขออื่นจึงไม่สามารถเปิดซ้ำเป็นตัวที่สองได้ แม้จะตอบกลับมาช้าแต่หากสถานะปกติ แอปก็สามารถทำงานต่อไปได้ ส่วน helper ที่หยุดทำงานไปแล้วก็สามารถเริ่มใหม่ได้ หากเริ่มไม่สำเร็จ หน้าเว็บจะบอกสาเหตุ (บรรทัดล่าสุดจะซ่อนอยู่หลังสวิตช์ข้อมูลทางเทคนิค ส่วนบันทึกประวัติฉบับเต็มจะอยู่ใน
+       <code>.local/voice/helper.log</code>) ดูข้อมูลว่าใช้ Python ตัวไหนและอาจใช้เวลานานเท่าไรได้ที่ <code>config/voice_helper.json</code>.</p></div>
+  <div class="f"><h3>พูดแทนการพิมพ์<span class="tag t-new">ใหม่</span></h3>
+    <p>หน้า Voice มีปุ่ม <b>กดเพื่อพูด</b> ปุ่มนี้: กดแล้วพูด จากนั้นกดอีกครั้งเพื่อหยุด คำพูดของคุณจะปรากฏในช่องข้อความพร้อมส่ง ระบบรู้จำเสียงก็ทำงานบน PC เครื่องนี้เช่นกัน ข้อมูลภาษาที่รองรับและคำที่มักฟังผิดในแต่ละภาษาอยู่ใน <code>config/voice.json</code>; การเพิ่มภาษาใน <code>config/voice.json</code> (<code>tts.voices</code> / <code>stt.languages</code>) จะเพิ่มคอลัมน์และภาษาปลายทางในชีต Answers และตัวตรวจจับชุดอักษรให้โดยอัตโนมัติ ใช้รหัสภาษาธรรมดา เช่น <code>ko</code>. ระบบตรวจจับดูจากชนิดตัวอักษร ไม่ได้แยกภาษาอย่างแม่นยำ คำถามภาษาฝรั่งเศส เยอรมัน สเปน หรือเวียดนามจึงไปอยู่ในคอลัมน์ภาษาอังกฤษ ส่วนข้อความคันจิที่ไม่มีคานะจะไปอยู่ในคอลัมน์ภาษาจีน</p></div>
+  <div class="f"><h3>พูดทีละเสียง<span class="tag t-new">ใหม่</span></h3>
+    <p>ถ้ากด Try หรือถามคำถามใหม่ตอนที่คำตอบเก่ายังเล่นอยู่ คำตอบเก่าจะหยุดก่อน เสียงสองเสียงจึงไม่พูดทับกัน ถ้าตัวช่วยเสียงไม่ตอบภายในหนึ่งนาที หน้าจะบอก แล้วลองใหม่ได้แทนการรอไม่จบ ออกจากหน้านี้เสียงก็หยุดด้วย</p></div>
+  <div class="f"><h3>หุ่นพูดทีละเรื่อง<span class="tag t-new">ใหม่</span></h3>
+    <p>ทุกอย่างที่หุ่นพูดผ่าน <b>คิวเดียว</b> บน Hub: คำทักทาย คำตอบจากหน้านี้ที่พูดผ่านหุ่น ข้อความจากโปรแกรมอื่นบน PC นี้ สองอย่างจึงไม่พูดทับกัน สิ่งที่มาถึงตอนหุ่นกำลังพูดจะ
+       <b>รอคิว</b> or is <b>ข้าม</b> — ผู้ที่ส่งคำขอเป็นผู้เลือก — และคำทักทายที่รอนานเกินไปจะถูกยกเลิก เพราะคนเดินผ่านไปแล้ว (<code>maxAgeSeconds</code>, 30 วินาทีหากไม่ได้เปลี่ยนค่า)</p></div>
   <!-- SECTION 3: ANSWERS SHEET & QUESTIONS ANALYTICS -->
   <div class="info-box">
     <div class="info-header">
       <b>จุดที่ 3: ตารางคำตอบแบบขยายและแดชบอร์ดสถิติคำถาม (Answers Sheet &amp; Questions Analytics)</b>
-      <span class="info-badge">Answers &amp; Analytics</span>
+      <span class="info-badge">คำตอบและสถิติ</span>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
@@ -128,7 +107,7 @@
         <div class="action-card-title"><span class="num">2</span> แดชบอร์ดคำถามและคำถามค้างตอบ (Questions &amp; Unanswered)</div>
         <div class="action-step"><b>การใช้งาน:</b> แท็บ Questions — ดูกราฟวิเคราะห์และคำถามที่พบบ่อย</div>
         <div class="action-impact"><b>ความสามารถ:</b>
-          แสดงสถิติ 6 มิติ (หัวข้อ, ช่วงเวลา, แหล่งคำตอบ, ภาษา, รางวัล, คำถามยอดฮิต) และกล่องรวมคำถามที่คนถามบ่อยแต่ยังไม่มีคำตอบตายตัว พร้อมปุ่ม <b>+ Make an answer</b> เพื่อเพิ่มลงตารางคำตอบได้ในคลิกเดียว
+          แสดงสถิติ 6 มิติ (หัวข้อ, ช่วงเวลา, แหล่งคำตอบ, ภาษา, รางวัล, คำถามยอดฮิต) และกล่องรวมคำถามที่คนถามบ่อยแต่ยังไม่มีคำตอบตายตัว พร้อมปุ่ม <b>สร้างคำตอบ</b> เพื่อเพิ่มลงตารางคำตอบได้ในคลิกเดียว
         </div>
       </div>
     </div>

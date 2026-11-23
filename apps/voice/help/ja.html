@@ -1,0 +1,119 @@
+<section id="voice">
+  <p class="mini">音声と感情のある音声生成はハブが管理します。ハブのパフォーマンス値を共有し、メインの聞き取り、言語別の聞き取り、CPU への切り替えは同じスレッド予算と並列ジョブ数を使います。すでに開いているモデルは古い値のままで、複数のリクエストの翻訳は同じバッチを使います。スレッド数の一部は音声ヘルパーを開き直す必要があります。音声の状態には読み込まれた値のバージョンが表示され、次回の読み込みを待つ値があれば知らせます。選んだモデル、キャラクター、サービスは変わりません。</p>
+  <div class="shead">
+    <span class="where tech">code/apps/voice · served at /app/voice/</span>
+    <h2>🎤 音声 — 声で話して操作する</h2>
+    <p>スマートな質問応答とテキスト読み上げで、PC のスピーカーと Nong ロボット本体のスピーカーをなめらかに切り替えます。</p>
+  </div>
+  <p class="mini">話したり聞いたりする前に、上のステータスを読んでください。音声ヘルパーや接続が準備できていないと表示されたら、接続を確認してもう一度試します。ウェブ上のステータスは、ロボットのスピーカーから実際に音が出たことを保証するものではありません。</p>
+
+  <!-- SECTION 1: CHAT & STT -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ポイント 1：質問応答ボックスと入力・音声入力（Q&amp;A チャットと音声入力）</b>
+      <span class="info-badge">チャットと音声認識</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" src="/docs/shots/voice-chat-box.png" alt="音声チャットボックス" class="info-img">
+      <div class="callout-pin" style="top: 45%; left: 35%;" title="1. 質問入力欄">1</div>
+      <div class="callout-pin" style="top: 45%; left: 65%;" title="2. Press to talk ボタン（音声認識マイク）">2</div>
+      <div class="callout-pin" style="top: 45%; left: 88%;" title="3. Ask 送信ボタン">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> 質問の入力欄</div>
+        <div class="action-step"><b>設定方法：</b> ロボットに答えさせたい質問やメッセージを入力します。</div>
+        <div class="action-impact"><b>ロボットに起こること：</b>
+          システムはまずイベントのシートから答えを探します（0.2 秒）。見つからなければクラウド AI（Gemini / Groq）に渡して答えてもらいます。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> マイクに話す（押して話す STT）</div>
+        <div class="action-step"><b>設定方法：</b> 押すと <b>押して話す</b> その後で話します（タイ語／英語／中国語／日本語）</div>
+        <div class="action-impact"><b>ロボットに起こること：</b>
+          マイクの音声をすぐに文字にして質問欄に入れ、次の辞書に従って聞き間違いを直します： <code>config/voice.json</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: SPEAKERS & MANNERS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ポイント 2：スピーカーの出力先、声の性格、キュー（スピーカー、話し方、キュー）</b>
+      <span class="info-badge">スピーカーと話し方</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img loading="lazy" decoding="async" src="/docs/shots/voice-settings-card.png" alt="音声設定カード" class="info-img">
+      <div class="callout-pin" style="top: 35%; left: 30%;" title="1. スピーカー出力先の選択">1</div>
+      <div class="callout-pin" style="top: 35%; left: 70%;" title="2. 声のスタイルとキャラクター設定">2</div>
+      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. 650ms Fast-Race システム">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> スピーカーの切り替え（PC とロボットのスピーカー）</div>
+        <div class="action-step"><b>設定方法：</b> 出力先を選びます： <b>PC スピーカー</b> または <b>Nong ロボットのスピーカー</b></div>
+        <div class="action-impact"><b>ロボットに起こること：</b>
+          • <b>PC スピーカー：</b> メイン PC のスピーカーから音を出します。<br>
+          • <b>Nong スピーカー：</b> 音を WiFi 経由でロボット上の I2S チップ（PCM5102A/TPA3118）に流し、話すリズムに合わせて頭を傾けます。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> 話し方</div>
+        <div class="action-step"><b>設定方法：</b> スタイルを選びます：標準、丁寧、おどけた（生意気）、暗唱。</div>
+        <div class="action-impact"><b>ロボットに起こること：</b>
+          文末の言葉（จ้ะ、นะคะ、ครับ など）を自動で整え、声の高さと話す速さもその気分がすぐ出るように調整します。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> 音声の速さ競争（Fast-Race 650 ms）</div>
+        <div class="action-step"><b>設定方法：</b> 音声設定で Fast-Race をオンにします</div>
+        <div class="action-impact"><b>ロボットに起こること：</b>
+          システムはまずクラウド TTS を呼びます。650 ms たっても返事がなければ、すぐ端末内のオフライン音声に切り替わるので、ロボットが固まることはありません。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="f"><h3>設備に質問する</h3>
+    <p>ツール一覧の音声アプリ：質問を入力すると設備が答えます。答えはハブの隣でこの PC 上で動くヘルパープログラムから来ます（ハブ自体は AI を持たず、質問を渡して答えを返すだけです）。</p></div>
+  <div class="f"><h3>ヘルパーは自動で起動<span class="tag t-new">新</span></h3>
+    <p>ヘルパーが動いていなければ、音声が必要になった瞬間にハブが起動します。音声アプリを開いたとき、ロボットが話す文があるとき、Studio の話すジェスチャーのときなどです。音声ページには次が表示されます： <b>音声ヘルパーを起動しています…</b>
+       秒数のカウントとともに表示され、その間に送られた問い合わせは待機した後に回答されます。起動に時間がかかりすぎている場合は、ページにその理由が表示されます。hub は動作中の helper をそのまま使い続けるため、別のリクエストによって重複して起動することはありません。遅れて届いた応答でも正常であればアプリは処理を続行でき、停止した helper は再起動が可能です。起動できない場合はページに理由が表示されます（末尾のログは詳細設定スイッチの奥にあり、完全なログは
+       <code>.local/voice/helper.log</code>）。使用するPythonと所要時間の目安は、次に記載されています： <code>config/voice_helper.json</code>.</p></div>
+  <div class="f"><h3>入力の代わりに話す<span class="tag t-new">新</span></h3>
+    <p>音声ページには次のボタンがあります： <b>押して話す</b> ボタンです。押して話し、もう一度押すと停止します。話した内容が入力欄に表示され、そのまま送信できます。音声認識もこの PC 上で行います。対応言語と、各言語でよく聞き間違える単語は、次の場所にまとめてあります <code>config/voice.json</code>; 言語の追加先は <code>config/voice.json</code> (<code>tts.voices</code> / <code>stt.languages</code>）を追加すると、Answersシートと文字種の判定機能に、対応する列と翻訳先の言語が自動で追加されます。言語コードは、次のようなシンプルな形式にしてください： <code>ko</code>。検出するのは文字の種類で、言語を正確に判別するわけではありません。フランス語、ドイツ語、スペイン語、ベトナム語の質問は英語の列に入り、かなを含まない漢字の文は中国語に入ります。</p></div>
+  <div class="f"><h3>声は一度にひとつだけ<span class="tag t-new">新</span></h3>
+    <p>答えが再生されている途中で Try を押したり新しい質問をすると、古い答えが先に止まり、二つの声が重なりません。音声ヘルパーが1分以内に答えないときはページがそう伝え、ずっと待たずにもう一度試せます。ページを離れると声も止まります。</p></div>
+  <div class="f"><h3>ロボットは一度に 1 つずつ話す<span class="tag t-new">新</span></h3>
+    <p>ロボットが話すことはすべて次を通ります： <b>1 つのキュー</b> ハブ上にあります。あいさつ、このページの答えをロボットで話すもの、この PC 上の他のプログラムからのメッセージなどです。そのため、2 つが重なって話されることはありません。ロボットが話している間に届いたものは、次のどちらかになります：
+       <b>順番を待つ</b> or is <b>スキップされる</b> — 要求元の選択に委ねられます — そして待ち時間が長すぎた挨拶は、相手がすでに通り過ぎてしまったため破棄されます（<code>maxAgeSeconds</code>、変更しなければ30秒）。</p></div>
+  <!-- SECTION 3: ANSWERS SHEET & QUESTIONS ANALYTICS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ポイント 3：広い答えのシートと質問統計ダッシュボード（答えのシートと質問分析）</b>
+      <span class="info-badge">答えと統計</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ゆったりした答えのシート</div>
+        <div class="action-step"><b>使い方：</b> 「答え」タブ — 上に人が聞く質問を、下にロボットの答えを入力します。</div>
+        <div class="action-impact"><b>できること：</b>
+          テキスト欄は自由に大きさを変えられ、圧縮されず、欄の中に二重のスクロールバーも出ません。保存を押すと、空欄の言語は自動で翻訳されます。
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> 質問ダッシュボードと未回答の質問（質問と未回答）</div>
+        <div class="action-step"><b>使い方：</b> 「質問」タブ — 分析グラフとよくある質問を見られます。</div>
+        <div class="action-impact"><b>できること：</b>
+          統計を 6 つの切り口（テーマ、時間帯、答えの出どころ、言語、景品、よくある質問）で表示し、よく聞かれるのに固定の答えがまだない質問をまとめた欄があり、次のボタンが付きます： <b>答えを作る</b> で、答えのシートにワンクリックで追加できます。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>AI の読み込み、解放、状態の読み取りが失敗すると、ボタンはエラーメッセージとともに再び押せる状態に戻ります。実際のモデルの読み込みには、端末によって時間がかかることがあります。</p>
+  <p><b>端末内の AI（Ollama）は、使うときに自動で起動します：</b> PC を起動した後に自分で起動する必要はなく、ログイン時に開く設定にもなっていません。「AI を読み込む」を押すか最初の質問をすると、ウィンドウを隠した状態で開いて準備ができるまで待ちます（通常は約 40 秒以内）。起動しなかったときは理由を分かりやすい言葉で表示し、1 分間は再試行しません。もう一度「AI を読み込む」を押してください。</p>
+  <p>話すボタンを押すと、すぐに「マイクを開いています…」と表示されます。ブラウザーがまだマイクを許可していないときは直し方が表示され、代わりに質問を入力することもできます。</p>
+
+</section>
