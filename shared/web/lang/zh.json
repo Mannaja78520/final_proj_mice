@@ -813,6 +813,12 @@
   "↶ Undo": "↶ 撤销",
   "↷ Redo": "↷ 重做",
   "Take back the last change (Ctrl+Z)": "撤销最近一次修改 (Ctrl+Z)",
-  "Put the change back (Ctrl+Y)": "恢复修改 (Ctrl+Y)"
- }
+  "Put the change back (Ctrl+Y)": "恢复修改 (Ctrl+Y)",
+    "Allow this device": "允许此设备",
+    "Devices on my network that may give videos": "我的网络中可提供视频的设备",
+    "A link to a device on your own network (a NAS, another PC) is refused until an admin allows it here. Links from the internet and picked files always work.": "指向您自己网络中设备(NAS、另一台电脑)的链接会被拒绝,直到管理员在此允许。互联网链接和所选文件始终可用。",
+    "Allow": "允许",
+    "Remember this device on your network as a place videos may come from.": "记住您网络中的此设备,作为可获取视频的来源。",
+    "nas.local or 192.168.1.50": "nas.local 或 192.168.1.50"
+  }
 }

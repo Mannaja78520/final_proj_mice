@@ -613,6 +613,12 @@
   "↶ Undo": "↶ ย้อนกลับ",
   "↷ Redo": "↷ ทำซ้ำ",
   "Take back the last change (Ctrl+Z)": "ย้อนการแก้ล่าสุด (Ctrl+Z)",
-  "Put the change back (Ctrl+Y)": "เอาการแก้กลับมา (Ctrl+Y)"
- }
+  "Put the change back (Ctrl+Y)": "เอาการแก้กลับมา (Ctrl+Y)",
+    "Allow this device": "อนุญาตอุปกรณ์นี้",
+    "Devices on my network that may give videos": "อุปกรณ์ในเครือข่ายของฉันที่ให้วิดีโอได้",
+    "A link to a device on your own network (a NAS, another PC) is refused until an admin allows it here. Links from the internet and picked files always work.": "ลิงก์ที่ชี้ไปอุปกรณ์ในเครือข่ายของคุณเอง (NAS หรือพีซีเครื่องอื่น) จะถูกปฏิเสธจนกว่าผู้ดูแลจะอนุญาตตรงนี้ ลิงก์จากอินเทอร์เน็ตและไฟล์ที่เลือกใช้ได้เสมอ",
+    "Allow": "อนุญาต",
+    "Remember this device on your network as a place videos may come from.": "จำอุปกรณ์นี้ในเครือข่ายของคุณไว้เป็นที่ที่วิดีโอมาได้",
+    "nas.local or 192.168.1.50": "nas.local หรือ 192.168.1.50"
+  }
 }

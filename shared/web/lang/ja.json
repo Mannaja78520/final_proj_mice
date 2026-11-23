@@ -813,6 +813,12 @@
   "↶ Undo": "↶ 元に戻す",
   "↷ Redo": "↷ やり直し",
   "Take back the last change (Ctrl+Z)": "直前の変更を取り消す (Ctrl+Z)",
-  "Put the change back (Ctrl+Y)": "変更をやり直す (Ctrl+Y)"
- }
+  "Put the change back (Ctrl+Y)": "変更をやり直す (Ctrl+Y)",
+    "Allow this device": "このデバイスを許可",
+    "Devices on my network that may give videos": "動画を提供できる自分のネットワーク上のデバイス",
+    "A link to a device on your own network (a NAS, another PC) is refused until an admin allows it here. Links from the internet and picked files always work.": "自分のネットワーク上のデバイス(NASや別のPC)へのリンクは、管理者がここで許可するまで拒否されます。インターネットのリンクと選んだファイルは常に使えます。",
+    "Allow": "許可",
+    "Remember this device on your network as a place videos may come from.": "このネットワーク上のデバイスを、動画の取得元として覚えます。",
+    "nas.local or 192.168.1.50": "nas.local または 192.168.1.50"
+  }
 }
