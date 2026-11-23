@@ -1,0 +1,12 @@
+[
+  {"name": "home", "url": "/"},
+  {"name": "help", "url": "/help"},
+  {"name": "studio", "url": "/studio/"},
+  {"name": "tv", "url": "/app/tv/"},
+  {"name": "camera", "url": "/app/camera/"},
+  {"name": "voice", "url": "/app/voice/"},
+  {"name": "gacha", "url": "/app/gacha/"},
+  {"name": "faces", "url": "/app/faces/"},
+  {"name": "photobooth", "url": "/app/photobooth/"},
+  {"name": "all-jao", "url": "/app/all-jao/"}
+]

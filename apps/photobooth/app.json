@@ -3,7 +3,7 @@
   // An outside program like Reconize: config/partners.json says where it is
   // and how to start it; this page only starts it and opens it.
   "name": "Photobooth",
-  "blurb": "ถ่ายภาพพร้อมกรอบและสติกเกอร์ แล้วรับภาพกลับไป",
+  "blurb": "เปิดตู้ถ่ายภาพของงาน ถ่ายภาพและรับภาพกลับไป",
   "icon": "📸",
   "image": "/img/apps/photobooth.webp",
   "order": 35,

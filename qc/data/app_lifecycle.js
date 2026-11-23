@@ -219,7 +219,8 @@ const machine = (id, label = id) => ({id, label, module: id, item: "gift", near:
       {id: "new-addon", name: "New add-on", path: "/app/new-addon/"}];
     const rows = node => (node.className.split(" ").includes("tool-tile") ? [node] : []).concat(...node.children.map(rows));
     manager.render(box, apps);
-    const rendered = rows(box), names = rendered.map(row => row.children.find(n => n.className === "nm").textContent);
+    const rendered = rows(box), text = n => (n.children.length ? n.children.map(text).join("") : n.textContent),
+      names = rendered.map(row => text(row.children.find(n => n.className === "nm")));
     ok(rendered.length === apps.length && names.join("|") === apps.map(a => a.name).join("|"),
       "registry order is preserved and each tool appears exactly once");
     ok(names.includes("New add-on"), "unknown tools remain visible without a category catalog");
@@ -232,6 +233,9 @@ const machine = (id, label = id) => ({id, label, module: id, item: "gift", near:
       ok(!links.some(n => n.href.includes("/help#")), "per-tool Help is absent even when a manifest declares it");
     });
     manager.render(box, apps);
+    const pics = rendered.map(row => row.children.find(n => n.className === "nm").children.find(n => n.tag === "img"));
+    ok(pics.every(p => p && p.src), "every tool has a cartoon icon: an app with no image gets the shared default");
+    ok(pics[1].src === "/img/apps/default.svg", "the shared default icon is the cartoon one", String(pics[1].src));
     ok(rows(box).length === apps.length, "redrawing replaces rather than duplicates rows");
   });
   process.exitCode = failed ? 1 : 0;
