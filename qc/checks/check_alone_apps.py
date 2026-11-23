@@ -226,5 +226,19 @@ def run(t):
     t.ok(("127.0.0.1:%d/api/dev/cam.stream" % other_port) in seen,
          "the hub reads the OWNER's picture link", seen[-200:])
     t.ok("run Desk Cam" not in seen, "and never opens the webcam itself", seen[-200:])
+    # "the first webcam" (dev "pc:") is the same camera as "pc:Desk Cam": the
+    # PC test had both opened at once (503 for every viewer).
+    main.cam_sources._claims.clear()
+    log.write_text("")
+    relay, why = main.cam_sources.relay_for("pc:", main.hub_api_faces.pc_camera())
+    t.ok(relay is not None and type(relay).__name__ == "UrlCamRelay",
+         "the unnamed first webcam is read from the owner too (same camera, same claim)",
+         why or type(relay).__name__)
+    time.sleep(0.2)
+    code, _ = F.get(base + "/api/dev/cam.jpg?dev=pc:")
+    seen = log.read_text() if log.exists() else ""
+    t.ok(code == 200 and "run Desk Cam" not in seen,
+         "the unnamed webcam gives a picture through the owner and is never opened a second time",
+         (code, seen[-200:]))
     other.close()
     peers.release_all(other_port)
