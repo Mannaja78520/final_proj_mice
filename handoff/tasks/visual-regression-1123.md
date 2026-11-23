@@ -1,8 +1,8 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
-Owner: claude
-Updated: 2026-11-23 04:05 +0000
-Branch: claude/project-thread-z9y1v3
+Owner: codex:11232030-35b8
+Updated: 2026-11-23 20:31 +0700
+Branch: codex/visual-regression-1123
 Last commit: this checkpoint
 Plan: none (user ask 2026-11-23: "ได้เช็คทั้งหมดแล้วจริงปะ ทำไมยังเหลือพังอีกเยอะ")
 
@@ -11,19 +11,14 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Reading the full screenshot run (/tmp/vis/full, not committed) and fixing bugs outside Studio 3D / Tools page / camera threads.
+Item 1, round 1: compare Edge screenshots from 8865359 and 06db461a using the same fixtures, viewports and locale. Check Japanese desktop/phone in dark/light and indigo/carnival. Budget one capture matrix and one review of largest changes. Stop after three rounds per item, retaining evidence.
 
 ## File status
-Baseline: ed5bd89
+Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| `tools/visual/shoot.js`, `pages.json`, `probe.js`, `serve_hub.py` | screenshot + probe tool (data-driven pages) | done | ran, 4 langs, cloud fake hub | uncommitted |
-| `tools/visual/urdf_fk.py`, `urdf_page.js`, `urdf_numeric.py` | independent FK vs page joints | done | repo nong.urdf: 0.000 mm; real SolidWorks model NOT run | uncommitted |
-| `qc/checks/check_visual_language.py` | Thai-in-en/zh/ja + popup-at-corner scan | done | failed before fix, passes after (quick, cloud) | uncommitted |
-| `main_python/web/home/parts/settings.js`, `hub.html` | settings summary in translatable pieces | done | check_visual_language | uncommitted |
-| `shared/web/lang/{en,zh,ja}.json`, `lang/help/*.json` | entries for settings texts, Help Prev/Next | done | tools/lang.py check | uncommitted |
-| `tools/lang_add.py` | append pack entries without reformatting | done | used | uncommitted |
+| handoff/tasks/visual-regression-1123.md | Claim and item 1 checkpoint | doing | task matches #229; no source edits | this checkpoint |
 
 ## Facts found
 - Screenshots taken mid-fade show a dim selected tab that is not a bug: shoot.js disables transitions.
