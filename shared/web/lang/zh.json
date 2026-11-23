@@ -1496,6 +1496,17 @@
   "Show older reports": "显示更早的报告",
   "USB / RS485 (shared) goes through the hub, which owns the cable and shares it — the module's own website (⚙ Open module) can be open on the same USB port at the same time, and it works from a phone or another laptop too. USB direct talks to the port straight from this browser (Chrome/Edge on this PC only) and takes the port for itself: nothing else can use that cable until you close this tab.": "USB / RS485（共享）经由中心转发，由中心占用并共享这根线——模块自己的网站（⚙ 打开模块）可以同时使用同一个 USB 端口，手机或另一台笔记本也能用。USB 直连是由此浏览器（仅限这台电脑上的 Chrome/Edge）直接访问端口，并独占该端口：关闭此标签页之前，其他程序都无法使用那根线。",
   "no SD card? the robot still runs on live commands from here (poses, monitor) — only saved sequences need the card.": "没有 SD 卡？机器人仍可通过这里的实时命令运行（姿势、监视）——只有已保存的序列才需要这张卡。",
-  "or use the view buttons at the top-right of the 3D view (Front / Top / Left…): the camera snaps straight at that plane, and stays there — you cannot orbit out of a flat view by accident, and dragging a hand moves it flat in that plane with no Shift held. Press 3D to turn the view loose again; there, dragging a hand needs Shift, because a plain drag orbits. Like Fusion/SolidWorks.": "或使用 3D 视图右上角的视图按钮（正面 / 顶部 / 左侧…）：相机会直接对准该平面并保持不动——你不会不小心从平面视图转出去，拖动手时也会在该平面内平移，无需按住 Shift。按 3D 可再次让视图自由旋转；在那里拖动手需要按住 Shift，因为普通拖动是旋转。和 Fusion/SolidWorks 一样。"
+  "or use the view buttons at the top-right of the 3D view (Front / Top / Left…): the camera snaps straight at that plane, and stays there — you cannot orbit out of a flat view by accident, and dragging a hand moves it flat in that plane with no Shift held. Press 3D to turn the view loose again; there, dragging a hand needs Shift, because a plain drag orbits. Like Fusion/SolidWorks.": "或使用 3D 视图右上角的视图按钮（正面 / 顶部 / 左侧…）：相机会直接对准该平面并保持不动——你不会不小心从平面视图转出去，拖动手时也会在该平面内平移，无需按住 Shift。按 3D 可再次让视图自由旋转；在那里拖动手需要按住 Shift，因为普通拖动是旋转。和 Fusion/SolidWorks 一样。",
+  "ข้อมูล addons ไม่ถูกต้อง": "addons 数据无效",
+  "ข้อมูลคำสั่งในคีย์ไม่ถูกต้อง": "关键帧里的指令无效",
+  "เพลงที่กู้คืนยังไม่พร้อม เลือกไฟล์ .nong.json อีกครั้ง": "恢复的音乐尚未就绪。请再次选择 .nong.json 文件",
+  "เพลงที่กู้คืนยังไม่พร้อม รอให้โหลดเสร็จ หรือเปิดไฟล์ .nong.json อีกครั้ง": "恢复的音乐尚未就绪。请等待加载完成，或再次打开 .nong.json 文件",
+  "ขนาดไฟล์เพลงไม่ถูกต้อง": "音乐文件大小无效",
+  "ความยาวเพลงไม่ถูกต้อง": "音乐时长无效",
+  "เพลงหยุดเพราะอ่านไฟล์ไม่ได้ ท่ายังคงอยู่ เลือกเพลงใหม่แล้วลองอีกครั้ง": "音乐因无法读取文件而停止。动作还在。请重新选择音乐后再试",
+  "ใส่โฟลเดอร์ของแอป หรือกด \"เลือกโฟลเดอร์…\"": "请输入应用所在的文件夹，或点击“选择文件夹…”",
+  "ไม่มีโหมดภาพนี้": "没有这种画面模式",
+  "เปิดเกมไม่ได้ ลองอีกครั้ง": "无法打开游戏，请重试",
+  "เปิดแท็บไม่ได้ อนุญาตป๊อปอัปแล้วกดลองอีกครั้ง": "无法打开标签页。请允许弹出窗口后重试"
  }
 }
