@@ -1037,6 +1037,8 @@ def main(argv=None):
             state.lookers.append(look.Looker(
                 state, cam["name"], look.hub_frames(state.greeter.hub, cam["dev"]),
                 per_second=state.look.get("perSecond") or 4).start())
+    # Cameras switched on for faces on the Cameras page (cam_sources).
+    look.sync(state, state.greeter.hub)
     if state.partners_error:
         print("[faces] %s" % state.partners_error)
     elif not state.partner():

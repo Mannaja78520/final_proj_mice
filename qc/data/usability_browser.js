@@ -19,7 +19,7 @@ window.addEventListener('load',async()=>{
    const {w,d}=await frame('/app/camera/',w=>w.cameraApp);
    w.fetch=()=>Promise.reject(Error('offline fixture'));await w.cameraApp.load(false);
    await mark('camera_error_not_empty',d.getElementById('none').hidden&&d.getElementById('stat').textContent.length>0);
-   w.fetch=()=>Promise.resolve(new w.Response(JSON.stringify({modules:[]})));await w.cameraApp.load(false);
+   w.fetch=()=>Promise.resolve(new w.Response(JSON.stringify({cameras:[]})));await w.cameraApp.load(false);
    await mark('camera_empty_after_success',!d.getElementById('none').hidden);
   }
   {

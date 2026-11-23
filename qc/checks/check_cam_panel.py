@@ -99,11 +99,11 @@ def run(t):
     t.ok(APP.is_file(), "its page is there", str(APP))
     page = APP.read_text(encoding="utf-8", errors="replace") + IDX.read_text(encoding="utf-8", errors="replace") + IDX.read_text(encoding="utf-8", errors="replace")
     t.contains(page, "cam.stream", "it shows the live view")
-    t.contains(page, "/api/mine", "built from the cameras the hub can reach")
+    t.contains(page, "/api/cameras", "built from the hub's one list of cameras (cam_sources)")
     t.contains(page, "/mice.css", "and it uses the one design system")
 
     # ---- and it does not offer what a cable cannot do -----------------
-    t.contains(page, "shot.disabled = !live",
+    t.contains(page, "shot.disabled = box.disabled = !live",
                "a cable-only camera cannot be asked for a picture",
                )
     t.ok("A picture can be taken" not in page,
