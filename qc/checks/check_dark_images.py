@@ -28,7 +28,11 @@ def run(t):
         t.ok(('img[src="%s.webp"]{content:url(%s-dark.webp)}' % (rel, rel)) in css, "%s is swapped by the CSS" % rel)
     themes = open(root / "themes.css", encoding="utf-8").read()
     dark = re.findall(r':root\[data-theme="(\w+)"\]\{[^}]*color-scheme:\s*dark', themes.replace("\n", ""))
-    t.ok(bool(dark) and all(('html[data-theme="%s"]' % d) in css for d in dark),
-         "every dark theme is listed", str(dark))
+    # The CSS keys on data-mode="dark" (mice.js sets it from --theme-mode), so every dark theme,
+    # packs included, gets the dark pictures: each dark theme must DECLARE itself dark.
+    t.ok('html[data-mode="dark"]' in css, "the CSS swaps for any dark mode", css[:120])
+    declared = re.findall(r':root\[data-theme="(\w+)"\]\{[^}]*--theme-mode:\s*"dark"', themes.replace("\n", ""))
+    t.ok(bool(dark) and sorted(dark) == sorted(declared),
+         "every dark theme declares --theme-mode dark", "%s vs %s" % (dark, declared))
     code, _ = F.get(base + "/img/apps/studio-dark.webp")
     t.ok(code == 200, "a dark picture is served", str(code))

@@ -18,7 +18,9 @@ TITLE = "text contrast is at least 4.5:1 (3:1 for large text) in every theme on 
 SLOW = True
 
 HERE = Path(F.CODE) / "tools" / "visual"
-THEMES = ["indigo", "midnight", "daylight", "carnival"]
+# The four CSS themes + every built-in theme pack (shared/web/themes/<id>/): a new pack is measured with no edit here.
+THEMES = ["indigo", "midnight", "daylight", "carnival"] + sorted(
+    d.name for d in (Path(F.CODE) / "shared" / "web" / "themes").iterdir() if d.is_dir())
 
 DRIVER = """
 __AUDIT__

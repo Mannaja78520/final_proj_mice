@@ -183,10 +183,12 @@ def run(t):
     # system was built to end. Compared directly, so neither the hub nor the
     # generator can quietly change the join and still pass.
     if body:
-        t.ok(got.strip() == body.group(1).strip(),
+        # The hub appends its theme packs (hub-only, never in a board's flash) after a marker.
+        shared = got.split("/* ---- theme packs ---- */")[0]
+        t.ok(shared.strip() == body.group(1).strip(),
              "and the board and the hub serve the same bytes",
              "hub %d bytes, board %d - one of them has been changed alone"
-             % (len(got.strip()), len(body.group(1).strip())))
+             % (len(shared.strip()), len(body.group(1).strip())))
 
     # The shared script travels the same way, or the theme works on one
     # surface and not the others.

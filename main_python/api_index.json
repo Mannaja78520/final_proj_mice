@@ -856,6 +856,36 @@
    "file": "hub_api_play.py"
   },
   {
+   "path": "/api/themes",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_themes.py"
+  },
+  {
+   "path": "/api/themes/images",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "id"
+   ],
+   "file": "hub_api_themes.py"
+  },
+  {
+   "path": "/api/themes/install",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_themes.py"
+  },
+  {
+   "path": "/api/themes/remove",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_themes.py"
+  },
+  {
    "path": "/api/upload/cancel",
    "method": "POST",
    "what": "",
