@@ -21,17 +21,17 @@
     "sunk": "#e1edfb",
     "line": "#c5d9f1",
     "txt": "#26304f",
-    "mut": "#515c85",
-    "acc": "#5457d6",
+    "mut": "#4a557d",
+    "acc": "#4346c0",
     "on-acc": "#ffffff",
     "btn": "#e4ecff",
-    "ok": "#1c7a52",
-    "warn": "#a35a00",
-    "err": "#c0365a",
+    "ok": "#176a46",
+    "warn": "#8f4d00",
+    "err": "#a3274a",
     "ty-nong": "#c2410c",
     "ty-lift": "#0e7fb5",
     "ty-cam": "#9333ea",
-    "ty-other": "#515c85"
+    "ty-other": "#4a557d"
   },
   "art": "clouds.svg"
 }
