@@ -10,7 +10,7 @@ Plan: none (user asked in thread 2026-11-23)
 "Themes like a VS Code extension: install, then press Use. A cute Cloudy theme, another pretty one, and the cream look of the Help page. Pictures should match: dark theme = dark pictures, light = light."
 
 ## Doing now
-QC run of themes/contrast/packs checks; then PR, then Codex + Gemini look review with screenshots.
+Handed to GPT Codex (user 2026-11-23: Claude near limit). Branch claude/themes-note-1123 has the Midnight note fix (themes.css + th/zh/ja lang keys), QC `themes language` was running, result unknown.
 
 ## File status
 Baseline: 363e810
@@ -33,11 +33,13 @@ Baseline: 363e810
 - Pack format: docs in main_python/theme_packs.py header.
 
 ## Done
-See PR.
+- PR #218 merged (theme packs, gallery, Cloudy/Cream/Aurora, dark pictures via data-mode in img-dark.css).
+- PR #227 merged (Cloudy clouds moved off the Help sidebar; Codex gpt-6.2-sol review of 3 themes, all fine).
 
-## Next
-1. Codex (gpt-6.2-sol medium) + Gemini 4 look review with screenshots.
-2. Exe rebuild: ask user (another thread owns builds).
+## Next (for GPT Codex)
+1. On branch claude/themes-note-1123: run `python qc/run_qc.py --quiet themes language`; if green, push and open a PR (no gh on PC: use the github.com compare link, or the cloud thread merges), then merge per standing approval.
+2. Gemini 4 review of .local/theme-review/*.png: run agy with `--add-dir` for the folder only (user approved all bash 2026-11-23); verify findings against the screenshots; fix real ones only in shared/web/themes/<id>/theme.json or svg art; run `qc theme_packs themes theme_contrast`.
+3. Do NOT build the exe: the coordinator arranges one rebuild after the Tools fixes merge.
 
 ## Blocked
 - nothing
