@@ -467,12 +467,12 @@
         </span>
         <button id="connBtn" onclick="connectRobot()">Connect</button>
       </div>
-      <div class="mini"><b>USB / RS485 (shared)</b> goes through the hub, which owns
+      <div class="mini">USB / RS485 (shared) goes through the hub, which owns
         the cable and shares it — the module's own website (⚙ Open module) can be
-        open on the <b>same USB port at the same time</b>, and it works from a
-        phone or another laptop too. <b>USB direct</b> talks to the port straight
-        from this browser (Chrome/Edge on this PC only) and <b>takes the port for
-        itself</b>: nothing else can use that cable until you close this tab.</div>
+        open on the same USB port at the same time, and it works from a
+        phone or another laptop too. USB direct talks to the port straight
+        from this browser (Chrome/Edge on this PC only) and takes the port for
+        itself: nothing else can use that cable until you close this tab.</div>
       <div class="row">
         <button onclick="scanModules()">🔍 Find modules</button>
         <select id="foundSel" style="flex:1" onchange="pickFound(this.value)">
@@ -489,7 +489,7 @@
       </div>
       <div class="row">
         <label><input type="checkbox" id="liveChk" onchange="liveChanged()"> live (robot follows editor)</label>
-        <label><input type="checkbox" id="monChk" onchange="monitorChanged()"> <b>monitor</b> (editor follows robot)</label>
+        <label><input type="checkbox" id="monChk" onchange="monitorChanged()"> monitor (editor follows robot)</label>
       </div>
       <div class="row">
         <button onclick="robotCmd('HOME')" title="move the robot to its home (start) position">Home</button>
@@ -506,7 +506,7 @@
       <div class="mini">monitor mode animates the 3D model with the robot's real
         joint angles and shows which sequence is playing — use it to watch a
         run from the SD card.</div>
-      <div class="mini">no SD card? the robot still runs on <b>live</b> commands
+      <div class="mini">no SD card? the robot still runs on live commands
         from here (poses, monitor) — only saved sequences need the card.</div>
     </div>
 

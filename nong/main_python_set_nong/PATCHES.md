@@ -139,3 +139,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0118 | 2026-11-05 03:42 | Latest results motion audio recovery verified |
 | 0056 | 2026-11-23 08:40 | phone: Studio 3D view 34vh so both rows of side tabs clear the Stop strip |
 | 0057 | 2026-11-23 09:02 | desktop: Studio header stays one row at 1440px |
+| 0058 | 2026-11-23 09:29 | Robot tab: monitor label and three paragraphs without inline bold so they translate |

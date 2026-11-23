@@ -956,6 +956,9 @@
   "NO ROBOT": "没有机器人",
   "Connecting…": "正在连接…",
   "Looking for cameras… this takes a few seconds.": "正在查找摄像头…需要几秒钟。",
-  "Show older reports": "显示更早的报告"
+  "Show older reports": "显示更早的报告",
+  "USB / RS485 (shared) goes through the hub, which owns the cable and shares it — the module's own website (⚙ Open module) can be open on the same USB port at the same time, and it works from a phone or another laptop too. USB direct talks to the port straight from this browser (Chrome/Edge on this PC only) and takes the port for itself: nothing else can use that cable until you close this tab.": "USB / RS485（共享）经由中心转发，由中心占用并共享这根线——模块自己的网站（⚙ 打开模块）可以同时使用同一个 USB 端口，手机或另一台笔记本也能用。USB 直连是由此浏览器（仅限这台电脑上的 Chrome/Edge）直接访问端口，并独占该端口：关闭此标签页之前，其他程序都无法使用那根线。",
+  "monitor mode animates the 3D model with the robot's real joint angles and shows which sequence is playing — use it to watch a run from the SD card.": "监视模式会让 3D 模型按机器人的真实关节角度动起来，并显示正在播放哪个序列——可用来观看 SD 卡上的运行。",
+  "no SD card? the robot still runs on live commands from here (poses, monitor) — only saved sequences need the card.": "没有 SD 卡？机器人仍可通过这里的实时命令运行（姿势、监视）——只有已保存的序列才需要这张卡。"
  }
 }
