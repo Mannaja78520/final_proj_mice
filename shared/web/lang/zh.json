@@ -1567,6 +1567,10 @@
   "cut servo power - the arms go limp": "切断舵机电源——手臂会软下来",
   "pose editor + live 3D over this USB cable (shared — the module site can stay open too)": "通过这根 USB 线使用动作编辑器 + 实时 3D（共享——模块网站也可以同时开着）",
   "No firmware has been built on this PC yet, so there is nothing to flash. Build it once, from the firmware folder:": "这台电脑上还没有构建固件，所以暂时没有可烧录的内容。请在 firmware 文件夹中构建一次：",
-  "It then appears here.": "之后它会显示在这里。"
+  "It then appears here.": "之后它会显示在这里。",
+  "takes the cable for about a minute": "会占用数据线约一分钟",
+  "this board has no cable of its own, so the image goes out on the bus as ordinary commands — several minutes, and it keeps the firmware it has if anything goes wrong": "这块板子没有自己的数据线，所以固件镜像会作为普通命令通过总线发送——需要几分钟，如果出错，它会保留原有固件",
+  "sent to the spare slot — if it does not finish, the board keeps what it has": "已发送到备用分区——如果没有完成，板子会保留原有固件",
+  "AI loaded": "AI 已加载"
  }
 }

@@ -1567,6 +1567,10 @@
   "cut servo power - the arms go limp": "サーボの電源を切ります。腕がだらんと垂れます",
   "pose editor + live 3D over this USB cable (shared — the module site can stay open too)": "この USB ケーブル経由のポーズエディタ + ライブ 3D（共有 — モジュールのサイトも開いたままにできます）",
   "No firmware has been built on this PC yet, so there is nothing to flash. Build it once, from the firmware folder:": "このPCにはまだファームウェアがビルドされていないため、書き込めるものがありません。firmware フォルダーで一度ビルドしてください：",
-  "It then appears here.": "その後、ここに表示されます。"
+  "It then appears here.": "その後、ここに表示されます。",
+  "takes the cable for about a minute": "ケーブルを約1分間使用します",
+  "this board has no cable of its own, so the image goes out on the bus as ordinary commands — several minutes, and it keeps the firmware it has if anything goes wrong": "このボードには専用のケーブルがないため、イメージは通常のコマンドとしてバス経由で送られます。数分かかり、問題が起きても今のファームウェアは残ります",
+  "sent to the spare slot — if it does not finish, the board keeps what it has": "予備スロットに送ります。完了しなくても、ボードは今のファームウェアを保持します",
+  "AI loaded": "AI は読み込み済み"
  }
 }
