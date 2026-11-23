@@ -1,7 +1,7 @@
 # Screenshot regression + numeric 3D check + Thai-leak QC
 
 Owner: codex:11232030-35b8
-Updated: 2026-11-23 20:31 +0700
+Updated: 2026-11-23T20:39+07:00
 Branch: codex/visual-regression-1123
 Last commit: this checkpoint
 Plan: none (user ask 2026-11-23: "ได้เช็คทั้งหมดแล้วจริงปะ ทำไมยังเหลือพังอีกเยอะ")
@@ -11,16 +11,26 @@ Look at every page like a person (screenshots, 4 languages, dark/light, phone/de
 numerically against the URDF, list visual bugs, add what a script can decide to QC.
 
 ## Doing now
-Item 1, round 1: compare Edge screenshots from 8865359 and 06db461a using the same fixtures, viewports and locale. Check Japanese desktop/phone in dark/light and indigo/carnival. Budget one capture matrix and one review of largest changes. Stop after three rounds per item, retaining evidence.
+Item 1, round 1 comparison in progress: compare Edge screenshots from 8865359 and 06db461a using the same fixtures, viewports and locale. Check Japanese desktop/phone in dark/light and indigo/carnival. Budget one capture matrix and one review of largest changes. Stop after three rounds per item, retaining evidence.
+Round 2 hypothesis: text translates but the document language stays English/blank. Set the language after the selected pack loads; verify the unchanged Japanese phone fixture before/after and add a QC assertion. Limit: one patch and one targeted browser rerun.
 
 ## File status
 Baseline: 06db461a (PRs #215, #217, #219, #220 and #229 already landed).
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| handoff/tasks/visual-regression-1123.md | Claim and item 1 checkpoint | doing | task matches #229; no source edits | this checkpoint |
+| handoff/tasks/visual-regression-1123.md | Item 1 capture and reproduction | doing | Edge phone probe, 28 rows | this checkpoint |
+| shared/web/mice-lang.js | Set root language after pack load | pending | not run | uncommitted |
+| qc/checks/check_dialog_language.py | Assert root language | pending | not run | uncommitted |
+| main_python/web/help/parts/bytask.html | Explain language and screen reader behavior | pending | not run | uncommitted |
+| main_python/web/help.html | Rebuild Help | pending | not run | uncommitted |
+| shared/web/lang/help/th.json | Translate Help language guidance | pending | not run | uncommitted |
+| shared/web/lang/help/zh.json | Translate Help language guidance | pending | not run | uncommitted |
+| shared/web/lang/help/ja.json | Translate Help language guidance | pending | not run | uncommitted |
 
 ## Facts found
+- Edge 157, current 06db461a, 390 ? 844: Home, Help, Studio, TV, Camera, Voice, and Gacha selected all four themes correctly and stayed at 390 px. Japanese titles appeared, but root language was en or empty in all 28 cases. Private evidence: .local/visual-regression-1123/phone-theme-check.json.
+- First visual diff review (Midnight, desktop): Help 46.8%, Reports 40.7%, Settings 31.0%; content changes are locale, Help art, and different stored report fixtures. Studio differences include header wrapping and panel height; still checking reachability.
 - Screenshots taken mid-fade show a dim selected tab that is not a bug: shoot.js disables transitions.
 - Committed nong.urdf names meshes/*.stl but the STLs sit in models/ (404 in CAD look) and torso/fore STLs are in assembly-world coordinates: CAD look in a clean checkout shows fragments. Studio 3D thread's area.
 - haveRobot() in Studio means "connected to a robot", not "3D ready".
