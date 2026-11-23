@@ -25,6 +25,7 @@ async function one(lang){
   await ready(f); await sleep(1500);
   var w = f.contentWindow, say = w.MiceLang.say;
   qcMark("D~" + lang + "~wrapped~" + (String(w.confirm).indexOf("say(") >= 0 ? 1 : 0));
+  qcMark("D~" + lang + "~document~" + f.contentDocument.documentElement.lang);
   qcMark("D~" + lang + "~file~" + JSON.stringify(say("my_move.yaml is already saved. Replace it?\\n\\nCancel, then type a new name to keep both.")));
   qcMark("D~" + lang + "~two~" + JSON.stringify(say("a.yaml has 3 step(s) this editor cannot read. Saving over it removes them.")));
   qcMark("D~" + lang + "~plain~" + JSON.stringify(say("nothing to translate here 123")));
@@ -49,9 +50,10 @@ def run(t):
         if m.startswith("D~"):
             _, lang, key, val = m.split("~", 3)
             got[(lang, key)] = val
-    t.ok(len(got) == 8, "both languages answered", sorted(got))
-    if len(got) == 8:
+    t.ok(len(got) == 10, "both languages answered", sorted(got))
+    if len(got) == 10:
         for lang in ("zh", "th"):
+            t.eq(got[(lang, "document")], lang, "screen readers get the selected language (%s)" % lang)
             t.ok(got[(lang, "wrapped")] == "1", "confirm() goes through the language layer (%s)" % lang)
             f = got[(lang, "file")]
             t.ok("my_move.yaml" in f and "\\n\\n" in f and "Replace" not in f, "the file name and the blank line survive (%s)" % lang, f)

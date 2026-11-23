@@ -113,6 +113,12 @@
     if (corner) corner.insertBefore(pill, corner.firstChild);     // top-right, before the technical switch
     else host.parentNode.insertBefore(pill, host.nextSibling);
   }
+  function applyPack(code) {
+    node(document.body);
+    document.documentElement.lang = code;
+    pageTitle();
+    watch();
+  }
   function start() {
     get("/lang/index.json", function (idx) {
       var langs = idx && idx.languages;
@@ -130,14 +136,10 @@
         if (location.pathname.indexOf("/help") === 0) {
           return get("/lang/help/" + encodeURIComponent(code) + ".json", function (h) {
             if (h && h.strings) for (var k in h.strings) if (Object.prototype.hasOwnProperty.call(h.strings, k)) dict[k] = h.strings[k];
-            node(document.body);
-            pageTitle();
-            watch();
+            applyPack(code);
           });
         }
-        node(document.body);
-        pageTitle();
-        watch();
+        applyPack(code);
       });
     });
   }

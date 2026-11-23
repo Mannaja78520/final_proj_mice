@@ -1929,6 +1929,7 @@
   "The Problem reports tab shows the newest 40 reports and a button for older ones, so the page stays quick on a phone.": "问题报告页签显示最新的 40 条报告，另有按钮查看更早的报告，这样手机上页面也很快。",
   "Help — MICE": "帮助 — MICE",
   "The page waits for the board to answer before showing its controls.": "页面会等板卡响应后再显示控制项。",
-  "The page reads camera settings after it identifies a camera.": "页面识别到摄像头后才会读取摄像头设置。"
+  "The page reads camera settings after it identifies a camera.": "页面识别到摄像头后才会读取摄像头设置。",
+  "Use the globe to change the page language. Screen readers follow the selected language.": "点击地球图标可切换页面语言。屏幕阅读器会使用所选的语言。"
  }
 }
