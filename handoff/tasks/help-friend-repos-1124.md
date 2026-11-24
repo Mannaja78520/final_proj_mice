@@ -1,7 +1,7 @@
 # help-friend-repos-1124 — Put Help + a main-page Help button into Face_Regonize and Photobooth
 Owner: codex:11240915-1a99
-Updated: 2026-11-24T09:28+07:00
-Last commit: e4af671 (Mice source parity and backups)
+Updated: 2026-11-24T09:33+07:00
+Last commit: c3eefd2 (Mice implementation checkpoint)
 
 ## User orders (Thai, 2026-11-24)
 - cmsg_01R7BbYxaTb3Yv9YS3gQaaA3Q6QC2jUpeSUV6Yw8pqH9TK: "put facereg and photobooth into the friend's git now; the game: let me look first for a moment"
@@ -38,13 +38,14 @@ Both friend repos have branch add-mice-help pushed (or the exact blocker is writ
 our friend-request doc updated, nothing in All-Jao-Games touched, report in Thai in "Result" below.
 
 ## Doing now
-Verify the updated friend trees. Run builds and frontend checks, then start the built apps with isolated data and inspect browser screenshots for both links and guide images.
+Finish isolated browser checks. Both production builds passed. The first Photobooth launch found its existing runtime lacks cv2, so use a fresh Python 3.13 venv installed from the lockfile.
 
 ## Done
 - Took the task as codex:11240915-1a99 on detached Mice HEAD 683f59f (remote handoff branch).
 - Reconciled clone branches. Face base e998b0e, package 3ea59d1, two pending UI edits and prior .vite5180.log. Photobooth base 858f0b6, package ee9e201, clean tree.
 - A58-24 registered in system plan. Backed up both base trees plus inherited Face edits under mice_system/.local/backup/help-friend-repos-1124. Compared all 31 Face and 37 Photobooth package files to source by SHA-256.
 - Implemented same-origin /help/index.html in both apps. The source package contains Hub HTML fragments with data-shot references, so Vite generates complete localized guide pages and resolves their bundled image URLs. Photobooth Help is in organizer navigation.
+- Fixed the Vite import to include the .ts extension after the Face build reported TS2307. Final builds passed in both clones. Photobooth lint passed and 397 frontend tests passed (before import-path-only correction).
 
 ## Next
 Build, run against throwaway fixtures on isolated ports, inspect screenshots, then make the second commit in each clone.
@@ -58,7 +59,7 @@ Build, run against throwaway fixtures on isolated ports, inspect screenshots, th
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| Mice: handoff/tasks/help-friend-repos-1124.md | Session and clone inventory | In progress | git diff --check | this checkpoint |
+| Mice: handoff/tasks/help-friend-repos-1124.md | Track scope, verification and publication | In progress | git diff --check | this checkpoint |
 | Face: frontend/src/components/Layout.tsx | Standalone Help in dashboard header | Edited | not run | uncommitted |
 | Face: frontend/src/pages/Login.tsx | Standalone Help on login | Edited | not run | uncommitted |
 | Face: .vite5180.log | Inherited test output, preserve outside commit | Existing | not run | uncommitted |
@@ -71,6 +72,10 @@ Build, run against throwaway fixtures on isolated ports, inspect screenshots, th
 
 | Face: help/standalone.html | Locale navigation and standalone app links | Added | not run | uncommitted |
 | Photobooth: help/standalone.html | Locale navigation and standalone app links | Added | not run | uncommitted |
+
+| Mice: docs/system_integral.html | A58-24 live plan row, mirrored from task workspace | Live state | plan.py show | uncommitted |
+| Mice: docs/system_integral_state.js | Generated system plan state | Live state | plan.py show | uncommitted |
+| Mice: docs/BRIDGE.md | Shared claim under mutex | Live state | Claim recorded | uncommitted |
 
 Package rows use clone names as prefixes.
 | Face: help/en.html | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
