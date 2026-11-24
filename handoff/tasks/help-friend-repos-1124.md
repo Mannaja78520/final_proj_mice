@@ -1,7 +1,7 @@
 # help-friend-repos-1124 — Put Help + a main-page Help button into Face_Regonize and Photobooth
 Owner: codex:11240915-1a99
-Updated: 2026-11-24T09:52+07:00
-Last commit: 18fed68 (Mice docs), 6af5d57 (gate checkpoint)
+Updated: 2026-11-24T09:54+07:00
+Last commit: 18fed68 (Mice docs draft PR #248), 90c7b3b (handoff)
 
 ## User orders (Thai, 2026-11-24)
 - cmsg_01R7BbYxaTb3Yv9YS3gQaaA3Q6QC2jUpeSUV6Yw8pqH9TK: "put facereg and photobooth into the friend's git now; the game: let me look first for a moment"
@@ -21,20 +21,16 @@ NOT allowed: All-Jao-Games (HOLD, user wants to look first: do not touch, do not
    Reconize: dashboard header (and login page if simple). Photobooth: organizer/admin main page and, only if it
    does not disturb the guest flow, a small Help on the start screen. Must work STANDALONE (no MiceHub): serve/link their
    own help/ files (least invasive way that works in their server); optionally also offer MiceHub http://127.0.0.1:8642/help#faces
-   (#photobooth) when reachable. Say which you chose. Commit separately: "Add Help button to main page".
+   (#photobooth) when reachable. Record the choice. Commit "Add Help button to main page".
 5. Test: the app still starts, the button opens the help and its images show; screenshot each main page with the button
    (light/dark if themed); LOOK at every screenshot. Gemini 4 may review (leads only).
 6. Push: `git push -u origin add-mice-help` (no force). If refused / credentials needed, STOP and write exactly why here.
 7. Also update docs/friend/friend_requests_all_2026-11-23.md in mice_system (our repo, new branch from main, draft PR,
-   merge per standing approval cmsg_01R7BbYxaTb3Yv9YS3gQaaA3XEQcQQyoUgXwMT6wXgfeYv when green): say the Help is now in the
-   friend repos on branch add-mice-help (+ commit ids) and the friend may merge it, and how the hub picks it up.
+   merge per standing approval cmsg_01R7BbYxaTb3Yv9YS3gQaaA3XEQcQQyoUgXwMT6wXgfeYv when green). Include branch status, commit IDs, merge ownership, and Hub discovery.
 8. Update this file after EVERY step and push WIP to Mice claude/project-thread-181856. Keep keys, passwords and real data out of Git.
 
-## Done when
-Both add-mice-help branches pushed or exact blockers recorded, screenshots checked, friend-request doc updated, All-Jao-Games untouched, and Result recorded in Thai.
-
 ## Doing now
-Publish the isolated Mice docs branch and open its draft PR. Shared QC driver remains with A59-2 until its owner releases it.
+Waiting for A59-2 to release the shared QC driver. Draft Mice PR #248 is open.
 
 ## Done
 - Face base e998b0e and package 3ea59d1. Photobooth base 858f0b6 and package ee9e201. SHA-256 matched all 31 and 37 original files to source. Backed up both bases and the inherited Face diff in mice_system/.local/backup/help-friend-repos-1124.
@@ -44,6 +40,7 @@ Publish the isolated Mice docs branch and open its draft PR. Shared QC driver re
 - Face branch pushed and ls-remote verified 7436718baa5055e778eeded3fdbfc6ecfa8d5a7c.
 - Updated the Mice friend request in .local/mice-friend-doc with actual branch status, commit IDs, standalone links and the Hub help/help.json lookup.
 - Mice full QC interrupted after detecting A59-2 had claimed the shared driver first. Stopped only our run, released our claim, and restored 8 transient generated files in our isolated docs worktree. No full-QC result.
+- Opened Mice draft PR #248 from 18fed68. Direct Hub lookup with test partner paths discovered both packages and resolved 18 images in each locale.
 
 ## Next
 After the shared QC driver is explicitly released, rerun the full gate. Merge the Mice docs PR only when green. Publish Photobooth only after explicit authorization.
@@ -68,7 +65,7 @@ Photobooth push was not executed. Automatic approval review rejected publishing 
 | Photobooth: frontend/vite.config.ts | Register bundled Help plugin | Committed | Build + Edge on isolated app | d11cffa |
 | Photobooth: frontend/vite.help.ts | Serve guide in dev and emit guide with screenshots in build | Committed | Build + Edge on isolated app | d11cffa |
 | Photobooth: frontend/src/features/admin/components/AdminLayout.tsx | Standalone Help in organizer navigation | Committed | Build + Edge on isolated app | d11cffa |
-| Mice: docs/friend/friend_requests_all_2026-11-23.md | Record Face published, Photobooth pending and Hub discovery | Committed | git diff --check; full QC interrupted | 18fed68 |
+| Mice: docs/friend/friend_requests_all_2026-11-23.md | Record Face published, Photobooth pending and Hub discovery | Draft PR #248 | Diff check and test-partner Hub lookup pass; full QC pending | 18fed68 |
 | Face: help/standalone.html | Locale navigation and standalone app links | Committed | Build + Edge on isolated app | 7436718 |
 | Photobooth: help/standalone.html | Locale navigation and standalone app links | Committed | Build + Edge on isolated app | d11cffa |
 | Mice: docs/system_integral.html | A58-24 live plan row, mirrored from task workspace | Live state | plan.py show | uncommitted |
@@ -144,4 +141,6 @@ Photobooth push was not executed. Automatic approval review rejected publishing 
 | Photobooth: help/zh.html | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
 
 ## Result
-(Codex: write branch names, commit ids, changed files/lines, screenshot paths, push result)
+- Face_Regonize: push สาขา add-mice-help แล้ว (คู่มือ 3ea59d1, ปุ่ม 7436718) หน้า Dashboard และ Login เปิดคู่มือได้
+- Photobooth: ปุ่ม Help หน้า Organizer ผ่านแล้ว (คู่มือ ee9e201, ปุ่ม d11cffa) รออนุญาตให้ push
+- ตรวจภาพทั้ง 10 ภาพที่ E:/work/help_friend_repos_1124/.local/friend-help-evidence แล้ว เอกสาร Mice อยู่ใน draft PR #248
