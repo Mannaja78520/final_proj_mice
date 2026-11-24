@@ -54,7 +54,7 @@
     "direct": true,
     "fixed": true,
     "url": "/activities",
-    "ready": "h1:has-text(\"Activities\")"
+    "ready": "button:text-is(\"Open station\")"
   },
   "reconize-cctv": {
     "native": true,
@@ -111,7 +111,11 @@
     "direct": true,
     "fixed": true,
     "url": "/settings",
-    "ready": "h1:has-text(\"Settings\")"
+    "ready": "h1:has-text(\"Settings\")",
+    "viewport": {
+      "width": 1440,
+      "height": 1480
+    }
   },
   "reconize-pdpa": {
     "native": true,

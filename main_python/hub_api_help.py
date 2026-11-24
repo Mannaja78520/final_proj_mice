@@ -80,10 +80,13 @@ class AppHelp:
             if not resolved.is_relative_to(root.resolve()):
                 return None
             if native and mime == "image/webp" and not resolved.exists():
-                name = rel[4:].split("-", 2)[2]
-                resolved = (root / "img" / f"{native}-{name}").resolve()
-                if not resolved.is_relative_to(root.resolve()):
-                    return None
+                _, mode, name = rel[4:].split("-", 2)
+                lang = native.split("-", 1)[0]
+                for variant in dict.fromkeys((f"{lang}-{mode}", native)):
+                    candidate = (root / "img" / f"{variant}-{name}").resolve()
+                    if candidate.is_relative_to(root.resolve()) and candidate.is_file():
+                        return candidate.read_bytes(), mime
+                return None
             return resolved.read_bytes(), mime
         except (OSError, ValueError, RuntimeError):
             pass

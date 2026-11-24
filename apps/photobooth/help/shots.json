@@ -74,18 +74,29 @@
     "fixed": true,
     "url": "/booth",
     "ready": "button:text-is(\"Start\")",
-    "steps": []
+    "steps": [],
+    "modes": [
+      "light",
+      "dark"
+    ]
   },
   "booth-choose": {
     "native": true,
     "direct": true,
     "fixed": true,
     "url": "/booth",
-    "ready": "[data-testid=\"frame-slide\"]",
+    "ready": "button:text-is(\"Start with this frame\")",
     "steps": [
       {
         "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "[data-testid=\"frame-slide\"] >> nth=0 >> button:text-is(\"Use this frame\")"
       }
+    ],
+    "modes": [
+      "light",
+      "dark"
     ]
   },
   "booth-capture": {
@@ -104,6 +115,10 @@
       {
         "click": "button:text-is(\"Start with this frame\")"
       }
+    ],
+    "modes": [
+      "light",
+      "dark"
     ]
   },
   "booth-review": {
@@ -122,6 +137,10 @@
       {
         "click": "button:text-is(\"Start with this frame\")"
       }
+    ],
+    "modes": [
+      "light",
+      "dark"
     ]
   },
   "booth-decorate": {
@@ -143,6 +162,10 @@
       {
         "click": "button:text-is(\"These are good\")"
       }
+    ],
+    "modes": [
+      "light",
+      "dark"
     ]
   },
   "booth-delivery": {
@@ -176,6 +199,10 @@
       {
         "eval": "const qr = document.querySelector('[data-testid=delivery-qr]'); qr.style.filter = 'blur(12px)'; document.querySelector('[data-testid=delivery-url]').textContent = 'Demo download address hidden'"
       }
+    ],
+    "modes": [
+      "light",
+      "dark"
     ]
   },
   "booth-sign-in": {

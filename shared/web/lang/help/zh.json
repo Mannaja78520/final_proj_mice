@@ -13,7 +13,7 @@
   "เมื่อเพิ่มหรือถอดแอปใน Tools คู่มือของแอปนั้นจะปรากฏหรือหายไปเมื่อเปิดหน้า Help อีกครั้ง": "在工具页添加或移除应用后，下次打开帮助时，应用指南也会随之增减。",
   "Open Cameras, then turn on live view for the camera you want to check.": "打开摄像头页面，然后打开需要查看的摄像头的实时画面。",
   "Some app guides could not load. Reload this page to try again.": "部分应用指南无法加载。请重新加载此页面再试。",
-  "Open an app guide below. Screenshots from inside an app use that app?s own language and appearance.": "????????????????????????????",
+  "Open an app guide below. Screenshots from inside an app use that app’s own language and appearance. If it has separate light and dark views, Help shows the available view for your Hub theme.": "从下方打开应用指南。应用内的截图保留该应用的语言和外观。如果应用提供浅色和深色画面，帮助页会优先显示与 Hub 主题对应的截图。",
   "Use an installed app": "使用已安装的应用",
   "สำหรับผู้ดูแล: โฟลเดอร์อัปเดตระบบ": "面向管理员：系统更新文件夹",
   "เครื่องมือนำงานที่ตรวจผ่านเข้าระบบอ้างอิงโฟลเดอร์หลักของโครงการ แม้เรียกจากสำเนาทำงาน โฟลเดอร์งานและบันทึกการอัปเดตจึงไม่ซ้อนอยู่ในสำเนาอีกชั้น": "将已通过检查的工作带入系统的工具始终指向项目主文件夹，即使从工作副本调用，工作文件夹和更新日志也不会嵌套在副本里。",

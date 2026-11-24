@@ -100,9 +100,9 @@ pages from another subfolder. Put these files in `help/`.
   `th-light-your-view.webp` and `th-dark-your-view.webp`.
 - For screens with their own fixed language and colors, set `nativeVariant`
   in `help.json`, for example `"en-light"`. Put one image per native view in
-  `img/`, such as `en-light-your-view.webp`. Help uses that image when the
-  selected language and theme have no matching image. Explain the app's
-  language and colors below the picture.
+  `img/`, such as `en-light-your-view.webp`. Help uses the app's native
+  language image for the selected theme when available, then the declared
+  variant. Explain the app's language and colors below the picture.
 - For a capture recipe, add `shots.json` next to the fragments. Each key is a
   view name. Its value supplies a loopback demo Hub path (`url`), optional
   `steps` to open the view, a `ready` selector, and an optional crop selector
@@ -116,6 +116,8 @@ pages from another subfolder. Put these files in `help/`.
   For a demo app served outside Hub, set `"direct": true` and pass
   `--native <app-id>=<loopback-demo-app-url>`. Use `--state <app-id>=<private-state.json>`
   for an isolated signed-in session. Use `--out` to review before shipping.
+  For native screens with separate light and dark themes, list both in `modes`.
+  Apply each theme in the demo app and capture with `--mode light` or `--mode dark`.
 
 Hub Help loads formatted text and matching images from the guides listed by
 `GET /api/help/apps`. It uses the same installed-app visibility as Tools.

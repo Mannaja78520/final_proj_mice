@@ -24,8 +24,13 @@ def full_catalog(t, folder, shots, langs, native=None):
     missing = []
     for shot in sorted(shots):
         recipe = recipes.get(shot, {})
-        variants = [native] if recipe.get("fixed") else [
-            f"{lang}-{mode}" for lang in langs for mode in ("light", "dark")]
+        variants = [f"{lang}-{mode}" for lang in langs for mode in ("light", "dark")]
+        if recipe.get("fixed"):
+            if not native:
+                missing.append(f"{shot}: nativeVariant")
+                continue
+            lang, default = native.split("-")
+            variants = [f"{lang}-{mode}" for mode in recipe.get("modes", [default])]
         for variant in variants:
             img = folder / "img" / f"{variant}-{shot}.webp"
             if not img.is_file() or img.read_bytes()[:12][8:12] != b"WEBP":
@@ -102,6 +107,9 @@ def install_round_trip(t, base, langs):
         image_dir.mkdir()
         image = next((F.CODE / "apps/voice/help/img").glob("en-light-*.webp")).read_bytes()
         (image_dir / "en-light-demo.webp").write_bytes(image)
+        dark = next((F.CODE / "apps/voice/help/img").glob("en-dark-*.webp")).read_bytes()
+        (image_dir / "en-dark-paired.webp").write_bytes(dark)
+        (image_dir / "en-light-paired.webp").write_bytes(image)
 
         t.ok(app_id not in app_ids(base), "uninstalled extension does not contribute a guide", app_id)
         result = F.post(base + "/api/extensions/add", json.dumps({"folder": str(folder)}).encode())
@@ -112,6 +120,8 @@ def install_round_trip(t, base, langs):
             t.eq(app.get("title"), meta["title"], "localized titles are read from extension manifest")
             with urlopen(url + "img/ja-dark-demo.webp", timeout=10) as response:
                 t.eq(response.read() == image, True, "native picture serves in other Help variants")
+            with urlopen(url + "img/ja-dark-paired.webp", timeout=10) as response:
+                t.eq(response.read() == dark, True, "native picture prefers the requested theme when available")
             for lang in langs:
                 status, html = F.get(url + lang + ".html")
                 t.eq(status, 200, f"{lang} fragment is served from the extension's manifest folder")

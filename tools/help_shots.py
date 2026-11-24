@@ -131,7 +131,7 @@ class HelpShooter:
             return route.continue_()
         context.route("**/*", permitted)
 
-    def run(self, catalog, apps, only):
+    def run(self, catalog, apps, only, mode=None):
         failures = []
         for app, recipe in catalog.recipes():
             if apps and app not in apps:
@@ -144,14 +144,18 @@ class HelpShooter:
             for name, shot in shots.items():
                 if only and name not in only:
                     continue
-                pairs = [(lang, mode) for lang in LANGS for mode in THEMES]
+                pairs = [(lang, theme) for lang in LANGS for theme in THEMES if mode in (None, theme)]
                 if shot.get("fixed"):
-                    pairs = [tuple(meta["nativeVariant"].split("-"))]
+                    lang, default = meta["nativeVariant"].split("-")
+                    theme = mode or default
+                    pairs = [(lang, theme)] if theme in shot.get("modes", [default]) else []
+                if not pairs:
+                    continue
                 variants = {}
-                for lang, mode in pairs:
-                    key = f"{lang}-{mode}-{name}"
+                for lang, theme in pairs:
+                    key = f"{lang}-{theme}-{name}"
                     try:
-                        variants[key] = self.capture(shot, lang, mode, app)
+                        variants[key] = self.capture(shot, lang, theme, app)
                     except (Error, RuntimeError, KeyError) as exc:
                         failures.append(f"{app}/{key}: {str(exc).splitlines()[0]}")
                         print(failures[-1], flush=True)
@@ -174,6 +178,7 @@ def main():
     p.add_argument("--state", action="append", default=[], metavar="APP=JSON",
                    help="private Playwright storage state from the isolated demo instance")
     p.add_argument("--fake-camera", action="store_true", help="use Edge's synthetic camera input")
+    p.add_argument("--mode", choices=THEMES, help="capture only this mode; select it in the demo app first")
     args = p.parse_args()
     try:
         base = loopback_origin(args.base.rstrip("/"))
@@ -189,7 +194,7 @@ def main():
         browser = pw.chromium.launch(channel="msedge", args=flags)
         try:
             shooter = HelpShooter(browser, base, args.out, native, states)
-            return 0 if shooter.run(ShotCatalog(ROOT), args.app, args.only) else 1
+            return 0 if shooter.run(ShotCatalog(ROOT), args.app, args.only, args.mode) else 1
         finally:
             browser.close()
 
