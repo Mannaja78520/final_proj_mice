@@ -1,7 +1,7 @@
 # help-friend-repos-1124 — Put Help + a main-page Help button into Face_Regonize and Photobooth
 Owner: codex:11240915-1a99
-Updated: 2026-11-24T09:19+07:00
-Last commit: 9302b2d (Mice clone reconciliation)
+Updated: 2026-11-24T09:28+07:00
+Last commit: e4af671 (Mice source parity and backups)
 
 ## User orders (Thai, 2026-11-24)
 - cmsg_01R7BbYxaTb3Yv9YS3gQaaA3Q6QC2jUpeSUV6Yw8pqH9TK: "put facereg and photobooth into the friend's git now; the game: let me look first for a moment"
@@ -38,35 +38,39 @@ Both friend repos have branch add-mice-help pushed (or the exact blocker is writ
 our friend-request doc updated, nothing in All-Jao-Games touched, report in Thai in "Result" below.
 
 ## Doing now
-Implement same-origin Help delivery through Vite and point both app UIs to /help/en.html. Backed-up inherited diff retained.
+Verify the updated friend trees. Run builds and frontend checks, then start the built apps with isolated data and inspect browser screenshots for both links and guide images.
 
 ## Done
 - Took the task as codex:11240915-1a99 on detached Mice HEAD 683f59f (remote handoff branch).
 - Reconciled clone branches. Face base e998b0e, package 3ea59d1, two pending UI edits and prior .vite5180.log. Photobooth base 858f0b6, package ee9e201, clean tree.
 - A58-24 registered in system plan. Backed up both base trees plus inherited Face edits under mice_system/.local/backup/help-friend-repos-1124. Compared all 31 Face and 37 Photobooth package files to source by SHA-256.
+- Implemented same-origin /help/index.html in both apps. The source package contains Hub HTML fragments with data-shot references, so Vite generates complete localized guide pages and resolves their bundled image URLs. Photobooth Help is in organizer navigation.
 
 ## Next
-Serve the existing help packages through each frontend's Vite dev and production entry points. Use Face dashboard/login and Photobooth organizer. Test isolated from 8000/5173.
+Build, run against throwaway fixtures on isolated ports, inspect screenshots, then make the second commit in each clone.
 
 ## Facts found
 - Face frontend/vite.config.ts proxies /api to port 8000 by default. Isolated tests must override it or use a build with a separate backend. Face backend/app/main.py serves frontend/dist.
 - Photobooth frontend/vite.config.ts supports PHOTOBOOTH_KIOSK_PORT. Production _mount_spa in backend/src/photobooth/main.py serves files in frontend/dist.
-- Existing Face links target port 8642. Both apps must link to local /help/en.html.
+- Existing Face links target port 8642. Both apps link to local /help/index.html. Original language fragments stay byte-identical for Hub discovery.
 
 ## File status
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | Mice: handoff/tasks/help-friend-repos-1124.md | Session and clone inventory | In progress | git diff --check | this checkpoint |
-| Face: frontend/src/components/Layout.tsx | Existing Hub Help link, switch to standalone | Pending | Prior typecheck, browser not run | uncommitted |
-| Face: frontend/src/pages/Login.tsx | Existing Hub Help link, switch to standalone | Pending | Prior typecheck, browser not run | uncommitted |
+| Face: frontend/src/components/Layout.tsx | Standalone Help in dashboard header | Edited | not run | uncommitted |
+| Face: frontend/src/pages/Login.tsx | Standalone Help on login | Edited | not run | uncommitted |
 | Face: .vite5180.log | Inherited test output, preserve outside commit | Existing | not run | uncommitted |
-| Face: frontend/vite.config.ts | Register Help serving/build plugin | Pending | not run | uncommitted |
-| Face: frontend/vite.help.ts | Serve/copy the root help package | Pending | not run | uncommitted |
-| Photobooth: frontend/vite.config.ts | Register Help serving/build plugin | Pending | not run | uncommitted |
-| Photobooth: frontend/vite.help.ts | Serve/copy the root help package | Pending | not run | uncommitted |
-| Photobooth: frontend/src/features/admin/components/AdminLayout.tsx | Organizer Help link | Pending | not run | uncommitted |
+| Face: frontend/vite.config.ts | Register bundled Help plugin | Edited | not run | uncommitted |
+| Face: frontend/vite.help.ts | Serve guide in dev and emit guide with screenshots in build | Added | All source screenshot references resolve | uncommitted |
+| Photobooth: frontend/vite.config.ts | Register bundled Help plugin | Edited | not run | uncommitted |
+| Photobooth: frontend/vite.help.ts | Serve guide in dev and emit guide with screenshots in build | Added | All source screenshot references resolve | uncommitted |
+| Photobooth: frontend/src/features/admin/components/AdminLayout.tsx | Standalone Help in organizer navigation | Edited | not run | uncommitted |
 | Mice: docs/friend/friend_requests_all_2026-11-23.md | Record verified branches and Hub discovery | Pending | not run | uncommitted |
+
+| Face: help/standalone.html | Locale navigation and standalone app links | Added | not run | uncommitted |
+| Photobooth: help/standalone.html | Locale navigation and standalone app links | Added | not run | uncommitted |
 
 Package rows use clone names as prefixes.
 | Face: help/en.html | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
