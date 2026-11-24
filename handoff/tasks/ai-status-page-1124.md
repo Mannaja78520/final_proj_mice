@@ -1,7 +1,7 @@
 # ai-status-page-1124 — "AI work" status page in the MICE hub
-Owner: gpt-codex (Claude out of quota). Queue: AFTER handoff/tasks/help-friend-repos-1124.md.
-Updated: 2026-11-24 02:40
-Last commit: (none)
+Owner: codex:11240934-20dc
+Updated: 2026-11-24 09:35 +0700
+Last commit: this checkpoint (branch claude/project-thread-181856)
 
 ## User ask (Thai, 2026-11-24)
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LaPHxqrTy1gy5i5h9CNTes: "Is there a place to see which GPT is working and how far it has got?"
@@ -28,7 +28,19 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Not started (waiting for help-friend-repos-1124 to finish).
+Reconcile the shared branch and identify the Hub access, launcher, Help and QC integration points. Friend Help remains under its separate owner.
+
+## Done
+- Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
+- Pulled the shared branch at d7cd8b7. Worktree started clean and detached because the named branch is checked out by the friend Help job.
+
+## Next
+Register the system plan row and claim the implementation paths. Check that the friend Help job has no overlapping source edits.
+
+## File status
+| File | Change | State | Verification | Commit |
+| --- | --- | --- | --- | --- |
+| handoff/tasks/ai-status-page-1124.md | Take task and record branch baseline | In progress | git diff --check | this checkpoint |
 
 ## Result
 (Codex: PR link, screenshot paths, what you verified; report in Thai)
