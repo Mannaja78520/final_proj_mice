@@ -1,0 +1,34 @@
+# ai-status-page-1124 — "AI work" status page in the MICE hub
+Owner: gpt-codex (Claude out of quota). Queue: AFTER handoff/tasks/help-friend-repos-1124.md.
+Updated: 2026-11-24 02:40
+Last commit: (none)
+
+## User ask (Thai, 2026-11-24)
+cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LaPHxqrTy1gy5i5h9CNTes: "Is there a place to see which GPT is working and how far it has got?"
+cmsg_01R7BbYxaTb3Yv9YS3gQaaA34v2d2dJ3DAzLRRVi6YfuDN: "Can it be shown in the app?"
+
+## Goal
+A page in the MICE hub (Tools/admin area, a card in the Tools list like other apps or a Home tab; follow docs/web_style.md,
+shared/web/mice-ui.js parts, themes, designer-first: plain words, technical detail behind the technical switch) that shows,
+live, every AI task: which AI/model (Codex, Gemini, Claude; from the task's `Owner:` line), task name, "Doing now",
+last update time (from the file/git, shown as "x minutes ago"), state (working / done / blocked / stale: no update for N hours),
+Last commit + branch, link-free plain text. Source = handoff/tasks/*.md + HANDOFF.md (read-only, parsed by a small OOP module,
+e.g. main_python/ai_status.py + route in a hub_api_*.py; no hardcoded task list: a new task file appears by itself).
+Auto-refresh every ~15 s (light client for Android TV Chrome 75), works on a phone, 4 languages (shared/web/lang/<code>.json),
+Help updated in all 4 languages with a real screenshot (apps/<id>/help format from PR #233 if it is an app; else hub Help part), Rule 11.
+Handle odd files (missing fields, huge files: read only the head sections, cap size), never expose secrets; admin-only if the
+hub has an access tier for Tools.
+Also show the running Codex/Claude work if cheap: parse nothing else; do NOT shell out to read logs.
+
+## Rules
+CLAUDE.md applies (read HANDOFF.md, update this file + WIP push after every step). New QC check (parser on odd/empty/huge files,
+route returns the list, designer-first words), sabotage-prove it. Full QC once; draft PR from branch claude/project-thread-181856;
+merge when green or equal to main's known env failures (standing approval cmsg_01R7BbYxaTb3Yv9YS3gQaaA3XEQcQQyoUgXwMT6wXgfeYv);
+then rebuild MiceHub.exe from a clean main worktree on the PC (standing approvals cmsg_01R7BbYxaTb3Yv9YS3gQaaA39kL7igdPaE1F66ZxWq6meq,
+cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
+
+## Doing now
+Not started (waiting for help-friend-repos-1124 to finish).
+
+## Result
+(Codex: PR link, screenshot paths, what you verified; report in Thai)
