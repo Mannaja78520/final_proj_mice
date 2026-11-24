@@ -59,7 +59,8 @@ same file. History is in `docs/BRIDGE.md` and the STATE block of
   Write each durable fact yourself (`tools/memory.py add <slug> "<line>" <type> "<body>"`),
   no secrets (public repo); `tools/memory.py stale` lists dead paths.
 - Stuck after 2 tries or long mechanical work: GPT Codex via the task file
-  (`gpt-overflow-rule`). Rule files change only when the user orders it (`rule-files-need-user-order`).
+  (`gpt-overflow-rule`); start it with `tools/codex_dispatch.py` so the job is visible in the
+  Codex app (`codex-dispatch-visible`). Rule files change only when the user orders it (`rule-files-need-user-order`).
 
 ## Save tokens (user 2026-10-21)
 
