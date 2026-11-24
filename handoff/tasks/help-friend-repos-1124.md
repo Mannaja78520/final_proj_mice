@@ -1,7 +1,7 @@
 # help-friend-repos-1124 — Put Help + a main-page Help button into Face_Regonize and Photobooth
 Owner: codex:11240915-1a99
-Updated: 2026-11-24T09:43+07:00
-Last commit: d70984d (Mice browser checkpoint)
+Updated: 2026-11-24T09:44+07:00
+Last commit: Face 7436718, Photobooth d11cffa (Help buttons). Mice a0d3f79 (browser proof)
 
 ## User orders (Thai, 2026-11-24)
 - cmsg_01R7BbYxaTb3Yv9YS3gQaaA3Q6QC2jUpeSUV6Yw8pqH9TK: "put facereg and photobooth into the friend's git now; the game: let me look first for a moment"
@@ -38,12 +38,13 @@ Both friend repos have branch add-mice-help pushed (or the exact blocker is writ
 our friend-request doc updated, nothing in All-Jao-Games touched, report in Thai in "Result" below.
 
 ## Doing now
-Review exact changed paths and commit the verified Help button changes separately in both friend clones.
+Push the two verified add-mice-help branches to their ChocolateOwO origin with no force. Record the first refusal per repo and stop that push.
 
 ## Done
 - Face base e998b0e and package 3ea59d1. Photobooth base 858f0b6 and package ee9e201. SHA-256 matched all 31 and 37 original files to source. Backed up both bases and the inherited Face diff in mice_system/.local/backup/help-friend-repos-1124.
 - Registered A58-24 in the real system plan. Both Vite builds passed. Photobooth lint and 397 frontend tests passed (tests ran before the import-path-only correction).
 - Edge passed with both actual clone servers and temporary databases. Face Login and dashboard, plus Photobooth organizer, opened own-origin Help. Each app loaded 18 images in every locale. Dev and production rendered identical pages in all 4 locales. Inspected all 10 screenshots in E:/work/help_friend_repos_1124/.local/friend-help-evidence.
+- Committed the exact tested Help paths in Face 7436718 and Photobooth d11cffa. Only inherited .vite5180.log remains untracked in Face.
 
 ## Next
 Push verified add-mice-help branches without force. Update the Mice friend request with actual publication status and Hub discovery.
@@ -57,17 +58,17 @@ Push verified add-mice-help branches without force. Update the Mice friend reque
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | Mice: handoff/tasks/help-friend-repos-1124.md | Track scope, verification and publication | In progress | git diff --check | this checkpoint |
-| Face: frontend/src/components/Layout.tsx | Standalone Help in dashboard header | Verified | Build + Edge on isolated app | uncommitted |
-| Face: frontend/src/pages/Login.tsx | Standalone Help on login | Verified | Build + Edge on isolated app | uncommitted |
+| Face: frontend/src/components/Layout.tsx | Standalone Help in dashboard header | Committed | Build + Edge on isolated app | 7436718 |
+| Face: frontend/src/pages/Login.tsx | Standalone Help on login | Committed | Build + Edge on isolated app | 7436718 |
 | Face: .vite5180.log | Inherited test output, preserve outside commit | Existing | not run | uncommitted |
-| Face: frontend/vite.config.ts | Register bundled Help plugin | Verified | Build + Edge on isolated app | uncommitted |
-| Face: frontend/vite.help.ts | Serve guide in dev and emit guide with screenshots in build | Verified | Build + Edge on isolated app | uncommitted |
-| Photobooth: frontend/vite.config.ts | Register bundled Help plugin | Verified | Build + Edge on isolated app | uncommitted |
-| Photobooth: frontend/vite.help.ts | Serve guide in dev and emit guide with screenshots in build | Verified | Build + Edge on isolated app | uncommitted |
-| Photobooth: frontend/src/features/admin/components/AdminLayout.tsx | Standalone Help in organizer navigation | Verified | Build + Edge on isolated app | uncommitted |
+| Face: frontend/vite.config.ts | Register bundled Help plugin | Committed | Build + Edge on isolated app | 7436718 |
+| Face: frontend/vite.help.ts | Serve guide in dev and emit guide with screenshots in build | Committed | Build + Edge on isolated app | 7436718 |
+| Photobooth: frontend/vite.config.ts | Register bundled Help plugin | Committed | Build + Edge on isolated app | d11cffa |
+| Photobooth: frontend/vite.help.ts | Serve guide in dev and emit guide with screenshots in build | Committed | Build + Edge on isolated app | d11cffa |
+| Photobooth: frontend/src/features/admin/components/AdminLayout.tsx | Standalone Help in organizer navigation | Committed | Build + Edge on isolated app | d11cffa |
 | Mice: docs/friend/friend_requests_all_2026-11-23.md | Record verified branches and Hub discovery | Pending | not run | uncommitted |
-| Face: help/standalone.html | Locale navigation and standalone app links | Verified | Build + Edge on isolated app | uncommitted |
-| Photobooth: help/standalone.html | Locale navigation and standalone app links | Verified | Build + Edge on isolated app | uncommitted |
+| Face: help/standalone.html | Locale navigation and standalone app links | Committed | Build + Edge on isolated app | 7436718 |
+| Photobooth: help/standalone.html | Locale navigation and standalone app links | Committed | Build + Edge on isolated app | d11cffa |
 | Mice: docs/system_integral.html | A58-24 live plan row, mirrored from task workspace | Live state | plan.py show | uncommitted |
 | Mice: docs/system_integral_state.js | Generated system plan state | Live state | plan.py show | uncommitted |
 | Mice: docs/BRIDGE.md | Shared claim under mutex | Live state | Claim recorded | uncommitted |
