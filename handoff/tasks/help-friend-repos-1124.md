@@ -1,7 +1,7 @@
 # help-friend-repos-1124 — Put Help + a main-page Help button into Face_Regonize and Photobooth
 Owner: codex:11240915-1a99
-Updated: 2026-11-24T09:48+07:00
-Last commit: d1c1ff2 (Mice branch-push checkpoint)
+Updated: 2026-11-24T09:49+07:00
+Last commit: 18fed68 (Mice docs commit), a0dccf5 (handoff)
 
 ## User orders (Thai, 2026-11-24)
 - cmsg_01R7BbYxaTb3Yv9YS3gQaaA3Q6QC2jUpeSUV6Yw8pqH9TK: "put facereg and photobooth into the friend's git now; the game: let me look first for a moment"
@@ -34,7 +34,7 @@ NOT allowed: All-Jao-Games (HOLD, user wants to look first: do not touch, do not
 Both add-mice-help branches pushed or exact blockers recorded, screenshots checked, friend-request doc updated, All-Jao-Games untouched, and Result recorded in Thai.
 
 ## Doing now
-Commit the Mice docs status section, claim the shared QC driver, and run the merge gate on the isolated docs branch.
+Run full Mice QC on docs branch commit 18fed68 in the isolated worktree. Claim the shared QC driver first and release it when the run exits.
 
 ## Done
 - Face base e998b0e and package 3ea59d1. Photobooth base 858f0b6 and package ee9e201. SHA-256 matched all 31 and 37 original files to source. Backed up both bases and the inherited Face diff in mice_system/.local/backup/help-friend-repos-1124.
@@ -67,7 +67,7 @@ Photobooth push was not executed. Automatic approval review rejected publishing 
 | Photobooth: frontend/vite.config.ts | Register bundled Help plugin | Committed | Build + Edge on isolated app | d11cffa |
 | Photobooth: frontend/vite.help.ts | Serve guide in dev and emit guide with screenshots in build | Committed | Build + Edge on isolated app | d11cffa |
 | Photobooth: frontend/src/features/admin/components/AdminLayout.tsx | Standalone Help in organizer navigation | Committed | Build + Edge on isolated app | d11cffa |
-| Mice: docs/friend/friend_requests_all_2026-11-23.md | Record Face published, Photobooth pending and Hub discovery | Edited | git diff --check | uncommitted |
+| Mice: docs/friend/friend_requests_all_2026-11-23.md | Record Face published, Photobooth pending and Hub discovery | Committed | git diff --check; full QC pending | 18fed68 |
 | Face: help/standalone.html | Locale navigation and standalone app links | Committed | Build + Edge on isolated app | 7436718 |
 | Photobooth: help/standalone.html | Locale navigation and standalone app links | Committed | Build + Edge on isolated app | d11cffa |
 | Mice: docs/system_integral.html | A58-24 live plan row, mirrored from task workspace | Live state | plan.py show | uncommitted |
