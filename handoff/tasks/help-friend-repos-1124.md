@@ -1,7 +1,7 @@
 # help-friend-repos-1124 — Put Help + a main-page Help button into Face_Regonize and Photobooth
 Owner: codex:11240915-1a99
-Updated: 2026-11-24T09:49+07:00
-Last commit: 18fed68 (Mice docs commit), a0dccf5 (handoff)
+Updated: 2026-11-24T09:52+07:00
+Last commit: 18fed68 (Mice docs), 6af5d57 (gate checkpoint)
 
 ## User orders (Thai, 2026-11-24)
 - cmsg_01R7BbYxaTb3Yv9YS3gQaaA3Q6QC2jUpeSUV6Yw8pqH9TK: "put facereg and photobooth into the friend's git now; the game: let me look first for a moment"
@@ -34,7 +34,7 @@ NOT allowed: All-Jao-Games (HOLD, user wants to look first: do not touch, do not
 Both add-mice-help branches pushed or exact blockers recorded, screenshots checked, friend-request doc updated, All-Jao-Games untouched, and Result recorded in Thai.
 
 ## Doing now
-Run full Mice QC on docs branch commit 18fed68 in the isolated worktree. Claim the shared QC driver first and release it when the run exits.
+Publish the isolated Mice docs branch and open its draft PR. Shared QC driver remains with A59-2 until its owner releases it.
 
 ## Done
 - Face base e998b0e and package 3ea59d1. Photobooth base 858f0b6 and package ee9e201. SHA-256 matched all 31 and 37 original files to source. Backed up both bases and the inherited Face diff in mice_system/.local/backup/help-friend-repos-1124.
@@ -43,9 +43,10 @@ Run full Mice QC on docs branch commit 18fed68 in the isolated worktree. Claim t
 - Committed the exact tested Help paths in Face 7436718 and Photobooth d11cffa. Only inherited .vite5180.log remains untracked in Face.
 - Face branch pushed and ls-remote verified 7436718baa5055e778eeded3fdbfc6ecfa8d5a7c.
 - Updated the Mice friend request in .local/mice-friend-doc with actual branch status, commit IDs, standalone links and the Hub help/help.json lookup.
+- Mice full QC interrupted after detecting A59-2 had claimed the shared driver first. Stopped only our run, released our claim, and restored 8 transient generated files in our isolated docs worktree. No full-QC result.
 
 ## Next
-Run docs checks and the Mice merge gate in the isolated docs worktree. Open the requested draft PR, merge only when green.
+After the shared QC driver is explicitly released, rerun the full gate. Merge the Mice docs PR only when green. Publish Photobooth only after explicit authorization.
 
 ## Blocked
 Photobooth push was not executed. Automatic approval review rejected publishing friend source changes to ChocolateOwO without explicit trusted user authorization. Requested specific authorization for add-mice-help at d11cffa. The commit and clone are intact.
@@ -67,7 +68,7 @@ Photobooth push was not executed. Automatic approval review rejected publishing 
 | Photobooth: frontend/vite.config.ts | Register bundled Help plugin | Committed | Build + Edge on isolated app | d11cffa |
 | Photobooth: frontend/vite.help.ts | Serve guide in dev and emit guide with screenshots in build | Committed | Build + Edge on isolated app | d11cffa |
 | Photobooth: frontend/src/features/admin/components/AdminLayout.tsx | Standalone Help in organizer navigation | Committed | Build + Edge on isolated app | d11cffa |
-| Mice: docs/friend/friend_requests_all_2026-11-23.md | Record Face published, Photobooth pending and Hub discovery | Committed | git diff --check; full QC pending | 18fed68 |
+| Mice: docs/friend/friend_requests_all_2026-11-23.md | Record Face published, Photobooth pending and Hub discovery | Committed | git diff --check; full QC interrupted | 18fed68 |
 | Face: help/standalone.html | Locale navigation and standalone app links | Committed | Build + Edge on isolated app | 7436718 |
 | Photobooth: help/standalone.html | Locale navigation and standalone app links | Committed | Build + Edge on isolated app | d11cffa |
 | Mice: docs/system_integral.html | A58-24 live plan row, mirrored from task workspace | Live state | plan.py show | uncommitted |
