@@ -1,0 +1,195 @@
+{
+  "all-jao-launcher": {
+    "url": "/app/all-jao/",
+    "clip": ".card:has(#openBtn)",
+    "ready": "#openBtn"
+  },
+  "all-jao-games-box": {
+    "url": "/play/all-jao/",
+    "clip": "#page-guest .game-grid",
+    "ready": "#page-guest .game-grid",
+    "native": true,
+    "steps": [
+      {
+        "click": ".continue-guest-button"
+      }
+    ]
+  },
+  "game-login": {
+    "native": true,
+    "fixed": true,
+    "url": "/play/all-jao/",
+    "ready": ".continue-guest-button"
+  },
+  "game-wheel": {
+    "native": true,
+    "fixed": true,
+    "url": "/play/all-jao/",
+    "ready": "#page-wheel h1",
+    "steps": [
+      {
+        "click": ".continue-guest-button"
+      },
+      {
+        "click": "#page-guest button[data-page=\"page-wheel\"]"
+      }
+    ],
+    "viewport": {
+      "width": 1440,
+      "height": 1200
+    }
+  },
+  "game-memory": {
+    "native": true,
+    "fixed": true,
+    "url": "/play/all-jao/",
+    "ready": "#page-memory h1",
+    "steps": [
+      {
+        "click": ".continue-guest-button"
+      },
+      {
+        "click": "#page-guest button[data-page=\"page-memory\"]"
+      },
+      {
+        "click": "#memory-start"
+      }
+    ]
+  },
+  "game-claw": {
+    "native": true,
+    "fixed": true,
+    "url": "/play/all-jao/",
+    "ready": "#page-claw h1",
+    "steps": [
+      {
+        "click": ".continue-guest-button"
+      },
+      {
+        "click": "#page-guest button[data-page=\"page-claw\"]"
+      }
+    ],
+    "viewport": {
+      "width": 1440,
+      "height": 1200
+    }
+  },
+  "game-quiz": {
+    "native": true,
+    "fixed": true,
+    "url": "/play/all-jao/",
+    "ready": "#page-quiz h1",
+    "steps": [
+      {
+        "click": ".continue-guest-button"
+      },
+      {
+        "click": "#page-guest button[data-page=\"page-wheel\"]"
+      },
+      {
+        "click": "#page-wheel button[data-page=\"page-quiz\"]"
+      }
+    ]
+  },
+  "game-wheel-admin": {
+    "native": true,
+    "fixed": true,
+    "url": "/play/all-jao/",
+    "ready": "#page-admin h1",
+    "steps": [
+      {
+        "fill": {
+          "selector": "#username",
+          "env": "ALL_JAO_DEMO_USER"
+        }
+      },
+      {
+        "fill": {
+          "selector": "#password",
+          "env": "ALL_JAO_DEMO_PASSWORD"
+        }
+      },
+      {
+        "click": "#login-form button[type=submit]"
+      }
+    ]
+  },
+  "game-memory-admin": {
+    "native": true,
+    "fixed": true,
+    "url": "/play/all-jao/",
+    "ready": "#page-memory-admin h1",
+    "steps": [
+      {
+        "fill": {
+          "selector": "#username",
+          "env": "ALL_JAO_DEMO_USER"
+        }
+      },
+      {
+        "fill": {
+          "selector": "#password",
+          "env": "ALL_JAO_DEMO_PASSWORD"
+        }
+      },
+      {
+        "click": "#login-form button[type=submit]"
+      },
+      {
+        "click": "#page-admin [data-page=\"page-memory-admin\"]"
+      }
+    ]
+  },
+  "game-claw-admin": {
+    "native": true,
+    "fixed": true,
+    "url": "/play/all-jao/",
+    "ready": "#page-claw-admin h1",
+    "steps": [
+      {
+        "fill": {
+          "selector": "#username",
+          "env": "ALL_JAO_DEMO_USER"
+        }
+      },
+      {
+        "fill": {
+          "selector": "#password",
+          "env": "ALL_JAO_DEMO_PASSWORD"
+        }
+      },
+      {
+        "click": "#login-form button[type=submit]"
+      },
+      {
+        "click": "#page-admin [data-page=\"page-claw-admin\"]"
+      }
+    ]
+  },
+  "game-quiz-admin": {
+    "native": true,
+    "fixed": true,
+    "url": "/play/all-jao/",
+    "ready": "#page-quiz-admin h1",
+    "steps": [
+      {
+        "fill": {
+          "selector": "#username",
+          "env": "ALL_JAO_DEMO_USER"
+        }
+      },
+      {
+        "fill": {
+          "selector": "#password",
+          "env": "ALL_JAO_DEMO_PASSWORD"
+        }
+      },
+      {
+        "click": "#login-form button[type=submit]"
+      },
+      {
+        "click": "#page-admin [data-page=\"page-quiz-admin\"]"
+      }
+    ]
+  }
+}

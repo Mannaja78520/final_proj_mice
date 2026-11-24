@@ -156,6 +156,9 @@ def reconize_package(t, app_help):
 
     t.eq(contents(package) == contents(original), True,
          "Reconize drop-in Help matches the installed fallback byte for byte")
+    jao = F.CODE / "docs/friend/all_jao_help_package/help"
+    t.eq(contents(jao) == contents(F.CODE / "apps/all-jao/help"), True,
+         "All-Jao drop-in Help matches the installed fallback byte for byte")
     partner = {"folder": str(package.parent)}
     hub = SimpleNamespace(
         read_partners=lambda: {"partners": {"reconize": partner}},

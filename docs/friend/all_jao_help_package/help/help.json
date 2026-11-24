@@ -1,0 +1,17 @@
+{
+  "title": {
+    "th": "All-Jao Games",
+    "en": "All-Jao Games",
+    "zh": "All-Jao Games",
+    "ja": "All-Jao Games"
+  },
+  "summary": {
+    "th": "เปิดเกมของงานและดูวิธีรับรางวัล",
+    "en": "Open event games and learn how prizes are awarded",
+    "zh": "打开活动游戏并了解领奖方式",
+    "ja": "イベントゲームを開いて景品の受け取り方を確認する"
+  },
+  "group": "use",
+  "order": 70,
+  "nativeVariant": "th-light"
+}
