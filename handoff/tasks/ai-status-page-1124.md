@@ -2,7 +2,7 @@
 Owner: codex:11240934-20dc
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-24T09:59:05+07:00
+Updated: 2026-11-24T10:01:44+07:00
 Last commit: this checkpoint (branch claude/project-thread-181856)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Recapture Help in all four languages and both themes. Compare the browser images with the localized copy and check images load in contextual Help.
+Capture the final eight Help images with the shared language picker mounted. Verify the images in contextual Hub Help, then run full QC.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -44,6 +44,8 @@ Recapture Help in all four languages and both themes. Compare the browser images
 
 - Targeted QC 83/0. Administrator access and read-bound sabotages each tripped the intended assertion. The first read-bound mutation left the bounded stream read intact, so it was corrected and rerun.
 - Edge at 360px verified login, Tools link, four state rows, technical toggle, offline last view and 15.0 s refresh. Initial screenshots revealed literal question marks from PowerShell redirection. Rewrote translations with a UTF-8 source file, added native-script assertions and fixed heading spacing.
+
+- Native text and the shared Chrome 75 DOM fallback passed the second Edge run. Review also confirmed the admin gate and bounded parser. Fixed a shared-header startup race by using one language script loader.
 
 ## Next
 Run full QC on the final feature tree, then review, draft PR and release.
