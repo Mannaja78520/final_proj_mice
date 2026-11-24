@@ -1,6 +1,8 @@
 # ai-status-page-1124 — "AI work" status page in the MICE hub
 Owner: codex:11240934-20dc
-Updated: 2026-11-24 09:35 +0700
+Plan: system A59-2
+Branch: claude/project-thread-181856
+Updated: 2026-11-24T09:38:16+07:00
 Last commit: this checkpoint (branch claude/project-thread-181856)
 
 ## User ask (Thai, 2026-11-24)
@@ -28,19 +30,58 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Reconcile the shared branch and identify the Hub access, launcher, Help and QC integration points. Friend Help remains under its separate owner.
+Run the design panel before implementation. Assess a read-only admin API, a Tools card, and four-language UI and Hub Help. Use only repository task files and linked Mice worktrees.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
 - Pulled the shared branch at d7cd8b7. Worktree started clean and detached because the named branch is checked out by the friend Help job.
 
+- Registered A59-2 in the real system plan and claimed exact files in the shared bridge. The friend job owns separate paths.
+- Pushed initial checkpoint cbfb06a after rebasing concurrent work.
+
 ## Next
-Register the system plan row and claim the implementation paths. Check that the friend Help job has no overlapping source edits.
+Implement the task reader, admin route and Tools page together with localized Hub Help. Then capture the Help screenshots and prove the QC check.
+
+## Facts found
+- main_python/hub_api_apps.py:50 supplies the registry-driven Tools list. A manifest in apps/ adds a tile.
+- main_python/main.py:2444 and main_python/hub_auth.py:574 expose session identity and the administrator role.
+- main_python/main.py:79 resolves source and frozen installs separately. Use the writable Hub DATA root for live task files.
+- main_python/web/help/shots.json and tools/help_shots.py define browser-captured Hub Help images.
 
 ## File status
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | handoff/tasks/ai-status-page-1124.md | Take task and record branch baseline | In progress | git diff --check | this checkpoint |
+
+| main_python/ai_status.py | Planned AI work integration | Pending | not run | uncommitted |
+| main_python/hub_api_apps.py | Planned AI work integration | Pending | not run | uncommitted |
+| apps/ai-status/app.json | Planned AI work integration | Pending | not run | uncommitted |
+| apps/ai-status/index.html | Planned AI work integration | Pending | not run | uncommitted |
+| apps/ai-status/status.js | Planned AI work integration | Pending | not run | uncommitted |
+| main_python/web/help/parts/hub.html | Planned AI work integration | Pending | not run | uncommitted |
+| main_python/web/help/shots.json | Planned AI work integration | Pending | not run | uncommitted |
+| main_python/web/help.html | Planned AI work integration | Pending | not run | uncommitted |
+| docs/systems.json | Planned AI work integration | Pending | not run | uncommitted |
+| docs/systems/hub-apps.md | Planned AI work integration | Pending | not run | uncommitted |
+| qc/checks/check_ai_status.py | Planned AI work integration | Pending | not run | uncommitted |
+| shared/web/lang/en.json | Planned AI work integration | Pending | not run | uncommitted |
+| shared/web/lang/th.json | Planned AI work integration | Pending | not run | uncommitted |
+| shared/web/lang/ja.json | Planned AI work integration | Pending | not run | uncommitted |
+| shared/web/lang/zh.json | Planned AI work integration | Pending | not run | uncommitted |
+| shared/web/lang/help/en.json | Planned AI work integration | Pending | not run | uncommitted |
+| shared/web/lang/help/ja.json | Planned AI work integration | Pending | not run | uncommitted |
+| shared/web/lang/help/zh.json | Planned AI work integration | Pending | not run | uncommitted |
+| main_python/web/help/img/en-light-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
+| main_python/web/help/img/en-dark-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
+| main_python/web/help/img/th-light-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
+| main_python/web/help/img/th-dark-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
+| main_python/web/help/img/ja-light-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
+| main_python/web/help/img/ja-dark-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
+| main_python/web/help/img/zh-light-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
+| main_python/web/help/img/zh-dark-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
+
+## Blocked
+No current blocker. A58-24 is still running independently. Avoid shared QC, build and restart resources until claimed.
 
 ## Result
 (Codex: PR link, screenshot paths, what you verified; report in Thai)
