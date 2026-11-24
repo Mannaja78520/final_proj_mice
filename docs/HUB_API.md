@@ -19,6 +19,7 @@ A `-` in the table means the code has no comment for that URL yet.
 | Method | Path | What | Query values | Defined in |
 |---|---|---|---|---|
 | GET | `/api/access` | - | - | hub_api_apps.py |
+| GET | `/api/ai-status` | - | - | hub_api_apps.py |
 | GET | `/api/all-jao/start` | - | - | hub_api_apps.py |
 | GET | `/api/allmods` | every module on every PC, this one included scan_hubs() already finds the other hubs on this subnet (it is wha | force | main.py |
 | GET | `/api/app` | - | - | hub_api_support.py |

@@ -10,6 +10,13 @@
    "file": "hub_api_apps.py"
   },
   {
+   "path": "/api/ai-status",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_apps.py"
+  },
+  {
    "path": "/api/all-jao/start",
    "method": "GET",
    "what": "",
