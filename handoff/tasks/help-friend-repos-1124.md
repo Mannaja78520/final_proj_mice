@@ -1,7 +1,7 @@
 # help-friend-repos-1124 — Put Help + a main-page Help button into Face_Regonize and Photobooth
 Owner: codex:11240915-1a99
-Updated: 2026-11-24T09:45+07:00
-Last commit: Face 7436718 (published), Photobooth d11cffa (local). Mice 59c9c6f (commit checkpoint)
+Updated: 2026-11-24T09:48+07:00
+Last commit: d1c1ff2 (Mice branch-push checkpoint)
 
 ## User orders (Thai, 2026-11-24)
 - cmsg_01R7BbYxaTb3Yv9YS3gQaaA3Q6QC2jUpeSUV6Yw8pqH9TK: "put facereg and photobooth into the friend's git now; the game: let me look first for a moment"
@@ -16,9 +16,7 @@ NOT allowed: All-Jao-Games (HOLD, user wants to look first: do not touch, do not
 ## Work (per repo; use a clean clone/worktree under E:\work, never their working tree if it has uncommitted changes)
 1. Read-only first: git status, branch, remote, last commit. Back up (note commit + copy under mice_system\.local\backup).
 2. New branch `add-mice-help` from the repo's default branch.
-3. Copy the package: Face_Regonize <- docs/friend/reconize_help_package/help -> `help/` at repo root;
-   Photobooth <- docs/friend/photobooth_help_package/help -> `help/` at repo root (packages are in mice_system main, PRs #245, #247).
-   Commit: "Add MICE Help package (help/)".
+3. Copy docs/friend/reconize_help_package/help and docs/friend/photobooth_help_package/help from Mice main (#245, #247) to each repo root. Commit "Add MICE Help package (help/)".
 4. Main-page Help button: read their frontend, reuse their own button style/classes, no new dependencies.
    Reconize: dashboard header (and login page if simple). Photobooth: organizer/admin main page and, only if it
    does not disturb the guest flow, a small Help on the start screen. Must work STANDALONE (no MiceHub): serve/link their
@@ -30,15 +28,13 @@ NOT allowed: All-Jao-Games (HOLD, user wants to look first: do not touch, do not
 7. Also update docs/friend/friend_requests_all_2026-11-23.md in mice_system (our repo, new branch from main, draft PR,
    merge per standing approval cmsg_01R7BbYxaTb3Yv9YS3gQaaA3XEQcQQyoUgXwMT6wXgfeYv when green): say the Help is now in the
    friend repos on branch add-mice-help (+ commit ids) and the friend may merge it, and how the hub picks it up.
-8. Update this file after EVERY step and push a WIP commit to branch claude/project-thread-181856 of mice_system.
-   Never put keys/passwords/real data in git.
+8. Update this file after EVERY step and push WIP to Mice claude/project-thread-181856. Keep keys, passwords and real data out of Git.
 
 ## Done when
-Both friend repos have branch add-mice-help pushed (or the exact blocker is written here), screenshots checked,
-our friend-request doc updated, nothing in All-Jao-Games touched, report in Thai in "Result" below.
+Both add-mice-help branches pushed or exact blockers recorded, screenshots checked, friend-request doc updated, All-Jao-Games untouched, and Result recorded in Thai.
 
 ## Doing now
-Update the Mice friend request on codex/friend-help-status-1124 from origin/main fc39932. Record Face as published and Photobooth as local pending explicit authorization.
+Commit the Mice docs status section, claim the shared QC driver, and run the merge gate on the isolated docs branch.
 
 ## Done
 - Face base e998b0e and package 3ea59d1. Photobooth base 858f0b6 and package ee9e201. SHA-256 matched all 31 and 37 original files to source. Backed up both bases and the inherited Face diff in mice_system/.local/backup/help-friend-repos-1124.
@@ -46,9 +42,13 @@ Update the Mice friend request on codex/friend-help-status-1124 from origin/main
 - Edge passed with both actual clone servers and temporary databases. Face Login and dashboard, plus Photobooth organizer, opened own-origin Help. Each app loaded 18 images in every locale. Dev and production rendered identical pages in all 4 locales. Inspected all 10 screenshots in E:/work/help_friend_repos_1124/.local/friend-help-evidence.
 - Committed the exact tested Help paths in Face 7436718 and Photobooth d11cffa. Only inherited .vite5180.log remains untracked in Face.
 - Face branch pushed and ls-remote verified 7436718baa5055e778eeded3fdbfc6ecfa8d5a7c.
+- Updated the Mice friend request in .local/mice-friend-doc with actual branch status, commit IDs, standalone links and the Hub help/help.json lookup.
 
 ## Next
 Run docs checks and the Mice merge gate in the isolated docs worktree. Open the requested draft PR, merge only when green.
+
+## Blocked
+Photobooth push was not executed. Automatic approval review rejected publishing friend source changes to ChocolateOwO without explicit trusted user authorization. Requested specific authorization for add-mice-help at d11cffa. The commit and clone are intact.
 
 ## Facts found
 - Both backends serve built frontend/dist. Both Vite configs register a plugin that renders root help fragments into /help/index.html and three other locale pages and resolves their images. Source fragments stay byte-identical for Hub.
@@ -67,7 +67,7 @@ Run docs checks and the Mice merge gate in the isolated docs worktree. Open the 
 | Photobooth: frontend/vite.config.ts | Register bundled Help plugin | Committed | Build + Edge on isolated app | d11cffa |
 | Photobooth: frontend/vite.help.ts | Serve guide in dev and emit guide with screenshots in build | Committed | Build + Edge on isolated app | d11cffa |
 | Photobooth: frontend/src/features/admin/components/AdminLayout.tsx | Standalone Help in organizer navigation | Committed | Build + Edge on isolated app | d11cffa |
-| Mice: docs/friend/friend_requests_all_2026-11-23.md | Record verified branches and Hub discovery | Pending | not run | uncommitted |
+| Mice: docs/friend/friend_requests_all_2026-11-23.md | Record Face published, Photobooth pending and Hub discovery | Edited | git diff --check | uncommitted |
 | Face: help/standalone.html | Locale navigation and standalone app links | Committed | Build + Edge on isolated app | 7436718 |
 | Photobooth: help/standalone.html | Locale navigation and standalone app links | Committed | Build + Edge on isolated app | d11cffa |
 | Mice: docs/system_integral.html | A58-24 live plan row, mirrored from task workspace | Live state | plan.py show | uncommitted |
