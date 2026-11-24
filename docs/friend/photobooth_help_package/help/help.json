@@ -1,0 +1,17 @@
+{
+  "title": {
+    "th": "Photobooth",
+    "en": "Photobooth",
+    "zh": "Photobooth",
+    "ja": "Photobooth"
+  },
+  "summary": {
+    "th": "เปิดตู้ถ่ายภาพและหน้าจัดการงาน",
+    "en": "Open the booth and its admin page",
+    "zh": "打开拍照亭和管理页面",
+    "ja": "フォトブースと管理画面を開く"
+  },
+  "group": "use",
+  "order": 80,
+  "nativeVariant": "en-light"
+}
