@@ -1,6 +1,6 @@
 # help-friend-repos-1124 — Put Help + a main-page Help button into Face_Regonize and Photobooth
-Owner: gpt-codex (Claude out of quota; Claude reviews after reset)
-Updated: 2026-11-24 02:20
+Owner: codex:11240915-1a99
+Updated: 2026-11-24 09:15 +0700
 Last commit: (none)
 
 ## User orders (Thai, 2026-11-24)
