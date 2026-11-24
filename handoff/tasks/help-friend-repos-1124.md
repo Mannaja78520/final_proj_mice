@@ -1,7 +1,7 @@
 # help-friend-repos-1124 — Put Help + a main-page Help button into Face_Regonize and Photobooth
 Owner: codex:11240915-1a99
-Updated: 2026-11-24T09:44+07:00
-Last commit: Face 7436718, Photobooth d11cffa (Help buttons). Mice a0d3f79 (browser proof)
+Updated: 2026-11-24T09:45+07:00
+Last commit: Face 7436718 (published), Photobooth d11cffa (local). Mice 59c9c6f (commit checkpoint)
 
 ## User orders (Thai, 2026-11-24)
 - cmsg_01R7BbYxaTb3Yv9YS3gQaaA3Q6QC2jUpeSUV6Yw8pqH9TK: "put facereg and photobooth into the friend's git now; the game: let me look first for a moment"
@@ -38,16 +38,17 @@ Both friend repos have branch add-mice-help pushed (or the exact blocker is writ
 our friend-request doc updated, nothing in All-Jao-Games touched, report in Thai in "Result" below.
 
 ## Doing now
-Push the two verified add-mice-help branches to their ChocolateOwO origin with no force. Record the first refusal per repo and stop that push.
+Update the Mice friend request on codex/friend-help-status-1124 from origin/main fc39932. Record Face as published and Photobooth as local pending explicit authorization.
 
 ## Done
 - Face base e998b0e and package 3ea59d1. Photobooth base 858f0b6 and package ee9e201. SHA-256 matched all 31 and 37 original files to source. Backed up both bases and the inherited Face diff in mice_system/.local/backup/help-friend-repos-1124.
 - Registered A58-24 in the real system plan. Both Vite builds passed. Photobooth lint and 397 frontend tests passed (tests ran before the import-path-only correction).
 - Edge passed with both actual clone servers and temporary databases. Face Login and dashboard, plus Photobooth organizer, opened own-origin Help. Each app loaded 18 images in every locale. Dev and production rendered identical pages in all 4 locales. Inspected all 10 screenshots in E:/work/help_friend_repos_1124/.local/friend-help-evidence.
 - Committed the exact tested Help paths in Face 7436718 and Photobooth d11cffa. Only inherited .vite5180.log remains untracked in Face.
+- Face branch pushed and ls-remote verified 7436718baa5055e778eeded3fdbfc6ecfa8d5a7c.
 
 ## Next
-Push verified add-mice-help branches without force. Update the Mice friend request with actual publication status and Hub discovery.
+Run docs checks and the Mice merge gate in the isolated docs worktree. Open the requested draft PR, merge only when green.
 
 ## Facts found
 - Both backends serve built frontend/dist. Both Vite configs register a plugin that renders root help fragments into /help/index.html and three other locale pages and resolves their images. Source fragments stay byte-identical for Hub.
