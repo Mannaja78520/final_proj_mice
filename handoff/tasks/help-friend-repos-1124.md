@@ -1,7 +1,7 @@
 # help-friend-repos-1124 — Put Help + a main-page Help button into Face_Regonize and Photobooth
 Owner: codex:11240915-1a99
-Updated: 2026-11-24T09:54+07:00
-Last commit: 18fed68 (Mice docs draft PR #248), 90c7b3b (handoff)
+Updated: 2026-11-24T09:58+07:00
+Last commit: Face 7436718 on origin/add-mice-help, Photobooth d11cffa local, Mice docs 18fed68 in PR #248, Mice checkpoint 0a5a135 before this one
 
 ## User orders (Thai, 2026-11-24)
 - cmsg_01R7BbYxaTb3Yv9YS3gQaaA3Q6QC2jUpeSUV6Yw8pqH9TK: "put facereg and photobooth into the friend's git now; the game: let me look first for a moment"
@@ -30,7 +30,7 @@ NOT allowed: All-Jao-Games (HOLD, user wants to look first: do not touch, do not
 8. Update this file after EVERY step and push WIP to Mice claude/project-thread-181856. Keep keys, passwords and real data out of Git.
 
 ## Doing now
-Waiting for A59-2 to release the shared QC driver. Draft Mice PR #248 is open.
+Stopped at two external blockers. Published Face branch and Mice handoff branch are verified. Mice docs are in draft PR #248.
 
 ## Done
 - Face base e998b0e and package 3ea59d1. Photobooth base 858f0b6 and package ee9e201. SHA-256 matched all 31 and 37 original files to source. Backed up both bases and the inherited Face diff in mice_system/.local/backup/help-friend-repos-1124.
@@ -43,10 +43,10 @@ Waiting for A59-2 to release the shared QC driver. Draft Mice PR #248 is open.
 - Opened Mice draft PR #248 from 18fed68. Direct Hub lookup with test partner paths discovered both packages and resolved 18 images in each locale.
 
 ## Next
-After the shared QC driver is explicitly released, rerun the full gate. Merge the Mice docs PR only when green. Publish Photobooth only after explicit authorization.
+With explicit user authorization, push Photobooth add-mice-help at d11cffa and update draft PR #248 status. With explicit A59-2 QC release, claim the driver, run python qc/run_qc.py --quiet --done-file qc/friend-status-done.json in .local/mice-friend-doc, and merge PR #248 only after green full QC.
 
 ## Blocked
-Photobooth push was not executed. Automatic approval review rejected publishing friend source changes to ChocolateOwO without explicit trusted user authorization. Requested specific authorization for add-mice-help at d11cffa. The commit and clone are intact.
+Photobooth push was not executed. Automatic approval review rejected publishing friend source changes to ChocolateOwO without explicit trusted user authorization. Requested specific authorization for add-mice-help at d11cffa. Mice full QC is waiting for A59-2 to release the shared driver.
 
 ## Facts found
 - Both backends serve built frontend/dist. Both Vite configs register a plugin that renders root help fragments into /help/index.html and three other locale pages and resolves their images. Source fragments stay byte-identical for Hub.
@@ -70,7 +70,7 @@ Photobooth push was not executed. Automatic approval review rejected publishing 
 | Photobooth: help/standalone.html | Locale navigation and standalone app links | Committed | Build + Edge on isolated app | d11cffa |
 | Mice: docs/system_integral.html | A58-24 live plan row, mirrored from task workspace | Live state | plan.py show | uncommitted |
 | Mice: docs/system_integral_state.js | Generated system plan state | Live state | plan.py show | uncommitted |
-| Mice: docs/BRIDGE.md | Shared claim under mutex | Live state | Claim recorded | uncommitted |
+| Mice: docs/BRIDGE.md | Shared claim, QC release and handoff under mutex | Released | Real plan A58-24 handed off | uncommitted |
 | Face: help/en.html | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
 | Face: help/help.json | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
 | Face: help/img/en-dark-faces-open.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
@@ -143,4 +143,5 @@ Photobooth push was not executed. Automatic approval review rejected publishing 
 ## Result
 - Face_Regonize: push สาขา add-mice-help แล้ว (คู่มือ 3ea59d1, ปุ่ม 7436718) หน้า Dashboard และ Login เปิดคู่มือได้
 - Photobooth: ปุ่ม Help หน้า Organizer ผ่านแล้ว (คู่มือ ee9e201, ปุ่ม d11cffa) รออนุญาตให้ push
-- ตรวจภาพทั้ง 10 ภาพที่ E:/work/help_friend_repos_1124/.local/friend-help-evidence แล้ว เอกสาร Mice อยู่ใน draft PR #248
+- ตรวจภาพทั้ง 10 ภาพที่ E:/work/help_friend_repos_1124/.local/friend-help-evidence แล้ว เอกสาร Mice อยู่ใน draft PR #248 รอ full QC
+- ตำแหน่งปุ่ม: Face Layout.tsx:94 และ Login.tsx:55, Photobooth AdminLayout.tsx:65. ทดสอบบนพอร์ตแยกและปิดครบแล้ว งานอยู่ในสอง repo ที่ระบุและเอกสาร Mice
