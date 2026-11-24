@@ -1,7 +1,7 @@
 # help-friend-repos-1124 — Put Help + a main-page Help button into Face_Regonize and Photobooth
 Owner: codex:11240915-1a99
-Updated: 2026-11-24T09:33+07:00
-Last commit: c3eefd2 (Mice implementation checkpoint)
+Updated: 2026-11-24T09:41+07:00
+Last commit: a7517f2 (Mice handoff branch reconciliation)
 
 ## User orders (Thai, 2026-11-24)
 - cmsg_01R7BbYxaTb3Yv9YS3gQaaA3Q6QC2jUpeSUV6Yw8pqH9TK: "put facereg and photobooth into the friend's git now; the game: let me look first for a moment"
@@ -38,7 +38,7 @@ Both friend repos have branch add-mice-help pushed (or the exact blocker is writ
 our friend-request doc updated, nothing in All-Jao-Games touched, report in Thai in "Result" below.
 
 ## Doing now
-Finish isolated browser checks. Both production builds passed. The first Photobooth launch found its existing runtime lacks cv2, so use a fresh Python 3.13 venv installed from the lockfile.
+Make the Face dashboard Help icon decorative and rebuild, then rerun the browser checks.
 
 ## Done
 - Took the task as codex:11240915-1a99 on detached Mice HEAD 683f59f (remote handoff branch).
@@ -46,6 +46,7 @@ Finish isolated browser checks. Both production builds passed. The first Photobo
 - A58-24 registered in system plan. Backed up both base trees plus inherited Face edits under mice_system/.local/backup/help-friend-repos-1124. Compared all 31 Face and 37 Photobooth package files to source by SHA-256.
 - Implemented same-origin /help/index.html in both apps. The source package contains Hub HTML fragments with data-shot references, so Vite generates complete localized guide pages and resolves their bundled image URLs. Photobooth Help is in organizer navigation.
 - Fixed the Vite import to include the .ts extension after the Face build reported TS2307. Final builds passed in both clones. Photobooth lint passed and 397 frontend tests passed (before import-path-only correction).
+- Fresh Photobooth runtime started from the exact lockfile. Both real clone servers and Vite dev serving worked. All four dev guide locales matched production byte-for-byte. Face Login Help opened 18 images. Dashboard link was visible but its accessible name included the decorative question mark, so the exact Help assertion stopped there.
 
 ## Next
 Build, run against throwaway fixtures on isolated ports, inspect screenshots, then make the second commit in each clone.
