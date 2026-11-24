@@ -54,7 +54,7 @@ Do not display past notes.
 None.
 """)
     folder.add("finished", "# Finish the review\nOwner: Claude Sonnet 4.5\nStatus: complete")
-    folder.add("waiting", "# Wait for approval\nOwner: Gemini\n## Blocked\nWaiting for review")
+    folder.add("waiting", "# Wait for approval\nOwner: Gemini\n## Blocked\nNo approval received yet.")
     folder.add("old", f"# Old work\nOwner: Codex\nUpdated: {folder.stamp(8)}")
     folder.add("huge", "# Big task\nOwner: Claude\n" + ("large line\n" * 200000) +
                "\n## Doing now\nOutside the read limit.")
@@ -124,10 +124,11 @@ def check_words(t):
     copy = visible_text(app / "index.html") + " " + js_strings(app / "status.js")
     t.eq([word for word in words if re.search(r"\b" + re.escape(word) + r"\b", copy)],
          [], "AI work uses designer-first wording")
-    for lang in ("en", "th", "ja", "zh"):
+    for lang, native in {"en": "[a-zA-Z]", "th": r"[฀-๿]",
+                         "ja": r"[぀-ヿ]", "zh": r"[一-鿿]"}.items():
         phrases = json.loads((F.CODE / "shared/web/lang" / (lang + ".json")).read_text(encoding="utf-8"))["strings"]
-        t.ok(all(phrases.get(key) for key in ("AI work", "Loading AI work?", "No recent update",
-                                             "Sign in to view AI work.")),
+        t.ok(all(re.search(native, phrases.get(key, "")) for key in
+                     ("AI work", "Loading AI work…", "No recent update", "Sign in to view AI work.")),
              f"{lang} has the AI work status words", lang)
 
 

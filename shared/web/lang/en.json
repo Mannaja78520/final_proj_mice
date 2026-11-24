@@ -2,9 +2,10 @@
  "name": "English",
  "strings": {
   "AI work": "AI work",
-  "AI work ? MICE": "AI work ? MICE",
+  "AI work — MICE": "AI work — MICE",
   "See who is working and what they are doing.": "See who is working and what they are doing.",
-  "Loading AI work?": "Loading AI work?",
+  "Loading AI work…": "Loading AI work…",
+  "Help": "Help",
   "Sign in on the Hub": "Sign in on the Hub",
   "Sign in to view AI work.": "Sign in to view AI work.",
   "Ask a Hub administrator to view AI work.": "Ask a Hub administrator to view AI work.",

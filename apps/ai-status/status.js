@@ -38,7 +38,7 @@ class AiWorkPage {
     if (task.branch || task.commit) {
       const source = this.text("p", "", "tech mini");
       if (task.branch) source.append(this.text("span", "Branch"), " ", this.text("code", task.branch));
-      if (task.branch && task.commit) source.append(" ? ");
+      if (task.branch && task.commit) source.append(" · ");
       if (task.commit) source.append(this.text("span", "Last commit"), " ", this.text("code", task.commit));
       card.appendChild(source);
     }

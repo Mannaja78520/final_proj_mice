@@ -2,7 +2,7 @@
 Owner: codex:11240934-20dc
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-24T09:50:24+07:00
+Updated: 2026-11-24T09:59:05+07:00
 Last commit: this checkpoint (branch claude/project-thread-181856)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Run focused QC, prove the read bound and access checks catch regressions, then capture and inspect the Help images. The shared QC/fake Hub driver is claimed for this step.
+Recapture Help in all four languages and both themes. Compare the browser images with the localized copy and check images load in contextual Help.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -42,8 +42,11 @@ Run focused QC, prove the read bound and access checks catch regressions, then c
 - The Gemini design panel returned no review after a CLI output redirection failure. No approval recorded.
 - Built the Tools page, administrator route, reader, four language packs and Hub Help. Parser, linked checkout resolution and plain wording passed direct checks. JS and Python parsed successfully.
 
+- Targeted QC 83/0. Administrator access and read-bound sabotages each tripped the intended assertion. The first read-bound mutation left the bounded stream read intact, so it was corrected and rerun.
+- Edge at 360px verified login, Tools link, four state rows, technical toggle, offline last view and 15.0 s refresh. Initial screenshots revealed literal question marks from PowerShell redirection. Rewrote translations with a UTF-8 source file, added native-script assertions and fixed heading spacing.
+
 ## Next
-Capture and inspect all eight Help images. Run the focused check, sabotage test and full QC. Then open the draft PR.
+Run full QC on the final feature tree, then review, draft PR and release.
 
 ## Facts found
 - main_python/hub_api_apps.py:50 supplies the registry-driven Tools list. A manifest in apps/ adds a tile.
@@ -56,24 +59,24 @@ Capture and inspect all eight Help images. Run the focused check, sabotage test 
 | --- | --- | --- | --- | --- |
 | handoff/tasks/ai-status-page-1124.md | Take task and record branch baseline | In progress | git diff --check | this checkpoint |
 
-| main_python/ai_status.py | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| main_python/hub_api_apps.py | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| apps/ai-status/app.json | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| apps/ai-status/index.html | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| apps/ai-status/status.js | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| main_python/web/help/parts/hub.html | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| main_python/web/help/shots.json | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| main_python/web/help.html | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| docs/systems.json | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| docs/systems/hub-apps.md | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| qc/checks/check_ai_status.py | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| shared/web/lang/en.json | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| shared/web/lang/th.json | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| shared/web/lang/ja.json | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| shared/web/lang/zh.json | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| shared/web/lang/help/en.json | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| shared/web/lang/help/ja.json | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
-| shared/web/lang/help/zh.json | Planned AI work integration | Built | parser and syntax checks only | this checkpoint |
+| main_python/ai_status.py | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| main_python/hub_api_apps.py | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
+| apps/ai-status/app.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
+| apps/ai-status/index.html | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| apps/ai-status/status.js | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| main_python/web/help/parts/hub.html | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| main_python/web/help/shots.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
+| main_python/web/help.html | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| docs/systems.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
+| docs/systems/hub-apps.md | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
+| qc/checks/check_ai_status.py | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| shared/web/lang/en.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| shared/web/lang/th.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| shared/web/lang/ja.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| shared/web/lang/zh.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| shared/web/lang/help/en.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| shared/web/lang/help/ja.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| shared/web/lang/help/zh.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
 | main_python/web/help/img/en-light-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
 | main_python/web/help/img/en-dark-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
 | main_python/web/help/img/th-light-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
@@ -82,11 +85,12 @@ Capture and inspect all eight Help images. Run the focused check, sabotage test 
 | main_python/web/help/img/ja-dark-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
 | main_python/web/help/img/zh-light-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
 | main_python/web/help/img/zh-dark-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
-| config/ai_status.json | AI work config or generated API documentation | Built | parser and syntax checks only | this checkpoint |
-| main_python/api_index.json | AI work config or generated API documentation | Built | parser and syntax checks only | this checkpoint |
-| docs/HUB_API.md | AI work config or generated API documentation | Built | parser and syntax checks only | this checkpoint |
-| docs/systems/agents.md | Generated handoff file inventory | Built | not run | this checkpoint |
-| docs/systems/qc.md | Generated check inventory | Built | not run | this checkpoint |
+| config/ai_status.json | AI work config or generated API documentation | Built | parser and syntax checks only | 64d425f |
+| main_python/api_index.json | AI work config or generated API documentation | Built | parser and syntax checks only | 64d425f |
+| docs/HUB_API.md | AI work config or generated API documentation | Built | parser and syntax checks only | 64d425f |
+| docs/systems/agents.md | Generated handoff file inventory | Built | not run | 64d425f |
+| docs/systems/qc.md | Generated check inventory | Built | not run | 64d425f |
+| docs/systems/hub-web.md | Generated inventory for Help images | Pending | not run | uncommitted |
 
 ## Blocked
 No current blocker. A58-24 is still running independently. Avoid shared QC, build and restart resources until claimed.

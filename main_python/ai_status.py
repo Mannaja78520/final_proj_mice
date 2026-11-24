@@ -14,8 +14,8 @@ FIELD = re.compile(r"^(Owner|Model|Updated|Status|State|Branch|Last commit):[ \t
 SHA = re.compile(r"[a-f0-9]{7,40}\b", re.I)
 BRANCH = re.compile(r"[\w.-]+(?:/[\w.-]+)*", re.ASCII)
 SECRET = re.compile(
-    r"\b(?:password|passwd|api[ _-]?key|secret|credential|access[ _-]?token|"
-    r"private[ _-]?key|authorization|bearer|cookie)\b|"
+    r"\b(?:password|passwd|api[ _-]?key|secret|credential|(?:access|refresh)[ _-]?token|"
+    r"private[ _-]?key|authorization|bearer|cookie)\b|\b(?:token|pwd)\s*[:=]|"
     r"\b(?:sk-[\w-]+|gh[pousr]_[\w]+|github_pat_[\w]+|AKIA[A-Z0-9]{16}|"
     r"eyJ[\w-]+\.[\w-]+\.[\w-]+)\b|\b[A-Za-z0-9_-]{28,}\b",
     re.I,
@@ -92,7 +92,7 @@ class AiStatus:
         if explicit in ("done", "complete", "completed") or re.match(r"^(done|complete|completed)[.!]?$", doing):
             return "done"
         if (explicit == "blocked" or doing.startswith(("blocked", "waiting for", "not started (waiting")) or
-                (blocked and not re.match(r"^(none\b|no\b|n/a\b|[-?]+$)", blocked))):
+                (blocked and not re.match(r"^(none\b|no (?:(?:current|remaining) )?block(?:er|s)?\b|n/a\b|[-?]+$)", blocked))):
             return "blocked"
         if explicit == "stale" or age >= stale_seconds or not fields.get("owner", "").strip():
             return "stale"
