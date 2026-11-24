@@ -2,7 +2,7 @@
 Owner: codex:11240934-20dc
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-24T09:38:16+07:00
+Updated: 2026-11-24T09:41:29+07:00
 Last commit: this checkpoint (branch claude/project-thread-181856)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Run the design panel before implementation. Assess a read-only admin API, a Tools card, and four-language UI and Hub Help. Use only repository task files and linked Mice worktrees.
+Build the bounded task reader, admin-only data API, Tools page, four-language Help and focused QC. Regenerate the web and API files. Screenshot captures follow in the verification step.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -39,8 +39,10 @@ Run the design panel before implementation. Assess a read-only admin API, a Tool
 - Registered A59-2 in the real system plan and claimed exact files in the shared bridge. The friend job owns separate paths.
 - Pushed initial checkpoint cbfb06a after rebasing concurrent work.
 
+- Submitted the UI and confidentiality design question to the existing Gemini panel. Review output is pending.
+
 ## Next
-Implement the task reader, admin route and Tools page together with localized Hub Help. Then capture the Help screenshots and prove the QC check.
+Capture the Help screenshots. Run the targeted checks and prove the parser check fails when its read bound is broken.
 
 ## Facts found
 - main_python/hub_api_apps.py:50 supplies the registry-driven Tools list. A manifest in apps/ adds a tile.
@@ -79,6 +81,9 @@ Implement the task reader, admin route and Tools page together with localized Hu
 | main_python/web/help/img/ja-dark-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
 | main_python/web/help/img/zh-light-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
 | main_python/web/help/img/zh-dark-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
+| config/ai_status.json | AI work config or generated API documentation | Pending | not run | uncommitted |
+| main_python/api_index.json | AI work config or generated API documentation | Pending | not run | uncommitted |
+| docs/HUB_API.md | AI work config or generated API documentation | Pending | not run | uncommitted |
 
 ## Blocked
 No current blocker. A58-24 is still running independently. Avoid shared QC, build and restart resources until claimed.
