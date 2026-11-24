@@ -1,7 +1,7 @@
 # help-friend-repos-1124 — Put Help + a main-page Help button into Face_Regonize and Photobooth
 Owner: codex:11240915-1a99
-Updated: 2026-11-24T09:18+07:00
-Last commit: 1c2a087 (Mice handoff claim)
+Updated: 2026-11-24T09:19+07:00
+Last commit: 9302b2d (Mice clone reconciliation)
 
 ## User orders (Thai, 2026-11-24)
 - cmsg_01R7BbYxaTb3Yv9YS3gQaaA3Q6QC2jUpeSUV6Yw8pqH9TK: "put facereg and photobooth into the friend's git now; the game: let me look first for a moment"
@@ -38,11 +38,12 @@ Both friend repos have branch add-mice-help pushed (or the exact blocker is writ
 our friend-request doc updated, nothing in All-Jao-Games touched, report in Thai in "Result" below.
 
 ## Doing now
-Verify package bytes against source, back up clone bases and pending Face links, claim plan work, then prepare standalone Help integration.
+Implement same-origin Help delivery through Vite and point both app UIs to /help/en.html. Backed-up inherited diff retained.
 
 ## Done
 - Took the task as codex:11240915-1a99 on detached Mice HEAD 683f59f (remote handoff branch).
 - Reconciled clone branches. Face base e998b0e, package 3ea59d1, two pending UI edits and prior .vite5180.log. Photobooth base 858f0b6, package ee9e201, clean tree.
+- A58-24 registered in system plan. Backed up both base trees plus inherited Face edits under mice_system/.local/backup/help-friend-repos-1124. Compared all 31 Face and 37 Photobooth package files to source by SHA-256.
 
 ## Next
 Serve the existing help packages through each frontend's Vite dev and production entry points. Use Face dashboard/login and Photobooth organizer. Test isolated from 8000/5173.
@@ -68,74 +69,74 @@ Serve the existing help packages through each frontend's Vite dev and production
 | Mice: docs/friend/friend_requests_all_2026-11-23.md | Record verified branches and Hub discovery | Pending | not run | uncommitted |
 
 Package rows use clone names as prefixes.
-| Face: help/en.html | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/help.json | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-dark-faces-open.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-faces-open.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-activities.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-attendees.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-cctv.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-connect.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-dashboard.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-event-photos.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-history.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-import.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-login.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-pdpa.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-people.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-privacy.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-recognition.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-reports.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-settings.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-uploads.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/en-light-reconize-video.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/ja-dark-faces-open.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/ja-light-faces-open.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/th-dark-faces-open.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/th-light-faces-open.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/zh-dark-faces-open.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/img/zh-light-faces-open.webp | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/ja.html | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/shots.json | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/th.html | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Face: help/zh.html | Bundled guide or image | Committed | Source parity pending | 3ea59d1 |
-| Photobooth: help/en.html | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/help.json | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-dark-booth-capture.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-dark-booth-choose.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-dark-booth-decorate.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-dark-booth-delivery.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-dark-booth-review.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-dark-booth-start.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-dark-photobooth-open.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-activity.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-capture.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-choose.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-decorate.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-delivery.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-editor.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-frames.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-history.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-profiles.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-retention.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-review.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-sign-in.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-start.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-statistics.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-system.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-test.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-booth-unpaired.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/en-light-photobooth-open.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/ja-dark-photobooth-open.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/ja-light-photobooth-open.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/th-dark-photobooth-open.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/th-light-photobooth-open.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/zh-dark-photobooth-open.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/img/zh-light-photobooth-open.webp | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/ja.html | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/shots.json | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/th.html | Bundled guide or image | Committed | Source parity pending | ee9e201 |
-| Photobooth: help/zh.html | Bundled guide or image | Committed | Source parity pending | ee9e201 |
+| Face: help/en.html | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/help.json | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-dark-faces-open.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-faces-open.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-activities.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-attendees.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-cctv.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-connect.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-dashboard.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-event-photos.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-history.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-import.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-login.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-pdpa.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-people.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-privacy.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-recognition.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-reports.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-settings.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-uploads.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/en-light-reconize-video.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/ja-dark-faces-open.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/ja-light-faces-open.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/th-dark-faces-open.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/th-light-faces-open.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/zh-dark-faces-open.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/img/zh-light-faces-open.webp | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/ja.html | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/shots.json | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/th.html | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Face: help/zh.html | Bundled guide or image | Committed | SHA-256 matches source | 3ea59d1 |
+| Photobooth: help/en.html | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/help.json | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-dark-booth-capture.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-dark-booth-choose.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-dark-booth-decorate.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-dark-booth-delivery.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-dark-booth-review.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-dark-booth-start.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-dark-photobooth-open.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-activity.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-capture.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-choose.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-decorate.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-delivery.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-editor.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-frames.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-history.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-profiles.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-retention.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-review.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-sign-in.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-start.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-statistics.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-system.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-test.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-booth-unpaired.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/en-light-photobooth-open.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/ja-dark-photobooth-open.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/ja-light-photobooth-open.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/th-dark-photobooth-open.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/th-light-photobooth-open.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/zh-dark-photobooth-open.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/img/zh-light-photobooth-open.webp | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/ja.html | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/shots.json | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/th.html | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
+| Photobooth: help/zh.html | Bundled guide or image | Committed | SHA-256 matches source | ee9e201 |
 
 ## Result
 (Codex: write branch names, commit ids, changed files/lines, screenshot paths, push result)
