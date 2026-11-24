@@ -1,0 +1,7 @@
+{
+  "name": "AI work",
+  "blurb": "See who is working and what they are doing.",
+  "image": "/img/apps/default.svg",
+  "order": 91,
+  "help": "hub"
+}

@@ -65,8 +65,9 @@
      "depends": ["hub-shows", "hub-media"]},
 
     {"id": "hub-apps", "summary": "The hub's routes for the app launcher, page access, partner programs and the voice helper.",
-     "files": ["main_python/hub_api_apps.py"],
-     "names": ["/api/apps", "/api/access", "/api/partners", "/api/voice", "/api/all-jao", "/api/reconize"],
+     "files": ["main_python/hub_api_apps.py", "main_python/ai_status.py", "config/ai_status.json", "apps/ai-status/"],
+     "names": ["/api/apps", "/api/ai-status", "/api/access", "/api/partners", "/api/voice", "/api/all-jao", "/api/reconize"],
+     "checks": ["check_ai_status"],
      "depends": []},
 
     {"id": "hub-support", "summary": "Self-update, the diagnostics text and problem reports.",
