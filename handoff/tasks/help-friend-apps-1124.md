@@ -1,22 +1,22 @@
 # help-friend-apps-1124 ? In-app Help for All-Jao, Reconize and Photobooth
 Owner: codex:11240637-1d82 (Claude reviews)
-Branch: claude/project-thread-181856 ? baseline 7f8b1b3 ? system plan A59-1
-Updated: 2026-11-24 06:58 +0700
-Last commit: e6fc031 (four-language guides and package)
+Plan: A59-1 (system)
+Branch: claude/project-thread-181856 ? baseline 7f8b1b3
+Updated: 2026-11-24 07:20 +0700
+Last commit: 5b5ff25 (targeted gate)
 
 ## Goal
 Detailed step-by-step app and Hub guides in th/en/zh/ja with real app screenshots and demo data.
 Keep each native language/palette. Capture Hub variations. Check screenshot-text match with Gemini 4 medium.
 Never edit Face_Regonize, All-Jao-Games or Photobooth. Ask friend nothing. Use the existing request list.
-Run targeted then full QC, draft PR, merge only when green, rebuild/restart the PC Hub, retest in four languages.
-Never overlap QC fake ports or PyInstaller. Push scoped WIP around every step. Report in Thai.
+Run targeted/full QC and draft PR. Merge only when green, then rebuild/restart the PC Hub and retest four languages. Serialize QC and builds, push WIP, report in Thai.
 
 ## Added 2026-11-23 23:36 ? Reconize Help drop-in
 Ready to copy from docs/friend/reconize_help_package/help to Face_Regonize/help by user or designated person.
 Thai/English README covers install, precedence and recapture. Keep byte-identical to apps/faces/help with QC.
 
 ## Doing now
-Step 4: run full QC under exclusive claim. [Draft PR #245](https://github.com/Mannaja78520/final_proj_mice/pull/245).
+Step 4 follow-up: implement Gemini picture/text findings and both Photobooth guest themes, then retest.
 
 ## Done
 - 8998b6e: inspected the real UI for all three in Edge against scratch instances.
@@ -32,10 +32,10 @@ Step 4: run full QC under exclusive claim. [Draft PR #245](https://github.com/Ma
 - Scratch used 4173, 5173, 8000, 8111/8113. No real data, fake Hub or PyInstaller used.
 
 ## Next
-Targeted QC passed 1285/0 on e6fc031. Full gate next. Check installed Help in four languages.
+Targeted QC passed 1285/0 on e6fc031. Gemini 4 Argon Medium reviewed 43 images. Full QC on 5b5ff25: 10632/8.
 
 ## Blocked
-Gemini 4 Argon Medium review and full QC pending.
+Full gate failed on one missing Plan field (restored here), three Home language checks and four camera checks. Baseline comparison pending. [Draft #245](https://github.com/Mannaja78520/final_proj_mice/pull/245).
 
 ## File status
 | File | Change | State | Verification | Commit |
