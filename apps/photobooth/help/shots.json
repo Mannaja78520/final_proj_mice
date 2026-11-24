@@ -3,5 +3,221 @@
     "url": "/app/photobooth/",
     "clip": ".card:has(#boothBtn)",
     "ready": "#boothBtn"
+  },
+  "booth-profiles": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/admin",
+    "ready": "h1:has-text(\"Event Profiles\")"
+  },
+  "booth-editor": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/admin/profiles/new",
+    "ready": "h1:has-text(\"New Event Profile\")"
+  },
+  "booth-frames": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/admin/frames",
+    "ready": "h1:has-text(\"Frames\")"
+  },
+  "booth-test": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/admin/test",
+    "ready": "h1:has-text(\"Test booth\")"
+  },
+  "booth-history": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/admin/history",
+    "ready": "h1:has-text(\"History\")"
+  },
+  "booth-statistics": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/admin/statistics",
+    "ready": "h1:has-text(\"Statistics\")"
+  },
+  "booth-activity": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/admin/activity",
+    "ready": "h1:has-text(\"Activity log\")"
+  },
+  "booth-retention": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/admin/retention",
+    "ready": "h1:has-text(\"Retention\")"
+  },
+  "booth-system": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/admin/system",
+    "ready": "h1:has-text(\"System\")",
+    "clip": "section[aria-label=\"Health\"]"
+  },
+  "booth-start": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/booth",
+    "ready": "button:text-is(\"Start\")",
+    "steps": [],
+    "modes": [
+      "light",
+      "dark"
+    ]
+  },
+  "booth-choose": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/booth",
+    "ready": "button:text-is(\"Start with this frame\")",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "[data-testid=\"frame-slide\"] >> nth=0 >> button:text-is(\"Use this frame\")"
+      }
+    ],
+    "modes": [
+      "light",
+      "dark"
+    ]
+  },
+  "booth-capture": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/booth",
+    "ready": "[aria-label=\"Camera preview\"]",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "[data-testid=\"frame-slide\"] >> nth=0 >> button:text-is(\"Use this frame\")"
+      },
+      {
+        "click": "button:text-is(\"Start with this frame\")"
+      }
+    ],
+    "modes": [
+      "light",
+      "dark"
+    ]
+  },
+  "booth-review": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/booth",
+    "ready": "[data-testid=\"review-photo\"]",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "[data-testid=\"frame-slide\"] >> nth=0 >> button:text-is(\"Use this frame\")"
+      },
+      {
+        "click": "button:text-is(\"Start with this frame\")"
+      }
+    ],
+    "modes": [
+      "light",
+      "dark"
+    ]
+  },
+  "booth-decorate": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/booth",
+    "ready": "[data-testid=\"decorated-photo\"]",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "[data-testid=\"frame-slide\"] >> nth=0 >> button:text-is(\"Use this frame\")"
+      },
+      {
+        "click": "button:text-is(\"Start with this frame\")"
+      },
+      {
+        "click": "button:text-is(\"These are good\")"
+      }
+    ],
+    "modes": [
+      "light",
+      "dark"
+    ]
+  },
+  "booth-delivery": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/booth",
+    "ready": "[data-testid=\"finished-photos\"] img",
+    "steps": [
+      {
+        "click": "button:text-is(\"Start\")"
+      },
+      {
+        "click": "[data-testid=\"frame-slide\"] >> nth=0 >> button:text-is(\"Use this frame\")"
+      },
+      {
+        "click": "button:text-is(\"Start with this frame\")"
+      },
+      {
+        "click": "button:text-is(\"These are good\")"
+      },
+      {
+        "click": "button:text-is(\"Finish\")"
+      },
+      {
+        "click": "button:text-is(\"Make my photos\")"
+      },
+      {
+        "wait": "[data-testid=\"delivery-qr\"]"
+      },
+      {
+        "eval": "const qr = document.querySelector('[data-testid=delivery-qr]'); qr.style.filter = 'blur(12px)'; document.querySelector('[data-testid=delivery-url]').textContent = 'Demo download address hidden'"
+      }
+    ],
+    "modes": [
+      "light",
+      "dark"
+    ]
+  },
+  "booth-sign-in": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "url": "/admin",
+    "ready": "h1:has-text(\"Admin sign in\")"
+  },
+  "booth-unpaired": {
+    "native": true,
+    "direct": true,
+    "fixed": true,
+    "anonymous": true,
+    "url": "/booth",
+    "ready": "button:text-is(\"Try again\")"
   }
 }

@@ -13,6 +13,7 @@
   "เมื่อเพิ่มหรือถอดแอปใน Tools คู่มือของแอปนั้นจะปรากฏหรือหายไปเมื่อเปิดหน้า Help อีกครั้ง": "ツールでアプリを追加または削除すると、次にヘルプを開いたときにそのアプリのガイドも追加または削除されます。",
   "Open Cameras, then turn on live view for the camera you want to check.": "カメラを開き、確認したいカメラのライブ表示をオンにします。",
   "Some app guides could not load. Reload this page to try again.": "一部のアプリガイドを読み込めませんでした。このページを再読み込みしてください。",
+  "Open an app guide below. Screenshots from inside an app use that app’s own language and appearance. If it has separate light and dark views, Help shows the available view for your Hub theme.": "下の一覧からアプリのガイドを開けます。アプリの画面写真は、そのアプリの言語と配色で表示します。ライトとダークの両方がある場合は、Hub の配色に合う画面写真を表示します。",
   "Use an installed app": "インストール済みのアプリを使う",
   "สำหรับผู้ดูแล: โฟลเดอร์อัปเดตระบบ": "管理者向け：システム更新フォルダー",
   "เครื่องมือนำงานที่ตรวจผ่านเข้าระบบอ้างอิงโฟลเดอร์หลักของโครงการ แม้เรียกจากสำเนาทำงาน โฟลเดอร์งานและบันทึกการอัปเดตจึงไม่ซ้อนอยู่ในสำเนาอีกชั้น": "確認済みの作業をシステムに取り込むツールは、作業コピーから呼んでも常にプロジェクトのメインフォルダーを指すため、作業フォルダーと更新ログがコピーの中に入れ子になりません。",

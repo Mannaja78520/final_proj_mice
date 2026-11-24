@@ -12,5 +12,6 @@
     "ja": "イベントゲームを開いて景品の受け取り方を確認する"
   },
   "group": "use",
-  "order": 70
+  "order": 70,
+  "nativeVariant": "th-light"
 }

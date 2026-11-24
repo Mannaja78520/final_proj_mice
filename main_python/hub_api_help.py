@@ -7,6 +7,7 @@ LANGS = ("th", "en", "zh", "ja")
 GROUPS = {"start", "use", "build", "wrong"}
 SLUG = re.compile(r"[a-z0-9][a-z0-9_-]*")
 SHOT = re.compile(r"(th|en|zh|ja)-(light|dark)-[a-z0-9][a-z0-9_-]*\.webp")
+VARIANT = re.compile(r"(th|en|zh|ja)-(light|dark)")
 NOT_MINE = object()
 
 
@@ -28,8 +29,12 @@ class AppHelp:
                 return None
             if not all((root / (code + ".html")).is_file() for code in LANGS):
                 return None
-            return dict(anchor=anchor, title=titles, summary=summaries,
+            meta = dict(anchor=anchor, title=titles, summary=summaries,
                         group=data["group"], order=data["order"])
+            native = data.get("nativeVariant")
+            if isinstance(native, str) and VARIANT.fullmatch(native):
+                meta["nativeVariant"] = native
+            return meta
         except (OSError, ValueError, TypeError):
             return None
 
@@ -63,7 +68,7 @@ class AppHelp:
         return found
 
     @staticmethod
-    def asset(root, rel):
+    def asset(root, rel, native=None):
         if rel in {code + ".html" for code in LANGS}:
             mime = "text/plain; charset=utf-8"
         elif rel.startswith("img/") and SHOT.fullmatch(rel[4:]):
@@ -72,8 +77,17 @@ class AppHelp:
             return None
         try:
             resolved = (root / rel).resolve()
-            if resolved.is_relative_to(root.resolve()):
-                return resolved.read_bytes(), mime
+            if not resolved.is_relative_to(root.resolve()):
+                return None
+            if native and mime == "image/webp" and not resolved.exists():
+                _, mode, name = rel[4:].split("-", 2)
+                lang = native.split("-", 1)[0]
+                for variant in dict.fromkeys((f"{lang}-{mode}", native)):
+                    candidate = (root / "img" / f"{variant}-{name}").resolve()
+                    if candidate.is_relative_to(root.resolve()) and candidate.is_file():
+                        return candidate.read_bytes(), mime
+                return None
+            return resolved.read_bytes(), mime
         except (OSError, ValueError, RuntimeError):
             pass
         return None
@@ -89,7 +103,7 @@ class HelpRoutes:
             return NOT_MINE
         app_id, _, rel = path[len("/api/help/apps/"):].partition("/")
         match = self.app_help.available(only=app_id).get(app_id)
-        asset = match and self.app_help.asset(match[0], rel)
+        asset = match and self.app_help.asset(match[0], rel, match[1].get("nativeVariant"))
         if asset is None:
             return self.send_err("Help file not found", 404)
         return self.send_bytes(*asset, headers=[("X-Content-Type-Options", "nosniff")])
