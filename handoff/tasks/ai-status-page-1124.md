@@ -2,7 +2,7 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T13:20:33+07:00
+Updated: 2026-11-25T13:22:05+07:00
 Last commit: 7cea7e6 (scoped release candidate)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Reapply the scoped AI work commit on latest main b20e09ae in a fresh worktree. Resolve the generated hub-web inventory through its generator and rebuild Help/API outputs.
+Finish the scoped integration on b20e09ae. Record the additional generated app-voice inventory from the clean main tree, stage only the explicit generated and AI work paths, and inspect the exact result.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -72,6 +72,8 @@ Reapply the scoped AI work commit on latest main b20e09ae in a fresh worktree. R
 - Diff from the first QC input to the scoped candidate consists only of the agent inventory and the two omitted handoffs. Both camera and visual-language passed in first full QC. Compare exact main before deciding whether this is inherited or candidate-specific.
 
 - Remote main moved to b20e09ae before baseline replay, with unrelated Hub, Help, API, and locale updates. Merge preview found one conflict, generated docs/systems/hub-web.md. Prior source and evidence are preserved at 7cea7e6.
+
+- Current-main cherry-pick regenerated Help, API and system inventories. The clean generator also corrects b20e09ae's app-voice inventory of private, absent profiles and their check references. System-map QC requires the clean generated inventory; no Voice source or settings edits.
 
 ## Next
 Run the bounded same-check language comparison on current main and its AI work candidate. If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
@@ -119,6 +121,8 @@ Run the bounded same-check language comparison on current main and its AI work c
 | docs/systems/agents.md | Regenerate candidate inventory | Staged in candidate | Generated; candidate gate pending | 7cea7e6 |
 | docs/systems/qc.md | Generated check inventory | Built | not run | 64d425f |
 | docs/systems/hub-web.md | Generated inventory for Help images | Built | Diff lists exactly eight new captures | 777a439 |
+
+| docs/systems/app-voice.md | Regenerate clean inventory after current-main sync | Generated output pending commit | Exact generated diff; QC pending | uncommitted |
 
 ## Blocked
 Visual-language QC remains red. Shared QC released after replay. Need a green full gate before merge, build or restart.
