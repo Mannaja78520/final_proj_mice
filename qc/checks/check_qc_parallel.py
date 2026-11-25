@@ -56,14 +56,10 @@ def run(t):
                       ("check_name_claim", "answers mDNS on 5353"),
                       ("check_mdns", "answers mDNS on 5353"),
                       ("check_build_split", "writes the firmware build dir"),
-                      ("check_hub_clock", "measures time, which needs a quiet "
-                                          "machine"),
                       ("check_themes", "rewrites the stylesheet every page "
                                        "is served"),
                       ("check_tools_list", "breaks an app.json on purpose to "
-                                           "prove broken is not empty"),
-                      ("check_studio_playback", "drives a browser on fixed "
-                                                "timers and asserts the order")):
+                                           "prove broken is not empty")):
         t.ok(name in solo, "%s runs alone - it %s" % (name, why),
              "two of these at once fight over something the machine has one of")
 

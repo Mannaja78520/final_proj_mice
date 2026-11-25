@@ -213,13 +213,6 @@ SOLO = {
     "check_name_claim",     # answers mDNS on 5353
     "check_mdns",           # the same
     "check_build_split",    # writes firmware/.pio, which other checks read
-    # Not a shared RESOURCE - a shared clock. It sleeps 150ms and expects the
-    # hub's show thread to have advanced by then, which is true on an idle
-    # machine and not true with ten workers competing for cores. It failed on
-    # the first parallel gate and passed three times out of three alone, which
-    # is the signature: the check is fine, the margin is not. Measuring time
-    # needs a quiet machine.
-    "check_hub_clock",
     # It ADDS A THEME to the real shared/web/themes.css and takes it out again -
     # which is the only honest way to prove a new theme needs no code. But that
     # file is served to every page, so while it runs, any other check reading
@@ -230,49 +223,20 @@ SOLO = {
     # as an empty one, and puts it back. Any check reading the app registry
     # while that is happening sees a fault that is not theirs.
     "check_tools_list",
-    # Complete multi-client Gacha journey: no marks in the crowded run,
-    # then green alone twice. Keep all assertions/budgets; isolate startup
-    # and the generated module-page journey from other heavy browsers.
-    "check_gacha_ui",
-    # Another clock, not another resource. It drives a browser on fixed
-    # setTimeout deadlines - pause at 1000ms, resume, finish at +4000 - and
-    # then asserts the robot walked the timeline in ORDER. With ten workers
-    # competing those deadlines slip and the order changes. It failed once in
-    # a parallel gate on 2026-08-20 and passed twice alone, which is the
-    # signature: the check is right, the margin is not.
-    "check_studio_playback",
-    # These spawn the REAL voice helper as a second process next to their own
-    # hub, then knock on it over HTTP. With ten workers competing, the helper
-    # or the hub was starved past its connect window and the check died with
-    # WinError 10061 (refused) 129 s in — while passing alone in 3.7 s. Same
-    # signature twice on 2026-08-25 gates; a refused socket is not an answer
-    # any assertion can weigh.
-    "check_translate",
-    "check_voice",
-    # check_voice_stt and check_voice_tts also boot the real helper and were
-    # added to SOLO 2026-09-12: they crashed in the parallel gate with the same
-    # refused-socket signature but passed alone, same root cause - the helper
-    # subprocess was starved past its connect window.
-    "check_voice_stt",
-    "check_voice_tts",
-    # Two hubs POST a 1.3 MB image to each other, then a browser page has 30 s
-    # to report. Failed 3 full gates in a row on 2026-09-17, green alone each
-    # time (40 s) - the same starved-margin signature as above.
-    "check_flash_remote",
     # It lists every file in the tree to prove each has one subsystem, and
     # other checks create and delete files while they run: the first full
     # gate 2026-09-21 saw studio's header "out of date" for a file that
     # existed only for a moment. Alone, it sees the tree as it really is.
     "check_systems",
-    # A browser drives Studio's crash preview on timers. Red in two full gates
-    # in a row 2026-09-21 ("the crash-gate driver reported"), green alone in
-    # 8 s each time - the starved-margin signature again.
-    "check_crash_gate",
-    # Both drive the hub page through a flash on browser timers. Between them
-    # red in five full gates on 2026-09-21 ("the hub page reported back") and
-    # green alone and together (65 s) every time.
-    "check_flash_type",
-    "check_flash_confirm",
+    # MOVED TO THE POOL 2026-11-26 (they were SOLO for "starved margin" - the
+    # check is right, the margin slips with ten workers - hub_clock,
+    # studio_playback, gacha_ui, translate, voice, voice_stt, voice_tts,
+    # flash_remote, crash_gate, flash_type, flash_confirm, chatty_board):
+    # green in a crowded full run with the PC to itself, three times in a
+    # row (docs/experiments/experiment-records.md). The earlier red gates
+    # coincided with other QC runs overlapping on the same PC; runlock.py
+    # now stops that. If one goes red in the crowd again, put it back HERE
+    # with the date and the evidence - never loosen its assertions.
 }
 
 
