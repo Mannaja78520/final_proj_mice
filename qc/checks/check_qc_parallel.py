@@ -35,10 +35,15 @@ TITLE = "the suite runs in parallel, and single-occupancy checks stay alone"
 def run(t):
     src = (F.QC / "run_qc.py").read_text(encoding="utf-8")
 
-    t.contains(src, "ProcessPoolExecutor",
-               "checks run in separate processes, not threads")
-    t.contains(src, "max_tasks_per_child=1",
-               "each check gets a fresh worker so hub services cannot accumulate")
+    # Since 2026-11-26 the pool is qc/lib/check_pool.py (hard limit + heartbeat):
+    # one NEW process per check, so the old ProcessPoolExecutor guarantees hold.
+    pool_src = (F.QC / "lib" / "check_pool.py").read_text(encoding="utf-8")
+    t.contains(src, "check_pool.CheckPool(",
+               "checks run through the process pool, not threads")
+    t.contains(pool_src, "self.ctx.Process(target=_entry",
+               "each check gets a fresh process so hub services cannot accumulate")
+    t.ok("ProcessPoolExecutor" not in src and "max_tasks_per_child" not in pool_src,
+         "no worker is ever reused for a second check")
     for lane in ("first", "solo", "wanted"):
         t.contains(src, "run_isolated(%s)" % lane,
                    "%s checks also release hub threads after each check" % lane)

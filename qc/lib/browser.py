@@ -516,8 +516,10 @@ window.qcWaitFor = function(cond, ms, step){
         _rmtree(prof)
 
 
-def kill():
-    """Kill only the Edge processes QC started (matched by our tag)."""
+def kill(tag=None):
+    """Kill only the Edge processes QC started (matched by our tag, or by
+    another QC process's tag when `tag` is given: the hard-limit kill)."""
+    tag = tag or TAG
     if not WINDOWS:
         import signal
         try:
@@ -532,7 +534,7 @@ def kill():
     subprocess.run(["powershell", "-NoProfile", "-Command",
                     "Get-CimInstance Win32_Process -Filter \"Name='msedge.exe'\" | "
                     "Where-Object { $_.CommandLine -like '*%s*' } | "
-                    "ForEach-Object { taskkill /F /T /PID $_.ProcessId }" % TAG],
+                    "ForEach-Object { taskkill /F /T /PID $_.ProcessId }" % tag],
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60)
 
 

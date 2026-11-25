@@ -18,7 +18,7 @@ def run(t):
     t.ok('RUN_FIRST = {"check_build_split"}' in src,
          "check_build_split is marked to run first")
     first = src.find("run_isolated(first)")
-    pools = src.find("pools, futs, by_path = [], [], {}")
+    pools = src.find("pools, by_path = [], {}")
     t.ok(0 < first < pools,
          "and it runs before the parallel pools start",
          "first at %d, pools at %d" % (first, pools))

@@ -134,3 +134,4 @@ tools/node_modules/
 main_python/reports/img/
 dist/reports/img/
 qc/last_timing.json
+qc/last_progress.json
