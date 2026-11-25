@@ -1,5 +1,7 @@
 # help-friend-repos-1124 — Put Help + a main-page Help button into Face_Regonize and Photobooth
 Owner: codex:11240915-1a99
+Branch: claude/project-thread-181856 (mice repo); friend repos: add-mice-help
+Plan: none (user ask 2026-11-24)
 Updated: 2026-11-24T09:58+07:00
 Last commit: Face 7436718 on origin/add-mice-help, Photobooth d11cffa local, Mice docs 18fed68 in PR #248, Mice checkpoint 0a5a135 before this one
 
