@@ -45,6 +45,7 @@ Where things live. Edit `config/layout.json`, then `python tools/layout.py build
 | `README.md` | what this project is, how to start |
 | `promote.py` | staging -> real tree, only when QC is green |
 | `promt.md` | the user's prompt log, written by the .claude hook |
+| `requirements-torch-cuda.txt` | PyTorch with CUDA for Voice on an NVIDIA GPU |
 | `requirements.txt` | Python packages |
 
 ## Working copies
