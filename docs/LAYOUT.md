@@ -34,6 +34,7 @@ Where things live. Edit `config/layout.json`, then `python tools/layout.py build
 
 | File | What it is |
 | --- | --- |
+| `.github` | GitHub pull request template (change-log checkbox) |
 | `.gitignore` | what git never keeps |
 | `.qc-receipt.json` | this PC's last green QC (git-ignored) |
 | `AGENTS.md` | Codex/GPT's rules |
