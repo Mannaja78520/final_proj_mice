@@ -112,6 +112,8 @@ class VoiceResources:
                 return loaded
             except Exception as exc:
                 error = exc
+                if device != "cpu":
+                    self.vram().released("stt:" + model)      # the GPU load failed: give its reserved room back
         raise error
 
     def torch_plan(self, torch):

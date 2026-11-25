@@ -28,13 +28,18 @@ class LocalLlm:
 
     def _drop_llm(self):
         """The GPU planner needs this room for something more valuable: let the model go, it reloads when next asked."""
-        self._llm = None
-        self._llm_loaded_model = None
+        try:
+            with self._evict_gate():
+                self._llm = None
+                self._llm_loaded_model = None
+        except TimeoutError:
+            return False                             # busy answering: keep it, the newcomer uses the CPU
         try:
             import torch
             torch.cuda.empty_cache()
         except Exception:                            # noqa: BLE001
             pass
+        return True
 
     def llm_device(self):
         """Where the local model runs and, if it is the CPU, why (GPU first)."""
@@ -150,6 +155,7 @@ class LocalLlm:
                     pass
         except Exception as e:                              # noqa: BLE001
             self._llm_err = "%s: %s" % (e.__class__.__name__, e)
+            self._resources.vram().released("llm:" + mid) if "mid" in locals() else None
         finally:
             self._llm_loading = False
 

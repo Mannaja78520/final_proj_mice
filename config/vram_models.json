@@ -1,6 +1,6 @@
 {
   "_note": "Dynamic GPU memory planner (tools/vramplan.py). NO fixed tiers by card size: the planner measures free VRAM at the moment a model loads and places models by priority. This file only says how important each kind of model is and a first guess of its size; real sizes are measured after the first load and remembered (.local/vram_learned.json). priority: lower number = more important, may push a higher number off the GPU. cpuSlowdown: how many times slower it runs on the CPU (bigger = worth more GPU memory). savedMs: how many ms one job saves on the GPU compared with the CPU (first guess; the planner puts the models that save the most time per MiB on the GPU first, among the live ones). canCpu false = it can only run on the GPU, so it is unloaded instead of spilled.",
-  "headroom": {"fraction": 0.05, "minMiB": 256, "_note": "kept free for other apps' spikes and the models' working memory"},
+  "headroom": {"fraction": 0.06, "minMiB": 384, "_note": "kept free for other apps' spikes and the models' working memory; on top of it the planner keeps the room other programs (the face app) were seen to grow into (learned, .local/vram_learned.json)"},
   "rules": [
     {"match": "^stt:.*(large|turbo)", "mib": 3400, "priority": 0, "cpuSlowdown": 6, "savedMs": 2300, "canCpu": true},
     {"match": "^stt:.*medium",        "mib": 1900, "priority": 0, "cpuSlowdown": 5, "savedMs": 1500, "canCpu": true},

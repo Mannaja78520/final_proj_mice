@@ -76,11 +76,21 @@ class Listener:
 
     def _drop_main_stt(self):
         """The GPU planner needed this room for something more valuable: reload lazily (CPU or GPU, by then)."""
-        self._stt = None
-        self._stt_loaded_model = None
+        try:
+            with self._evict_gate():
+                self._stt = None
+                self._stt_loaded_model = None
+        except TimeoutError:
+            return False                             # busy hearing someone: keep it
+        return True
 
     def _drop_own_stt(self, mid):
-        (getattr(self, "_stt_own", None) or {}).pop(mid, None)
+        try:
+            with self._evict_gate():
+                (getattr(self, "_stt_own", None) or {}).pop(mid, None)
+        except TimeoutError:
+            return False
+        return True
 
     def _own_model(self, lang):
         """The model trained for this one language, loaded once, or None.

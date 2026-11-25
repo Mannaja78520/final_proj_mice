@@ -25,6 +25,7 @@ import json
 import os
 import re
 import threading
+import time
 from pathlib import Path
 
 
@@ -59,15 +60,34 @@ class Registry:
     def learn(self, key, mib):
         if mib and mib > 0:
             self.learned[key] = int(mib)
-            if self.learned_path:
-                try:
-                    self.learned_path.parent.mkdir(parents=True, exist_ok=True)
-                    self.learned_path.write_text(json.dumps(self.learned, indent=1), encoding="utf-8")
-                except OSError:
-                    pass
+            self._save()
 
-    def headroom_mib(self, total_mib):
-        return max(int(self.headroom["minMiB"]), int(total_mib * self.headroom["fraction"]))
+    def _save(self):
+        if self.learned_path:
+            try:
+                self.learned_path.parent.mkdir(parents=True, exist_ok=True)
+                self.learned_path.write_text(json.dumps(self.learned, indent=1), encoding="utf-8")
+            except OSError:
+                pass
+
+    def headroom_mib(self, total_mib, growth_mib=0):
+        """Kept free: a share of the card (floor in config) plus the room other programs have been seen to grow into."""
+        return max(int(self.headroom["minMiB"]), int(total_mib * self.headroom["fraction"])) + int(growth_mib)
+
+    def note_others(self, others_now_mib, now=None):
+        """Remember the most VRAM other programs (the face app) were recently seen using, for later loads.
+        The memory fades (10% an hour) so one passing spike does not reserve room for ever."""
+        now = time.time() if now is None else now
+        if others_now_mib > self.others_peak(now) + 64:
+            self.learned["_othersPeak"] = {"mib": int(others_now_mib), "at": now}
+            self._save()
+
+    def others_peak(self, now=None):
+        rec = self.learned.get("_othersPeak")
+        if not rec:
+            return 0
+        now = time.time() if now is None else now
+        return rec["mib"] * (0.9 ** max(0.0, (now - rec["at"]) / 3600.0))
 
 
 def capped(probe_result, cap_mib):
@@ -100,13 +120,18 @@ def pack(capacity_mib, demands):
 
 
 class Arbiter:
-    """The live bookkeeping: which models we hold on the GPU, and the decision for a new one."""
+    """The live bookkeeping: which models we hold on the GPU, and the decision for a new one.
+
+    A model is RESERVED in `_held` the moment it is told to load on the GPU (state pending), so two
+    loads at the same time cannot both be promised the same room; `loaded()` corrects the size and
+    `released()` gives the room back when a load fails."""
 
     def __init__(self, registry, probe, cap_mib=None):
         self.reg, self._probe = registry, probe
         self.cap_mib = cap_mib if cap_mib is not None else int(os.environ.get("MICE_VRAM_CAP_MIB") or 0) or None
         self._lock = threading.RLock()
-        self._held = {}                              # key -> {"mib", "unload", "device"}
+        self._held = {}                              # key -> {"mib", "unload", "device", "pending"}
+        self._clean = {}                             # key -> True when its before-reading had no eviction mixed in
         self.last = {}
 
     def card(self):
@@ -115,16 +140,26 @@ class Arbiter:
         except Exception:                            # noqa: BLE001 - no probe = no GPU knowledge = CPU
             return None
 
+    def _headroom(self, card, mine_mib):
+        others = max(0, card["totalMiB"] - card["freeMiB"] - mine_mib)
+        self.reg.note_others(others)
+        growth = min(max(0, self.reg.others_peak() - others), int(card["totalMiB"] * 0.30))   # never more than 30% of the card
+        return self.reg.headroom_mib(card["totalMiB"], growth)
+
     def request(self, key, unload=None):
         """Decide where `key` loads NOW. Returns {device, evict:[keys], why, card}. Evicted models'
-        unload callbacks are called here, before the caller loads."""
+        unload callbacks are called here, before the caller loads; an unload that refuses (the model
+        is busy answering) means the newcomer takes the CPU instead of pulling memory from under it.
+        `card` is read again AFTER the evictions: it is the 'before' reading for measuring the size."""
         with self._lock:
             info = self.reg.info(key)
             card = self.card()
             if not card:
-                return {"device": "cpu" if info["canCpu"] else "unload", "evict": [], "why": "no GPU reading", "card": None}
+                return {"device": "cpu" if info["canCpu"] else "unload", "evict": [], "why": "no GPU reading (no NVIDIA probe)", "card": None}
             mine_on_gpu = {k: v for k, v in self._held.items() if v["device"] == "cuda" and k != key}
-            capacity = card["freeMiB"] + sum(v["mib"] for v in mine_on_gpu.values()) - self.reg.headroom_mib(card["totalMiB"])
+            # A load still in progress has not shown up in the card reading yet: its room is taken but NOT added back.
+            mine_mib = sum(v["mib"] for v in mine_on_gpu.values() if not v.get("pending"))
+            capacity = card["freeMiB"] + mine_mib - self._headroom(card, mine_mib)
             demands = [{"key": key, "resident": False, **{x: info[x] for x in ("mib", "priority", "cpuSlowdown", "savedMs", "canCpu")}}]
             for k, v in mine_on_gpu.items():
                 i = self.reg.info(k)
@@ -138,39 +173,61 @@ class Arbiter:
             evict = [d["key"] for d in movable[1:] if plan[d["key"]] != "cuda"]
             if plan[key] != "cuda":
                 evict = []                           # losing is not a reason to push anyone else out
+            done, refused = [], False
             for k in evict:
-                held = self._held.pop(k, None)
+                held = self._held.get(k)
+                ok = True
                 if held and held.get("unload"):
                     try:
-                        held["unload"]()
+                        ok = held["unload"]() is not False
                     except Exception:                # noqa: BLE001 - a failing unload must not block the load
-                        pass
-            device = plan[key]
-            self.last = {"key": key, "device": device, "evict": evict, "capacityMiB": capacity, "needMiB": info["mib"],
-                         "freeMiB": card["freeMiB"], "totalMiB": card["totalMiB"]}
+                        ok = True
+                if ok:
+                    self._held.pop(k, None)
+                    done.append(k)
+                else:
+                    refused = True
+                    break
+            device = "cpu" if refused else plan[key]
+            if device == "unload" or (device == "cpu" and not info["canCpu"]):
+                device = "unload"
+            after = self.card() if done else card
+            self.last = {"key": key, "device": device, "evict": done, "capacityMiB": capacity, "needMiB": info["mib"],
+                         "freeMiB": (after or card)["freeMiB"], "totalMiB": card["totalMiB"]}
+            if device == "cuda":                     # reserve the room now: a load that starts a moment later sees it taken
+                self._held[key] = {"mib": info["mib"], "unload": unload, "device": "cuda", "pending": True}
+                self._clean[key] = not done
             why = ("fits in %d MiB of room" % capacity if device == "cuda" else
+                   "a model on the GPU is busy, so this one runs on the CPU" if refused else
                    "only %d MiB of room for %d MiB: runs on the CPU, same quality" % (max(0, capacity), info["mib"]))
-            return {"device": device, "evict": evict, "why": why, "card": card}
+            return {"device": device, "evict": done, "why": why, "card": after or card}
 
     def loaded(self, key, device, unload=None, before_free_mib=None):
-        """Tell us a load finished. Measures its real size when given the free VRAM from before."""
+        """Tell us a load finished. Measures its real size when the before-reading is clean (no eviction mixed in)."""
         with self._lock:
             info = self.reg.info(key)
             mib = info["mib"]
-            if device == "cuda" and before_free_mib is not None:
+            if device == "cuda" and before_free_mib is not None and self._clean.pop(key, False):
                 card = self.card()
                 if card and before_free_mib - card["freeMiB"] > 64:
                     mib = before_free_mib - card["freeMiB"]
                     self.reg.learn(key, mib)
-            self._held[key] = {"mib": mib, "unload": unload, "device": "cuda" if str(device).startswith("cuda") else "cpu"}
+            self._held[key] = {"mib": mib, "unload": unload, "device": "cuda" if str(device).startswith("cuda") else "cpu",
+                               "pending": False}
 
     def released(self, key):
+        """A load failed or a model was dropped: give its room back."""
         with self._lock:
             self._held.pop(key, None)
+            self._clean.pop(key, None)
 
     def status(self):
         with self._lock:
-            return {"card": self.card(), "capMiB": self.cap_mib,
-                    "headroomMiB": self.reg.headroom_mib((self.card() or {}).get("totalMiB", 0)),
-                    "models": {k: {"device": v["device"], "mib": v["mib"]} for k, v in self._held.items()},
+            card = self.card()
+            mine = sum(v["mib"] for v in self._held.values() if v["device"] == "cuda")
+            return {"card": card, "capMiB": self.cap_mib,
+                    "note": "" if card else "no GPU reading (AMD/Intel or no NVIDIA tool): models run on the CPU",
+                    "headroomMiB": self._headroom(card, mine) if card else 0,
+                    "othersPeakMiB": self.reg.others_peak(),
+                    "models": {k: {"device": v["device"], "mib": v["mib"], "pending": v.get("pending", False)} for k, v in self._held.items()},
                     "lastDecision": self.last}

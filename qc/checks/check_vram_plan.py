@@ -31,7 +31,10 @@ class Card:
 def run(t):
     sys.path.insert(0, str(F.CODE / "tools"))
     import vramplan as v
-    reg = v.Registry.from_file(F.CODE / "config" / "vram_models.json")
+    def fresh_reg(path=None):
+        return v.Registry.from_file(F.CODE / "config" / "vram_models.json", path)
+
+    reg = fresh_reg()
 
     def load_all(card, arb, keys):
         placed = {}
@@ -83,7 +86,7 @@ def run(t):
 
     # 3. Other apps change the room at run time: a new load sees it, no restart, no setting.
     card = Card(12 * 1024, others=0)
-    arb = v.Arbiter(reg, card.probe)
+    arb = v.Arbiter(fresh_reg(), card.probe)
     a = arb.request("stt:large-v3")["device"]
     card.others = 11 * 1024                                 # the face app and a game grab the card
     b = arb.request("stt:small")["device"]
@@ -107,7 +110,8 @@ def run(t):
         reg2 = v.Registry.from_file(F.CODE / "config" / "vram_models.json", learned)
         card = Card(12 * 1024)
         arb = v.Arbiter(reg2, card.probe)
-        before = card.probe()["freeMiB"]
+        r = arb.request("stt:small")                              # a clean reading: nothing pushed out
+        before = r["card"]["freeMiB"]
         card.ours["stt:small"] = 950
         arb.loaded("stt:small", "cuda", before_free_mib=before)
         again = v.Registry.from_file(F.CODE / "config" / "vram_models.json", learned)
@@ -117,3 +121,45 @@ def run(t):
     data = json.loads((F.CODE / "config" / "vram_models.json").read_text(encoding="utf-8"))
     t.ok(data["rules"][-1]["match"] == "^" and all({"match", "mib", "priority"} <= set(r) for r in data["rules"]),
          "registry rules are complete and end with a catch-all")
+
+    # 8. Two loads at the same moment are not both promised the same room (the boot preload and a live question).
+    card = Card(4 * 1024)
+    arb = v.Arbiter(fresh_reg(), card.probe)
+    a = arb.request("stt:large-v3")["device"]               # reserved, not yet loaded: the card still shows it free
+    b = arb.request("llm:Qwen2.5-0.5B-Instruct")["device"]
+    t.ok(a == "cuda" and b == "cpu", "a load that has started holds its room against a second one at the same moment", str((a, b)))
+    arb.released("stt:large-v3")                              # that load failed: the room comes back
+    t.ok(arb.request("llm:Qwen2.5-0.5B-Instruct")["device"] == "cuda", "a failed load gives its room back")
+
+    # 9. A size measured right after pushing another model out is not learned (it would come out too small).
+    with tempfile.TemporaryDirectory() as d:
+        reg3 = v.Registry.from_file(F.CODE / "config" / "vram_models.json", Path(d) / "l.json")
+        card = Card(4 * 1024)
+        arb = v.Arbiter(reg3, card.probe)
+        load_all(card, arb, ["llm:Qwen2.5-0.5B-Instruct"])
+        r = arb.request("stt:large-v3", unload=lambda: None)
+        card.ours.pop("llm:Qwen2.5-0.5B-Instruct", None)    # the evicted model's memory was freed
+        before = r["card"]["freeMiB"]
+        card.ours["stt:large-v3"] = 3400
+        arb.loaded("stt:large-v3", "cuda", before_free_mib=before)
+        t.ok(r["evict"] and "stt:large-v3" not in reg3.learned, "a size measured with an eviction mixed in is not remembered", str(reg3.learned))
+
+    # 10. A model that is busy answering refuses to be pushed off the GPU: the newcomer uses the CPU instead.
+    card = Card(4 * 1024)
+    arb = v.Arbiter(fresh_reg(), card.probe)
+    load_all(card, arb, ["llm:Qwen2.5-0.5B-Instruct"])
+    arb._held["llm:Qwen2.5-0.5B-Instruct"]["unload"] = lambda: False      # busy
+    r = arb.request("stt:large-v3")
+    t.ok(r["device"] == "cpu" and r["evict"] == [] and "llm:Qwen2.5-0.5B-Instruct" in arb._held,
+         "a busy model is not pulled from under its answer", str(r))
+
+    # 11. Room that another program (the face app) was seen to grow into stays free for it.
+    with tempfile.TemporaryDirectory() as d:
+        reg4 = v.Registry.from_file(F.CODE / "config" / "vram_models.json", Path(d) / "l.json")
+        card = Card(12 * 1024, others=6 * 1024)
+        arb = v.Arbiter(reg4, card.probe)
+        arb.request("stt:small")                              # sees the other program at 6 GB
+        arb.released("stt:small")
+        card.others = 1024                                    # it shrinks now ...
+        room_now = arb.status()["headroomMiB"]
+        t.ok(4 * 1024 <= room_now <= 0.4 * 12 * 1024, "room the other program grew into stays reserved for it, capped at a share of the card", str(room_now))

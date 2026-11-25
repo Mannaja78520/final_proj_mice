@@ -182,6 +182,15 @@ class Brain(FaceLink, Translator, Listener, Speaker, Faq, LocalLlm, Answerer):
             sched = self.__dict__.setdefault("_sched", jobsched.Scheduler.from_file(CODE / "config" / "scheduler.json"))
         return sched.gate(klass)
 
+    def _evict_gate(self):
+        """Pushing a model off the GPU must not pull memory from under a running answer: take the
+        model's own gate (waits for the running job, gives up after 3 s = the caller keeps the model)."""
+        return self._gpu_timeout("live", 3.0)
+
+    def _gpu_timeout(self, klass, seconds):
+        self._gpu(klass)                           # makes sure the scheduler exists
+        return self._sched.gate(klass, timeout=seconds)
+
     def scheduler_status(self):
         self._gpu("normal")                        # makes sure the scheduler exists
         return self._sched.status()
