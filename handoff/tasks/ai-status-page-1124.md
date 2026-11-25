@@ -2,7 +2,7 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T13:22:50+07:00
+Updated: 2026-11-25T13:32:14+07:00
 Last commit: ee6a7172 (current-main candidate)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Run a matched visual-language check on clean b20e09ae and ee6a7172. Then classify the result with candidate AI work, camera, and system-map checks. One process at a time, matched private temp/peer setup, one run per tree.
+Fix the reproduced dynamic Tools title/ARIA-label translation. Reuse the shared language placeholder support for attributes and update localized Hub Help in this step. Then recheck the same visual journey and locale contract.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -76,6 +76,9 @@ Run a matched visual-language check on clean b20e09ae and ee6a7172. Then classif
 - Current-main cherry-pick regenerated Help, API and system inventories. The clean generator also corrects b20e09ae's app-voice inventory of private, absent profiles and their check references. System-map QC requires the clean generated inventory; no Voice source or settings edits.
 
 - Current-main candidate ee6a7172 committed in _out/ai-status-1124/release-current. Exact diff is the 32 owned AI work paths and one clean generated Voice inventory. Existing current-main changes preserved.
+
+- Matched QC: clean current main b20e09ae visual-language 161/4. Candidate ee6a7172 targeted 209/3 with AI work 21/0, camera 13/0, system map 13/0. Both leak the Tools dynamic title in en/zh/ja. Main also leaked a loading string. Evidence: _out/ai-status-1124/matched-b20e09ae.log and matched-ee6a7172.log.
+- Root cause: Tools builds a Thai title and aria-label with the inserted app name. The automatic shared attribute translation checks literal keys only; placeholder support already exists for other dynamic strings. Shared QC released after matched checks.
 
 ## Next
 If matched user journeys pass, run the full serial gate on ee6a7172. If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
@@ -125,6 +128,8 @@ If matched user journeys pass, run the full serial gate on ee6a7172. If candidat
 | docs/systems/hub-web.md | Generated inventory for Help images | Built | Diff lists exactly eight new captures | 777a439 |
 
 | docs/systems/app-voice.md | Regenerate clean inventory after current-main sync | Generated | Exact generated diff; QC pending | ee6a7172 |
+
+| shared/web/mice-lang.js | Reuse locale placeholders for dynamic tool labels | Planned | Red controls on clean main and candidate | uncommitted |
 
 ## Blocked
 Visual-language QC remains red. Shared QC released after replay. Need a green full gate before merge, build or restart.
