@@ -27,6 +27,7 @@ sys.path.insert(0, str(QC / "lib"))
 sys.path.insert(0, str(QC))
 
 import qc as F  # noqa: E402
+import check_pool  # noqa: E402
 
 
 # ---- proof that a particular tree passed ------------------------------
@@ -61,7 +62,7 @@ def tree_fingerprint():
             continue
         # The receipt itself, and files the RUNNING system writes, are not
         # source: including them would invalidate every receipt immediately.
-        if f.name in (".qc-receipt.json", "last_timing.json", "promt.md", "PLAN.html",
+        if f.name in (".qc-receipt.json", "last_timing.json", "last_progress.json", "promt.md", "PLAN.html",
                       "settings_shared.json", "hub_auth.json",
                       "hub_password.txt", "faces_login.json", "BRIDGE.md", "HANDOVER.md",
                       "plan_state.js", "system_integral.html", "system_integral_state.js"):
@@ -102,6 +103,9 @@ SPEED = _speed()
 # with the 1-second checks and ends with a 90-second one waits on it alone.
 # qc/data/qc_durations.json is the committed seed for a fresh clone. 2026-11-25.
 TIMING_FILE = CODE / "qc" / "last_timing.json"
+# Written every ~10 s during a run (what is running, how long, what finished
+# last): git-ignored and not part of tree_fingerprint. qc/lib/check_pool.py.
+PROGRESS_FILE = CODE / "qc" / "last_progress.json"
 TIMING_SEED = QC / "data" / "qc_durations.json"
 
 
@@ -527,26 +531,42 @@ def main(argv):
     def _red(results, crash):
         return bool(crash) or not results or any(not g for g, _l, _d in results)
 
+    def _budget(f):
+        """Hard limit for one check: the floor, or 3x its slowest healthy time."""
+        return check_pool.budget_for(
+            f.stem, durations, SPEED.get("checkTimeoutFloorSecs") or 600)
+
+    def _kill_browsers(pid):
+        import browser
+        browser.kill(browser.tag_for(pid))
+
+    def _result_of(f, kind, value, secs):
+        """A CheckPool outcome as the 7-tuple _one returns. A timeout or a dead
+        process is a FAILED check (crash text), never a hang or a silent pass."""
+        if kind == "done":
+            if isinstance(value, tuple) and value and value[0] == "__error__":
+                return (str(f), "", [], secs, "", value[1], "")
+            return value
+        return (str(f), "", [], secs, value, "", "")
+
     def _alone(f):
         """One more run of one check, in a fresh process, with nothing beside it."""
-        import concurrent.futures as _cf
-        with _cf.ProcessPoolExecutor(max_workers=1, max_tasks_per_child=1) as pool:
-            return pool.submit(_one, str(f)).result()
+        pool = check_pool.CheckPool(_one, 1, on_kill=_kill_browsers)
+        pool.submit(str(f), str(f), _budget(f))
+        while True:
+            for _key, kind, value, secs in pool.poll():
+                return _result_of(f, kind, value, secs)
+            time.sleep(0.2)
 
     def run_isolated(items):
-        """Keep sequential checks sequential without retaining their hub threads."""
-        if not items:
-            return
-        import concurrent.futures as _cf
-        with _cf.ProcessPoolExecutor(max_workers=1,
-                                     max_tasks_per_child=1) as pool:
-            for f, mod in items:
-                (_path, _title, results, secs, crash, err,
-                 printed) = pool.submit(_one, str(f)).result()
-                if err:
-                    broken.append((f.stem, err))
-                else:
-                    report(f, mod, results, secs, crash, _said(results, crash, printed))
+        """Keep sequential checks sequential, each in a fresh process."""
+        for f, mod in items:
+            (_path, _title, results, secs, crash, err,
+             printed) = _alone(f)
+            if err:
+                broken.append((f.stem, err))
+            else:
+                report(f, mod, results, secs, crash, _said(results, crash, printed))
 
     solo = [(f, m) for f, m in wanted
             if f.stem in SOLO or getattr(m, "SOLO", False)]
@@ -605,37 +625,42 @@ def main(argv):
         run_isolated(first)
         heavy_paths = {str(f) for f, _m in heavy}
         suspect = []        # browser checks that failed in the crowd: retried alone
-        pools, futs, by_path = [], [], {}
+        pools, by_path = [], {}
         t_pool = time.time()
         for group, width in ((para, jobs), (heavy, browser_jobs)):
             if not group:
                 continue
             group = longest_first(group, durations)
-            # Hub threads outlive a check. Reusing a worker accumulates HTTP,
-            # scanner and route-probe services until browser checks time out.
-            pool = _cf.ProcessPoolExecutor(max_workers=width,
-                                           max_tasks_per_child=1)
+            # One process per check (hub threads outlive a check), each with a
+            # hard time limit - qc/lib/check_pool.py.
+            pool = check_pool.CheckPool(_one, width, on_kill=_kill_browsers)
             pools.append(pool)
             for f, m in group:
                 by_path[str(f)] = (f, m)
-                futs.append(pool.submit(_one, str(f)))
-        try:
-            for fut in _cf.as_completed(futs):
-                path_s, _title, results, secs, crash, err, printed = fut.result()
-                f, mod = by_path[path_s]
+                pool.submit(str(f), str(f), _budget(f))
+        beat = check_pool.Heartbeat(PROGRESS_FILE, len(para) + len(heavy), pools)
+        while any(p.busy() for p in pools):
+            got = [r for p in pools for r in p.poll()]
+            for key, kind, value, secs_w in got:
+                f, mod = by_path[key]
+                path_s, _title, results, secs, crash, err, printed = _result_of(
+                    f, kind, value, secs_w)
+                beat.finished(f.stem)
                 if err:
                     broken.append((f.stem, err))
                     continue
-                if path_s in heavy_paths and retries and _red(results, crash):
+                # a check that hit its hard limit is not retried: it would
+                # only hang again, for another full budget
+                if path_s in heavy_paths and retries and _red(results, crash)                         and kind != "timeout":
                     suspect.append((f, mod, results, secs, crash, printed))
                     continue
                 report(f, mod, results, secs, crash, _said(results, crash, printed))
                 done_n += 1
                 if done_n % 10 == 0:
                     _plan("QC %d/%d checks" % (done_n, total_n))
-        finally:
-            for pool in pools:
-                pool.shutdown(wait=True)
+            beat.tick()
+            if not got:
+                time.sleep(0.2)
         for f, mod, results, secs, crash, printed in suspect:
             again = [_alone(f) for _ in range(retries)]
             if all(not _red(r[2], r[4]) and not r[5] for r in again):
