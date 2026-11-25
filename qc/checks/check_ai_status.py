@@ -69,7 +69,20 @@ None.
     t.eq([rows[name]["state"] for name in ("Finish the review", "Wait for approval", "Old work")],
          ["done", "blocked", "stale"], "finished, waiting and old handoffs stay distinct")
     t.eq(rows["Big task"]["activity"], "", "a heading beyond the read limit cannot appear")
+    check_loose_dates(t, AiStatus)
     return task
+
+
+def check_loose_dates(t, AiStatus):
+    """Real task files write dates as words, not strict ISO: the age must still come from the date, not the file time."""
+    read = AiStatus._updated
+    t.eq(read("2026-10-28 19:40 (Bangkok)", -1), read("2026-10-28T19:40:00+07:00", -1),
+         "a Bangkok clock stamp with a zone word is read as that time")
+    t.eq(read("2026-10-29 11:04 UTC", -1), read("2026-10-29T11:04:00+00:00", -1), "a UTC stamp is read as UTC")
+    t.eq(read("2026-10-29 15:05 (+07)", -1), read("2026-10-29T15:05:00+07:00", -1), "a +07 offset is read")
+    t.eq(read("2026-11-06 (Bangkok)", -1), read("2026-11-06T00:00:00+07:00", -1), "a date without a time is read as Bangkok midnight")
+    t.eq(read("2569-10-25 15:49 (Bangkok)", -1), read("2026-10-25T15:49:00+07:00", -1), "a Buddhist-era year is converted")
+    t.eq(read("no date here", 42), 42, "a file with no date falls back to its file time")
 
 
 def check_worktree(t, AiStatus, root):
