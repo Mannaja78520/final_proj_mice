@@ -403,6 +403,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/checks/check_voice_edge_fallback.py`
 - `qc/checks/check_voice_fast.py`
 - `qc/checks/check_voice_gestures.py`
+- `qc/checks/check_voice_gpu_and_ask_speed.py`
 - `qc/checks/check_voice_guard.py`
 - `qc/checks/check_voice_helper.py`
 - `qc/checks/check_voice_identify.py`

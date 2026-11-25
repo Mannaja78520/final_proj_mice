@@ -58,7 +58,32 @@ try:
 except Exception:
     pass
 
-CODE = Path(__file__).resolve().parents[2]          # apps/voice/service.py -> code
+
+def _add_nvidia_wheel_dlls():
+    """cublas/cudnn from the pip `nvidia-*-cu12` wheels (site-packages/nvidia/*/bin).
+
+    PC 2026-11-25: torch here is the CPU build, so the torch/lib path above
+    holds no cublas64_12.dll and Whisper on CTranslate2 fell back to CPU int8
+    (3.1 s per clip). `pip install nvidia-cublas-cu12` puts the DLL here; this
+    finds it on any path in sys.path so no version or folder is hardcoded.
+    """
+    for base in sys.path:
+        root = os.path.join(base or ".", "nvidia")
+        if not os.path.isdir(root):
+            continue
+        for name in sorted(os.listdir(root)):
+            b = os.path.join(root, name, "bin")
+            if os.path.isdir(b):
+                try:
+                    os.add_dll_directory(b)
+                except (OSError, AttributeError):
+                    pass
+                os.environ["PATH"] = b + os.pathsep + os.environ.get("PATH", "")
+
+
+_add_nvidia_wheel_dlls()
+
+CODE =Path(__file__).resolve().parents[2]          # apps/voice/service.py -> code
 
 # EVERY child process this helper runs is started with this, or Windows opens a
 # console for it. Speaking a sentence that is not cached runs edge_tts and may
@@ -898,6 +923,10 @@ class VoiceHandler(BaseHTTPRequestHandler):
                                "no sound arrived - press talk and speak again"},
                               400)
         hint = parse_qs(urlparse(self.path).query).get("lang", [""])[0]
+        try:
+            self.brain.prefetch_person()     # the name is looked up while we hear
+        except Exception:                    # noqa: BLE001 - a look never blocks hearing
+            pass
         try:
             got, why_not = self.brain.listen(audio, hint)
         except Exception as e:                      # noqa: BLE001
