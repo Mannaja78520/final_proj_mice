@@ -2,7 +2,7 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T13:34:49+07:00
+Updated: 2026-11-25T13:39:42+07:00
 Last commit: 931b7264 (localized release candidate)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Recheck visual language, AI work, translations, handoff and system inventory on frozen 931b7264. Run the full serial gate only if this preflight is green. Use private temp and peer directories.
+Full serial QC is running on frozen 931b7264 in a fresh private temp and peer directory. Await _out/ai-status-1124/full-931b7264.done.json.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -82,8 +82,10 @@ Recheck visual language, AI work, translations, handoff and system inventory on 
 
 - Fixed the shared localized attributes using the existing placeholder matcher. Added the Tools label in en/ja/zh and translated loading and network status text in th/ja/zh. Hub Help and its four languages now note that AI work opens in a new tab. Build, syntax and staged diff check pass. Candidate 931b7264; WIP source checkpoint 3c6395ad.
 
+- Localized candidate preflight PASS 509/0 in 157.6s. Same visual-language check now passes. AI work, Help, handoff, camera, systems and translation checks passed. Evidence: _out/ai-status-1124/preflight-931b7264.log.
+
 ## Next
-If matched user journeys pass, run the full serial gate on ee6a7172. If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
+After a green full gate, record the final scoped review and publish, merge, build and restart. If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
 
 ## Facts found
 - main_python/hub_api_apps.py:50 supplies the registry-driven Tools list. A manifest in apps/ adds a tile.
@@ -101,19 +103,19 @@ If matched user journeys pass, run the full serial gate on ee6a7172. If candidat
 | apps/ai-status/app.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
 | apps/ai-status/index.html | Planned AI work integration | Built | focused QC and native text check | d7bb1ec |
 | apps/ai-status/status.js | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
-| main_python/web/help/parts/hub.html | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
+| main_python/web/help/parts/hub.html | Localize AI work and Tools labels / Help | Built | Focused preflight passed | 931b7264 |
 | main_python/web/help/shots.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
-| main_python/web/help.html | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
+| main_python/web/help.html | Localize AI work and Tools labels / Help | Built | Focused preflight passed | 931b7264 |
 | docs/systems.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
 | docs/systems/hub-apps.md | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
 | qc/checks/check_ai_status.py | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
-| shared/web/lang/en.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
-| shared/web/lang/th.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
-| shared/web/lang/ja.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
-| shared/web/lang/zh.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
-| shared/web/lang/help/en.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
-| shared/web/lang/help/ja.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
-| shared/web/lang/help/zh.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
+| shared/web/lang/en.json | Localize AI work and Tools labels / Help | Built | Focused preflight passed | 931b7264 |
+| shared/web/lang/th.json | Localize AI work and Tools labels / Help | Built | Focused preflight passed | 931b7264 |
+| shared/web/lang/ja.json | Localize AI work and Tools labels / Help | Built | Focused preflight passed | 931b7264 |
+| shared/web/lang/zh.json | Localize AI work and Tools labels / Help | Built | Focused preflight passed | 931b7264 |
+| shared/web/lang/help/en.json | Localize AI work and Tools labels / Help | Built | Focused preflight passed | 931b7264 |
+| shared/web/lang/help/ja.json | Localize AI work and Tools labels / Help | Built | Focused preflight passed | 931b7264 |
+| shared/web/lang/help/zh.json | Localize AI work and Tools labels / Help | Built | Focused preflight passed | 931b7264 |
 | main_python/web/help/img/en-light-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
 | main_python/web/help/img/en-dark-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
 | main_python/web/help/img/th-light-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
@@ -131,10 +133,10 @@ If matched user journeys pass, run the full serial gate on ee6a7172. If candidat
 
 | docs/systems/app-voice.md | Regenerate clean inventory after current-main sync | Generated | Exact generated diff; QC pending | ee6a7172 |
 
-| shared/web/mice-lang.js | Reuse locale placeholders for dynamic tool labels | Built | Syntax and generated diff pass; focused QC pending | 931b7264 |
+| shared/web/mice-lang.js | Reuse locale placeholders for dynamic tool labels | Built | Visual-language preflight passed | 931b7264 |
 
 ## Blocked
-Visual-language QC remains red. Shared QC released after replay. Need a green full gate before merge, build or restart.
+A59-2 owns the shared QC driver while full serial QC runs. Merge, build and restart await that result.
 
 ## Result
 (Codex: PR link, screenshot paths, what you verified; report in Thai)
