@@ -476,3 +476,17 @@ Tools: tools/perf_profile.py (RAM/VRAM per app, GPU enc/dec), tools/perf_load.py
 - Rejected: Whisper th-medium int8_float16: VRAM 2069 -> 1149 MiB, but text vs float16 only 0.72 mean similarity (min 0.44), 10 clips: quality drop.
 - GPU encoder/decoder 0% in every run: PC camera gives raw nv12/yuyv (no H.264/MJPEG), hub re-encodes 640 px 10 fps q6 JPEG on CPU. Encode test (lavfi): 720p30 q4 1.61 MB/s RSS 212 MB; 1080p30 2.73 MB/s RSS 411 MB.
 - Second opinions: Gemini 4 Neon medium and Codex gpt-6.2-sol medium both ranked cublas fix and Ollama-first /ask on top.
+
+### 2026-11-25 round 2: Video page waited 210 s for nothing
+Per-phase profile of check_video_page alone (4-core cloud): hub half 0.8 s, page half 11.5 s, LAN page half 210.1 s. The LAN driver
+never sent its `VL~done` mark, so browser.page() sat out `seconds + grace` (60 + 150 s) after the page had already reported
+("QC SLOW ... waited for nothing"). Fix: send `VL~done` at the end of that driver. Same 62 assertions, all green.
+- check_video_page: 233.0 s -> 22.5 s in the full run (15.9 s alone).
+- Full QC, same box, same env-only failures: 651.2 s -> 516.5 s (-20.7%); old runner on main was 675.3 s (-23.5% in total).
+  Pool phase 400 -> 264 s; SOLO phase unchanged at 252 s. 10476 passed, 13 failed (all env-only: no PlatformIO, torch, mujoco, branch `app`).
+- Checked the next slowest browser checks alone for the same bug (visual_language 107 s, theme_contrast 89 s, network_tab 69 s):
+  none prints QC SLOW; their time is real work.
+- SOLO tail: 29 checks, 245 s of work. Port-only ones (short_name, name_claim, mdns, build_split) total under 7 s; the 250 s is
+  clock-sensitive browser checks (flash_type 43 s, flash_confirm 42 s, chatty_board 29 s, report_pictures 23 s ...) whose history
+  of starved-margin failures is in run_qc.py. Moving them into the pool would trade time for flakes, so not done.
+- Stop rule: round 3 (splitting visual_language by language) is estimated at under 10% and is left for a measured follow-up.
