@@ -48,7 +48,8 @@ async function submitReport(){
       module: (window.CURRENT_MOD && window.CURRENT_MOD.id) || '',
       build: (window.BUILD_VER || ''),
       time: new Date().toISOString(),
-      attachDiag: document.getElementById('reportAttachDiag').checked
+      attachDiag: document.getElementById('reportAttachDiag').checked,
+      images: reportPics.slice()
     };
     const r = await fetch('/api/report', {
       method: 'POST',

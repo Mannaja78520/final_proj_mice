@@ -17,7 +17,7 @@ class Translator:
         language, the translator always answers in English. One model, two
         system prompts - never both at once.
         """
-        with self._lock:
+        with self._gpu("helper"):
             ok, why_not = self._ensure_llm()
             if not ok:
                 return None, why_not
@@ -65,7 +65,7 @@ class Translator:
             pass
 
         # Fallback to local LLM if available (short reply only)
-        with self._lock:
+        with self._gpu("translate"):
             ok, _ = self._ensure_llm()
             if ok:
                 target_names = {

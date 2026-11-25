@@ -6,6 +6,7 @@ that live in main.py are read late through _hub, so a check that swaps
 main.<name> reaches this code too.
 """
 import json
+import report_images
 import socket
 import threading
 import time
@@ -72,7 +73,7 @@ class SupportRoutes:
             # UnboundLocalError. 33 red checks from two lines.
             try:
                 length = int(self.headers.get("Content-Length", 0))
-                if length > 1048576:
+                if length > report_images.MAX_BODY:
                     # This endpoint is deliberately open, so the cap is not
                     # optional: a lying Content-Length must not become RAM.
                     # Same rudeness rule as drain() - past the cap, drop the
@@ -97,9 +98,14 @@ class SupportRoutes:
             t = "".join(ch for ch in str(data.get("time") or "")
                         if ch.isalnum() or ch in "-T:.Z ")[:40]
             attach = bool(data.get("attachDiag"))
+            rid = uuid.uuid4().hex[:12]
+            # Pictures go to their own files; the report keeps only the names.
+            images = report_images.save(_hub.HERE / "reports" / "img", rid,
+                                        data.get("images"))
             # Build the report record
             report = {
-                "id": uuid.uuid4().hex[:12],
+                "id": rid,
+                "images": images,
                 "time": t or time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "text": text,
                 "page": page,
@@ -128,6 +134,14 @@ class SupportRoutes:
             threading.Thread(target=_hub._translate_report_later,
                              args=(fname, text), daemon=True).start()
             return self.send_json({"ok": True, "id": report["id"]})
+        if path == "/api/report/image" and method == "GET":
+            # One picture of a report (?id=..&n=0). Open like the list; the
+            # id and number are checked as plain characters before any file.
+            got = report_images.read(_hub.HERE / "reports" / "img",
+                                     (q.get("id") or [""])[0], (q.get("n") or [""])[0])
+            if not got:
+                return self.send_json({"ok": False, "error": "no such picture"}, 404)
+            return self.send_bytes(got[1], got[0])
         if path == "/api/reports" and method == "GET":
             # LIST reports for the complaints screen — no login, anyone can see.
             # Returns: [ {id, time, text, text_en, page, module, build, status, ...} ]
@@ -160,6 +174,7 @@ class SupportRoutes:
                         "build": data.get("build"),
                         "status": data.get("status", "open"),
                         "client": data.get("client", ""),
+                        "images": len(data.get("images") or []),
                     })
             return self.send_json({"ok": True, "reports": out})
         if path == "/api/reports" and method == "POST":

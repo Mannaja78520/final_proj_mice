@@ -201,6 +201,42 @@ def dead_port():
 _hub_port = [_free_port()]
 
 
+def isolate_data(main):
+    """Give THIS check process its own copy of the studio data folders.
+
+    projects/, sequences/ and shows/ are shared by every hub that runs
+    from the same tree, and ~35 checks save into them under fixed names
+    (qc_video_page, qc_welcome, dummy_<date>.yaml ...). One copy of each check
+    is fine; two overlapping runs, or two checks using the same name, overwrote
+    each other: 3 copies of check_video_page at once passed 1 of 3, and nine
+    checks failed the same way (2026-11-26). The auth file, gestures, app list
+    and peers folder were already per-process; this is the same rule for the
+    data. The copy keeps whatever the tree ships (some checks play the shipped
+    sequences) and is removed when the process ends. A check that points
+    main.PROJECTS / SEQUENCES somewhere itself still wins.
+    """
+    if getattr(main, "_qc_data_box", None):
+        return main._qc_data_box
+    import atexit
+    import shutil
+    import tempfile
+    box = Path(tempfile.mkdtemp(prefix="mice_qc_data_%d_" % os.getpid()))
+    root = Path(main.PROJECTS).parent
+    for name in ("projects", "sequences", "shows"):
+        src = root / name
+        if src.is_dir():
+            shutil.copytree(src, box / name)
+        else:
+            (box / name).mkdir()
+    # models/ holds 27 MB of robot meshes the checks only READ; copying that
+    # into every one of ~150 hubs would cost more than it protects.
+    main.PROJECTS, main.SEQUENCES = box / "projects", box / "sequences"
+    main.SHOWS = main.shows_mod.Shows(box / "shows", main.SEQUENCES)
+    main._qc_data_box = box
+    atexit.register(shutil.rmtree, str(box), True)
+    return box
+
+
 def start_hub(fake=True):
     """Boot the hub in-process on a free port, with the fake module on COM99.
 
@@ -225,6 +261,15 @@ def start_hub(fake=True):
                                         / ("mice_qc_ext_%d.json" % _hub_port[0]))
     # A hub in QC never starts a real voice helper (A55-1): a check that points
     # the helper at a dead port expects "not running", not a model loading.
+    # The apps on this PC find each other through files in one temp folder. A QC hub that shared it
+    # with the REAL hub on the same PC saw its Cameras and Voice apps (and read the real webcam through
+    # them): the camera checks failed on a PC that had MiceHub open and passed in the cloud. A
+    # throwaway folder per QC run keeps the QC hub alone. A check that sets its own folder wins.
+    _peers_now = os.environ.get("MICE_PEERS_DIR", "")
+    if not _peers_now or "mice_qc_peers_" in _peers_now:
+        # a fresh folder per hub: a worker process runs several checks one after another, and a later
+        # hub must not meet the peers an earlier one left
+        os.environ["MICE_PEERS_DIR"] = str(Path(tempfile.gettempdir()) / ("mice_qc_peers_%d_%d" % (os.getpid(), time.time_ns())))
     os.environ["MICE_VOICE_AUTOSTART"] = "0"
     # QC pages are shown exactly as written ("off"): the checks look for the page's own words. The
     # Thai default (mice-lang.js) has its own check, check_language.
@@ -237,6 +282,7 @@ def start_hub(fake=True):
     import webbrowser
     webbrowser.open = lambda *a, **k: None      # never pop a browser in QC
     import main
+    isolate_data(main)
     main.HOST = "127.0.0.1"  # isolated fake Hub; never expose a test listener to the LAN
     import socketserver
     main.Handler.log_message = lambda *a, **k: None   # QC output stays readable

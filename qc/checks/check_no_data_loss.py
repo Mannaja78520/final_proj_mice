@@ -41,7 +41,7 @@ def _post(base, path, obj):
 def run(t):
     fake_serial.reset()
     base, main = F.start_hub()
-    projects = F.STUDIO / "projects"
+    projects = main.PROJECTS            # this check's own copy (qc.isolate_data)
 
     name = "qc_atomic_save"
     dest = projects / (name + ".json")

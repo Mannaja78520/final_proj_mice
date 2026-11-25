@@ -374,7 +374,7 @@ async function run(){
   rep("removed", await until(() => document.getElementById("vidLanItems").textContent.includes("No device"), 8000));
   rep("end", 1);
 }
-run().catch(e => rep("ERR", e));
+run().catch(e => rep("ERR", e)).then(() => qcMark("VL~done"));
 """
 
 

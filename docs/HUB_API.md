@@ -19,6 +19,7 @@ A `-` in the table means the code has no comment for that URL yet.
 | Method | Path | What | Query values | Defined in |
 |---|---|---|---|---|
 | GET | `/api/access` | - | - | hub_api_apps.py |
+| GET | `/api/ai-status` | - | - | hub_api_apps.py |
 | GET | `/api/all-jao/start` | - | - | hub_api_apps.py |
 | GET | `/api/allmods` | every module on every PC, this one included scan_hubs() already finds the other hubs on this subnet (it is wha | force | main.py |
 | GET | `/api/app` | - | - | hub_api_support.py |
@@ -99,6 +100,7 @@ A `-` in the table means the code has no comment for that URL yet.
 | GET | `/api/questions/topics` | - | - | hub_api_gacha.py |
 | GET | `/api/quit` | - | - | hub_api_apps.py |
 | POST | `/api/report` | - | - | hub_api_support.py |
+| GET | `/api/report/image` | - | id, n | hub_api_support.py |
 | GET | `/api/reports` | - | - | hub_api_support.py |
 | POST | `/api/reports` | - | - | hub_api_support.py |
 | POST | `/api/rigcad` | - | - | hub_api_studio.py |
@@ -108,6 +110,7 @@ A `-` in the table means the code has no comment for that URL yet.
 | POST | `/api/save` | - | - | hub_api_studio.py |
 | GET | `/api/scan` | - | force | main.py |
 | GET | `/api/scanusb` | - | force, full, port | main.py |
+| GET | `/api/scheduler` | - | - | hub_api_scheduler.py |
 | GET | `/api/selfupdate` | - | - | hub_api_support.py |
 | POST | `/api/seqdelete` | - | - | hub_api_studio.py |
 | GET | `/api/seqsteps` | - | name | hub_api_studio.py |

@@ -196,7 +196,7 @@ def run(t):
         fresh_file=Path(folder)/"voice.json";fresh_file.write_text("{}")
         fresh={"stt":{"model":"new-stt"},"llm":{"model":"new-llm"}}
         reload_model=production("maybe_reload",{"registry":SimpleNamespace(load=lambda p:fresh)})
-        brain=SimpleNamespace(cfg_path=fresh_file,_cfg_mtime=None,_lock=threading.RLock(),_resources=voice,
+        brain=SimpleNamespace(cfg_path=fresh_file,_cfg_mtime=None,_gpu=lambda klass, _l=threading.RLock(): _l,_resources=voice,
                               _stt_loaded_model="old-stt",_llm_loaded_model="old-llm")
         voice.mark("stt:old-stt",full,"cpu");voice.mark("stt:specialist",full,"cpu");voice.mark("llm:old-llm",full,"cpu")
         reload_model(brain)

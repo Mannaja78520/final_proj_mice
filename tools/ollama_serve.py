@@ -22,6 +22,29 @@ def load(path=None):
     return json.loads(strip_jsonc(p.read_text(encoding="utf-8")))
 
 
+def _vendor_env(cfg):
+    """Extra Ollama environment for a non-NVIDIA GPU (AMD/Intel via Vulkan/ROCm).
+
+    Only when the PC has such a GPU and NO NVIDIA one (NVIDIA keeps Ollama's
+    default CUDA path). `gpuBackend` in config/local_ai.json: "auto" (default),
+    "off" (leave Ollama alone), or a vendor id from config/gpu_vendors.json.
+    Data lives in config/gpu_vendors.json, nothing vendor-specific is here.
+    """
+    mode = (cfg.get("gpuBackend") or "auto")
+    if mode == "off":
+        return {}
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "main_python"))
+    import resource_hardware as hw
+    table = hw.load_vendors()
+    if mode != "auto":
+        row = next((v for v in table["vendors"] if v["id"] == mode), None)
+        return dict(row.get("ollamaEnv", {})) if row else {}
+    found = hw.classify_adapters(hw.adapter_names(), table)
+    if not found or any(a["cudaRuntime"] for a in found):
+        return {}
+    return dict(next((a["ollamaEnv"] for a in found if a["ollamaEnv"]), {}))
+
+
 def server_env(cfg, base=None):
     """The environment variables Ollama is started with. Raises on a bad value."""
     kv = str(cfg.get("kvCache", "f16"))
@@ -38,6 +61,7 @@ def server_env(cfg, base=None):
     if cfg.get("modelsDir"):
         env["OLLAMA_MODELS"] = cfg["modelsDir"]
     env["OLLAMA_FLASH_ATTENTION"] = "1" if flash else "0"
+    env.update(_vendor_env(cfg))
     # Ollama unloads a model after 5 idle minutes; the next question then pays the
     # whole reload (a 3.2 GB model from disk). keepAlive keeps it in memory.
     keep = cfg.get("keepAlive")

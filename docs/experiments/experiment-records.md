@@ -447,3 +447,125 @@ injection, language switch). Face_Regonize backend (port 8000) was running; an e
   switch, injection: all replied, language and source badge right, text box cleared, no console error except favicon 404.
   Ollama stopped: saved answers unchanged, model questions answered by the Qwen fallback (slower, 4-7 s, weaker Lao/injection reply).
 - Verdict: nothing clearly worse on q8_0; config/local_ai.json stays q8_0 + flash.
+
+## 2026-11-25 QC wall time: slowest-first ordering and timing report
+Question (user): why does full QC take so long, could the checks run at once? Finding: `qc/run_qc.py` already runs them in a pool
+(plain checks on `workers`, browser checks on `browserLanes`=6); 29 SOLO checks (shared port 80/5353, shared files, or timing-sensitive
+with a measured starved-margin history, see the comments in run_qc.py) run one by one after the pool. Nothing was weakened.
+Change: each full run saves per-check seconds (qc/last_timing.json, seed qc/data/qc_durations.json) and starts the slowest checks first;
+the run prints phase/lane times and the 12 slowest checks.
+Setup: cloud container, 4 cores (so 2 plain workers, 6 browser lanes), same tree, same env-only failures (no PlatformIO/torch/mujoco).
+- Old runner (main 8452142): wall 675.3 s, 10456 passed, 15 failed (13 env-only + 2 system-map headers stale, fixed here).
+- New runner: wall 651.2 s, 10458 passed, 14 failed (all env-only except the same stale headers). Same pass/fail per check.
+- Gain 24 s (3.6%) on this box: within run-to-run noise, so not a proven speed-up.
+- Where the time goes (new runner): pool phase 400 s, solo phase 250 s (38% of wall). Sum of check time 2100 s (x3.2 overlap).
+  Browser lane: 128 checks, 1452 s of work over 6 lanes (~242 s lower bound); longest single check_video_page 233 s,
+  check_visual_language 109 s, check_theme_contrast 92 s, check_network_tab 69 s. Plain lane: 254 checks, only 405 s of work.
+- Conclusion: the wait is the browser lane + the serial SOLO tail, not the plain checks. Next levers, each needing a measured
+  3-green-run proof: split check_video_page (233 s alone = the floor of the pool phase), move SOLO checks whose only reason is a
+  port to a free port, and widen browserLanes only on a PC with free cores.
+Live mode: `python tools/qc_live.py` (read-only GETs at the running hub/voice/faces/friend app, alone then all together, p50/p95/max,
+errors, contention factor). Self-test against local servers: 2 apps x 3 clients, p95 7 ms alone and 7 ms together, 0 errors.
+Not yet run against the real apps on the PC.
+### 2026-11-25 All apps at once on the PC (hub + voice + Ollama + Face_Regonize + camera + Chrome)
+Tools: tools/perf_profile.py (RAM/VRAM per app, GPU enc/dec), tools/perf_load.py (alone, together, --real). Raw: .local/perf/ (PC only). Report with charts: docs/experiments/2026-11-25_all_apps_together.md.
+- Before: torch 2.15.0+cpu, so Whisper's GPU check said no GPU; also cublas64_12.dll missing. 3 Whisper models CPU int8. STT /transcribe median 3086 ms, p95 6164 ms (tts_cache clips). Direct th-medium 6.5 s clip: CPU int8 44-58 s vs GPU float16 0.6 s.
+- After (CTranslate2 probe + pip nvidia-cublas-cu12 12.9.2.10 + DLL dirs): STT median 751 ms, p95 2242 ms. VRAM voice 0 -> 4712 MiB, RAM voice 4331 -> 3093 MiB. Total VRAM 4.2 -> 9.0 GB of 12.
+- /ask: 2615 ms median before; 3.07 s vs 0.73 s with a name given proved the sync face look; after (worker + prefetch on /transcribe, askWaitSeconds 0.4): 61 ms median, 554 ms p95. Ollama think itself 197 ms.
+- Face /api/look t1.jpg (1280x886, 6 faces): 73 ms alone (server took_ms 42); together stress 139 ms before, 204 ms after (voice now on the GPU too); --real (face 10/s) 87 ms. STT together: --real 1151 ms, stress 2832 ms.
+- Rejected: Whisper th-medium int8_float16: VRAM 2069 -> 1149 MiB, but text vs float16 only 0.72 mean similarity (min 0.44), 10 clips: quality drop.
+- GPU encoder/decoder 0% in every run: PC camera gives raw nv12/yuyv (no H.264/MJPEG), hub re-encodes 640 px 10 fps q6 JPEG on CPU. Encode test (lavfi): 720p30 q4 1.61 MB/s RSS 212 MB; 1080p30 2.73 MB/s RSS 411 MB.
+- Second opinions: Gemini 4 Neon medium and Codex gpt-6.2-sol medium both ranked cublas fix and Ollama-first /ask on top.
+
+### 2026-11-25 round 2: Video page waited 210 s for nothing
+Per-phase profile of check_video_page alone (4-core cloud): hub half 0.8 s, page half 11.5 s, LAN page half 210.1 s. The LAN driver
+never sent its `VL~done` mark, so browser.page() sat out `seconds + grace` (60 + 150 s) after the page had already reported
+("QC SLOW ... waited for nothing"). Fix: send `VL~done` at the end of that driver. Same 62 assertions, all green.
+- check_video_page: 233.0 s -> 22.5 s in the full run (15.9 s alone).
+- Full QC, same box, same env-only failures: 651.2 s -> 516.5 s (-20.7%); old runner on main was 675.3 s (-23.5% in total).
+  Pool phase 400 -> 264 s; SOLO phase unchanged at 252 s. 10476 passed, 13 failed (all env-only: no PlatformIO, torch, mujoco, branch `app`).
+- Checked the next slowest browser checks alone for the same bug (visual_language 107 s, theme_contrast 89 s, network_tab 69 s):
+  none prints QC SLOW; their time is real work.
+- SOLO tail: 29 checks, 245 s of work. Port-only ones (short_name, name_claim, mdns, build_split) total under 7 s; the 250 s is
+  clock-sensitive browser checks (flash_type 43 s, flash_confirm 42 s, chatty_board 29 s, report_pictures 23 s ...) whose history
+  of starved-margin failures is in run_qc.py. Moving them into the pool would trade time for flakes, so not done.
+- Stop rule: round 3 (splitting visual_language by language) is estimated at under 10% and is left for a measured follow-up.
+
+### 2026-11-25 PC (24 threads, 31 GB, SSD): why a full gate is 25 min here, 8.6 min in the cloud
+Raw runs, fresh worktree, PC otherwise idle (other threads' QC not running):
+- Run 1 (baseline, cold firmware tree): wall 1524 s. Parallel phase 782 s, SOLO phase 320 s, check_build_split 414 s run alone FIRST.
+- Run 2 (shared PlatformIO object cache): wall 1541 s but not comparable: 4 browser checks failed in the crowd and were re-run
+  alone twice each (parallel phase 882 s of which the pool itself ended at 491 s), and check_report_pictures spent 270 s in a
+  page that never reported (QC SILENT). build_split fell from 414 s to 2 s (build dirs kept from run 1).
+- Process start cost is NOT the cause: python start 0.03 s, `import qc` 0.07 s, powershell -NoProfile 0.21 s, one Get-CimInstance
+  0.7 s, SSDs. Defender real-time protection is on (exclusions not readable without admin) but nothing measured points at it.
+- Firmware, measured directly (5 envs at once, `pio run`): no cache cold 474 s; shared `PLATFORMIO_BUILD_CACHE_DIR` populating
+  477 s (same); same build with the cache warm 42 s (-91%). One env alone cold: 55 s (cam) - five at once is 8.6x slower than one,
+  so the five compilers contend for something (not CPU: 24 threads). Cause not found; the warm cache avoids it.
+- Fix landed: check_build_split passes a machine-wide cache dir (`~/.platformio/qc_object_cache`) to pio (keyed on compile command
+  + source content, so a hit is the object a fresh compile would make). Same assertions; new assertion proven by breaking it.
+  Every new worktree / staging tree used to pay the cold 414-474 s before any other check could start (it runs first, alone).
+- Timing file now stores `end` (seconds into the run) per check, so lane idle gaps can be read: plain lane finished at 169 s,
+  browser lane pool at 491 s; 10 plain workers idle for ~320 s while 6 browser lanes work. Browser work is 2233 s of checks.
+- Where the rest goes: (a) browser checks that fail in the crowd and are re-run alone twice (4 flaky in run 2, 1 in run 1;
+  real failures on main cost 2 extra alone runs each, e.g. visual_language 2 x ~110 s); (b) QC SILENT waits: a page that never
+  reports sits out seconds+grace (190 s, 270 s, 478 s seen in run 2); (c) SOLO tail 232 s of clock-sensitive checks.
+- SOLO list kept, with the measured reason: short_name (port 80), name_claim + mdns (5353): real single resources, all under 8 s
+  together. themes + tools_list (edit shared files while others read them), systems (lists the tree). The starved-margin set
+  (hub_clock, studio_playback, flash_*, crash_gate, voice*, translate, gacha_ui, chatty_board, report_pictures) was NOT moved: moving
+  needs three green crowded runs each (25 min a run) and run 2 already showed the crowd is at its limit (4 flakes at 6 lanes).
+  Next lever: give those pages a readiness signal instead of a connect/timer margin, then move one at a time.
+- Not done (stop rule): widening workers/browserLanes (run 2 flaked more than run 1 at the current width).
+
+### 2026-11-25 later: why the crowd failed, one run at a time, firmware built once
+- Run 3 (full, 993 s wall, 26 failed) was overlapped by another thread's full run and a `--only check_panel` run: log shows
+  `WinError 10048` and `{'_raw': '[]'}` (pages reporting nothing). The QC SILENT waits (190-478 s) and report_pictures 278 s in
+  run 2 fit the same cause: a second run on the fake serial port / port 80. Not proven for every case: run 2's log was overwritten.
+- Fix: `qc/lib/runlock.py` (lock file in the temp dir with pid + start; a second run waits and names the holder; dead holder taken
+  over; `--no-lock` / `--list` skip). `check_run_lock` proves wait + takeover; two sabotages (takeover off, wait off) were caught.
+- Firmware artifact cache `qc/lib/fw_cache.py`, outside the repo (`~/.platformio/qc_artifact_cache/<key>/`), key = sha256(firmware +
+  config + shared-web inputs, PlatformIO + every platform/package version, env). Restore verifies size + sha256 per file; stored only
+  after check_build_split's own assertions passed; `--rebuild-firmware` / MICE_QC_REBUILD=1 forces a build. `check_fw_cache` proves
+  hit, miss on input / toolchain / env change, corrupt and truncated entry rejected; three sabotages caught.
+  Measured (check_build_split + 3 small checks, `--jobs 1`): first run, cache empty (pio object cache warm) 136 s; same tree
+  with build dirs removed, cache hit 31 s. Cold fresh tree without any cache stays 414-474 s once per machine per firmware change.
+- promote.py gate: left as is. It runs run_qc.py, so it uses the cache; the key covers every input and the toolchain, a hit
+  still runs every assertion on the restored binaries, and an unknown key always builds for real.
+- Not done: SOLO checks stay SOLO; three green crowded runs each is not measurable while other threads run QC on this PC.
+
+### 2026-11-25 final full run on the branch (PC to itself, lock held, artifact + object caches warm)
+- Wall 832 s (13.9 min), against 1524 s for the baseline run 1 (same PC, cold firmware tree): -45%. Parallel phase 524 s, SOLO phase 297 s,
+  check_build_split 1.8 s. 10682 passed, 9 failed, no FLAKY, no QC SILENT, no QC SLOW. A filtered `check_settings_transfer` run
+  from another thread started 9 s before it (seconds of overlap).
+- The 9 failures are the failures main already has (th/ja/zh text leaks, "no page threw", the camera-reader checks); the system-map
+  failure of that run was my own new files and is fixed in the next commit (check_systems green).
+- The remaining wall is real work: browser lane 2233 s of checks on 6 lanes, plus the SOLO tail (~297 s). Not touched.
+
+### 2026-11-26 twelve SOLO checks moved into the pool (PC to itself, lock held, three crowded full runs)
+Moved: check_hub_clock, check_studio_playback, check_gacha_ui, check_translate, check_voice, check_voice_stt, check_voice_tts,
+check_flash_remote, check_crash_gate, check_flash_type, check_flash_confirm, check_chatty_board. All their assertions are unchanged.
+- Round 1: 536 s wall (parallel 302 s, SOLO 231 s). All 12 green. Red only on two guard assertions in check_qc_parallel (they
+  encoded the old policy for hub_clock and studio_playback; removed with the move) and check_dev_tools (QC lock deadlock, fixed in #262).
+- Round 2: 605 s, 10799 passed, 0 failed; check_gestures flaked (passed alone 2/2), one QC SILENT 190 s on a page (not one of the 12).
+- Round 3: 549 s, 10799 passed, 0 failed, no flake, no SILENT.
+- Before (same tree, same PC, those 12 in the SOLO tail): 832 s. After: 536-605 s (-27 to -36%). The earlier "starved margin" reds
+  in the crowd coincided with overlapping QC runs on this PC (see the lock entry above); with one run at a time they did not recur in 3 runs.
+- Still SOLO, with the real reason: short_name (port 80), name_claim + mdns (5353), build_split (writes firmware/.pio), themes (rewrites
+  the shared stylesheet), tools_list (breaks an app.json), systems (lists the tree), report_pictures + visual_language (shared report data),
+  and the module-level SOLO ones (faces_* fake ports, camera_hub, pc_camera, alone_apps). SOLO tail is now ~228 s; check_visual_language is 111 s of it.
+
+### 2026-11-26 combined tree, and the "page reports nothing" flake (investigation, no fix merged)
+- #265 (12 checks out of SOLO) on top of the watchdog: full QC PASS, 10814 passed, 0 failed, 658 s wall (parallel 417 s, SOLO 228 s),
+  no QC STALL, no timed out. One FLAKY: check_video_page (passed alone 2/2) with one QC SILENT line.
+- QC SILENT / empty-marks flakes seen in 7 of 8 crowded full runs today, on different checks: gestures (x3), video_page (x2),
+  responsive, studio_peer, page_frame, music_ui. Always: marks list empty, "6-16 bytes on the wire", passes alone.
+- Stress, PC to itself, 8 copies of one check at once: check_gestures 8/8 green in 28 s (no SILENT) => load alone does not reproduce it.
+- Tried: relaunch the browser once when a page has reported nothing after 75 s (branch claude/qc-page-relaunch, check_page_relaunch
+  proves the rule). Full run PASS 10823, 835 s. The relaunch fired once, on check_video_page, and the second browser was also silent
+  => the silent page there is not a dead browser, and a fixed 75 s rule can misfire on a page that is quiet on purpose.
+  NOT recommended for merge.
+- check_video_page x8 at once: 7 of 8 fail, ~31-37 s, "the video and its choices are saved in the project file": every copy saves the
+  project under the same name (`qc_video_page`), so concurrent copies overwrite each other's file. A different failure from the
+  crowd's silent page, but a real shared-name collision (a unique work name per run would remove it).
+- Open: why the page of check_video_page (and gestures) sends no mark in a full run. Next step: capture the browser console of a
+  silent page (--enable-logging, or the DevTools protocol) the moment QC SILENT fires.

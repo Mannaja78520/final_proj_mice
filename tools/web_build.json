@@ -76,6 +76,7 @@
         "pinned.js",
         "stop_report.js",
         "complaints.js",
+    "report_images.js",
         "network.js",
         "tools.js",
         "apps_manage.js",

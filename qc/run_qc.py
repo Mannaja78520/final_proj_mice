@@ -27,6 +27,7 @@ sys.path.insert(0, str(QC / "lib"))
 sys.path.insert(0, str(QC))
 
 import qc as F  # noqa: E402
+import check_pool  # noqa: E402
 
 
 # ---- proof that a particular tree passed ------------------------------
@@ -61,7 +62,7 @@ def tree_fingerprint():
             continue
         # The receipt itself, and files the RUNNING system writes, are not
         # source: including them would invalidate every receipt immediately.
-        if f.name in (".qc-receipt.json", "promt.md", "PLAN.html",
+        if f.name in (".qc-receipt.json", "last_timing.json", "last_progress.json", "promt.md", "PLAN.html",
                       "settings_shared.json", "hub_auth.json",
                       "hub_password.txt", "faces_login.json", "BRIDGE.md", "HANDOVER.md",
                       "plan_state.js", "system_integral.html", "system_integral_state.js"):
@@ -94,6 +95,40 @@ def _speed():
 
 
 SPEED = _speed()
+
+# ---- how long each check took, last time -------------------------------
+# Written by every full run (qc/last_timing.json, git-ignored) and read by the
+# next one, so the slowest checks are started FIRST. A pool that begins with
+# the 90-second checks finishes when the last of them does; one that begins
+# with the 1-second checks and ends with a 90-second one waits on it alone.
+# qc/data/qc_durations.json is the committed seed for a fresh clone. 2026-11-25.
+TIMING_FILE = CODE / "qc" / "last_timing.json"
+# Written every ~10 s during a run (what is running, how long, what finished
+# last): git-ignored and not part of tree_fingerprint. qc/lib/check_pool.py.
+PROGRESS_FILE = CODE / "qc" / "last_progress.json"
+TIMING_SEED = QC / "data" / "qc_durations.json"
+
+
+def load_durations():
+    """{check stem: seconds} from the last run, else the seed, else empty."""
+    import json
+    out = {}
+    for path in (TIMING_SEED, TIMING_FILE):          # the newer file wins
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        for stem, row in (data.get("checks") or {}).items():
+            try:
+                out[stem] = float(row["secs"] if isinstance(row, dict) else row)
+            except (TypeError, ValueError, KeyError):
+                pass
+    return out
+
+
+def longest_first(group, durations):
+    """Slowest first; checks never timed keep file order after the timed ones."""
+    return sorted(group, key=lambda fm: -durations.get(fm[0].stem, 0.0))
 
 
 def write_receipt(passed, failed, fingerprint=None):
@@ -182,13 +217,6 @@ SOLO = {
     "check_name_claim",     # answers mDNS on 5353
     "check_mdns",           # the same
     "check_build_split",    # writes firmware/.pio, which other checks read
-    # Not a shared RESOURCE - a shared clock. It sleeps 150ms and expects the
-    # hub's show thread to have advanced by then, which is true on an idle
-    # machine and not true with ten workers competing for cores. It failed on
-    # the first parallel gate and passed three times out of three alone, which
-    # is the signature: the check is fine, the margin is not. Measuring time
-    # needs a quiet machine.
-    "check_hub_clock",
     # It ADDS A THEME to the real shared/web/themes.css and takes it out again -
     # which is the only honest way to prove a new theme needs no code. But that
     # file is served to every page, so while it runs, any other check reading
@@ -199,49 +227,20 @@ SOLO = {
     # as an empty one, and puts it back. Any check reading the app registry
     # while that is happening sees a fault that is not theirs.
     "check_tools_list",
-    # Complete multi-client Gacha journey: no marks in the crowded run,
-    # then green alone twice. Keep all assertions/budgets; isolate startup
-    # and the generated module-page journey from other heavy browsers.
-    "check_gacha_ui",
-    # Another clock, not another resource. It drives a browser on fixed
-    # setTimeout deadlines - pause at 1000ms, resume, finish at +4000 - and
-    # then asserts the robot walked the timeline in ORDER. With ten workers
-    # competing those deadlines slip and the order changes. It failed once in
-    # a parallel gate on 2026-08-20 and passed twice alone, which is the
-    # signature: the check is right, the margin is not.
-    "check_studio_playback",
-    # These spawn the REAL voice helper as a second process next to their own
-    # hub, then knock on it over HTTP. With ten workers competing, the helper
-    # or the hub was starved past its connect window and the check died with
-    # WinError 10061 (refused) 129 s in — while passing alone in 3.7 s. Same
-    # signature twice on 2026-08-25 gates; a refused socket is not an answer
-    # any assertion can weigh.
-    "check_translate",
-    "check_voice",
-    # check_voice_stt and check_voice_tts also boot the real helper and were
-    # added to SOLO 2026-09-12: they crashed in the parallel gate with the same
-    # refused-socket signature but passed alone, same root cause - the helper
-    # subprocess was starved past its connect window.
-    "check_voice_stt",
-    "check_voice_tts",
-    # Two hubs POST a 1.3 MB image to each other, then a browser page has 30 s
-    # to report. Failed 3 full gates in a row on 2026-09-17, green alone each
-    # time (40 s) - the same starved-margin signature as above.
-    "check_flash_remote",
     # It lists every file in the tree to prove each has one subsystem, and
     # other checks create and delete files while they run: the first full
     # gate 2026-09-21 saw studio's header "out of date" for a file that
     # existed only for a moment. Alone, it sees the tree as it really is.
     "check_systems",
-    # A browser drives Studio's crash preview on timers. Red in two full gates
-    # in a row 2026-09-21 ("the crash-gate driver reported"), green alone in
-    # 8 s each time - the starved-margin signature again.
-    "check_crash_gate",
-    # Both drive the hub page through a flash on browser timers. Between them
-    # red in five full gates on 2026-09-21 ("the hub page reported back") and
-    # green alone and together (65 s) every time.
-    "check_flash_type",
-    "check_flash_confirm",
+    # MOVED TO THE POOL 2026-11-26 (they were SOLO for "starved margin" - the
+    # check is right, the margin slips with ten workers - hub_clock,
+    # studio_playback, gacha_ui, translate, voice, voice_stt, voice_tts,
+    # flash_remote, crash_gate, flash_type, flash_confirm, chatty_board):
+    # green in a crowded full run with the PC to itself, three times in a
+    # row (docs/experiments/experiment-records.md). The earlier red gates
+    # coincided with other QC runs overlapping on the same PC; runlock.py
+    # now stops that. If one goes red in the crowd again, put it back HERE
+    # with the date and the evidence - never loosen its assertions.
 }
 
 
@@ -289,7 +288,45 @@ def _one(path_str):
             secs, crash or "", "", buf.getvalue())
 
 
+def _timing_report(timings, phases, wall, full_run, top=12):
+    """Where the time went: per-phase wall clock and the slowest checks.
+
+    Asked 2026-11-25 (*why does QC take so long*): without this nobody could
+    say whether the wait was the pool, one slow check, or the solo tail.
+    Also saved, so the next run starts its slowest checks first.
+    """
+    import json
+    if not timings:
+        return
+    lanes = {}
+    for row in timings.values():
+        lanes.setdefault(row["lane"], [0, 0.0])
+        lanes[row["lane"]][0] += 1
+        lanes[row["lane"]][1] += row["secs"]
+    total = sum(r["secs"] for r in timings.values())
+    print("\n%sQC TIMING%s  wall %.0fs, sum of checks %.0fs (x%.1f overlap)"
+          % (B, D, wall, total, total / max(wall, 0.1)))
+    for name, secs in phases.items():
+        print("  phase %-34s %6.0fs" % (name, secs))
+    for lane, (n, secs) in sorted(lanes.items()):
+        print("  lane  %-8s %3d checks, %6.0fs of work" % (lane, n, secs))
+    print("  slowest checks:")
+    for stem, row in sorted(timings.items(), key=lambda kv: -kv[1]["secs"])[:top]:
+        print("    %6.1fs  %-8s %s" % (row["secs"], row["lane"], stem))
+    if full_run:                      # a filtered run would erase the history
+        try:
+            TIMING_FILE.write_text(json.dumps(
+                {"wall": round(wall, 1),
+                 "phases": {k: round(v, 1) for k, v in phases.items()},
+                 "checks": timings}, indent=1), encoding="utf-8")
+        except OSError:
+            pass
+
+
 def main(argv):
+    if "--rebuild-firmware" in argv:
+        # pool children inherit the environment, not argv (qc/lib/fw_cache.py)
+        os.environ["MICE_QC_REBUILD"] = "1"
     quick = "--quick" in argv
     listing = "--list" in argv
     # HOW MANY AT ONCE. Default is most of the machine: the suite spent 836s on
@@ -403,6 +440,12 @@ def main(argv):
         nonlocal total_pass, total_fail
         print("%s[%s]%s %s" % (B, getattr(mod, "AREA", "?"), D,
                                getattr(mod, "TITLE", f.stem)))
+        timings[f.stem] = {"secs": round(secs, 2),
+                           "lane": lane_of.get(f.stem, "plain"),
+                           # seconds into the run when the main process saw it
+                           # finish; end - secs = start, so idle gaps in a
+                           # lane can be read afterwards
+                           "end": round(time.time() - t_all, 1)}
         if printed:
             sys.stdout.write(printed)
         n_fail = 0
@@ -444,30 +487,50 @@ def main(argv):
 
     retries = int(SPEED.get("browserRetriesAlone") or 0)
     flaky = []
+    durations = load_durations()
+    timings = {}                 # stem -> {"secs", "lane"}; written at the end
+    lane_of = {}                 # stem -> plain | browser | solo
+    phases = {}                  # phase name -> wall seconds
 
     def _red(results, crash):
         return bool(crash) or not results or any(not g for g, _l, _d in results)
 
+    def _budget(f):
+        """Hard limit for one check: the floor, or 3x its slowest healthy time."""
+        return check_pool.budget_for(
+            f.stem, durations, SPEED.get("checkTimeoutFloorSecs") or 600)
+
+    def _kill_browsers(pid):
+        import browser
+        browser.kill(browser.tag_for(pid))
+
+    def _result_of(f, kind, value, secs):
+        """A CheckPool outcome as the 7-tuple _one returns. A timeout or a dead
+        process is a FAILED check (crash text), never a hang or a silent pass."""
+        if kind == "done":
+            if isinstance(value, tuple) and value and value[0] == "__error__":
+                return (str(f), "", [], secs, "", value[1], "")
+            return value
+        return (str(f), "", [], secs, value, "", "")
+
     def _alone(f):
         """One more run of one check, in a fresh process, with nothing beside it."""
-        import concurrent.futures as _cf
-        with _cf.ProcessPoolExecutor(max_workers=1, max_tasks_per_child=1) as pool:
-            return pool.submit(_one, str(f)).result()
+        pool = check_pool.CheckPool(_one, 1, on_kill=_kill_browsers)
+        pool.submit(str(f), str(f), _budget(f))
+        while True:
+            for _key, kind, value, secs in pool.poll():
+                return _result_of(f, kind, value, secs)
+            time.sleep(0.2)
 
     def run_isolated(items):
-        """Keep sequential checks sequential without retaining their hub threads."""
-        if not items:
-            return
-        import concurrent.futures as _cf
-        with _cf.ProcessPoolExecutor(max_workers=1,
-                                     max_tasks_per_child=1) as pool:
-            for f, mod in items:
-                (_path, _title, results, secs, crash, err,
-                 printed) = pool.submit(_one, str(f)).result()
-                if err:
-                    broken.append((f.stem, err))
-                else:
-                    report(f, mod, results, secs, crash, _said(results, crash, printed))
+        """Keep sequential checks sequential, each in a fresh process."""
+        for f, mod in items:
+            (_path, _title, results, secs, crash, err,
+             printed) = _alone(f)
+            if err:
+                broken.append((f.stem, err))
+            else:
+                report(f, mod, results, secs, crash, _said(results, crash, printed))
 
     solo = [(f, m) for f, m in wanted
             if f.stem in SOLO or getattr(m, "SOLO", False)]
@@ -487,6 +550,10 @@ def main(argv):
             return False
     heavy = [(f, m) for f, m in rest if needs_browser(f)]
     para = [(f, m) for f, m in rest if (f, m) not in heavy]
+    for f, _m in heavy:
+        lane_of[f.stem] = "browser"
+    for f, _m in solo:
+        lane_of[f.stem] = "solo"
     if jobs > 1 and len(para) > 1:
         import concurrent.futures as _cf
         # ONE BROWSER AT A TIME. Three was still too many: four different
@@ -522,35 +589,42 @@ def main(argv):
         run_isolated(first)
         heavy_paths = {str(f) for f, _m in heavy}
         suspect = []        # browser checks that failed in the crowd: retried alone
-        pools, futs, by_path = [], [], {}
+        pools, by_path = [], {}
+        t_pool = time.time()
         for group, width in ((para, jobs), (heavy, browser_jobs)):
             if not group:
                 continue
-            # Hub threads outlive a check. Reusing a worker accumulates HTTP,
-            # scanner and route-probe services until browser checks time out.
-            pool = _cf.ProcessPoolExecutor(max_workers=width,
-                                           max_tasks_per_child=1)
+            group = longest_first(group, durations)
+            # One process per check (hub threads outlive a check), each with a
+            # hard time limit - qc/lib/check_pool.py.
+            pool = check_pool.CheckPool(_one, width, on_kill=_kill_browsers)
             pools.append(pool)
             for f, m in group:
                 by_path[str(f)] = (f, m)
-                futs.append(pool.submit(_one, str(f)))
-        try:
-            for fut in _cf.as_completed(futs):
-                path_s, _title, results, secs, crash, err, printed = fut.result()
-                f, mod = by_path[path_s]
+                pool.submit(str(f), str(f), _budget(f))
+        beat = check_pool.Heartbeat(PROGRESS_FILE, len(para) + len(heavy), pools)
+        while any(p.busy() for p in pools):
+            got = [r for p in pools for r in p.poll()]
+            for key, kind, value, secs_w in got:
+                f, mod = by_path[key]
+                path_s, _title, results, secs, crash, err, printed = _result_of(
+                    f, kind, value, secs_w)
+                beat.finished(f.stem)
                 if err:
                     broken.append((f.stem, err))
                     continue
-                if path_s in heavy_paths and retries and _red(results, crash):
+                # a check that hit its hard limit is not retried: it would
+                # only hang again, for another full budget
+                if path_s in heavy_paths and retries and _red(results, crash)                         and kind != "timeout":
                     suspect.append((f, mod, results, secs, crash, printed))
                     continue
                 report(f, mod, results, secs, crash, _said(results, crash, printed))
                 done_n += 1
                 if done_n % 10 == 0:
                     _plan("QC %d/%d checks" % (done_n, total_n))
-        finally:
-            for pool in pools:
-                pool.shutdown(wait=True)
+            beat.tick()
+            if not got:
+                time.sleep(0.2)
         for f, mod, results, secs, crash, printed in suspect:
             again = [_alone(f) for _ in range(retries)]
             if all(not _red(r[2], r[4]) and not r[5] for r in again):
@@ -575,7 +649,10 @@ def main(argv):
             else:
                 # real: it blocks - with whatever the crowded run printed
                 report(f, mod, results, secs, crash, _said(results, crash, printed))
+        phases["parallel (plain + browser lanes)"] = time.time() - t_pool
+        t_solo = time.time()
         run_isolated(solo)
+        phases["solo (one at a time)"] = time.time() - t_solo
         _plan("QC finished: %d passed, %d failed" % (total_pass, total_fail))
 
     else:
@@ -605,6 +682,8 @@ def main(argv):
         write_receipt(total_pass, total_fail, after_tree)
     elif RECEIPT.exists() and full_run:
         RECEIPT.unlink()          # this tree is not green any more
+
+    _timing_report(timings, phases, time.time() - t_all, full_run)
 
     if flaky:
         # Counted as passed, never hidden: these are the checks to make steadier.
@@ -685,7 +764,20 @@ def _run():
     return main(sys.argv[1:])
 
 
+def _take_run_lock(argv):
+    """One QC run at a time on this PC (qc/lib/runlock.py). Returns the lock
+    or None. Waits and says who holds it; --no-lock and --list skip it."""
+    if "--no-lock" in argv or "--list" in argv:
+        return None
+    import runlock
+    lock = runlock.RunLock(say=lambda m: print(m, file=sys.__stderr__, flush=True))
+    lock.acquire()
+    return lock
+
+
 if __name__ == "__main__":
+    _lock = _take_run_lock(sys.argv)
+    sys.argv = [a for a in sys.argv if a != "--no-lock"]
     _df = _done_file(sys.argv)
     if _df:                       # strip it so main() never sees an unknown flag
         _i = sys.argv.index("--done-file") if "--done-file" in sys.argv else None
@@ -695,5 +787,7 @@ if __name__ == "__main__":
         _code = _run()
     except SystemExit as e:
         _code = e.code if isinstance(e.code, int) else 1
+    if _lock:
+        _lock.release()
     _write_done(_df, _code)
     sys.exit(_code)

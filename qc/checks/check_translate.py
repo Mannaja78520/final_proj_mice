@@ -71,7 +71,7 @@ def run(t):
         stdout=svc_log, stderr=subprocess.STDOUT,
         env=dict(os.environ, PYTHONUNBUFFERED="1"))
     try:
-        deadline = time.time() + 15
+        deadline = time.time() + 60   # a condition wait: 15 s was too short in the full gate on the PC (green alone in 21 s)
         up = False
         while time.time() < deadline:
             try:

@@ -1,0 +1,18 @@
+# The CUDA build of PyTorch for the Voice helper's local model (RTX 50 series needs CUDA 12.8 or newer).
+#
+# Why: on Windows a plain `pip install torch` (or `pip install -U torch`) gives the CPU-only wheel
+# (e.g. 2.15.0+cpu), and the local model then runs on the CPU even when the PC has a GPU
+# (measured 2026-11-26 on the booth PC: RTX 5070 Ti beside torch 2.15.0+cpu). The Voice status
+# (`GET /health` -> llmDevice) says which one is running, with a warning when it is the CPU build.
+#
+# Install (torch and torchvision are a pair: a torchvision built for another torch fails with
+# "operator torchvision::nms does not exist" and the local model does not load):
+#   python -m pip install -r requirements-torch-cuda.txt
+# Check:
+#   python -c "import torch; print(torch.__version__, torch.version.cuda, torch.cuda.is_available())"
+# Back to the CPU build (the 2026-11-26 state of the booth PC):
+#   python -m pip install --force-reinstall --no-deps torch==2.15.0+cpu torchvision==0.29.2+cpu --index-url https://download.pytorch.org/whl/cpu
+--index-url https://download.pytorch.org/whl/cu128
+--extra-index-url https://pypi.org/simple
+torch==2.11.0+cu128
+torchvision==0.26.0+cu128

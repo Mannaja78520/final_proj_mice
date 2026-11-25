@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI work — MICE</title>
+<link rel="stylesheet" href="/mice.css">
+<style>
+  .task-list { display: grid; gap: 12px; }
+  .task-list .card { margin: 0; min-width: 0; overflow-wrap: break-word; overflow-wrap: anywhere; }
+  .task-line h2 { margin: 0 12px 0 0; }
+  .task-line { display: flex; flex-wrap: wrap; align-items: baseline; }
+  .task-line > * { margin-inline-end: 12px; }
+  .task-list p { margin: 8px 0 0; white-space: pre-wrap; }
+</style>
+<body class="page">
+<header class="topbar">
+  <h1>AI work</h1>
+  <a class="btn" href="/help#hub">Help</a>
+</header>
+<main>
+  <p id="task-status" class="statline">Loading AI work…</p>
+  <p id="task-login" hidden><a class="btn" href="/">Sign in on the Hub</a></p>
+  <div id="task-list" class="task-list"></div>
+</main>
+<script src="/mice.js"></script>
+<script src="/mice-ui.js"></script>
+<script src="/app/ai-status/status.js"></script>
+</body>
+</html>

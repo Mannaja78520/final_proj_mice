@@ -43,7 +43,7 @@ SLOW = True
 # Two full gates lost the quiet board; two isolated runs identify it. The
 # probe has its own 0.6s INFO budget, so run this clock check without workers
 # competing for CPU. Keep every flood/identity assertion and deadline.
-SOLO = True
+SOLO = False
 
 # Generous on purpose. The real wait is 1.2s of settling plus the 4s cap; this
 # only has to be shorter than "forever", and a busy parallel gate is slow.
