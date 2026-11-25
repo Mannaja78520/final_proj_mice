@@ -176,6 +176,13 @@ class VoiceResources:
                 "notice":"ค่ามีผลเมื่อโหลดโมเดลครั้งถัดไป เธรดและงานแปลที่เปิดแล้วต้องเปิดตัวช่วยเสียงใหม่"}
 
     def map(self, function, items):
+        # One item is run right here, on the caller's own request thread: it used to
+        # wait in this FIFO pool (workers=1 on the light profile) BEFORE reaching the
+        # priority gate, so a live job queued behind background ones and the gate
+        # never saw a queue (measured 2026-11-25: gate wait 0 ms, caller wait ~3 s).
+        items = list(items)
+        if len(items) <= 1:
+            return [function(i) for i in items]
         # One shared pool across HTTP requests; callers never nest this pool.
         lock = self.__dict__.setdefault("_jobs_lock", threading.Lock())
         with lock:

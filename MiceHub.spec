@@ -68,6 +68,7 @@ datas = [
     # The registries, and the reader that turns them into lists. A module type
     # or a servo is one entry in these files, so they are not optional extras.
     (str(ROOT / "tools" / "registry.py"), "tools"),
+    (str(ROOT / "tools" / "jobsched.py"), "tools"),   # shared priority scheduler (Voice imports it)
     (str(ROOT / "firmware" / "config"), "firmware/config"),
     # The hub's OWN config: config/voice.json (where the voice helper answers)
     # and config/page_access.json (which pages work with no login). Missing

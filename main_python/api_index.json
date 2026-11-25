@@ -714,6 +714,13 @@
    "file": "main.py"
   },
   {
+   "path": "/api/scheduler",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "hub_api_scheduler.py"
+  },
+  {
    "path": "/api/selfupdate",
    "method": "GET",
    "what": "",

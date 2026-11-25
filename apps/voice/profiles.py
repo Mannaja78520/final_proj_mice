@@ -16,10 +16,108 @@ class ProfileError(ValueError):
     pass
 
 
+class SharedLock:
+    """Many requests at once, but a character switch or a settings write alone.
+
+    Voice wrapped EVERY request in one plain RLock so a switch could not split a
+    request between two characters. That also made every question wait for the
+    one before it, hiding the queue from the priority scheduler (PC measurement
+    2026-11-25: hearing 2390 -> 996 ms and questions p95 2538 -> 1788 ms once
+    requests could reach the gate together). Now readers share it; the paths in
+    config/voice_profiles.json "exclusivePaths" take it alone, and a waiting
+    writer is not starved by new readers. `with lock:` is the exclusive form, so
+    old callers keep their meaning.
+    """
+
+    def __init__(self):
+        self._cond = threading.Condition()
+        self._readers = 0
+        self._writer = None
+        self._writer_depth = 0
+        self._writers_waiting = 0
+        self._local = threading.local()
+
+    def shared(self):
+        return _Hold(self.acquire_shared, self.release_shared)
+
+    def exclusive(self):
+        return _Hold(self.acquire_exclusive, self.release_exclusive)
+
+    __enter__ = lambda self: self.acquire_exclusive()
+    __exit__ = lambda self, *exc: self.release_exclusive()
+
+    def acquire_shared(self):
+        me = threading.get_ident()
+        with self._cond:
+            if self._writer == me or getattr(self._local, "n", 0):    # re-entry: this thread already holds it
+                self._local.n = getattr(self._local, "n", 0) + 1
+                return
+            while self._writer is not None or self._writers_waiting:
+                self._cond.wait()
+            self._readers += 1
+            self._local.n = 1
+
+    def release_shared(self):
+        with self._cond:
+            self._local.n -= 1
+            if self._local.n == 0 and self._writer != threading.get_ident():
+                self._readers -= 1
+                self._cond.notify_all()
+
+    def acquire_exclusive(self):
+        me = threading.get_ident()
+        with self._cond:
+            if self._writer == me:
+                self._writer_depth += 1
+                return
+            self._writers_waiting += 1
+            try:
+                while self._writer is not None or self._readers:
+                    self._cond.wait()
+            finally:
+                self._writers_waiting -= 1
+            self._writer, self._writer_depth = me, 1
+
+    def release_exclusive(self):
+        with self._cond:
+            self._writer_depth -= 1
+            if not self._writer_depth:
+                self._writer = None
+                self._cond.notify_all()
+
+
+class _Hold:
+    def __init__(self, enter, leave):
+        self._enter, self._leave = enter, leave
+
+    def __enter__(self):
+        self._enter()
+
+    def __exit__(self, *exc):
+        self._leave()
+
+
+_EXCLUSIVE = None
+
+
+def exclusive_paths():
+    global _EXCLUSIVE
+    if _EXCLUSIVE is None:
+        spec = registry.load(Path(__file__).resolve().parents[2] / "config" / "voice_profiles.json")
+        _EXCLUSIVE = frozenset(spec.get("exclusivePaths", ()))
+    return _EXCLUSIVE
+
+
 def guarded(method):
     """A switch cannot split a request between two characters."""
     def call(handler, *args, **kwargs):
-        with getattr(handler.brain, "profile_lock", nullcontext()):
+        lock = getattr(handler.brain, "profile_lock", None)
+        if isinstance(lock, SharedLock):
+            path = handler.path.split("?", 1)[0]
+            held = lock.exclusive() if (handler.command == "POST" and path in exclusive_paths()) else lock.shared()
+        else:
+            held = lock if lock is not None else nullcontext()
+        with held:
             store = getattr(handler.brain, "profiles", None)
             if store:
                 try:

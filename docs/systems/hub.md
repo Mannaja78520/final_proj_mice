@@ -100,7 +100,7 @@ hub-support (+ hub_update.py), hub-studio, hub-modules, hub-media (+ hub_cam.py)
 
 - nothing
 
-## Checks that test it (28)
+## Checks that test it (29)
 
 - `check_app_window`
 - `check_code_patches`
@@ -114,6 +114,7 @@ hub-support (+ hub_update.py), hub-studio, hub-modules, hub-media (+ hub_cam.py)
 - `check_gacha`
 - `check_game_prize`
 - `check_hub_stop`
+- `check_job_scheduler`
 - `check_no_console_window`
 - `check_no_data_loss`
 - `check_onefile`
@@ -131,4 +132,4 @@ hub-support (+ hub_update.py), hub-studio, hub-modules, hub-media (+ hub_cam.py)
 - `check_voice_identify`
 - `check_voice_reconize`
 
-Run them: `python qc/run_qc.py --no-build check_app_window check_code_patches check_extensions check_faces_app check_faces_cursor check_faces_login check_faces_loopback check_faces_poll check_friend_api check_gacha check_game_prize check_hub_stop check_no_console_window check_no_data_loss check_onefile check_page_frame check_partner_launch check_partner_live check_partner_resume check_partner_version check_partners check_play_proxy check_registries check_scale_robust check_show_continuous check_stale_build check_voice_identify check_voice_reconize`
+Run them: `python qc/run_qc.py --no-build check_app_window check_code_patches check_extensions check_faces_app check_faces_cursor check_faces_login check_faces_loopback check_faces_poll check_friend_api check_gacha check_game_prize check_hub_stop check_job_scheduler check_no_console_window check_no_data_loss check_onefile check_page_frame check_partner_launch check_partner_live check_partner_resume check_partner_version check_partners check_play_proxy check_registries check_scale_robust check_show_continuous check_stale_build check_voice_identify check_voice_reconize`

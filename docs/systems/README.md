@@ -7,6 +7,7 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 
 | system | what it is |
 |---|---|
+| [job-scheduler](job-scheduler.md) | One shared priority scheduler (live work jumps the queue, background yields, aging prevents starvation) in front of the GPU/CPU; classes and limits are data. |
 | [hub-resources](hub-resources.md) | Machine-local configurable CPU/GPU/RAM policy, bounded capability discovery, next-load Voice budgets and independent client display choices. |
 | [hub](hub.md) | The hub program: HTTP server, the device routes (dev, modules, USB proxy, pairing, robot proxy), startup. Split into hub-* systems (A26-76, A26-93). |
 | [hub-themes](hub-themes.md) | Theme packs (2026-11-23): colours + pictures installed like extensions, light/dark mode, dark picture twins. Built-ins in shared/web/themes/<id>/theme.json, installed ones beside hub_auth.json. |

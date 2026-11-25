@@ -78,11 +78,24 @@ def w_stt(cfg, ctx):
     urllib.request.urlopen(req, timeout=120).read()
 
 
-WORK = {"stt": w_stt, "face": w_face, "voice": w_voice, "llm": w_llm, "camera": w_camera}
+def w_helper(cfg, ctx):
+    """Background-class work: the helper translates a visitor's words to English
+    (POST /translate with no target), which runs the local model under the
+    scheduler's `helper` class - the kind of job a live question must overtake."""
+    texts = cfg.get("helper_texts") or ["ตู้นี้ทำอะไรได้บ้าง ราคาเท่าไหร่"]
+    ctx["j"] = ctx.get("j", 0) + 1
+    req = urllib.request.Request(cfg["voice"] + "/translate", data=json.dumps(
+        {"text": texts[ctx["j"] % len(texts)]}).encode(), headers={"Content-Type": "application/json"})
+    urllib.request.urlopen(req, timeout=120).read()
 
 
-def run(names, cfg, seconds, rates=None):
+WORK = {"stt": w_stt, "face": w_face, "voice": w_voice, "llm": w_llm, "camera": w_camera, "helper": w_helper}
+
+
+def run(names, cfg, seconds, rates=None, helpers=0):
+    """`helpers` extra threads of the background `helper` workload run beside `names`."""
     rates = rates or {}
+    names = list(names) + (["helper"] if helpers else [])
     ctx_all = {"token": _token(cfg) if "face" in names else "", "questions": cfg["questions"], "i": 0}
     res = {n: {"ms": [], "err": 0} for n in names}
     end = time.time() + seconds
@@ -100,6 +113,7 @@ def run(names, cfg, seconds, rates=None):
                 time.sleep(0.5)
             time.sleep(max(0.0, gap - (time.time() - t)))
     ts = [threading.Thread(target=loop, args=(n,)) for n in names]
+    ts += [threading.Thread(target=loop, args=("helper",)) for _ in range(max(0, helpers - 1))]
     [t.start() for t in ts]
     [t.join() for t in ts]
     return res
@@ -119,16 +133,20 @@ def main():
     ap.add_argument("--seconds", type=int, default=20)
     ap.add_argument("--only", default="")
     ap.add_argument("--out", default="")
+    ap.add_argument("--helpers", type=int, default=0,
+                    help="N threads of background helper translations beside the live workloads "
+                         "(together phase only); reports their calls = background throughput")
+    ap.add_argument("--together-only", action="store_true", help="skip the one-by-one phase")
     ap.add_argument("--real", action="store_true",
                     help="cap each workload at config ratesHz (a show day, not a stress test)")
     a = ap.parse_args()
     cfg = json.loads(CONF.read_text(encoding="utf-8"))
     names = [n for n in cfg["workloads"] if not a.only or n in a.only.split(",")]
     report = {}
-    for n in names:
+    for n in ([] if a.together_only else names):
         report["alone_" + n] = summary(run([n], cfg, a.seconds, cfg.get("ratesHz") if a.real else None))
         print("alone", n, report["alone_" + n][n], flush=True)
-    report["together"] = summary(run(names, cfg, a.seconds, cfg.get("ratesHz") if a.real else None))
+    report["together"] = summary(run(names, cfg, a.seconds, cfg.get("ratesHz") if a.real else None, a.helpers))
     for n, s in report["together"].items():
         print("together", n, s, flush=True)
     if a.out:
