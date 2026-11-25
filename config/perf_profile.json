@@ -1,0 +1,12 @@
+{
+  "groups": [
+    { "id": "hub",       "match": ["main_python/main.py", "main_python\\main.py", "micehub.exe"] },
+    { "id": "voice",     "match": ["apps/voice", "voice/service", "tts_spark"] },
+    { "id": "ollama",    "match": ["ollama"] },
+    { "id": "face",      "match": ["face_regonize", "uvicorn app.main"] },
+    { "id": "photobooth","match": ["photobooth"] },
+    { "id": "games",     "match": ["all-jao"] },
+    { "id": "browser",   "match": ["chrome.exe", "msedge.exe"] },
+    { "id": "ffmpeg",    "match": ["ffmpeg"] }
+  ]
+}

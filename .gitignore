@@ -129,3 +129,8 @@ qc/done.json
 
 # tools/ build helpers
 tools/node_modules/
+
+# Pictures sent with problem reports (may show a customer screen) - machine-local
+main_python/reports/img/
+dist/reports/img/
+qc/last_timing.json

@@ -447,3 +447,46 @@ injection, language switch). Face_Regonize backend (port 8000) was running; an e
   switch, injection: all replied, language and source badge right, text box cleared, no console error except favicon 404.
   Ollama stopped: saved answers unchanged, model questions answered by the Qwen fallback (slower, 4-7 s, weaker Lao/injection reply).
 - Verdict: nothing clearly worse on q8_0; config/local_ai.json stays q8_0 + flash.
+
+## 2026-11-25 QC wall time: slowest-first ordering and timing report
+Question (user): why does full QC take so long, could the checks run at once? Finding: `qc/run_qc.py` already runs them in a pool
+(plain checks on `workers`, browser checks on `browserLanes`=6); 29 SOLO checks (shared port 80/5353, shared files, or timing-sensitive
+with a measured starved-margin history, see the comments in run_qc.py) run one by one after the pool. Nothing was weakened.
+Change: each full run saves per-check seconds (qc/last_timing.json, seed qc/data/qc_durations.json) and starts the slowest checks first;
+the run prints phase/lane times and the 12 slowest checks.
+Setup: cloud container, 4 cores (so 2 plain workers, 6 browser lanes), same tree, same env-only failures (no PlatformIO/torch/mujoco).
+- Old runner (main 8452142): wall 675.3 s, 10456 passed, 15 failed (13 env-only + 2 system-map headers stale, fixed here).
+- New runner: wall 651.2 s, 10458 passed, 14 failed (all env-only except the same stale headers). Same pass/fail per check.
+- Gain 24 s (3.6%) on this box: within run-to-run noise, so not a proven speed-up.
+- Where the time goes (new runner): pool phase 400 s, solo phase 250 s (38% of wall). Sum of check time 2100 s (x3.2 overlap).
+  Browser lane: 128 checks, 1452 s of work over 6 lanes (~242 s lower bound); longest single check_video_page 233 s,
+  check_visual_language 109 s, check_theme_contrast 92 s, check_network_tab 69 s. Plain lane: 254 checks, only 405 s of work.
+- Conclusion: the wait is the browser lane + the serial SOLO tail, not the plain checks. Next levers, each needing a measured
+  3-green-run proof: split check_video_page (233 s alone = the floor of the pool phase), move SOLO checks whose only reason is a
+  port to a free port, and widen browserLanes only on a PC with free cores.
+Live mode: `python tools/qc_live.py` (read-only GETs at the running hub/voice/faces/friend app, alone then all together, p50/p95/max,
+errors, contention factor). Self-test against local servers: 2 apps x 3 clients, p95 7 ms alone and 7 ms together, 0 errors.
+Not yet run against the real apps on the PC.
+### 2026-11-25 All apps at once on the PC (hub + voice + Ollama + Face_Regonize + camera + Chrome)
+Tools: tools/perf_profile.py (RAM/VRAM per app, GPU enc/dec), tools/perf_load.py (alone, together, --real). Raw: .local/perf/ (PC only). Report with charts: docs/experiments/2026-11-25_all_apps_together.md.
+- Before: torch 2.15.0+cpu, so Whisper's GPU check said no GPU; also cublas64_12.dll missing. 3 Whisper models CPU int8. STT /transcribe median 3086 ms, p95 6164 ms (tts_cache clips). Direct th-medium 6.5 s clip: CPU int8 44-58 s vs GPU float16 0.6 s.
+- After (CTranslate2 probe + pip nvidia-cublas-cu12 12.9.2.10 + DLL dirs): STT median 751 ms, p95 2242 ms. VRAM voice 0 -> 4712 MiB, RAM voice 4331 -> 3093 MiB. Total VRAM 4.2 -> 9.0 GB of 12.
+- /ask: 2615 ms median before; 3.07 s vs 0.73 s with a name given proved the sync face look; after (worker + prefetch on /transcribe, askWaitSeconds 0.4): 61 ms median, 554 ms p95. Ollama think itself 197 ms.
+- Face /api/look t1.jpg (1280x886, 6 faces): 73 ms alone (server took_ms 42); together stress 139 ms before, 204 ms after (voice now on the GPU too); --real (face 10/s) 87 ms. STT together: --real 1151 ms, stress 2832 ms.
+- Rejected: Whisper th-medium int8_float16: VRAM 2069 -> 1149 MiB, but text vs float16 only 0.72 mean similarity (min 0.44), 10 clips: quality drop.
+- GPU encoder/decoder 0% in every run: PC camera gives raw nv12/yuyv (no H.264/MJPEG), hub re-encodes 640 px 10 fps q6 JPEG on CPU. Encode test (lavfi): 720p30 q4 1.61 MB/s RSS 212 MB; 1080p30 2.73 MB/s RSS 411 MB.
+- Second opinions: Gemini 4 Neon medium and Codex gpt-6.2-sol medium both ranked cublas fix and Ollama-first /ask on top.
+
+### 2026-11-25 round 2: Video page waited 210 s for nothing
+Per-phase profile of check_video_page alone (4-core cloud): hub half 0.8 s, page half 11.5 s, LAN page half 210.1 s. The LAN driver
+never sent its `VL~done` mark, so browser.page() sat out `seconds + grace` (60 + 150 s) after the page had already reported
+("QC SLOW ... waited for nothing"). Fix: send `VL~done` at the end of that driver. Same 62 assertions, all green.
+- check_video_page: 233.0 s -> 22.5 s in the full run (15.9 s alone).
+- Full QC, same box, same env-only failures: 651.2 s -> 516.5 s (-20.7%); old runner on main was 675.3 s (-23.5% in total).
+  Pool phase 400 -> 264 s; SOLO phase unchanged at 252 s. 10476 passed, 13 failed (all env-only: no PlatformIO, torch, mujoco, branch `app`).
+- Checked the next slowest browser checks alone for the same bug (visual_language 107 s, theme_contrast 89 s, network_tab 69 s):
+  none prints QC SLOW; their time is real work.
+- SOLO tail: 29 checks, 245 s of work. Port-only ones (short_name, name_claim, mdns, build_split) total under 7 s; the 250 s is
+  clock-sensitive browser checks (flash_type 43 s, flash_confirm 42 s, chatty_board 29 s, report_pictures 23 s ...) whose history
+  of starved-margin failures is in run_qc.py. Moving them into the pool would trade time for flakes, so not done.
+- Stop rule: round 3 (splitting visual_language by language) is estimated at under 10% and is left for a measured follow-up.

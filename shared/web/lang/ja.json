@@ -1608,7 +1608,6 @@
   "Save these moves on the robot, under the name at the top, so it can play them by itself.": "これらの動きを上部の名前でロボットに保存し、ロボット単独で再生できるようにします。",
   "back on top, always (the hand may move)": "常に手の甲を上（手は動くことがあります）",
   "shrug pivot ↑ (mm above shoulders)": "肩すくめの支点 ↑（肩より上のmm）",
-  "Looking for cameras… this takes a few seconds.": "カメラを探しています…数秒かかります。",
   "Use my own sizes": "自分のサイズを使う",
   "What the rig's camera sees": "ロボットのカメラが見ているもの",
   "The address is the PC showing the code — the same one the list above uses. Upper or lower case, dash or no dash.": "アドレスはコードを表示しているPCのものです（上の一覧と同じ）。大文字小文字、ハイフンの有無は問いません。",
@@ -1682,6 +1681,21 @@
   "takes the cable for about a minute": "ケーブルを約1分間使用します",
   "this board has no cable of its own, so the image goes out on the bus as ordinary commands — several minutes, and it keeps the firmware it has if anything goes wrong": "このボードには専用のケーブルがないため、イメージは通常のコマンドとしてバス経由で送られます。数分かかり、問題が起きても今のファームウェアは残ります",
   "sent to the spare slot — if it does not finish, the board keeps what it has": "予備スロットに送ります。完了しなくても、ボードは今のファームウェアを保持します",
-  "AI loaded": "AI は読み込み済み"
+  "AI loaded": "AI は読み込み済み",
+  "🖼 Add a picture": "🖼 画像を追加",
+  "📷 Take a photo": "📷 写真を撮る",
+  "🖥 Picture of this screen": "🖥 この画面を撮る",
+  "You can also paste a picture here (Ctrl+V). Up to three.": "ここに画像を貼り付けることもできます（Ctrl+V）。最大3枚。",
+  "Remove this picture": "この画像を削除",
+  "That is not a picture.": "画像ではありません。",
+  "Three pictures at most. Remove one to add another.": "画像は最大3枚です。1枚削除してから追加してください。",
+  "That picture could not be used. Try another one.": "この画像は使えません。別の画像をお試しください。",
+  "The screen picture was not taken.": "画面を撮影できませんでした。",
+  "🐛 Report a problem": "🐛 問題を報告",
+  "📋 Complaint detail": "📋 報告の詳細",
+  "Report sent — thank you.": "報告を送信しました。ありがとうございます。",
+  "Write what happened first.": "まず何が起きたかを書いてください。",
+  "Sending…": "送信中…",
+  "That did not send. Try again, or copy your text somewhere safe and send it later.": "送信できませんでした。もう一度試すか、文章をコピーして保管し、後で送ってください。"
  }
 }

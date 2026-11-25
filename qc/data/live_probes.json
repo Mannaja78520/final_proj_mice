@@ -1,0 +1,10 @@
+{
+  "_doc": "Read-only GETs for `python tools/qc_live.py`. One group per running app; add a group or a path here, no code. Ports are the defaults in config/*.json and main_python/main.py.",
+  "groups": {
+    "hub":   {"base": "http://127.0.0.1:8642", "paths": ["/", "/api/status", "/api/ports", "/api/mine"]},
+    "voice": {"base": "http://127.0.0.1:8767", "paths": ["/health"]},
+    "faces": {"base": "http://127.0.0.1:8769", "paths": ["/health"]},
+    "friend_reconize": {"base": "http://127.0.0.1:8000", "paths": ["/"]}
+  },
+  "budgets": {"p95_ms": 1500, "max_error_rate": 0.0, "contention_factor": 4.0}
+}

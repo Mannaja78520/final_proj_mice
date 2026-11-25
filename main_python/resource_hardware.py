@@ -1,10 +1,55 @@
 """Small cached capability probes. Never import an AI library or open a device."""
+import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
 import threading
 import time
+from pathlib import Path
+
+VENDORS = Path(__file__).resolve().parent.parent / "config" / "gpu_vendors.json"
+
+
+def load_vendors(path=None):
+    """The vendor table (config/gpu_vendors.json, // comments allowed). {} rows when unreadable."""
+    try:
+        text = Path(path or VENDORS).read_text(encoding="utf-8")
+        text = re.sub(r"^\s*//.*$", "", text, flags=re.M)
+        return json.loads(text)
+    except (OSError, ValueError):
+        return {"vendors": [], "ignore": []}
+
+
+def classify_adapters(names, table=None):
+    """Adapter names -> [{name, vendor, ...vendor row}] for real GPUs only. Pure, no probing."""
+    table = table or load_vendors()
+    out = []
+    for name in names:
+        low = name.lower()
+        if any(w in low for w in table.get("ignore", [])):
+            continue
+        row = next((v for v in table.get("vendors", []) if any(m in low for m in v["match"])), None)
+        out.append({"name": name[:100], "vendor": row["id"] if row else "unknown",
+                    "cudaRuntime": bool(row and row.get("cudaRuntime")),
+                    "ollamaEnv": dict(row.get("ollamaEnv", {})) if row else {},
+                    "sttBackend": row.get("sttBackend", "cpu") if row else "cpu"})
+    return out
+
+
+def adapter_names():
+    """GPU adapter names from Windows (no vendor tool needed); [] elsewhere or on failure."""
+    if os.name != "nt":
+        return []
+    try:
+        out = subprocess.run(["powershell", "-NoProfile", "-Command",
+                              "(Get-CimInstance Win32_VideoController).Name"],
+                             capture_output=True, text=True, timeout=5,
+                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout
+    except (OSError, subprocess.SubprocessError):
+        return []
+    return [line.strip() for line in out.splitlines() if line.strip()][:8]
 
 
 def visible_gpus(gpus, visible):
@@ -69,9 +114,13 @@ class Capabilities:
                 result.update(memoryMiB=total // 1048576, availableMemoryMiB=available // 1048576)
             except (AttributeError, OSError, ValueError):
                 result["unknown"].append("memory")
+        # Every adapter Windows reports, by vendor: AMD/Intel cannot run CUDA but
+        # Ollama can use them (user 2026-11-25). NVIDIA ones also get VRAM below.
+        result["adapters"] = classify_adapters(adapter_names())
         tool = shutil.which("nvidia-smi")
         if not tool:
-            result["unknown"].append("gpu")
+            if not result["adapters"]:
+                result["unknown"].append("gpu")
             return result
         # A file bounds what we read into memory; no shell, windows or model start.
         try:

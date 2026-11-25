@@ -1,0 +1,20 @@
+{
+  // WHICH GPUS THE PC MAY HAVE, AND WHAT EACH CAN RUN (user 2026-11-25: support
+  // AMD too, not only NVIDIA). Matched on the adapter name Windows reports
+  // (Win32_VideoController). A new vendor = a new row, no code.
+  //   cudaRuntime   true = CTranslate2/onnxruntime CUDA (Whisper, face app) can use it
+  //   ollamaEnv     environment Ollama is started with so it uses this GPU
+  //                 (Ollama has its own AMD ROCm and Vulkan backends)
+  //   sttBackend    what Whisper may use today; "cpu" until a backend for that vendor is added
+  //                 (CTranslate2 has no ROCm/DirectML build on Windows, 2026-11-25)
+  "vendors": [
+    { "id": "nvidia", "match": ["nvidia", "geforce", "rtx", "quadro"], "cudaRuntime": true,
+      "ollamaEnv": {}, "sttBackend": "cuda" },
+    { "id": "amd", "match": ["amd", "radeon", "advanced micro devices"], "cudaRuntime": false,
+      "ollamaEnv": { "OLLAMA_VULKAN": "1" }, "sttBackend": "cpu" },
+    { "id": "intel", "match": ["intel", "arc(tm)", "iris", "uhd graphics"], "cudaRuntime": false,
+      "ollamaEnv": { "OLLAMA_VULKAN": "1" }, "sttBackend": "cpu" }
+  ],
+  // Adapters that are not real compute GPUs and must never count.
+  "ignore": ["microsoft basic", "remote display", "virtual", "displaylink", "parsec"]
+}

@@ -61,7 +61,7 @@ def tree_fingerprint():
             continue
         # The receipt itself, and files the RUNNING system writes, are not
         # source: including them would invalidate every receipt immediately.
-        if f.name in (".qc-receipt.json", "promt.md", "PLAN.html",
+        if f.name in (".qc-receipt.json", "last_timing.json", "promt.md", "PLAN.html",
                       "settings_shared.json", "hub_auth.json",
                       "hub_password.txt", "faces_login.json", "BRIDGE.md", "HANDOVER.md",
                       "plan_state.js", "system_integral.html", "system_integral_state.js"):
@@ -94,6 +94,37 @@ def _speed():
 
 
 SPEED = _speed()
+
+# ---- how long each check took, last time -------------------------------
+# Written by every full run (qc/last_timing.json, git-ignored) and read by the
+# next one, so the slowest checks are started FIRST. A pool that begins with
+# the 90-second checks finishes when the last of them does; one that begins
+# with the 1-second checks and ends with a 90-second one waits on it alone.
+# qc/data/qc_durations.json is the committed seed for a fresh clone. 2026-11-25.
+TIMING_FILE = CODE / "qc" / "last_timing.json"
+TIMING_SEED = QC / "data" / "qc_durations.json"
+
+
+def load_durations():
+    """{check stem: seconds} from the last run, else the seed, else empty."""
+    import json
+    out = {}
+    for path in (TIMING_SEED, TIMING_FILE):          # the newer file wins
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        for stem, row in (data.get("checks") or {}).items():
+            try:
+                out[stem] = float(row["secs"] if isinstance(row, dict) else row)
+            except (TypeError, ValueError, KeyError):
+                pass
+    return out
+
+
+def longest_first(group, durations):
+    """Slowest first; checks never timed keep file order after the timed ones."""
+    return sorted(group, key=lambda fm: -durations.get(fm[0].stem, 0.0))
 
 
 def write_receipt(passed, failed, fingerprint=None):
@@ -289,6 +320,41 @@ def _one(path_str):
             secs, crash or "", "", buf.getvalue())
 
 
+def _timing_report(timings, phases, wall, full_run, top=12):
+    """Where the time went: per-phase wall clock and the slowest checks.
+
+    Asked 2026-11-25 (*why does QC take so long*): without this nobody could
+    say whether the wait was the pool, one slow check, or the solo tail.
+    Also saved, so the next run starts its slowest checks first.
+    """
+    import json
+    if not timings:
+        return
+    lanes = {}
+    for row in timings.values():
+        lanes.setdefault(row["lane"], [0, 0.0])
+        lanes[row["lane"]][0] += 1
+        lanes[row["lane"]][1] += row["secs"]
+    total = sum(r["secs"] for r in timings.values())
+    print("\n%sQC TIMING%s  wall %.0fs, sum of checks %.0fs (x%.1f overlap)"
+          % (B, D, wall, total, total / max(wall, 0.1)))
+    for name, secs in phases.items():
+        print("  phase %-34s %6.0fs" % (name, secs))
+    for lane, (n, secs) in sorted(lanes.items()):
+        print("  lane  %-8s %3d checks, %6.0fs of work" % (lane, n, secs))
+    print("  slowest checks:")
+    for stem, row in sorted(timings.items(), key=lambda kv: -kv[1]["secs"])[:top]:
+        print("    %6.1fs  %-8s %s" % (row["secs"], row["lane"], stem))
+    if full_run:                      # a filtered run would erase the history
+        try:
+            TIMING_FILE.write_text(json.dumps(
+                {"wall": round(wall, 1),
+                 "phases": {k: round(v, 1) for k, v in phases.items()},
+                 "checks": timings}, indent=1), encoding="utf-8")
+        except OSError:
+            pass
+
+
 def main(argv):
     quick = "--quick" in argv
     listing = "--list" in argv
@@ -403,6 +469,8 @@ def main(argv):
         nonlocal total_pass, total_fail
         print("%s[%s]%s %s" % (B, getattr(mod, "AREA", "?"), D,
                                getattr(mod, "TITLE", f.stem)))
+        timings[f.stem] = {"secs": round(secs, 2),
+                           "lane": lane_of.get(f.stem, "plain")}
         if printed:
             sys.stdout.write(printed)
         n_fail = 0
@@ -444,6 +512,10 @@ def main(argv):
 
     retries = int(SPEED.get("browserRetriesAlone") or 0)
     flaky = []
+    durations = load_durations()
+    timings = {}                 # stem -> {"secs", "lane"}; written at the end
+    lane_of = {}                 # stem -> plain | browser | solo
+    phases = {}                  # phase name -> wall seconds
 
     def _red(results, crash):
         return bool(crash) or not results or any(not g for g, _l, _d in results)
@@ -487,6 +559,10 @@ def main(argv):
             return False
     heavy = [(f, m) for f, m in rest if needs_browser(f)]
     para = [(f, m) for f, m in rest if (f, m) not in heavy]
+    for f, _m in heavy:
+        lane_of[f.stem] = "browser"
+    for f, _m in solo:
+        lane_of[f.stem] = "solo"
     if jobs > 1 and len(para) > 1:
         import concurrent.futures as _cf
         # ONE BROWSER AT A TIME. Three was still too many: four different
@@ -523,9 +599,11 @@ def main(argv):
         heavy_paths = {str(f) for f, _m in heavy}
         suspect = []        # browser checks that failed in the crowd: retried alone
         pools, futs, by_path = [], [], {}
+        t_pool = time.time()
         for group, width in ((para, jobs), (heavy, browser_jobs)):
             if not group:
                 continue
+            group = longest_first(group, durations)
             # Hub threads outlive a check. Reusing a worker accumulates HTTP,
             # scanner and route-probe services until browser checks time out.
             pool = _cf.ProcessPoolExecutor(max_workers=width,
@@ -575,7 +653,10 @@ def main(argv):
             else:
                 # real: it blocks - with whatever the crowded run printed
                 report(f, mod, results, secs, crash, _said(results, crash, printed))
+        phases["parallel (plain + browser lanes)"] = time.time() - t_pool
+        t_solo = time.time()
         run_isolated(solo)
+        phases["solo (one at a time)"] = time.time() - t_solo
         _plan("QC finished: %d passed, %d failed" % (total_pass, total_fail))
 
     else:
@@ -605,6 +686,8 @@ def main(argv):
         write_receipt(total_pass, total_fail, after_tree)
     elif RECEIPT.exists() and full_run:
         RECEIPT.unlink()          # this tree is not green any more
+
+    _timing_report(timings, phases, time.time() - t_all, full_run)
 
     if flaky:
         # Counted as passed, never hidden: these are the checks to make steadier.

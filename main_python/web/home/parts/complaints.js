@@ -54,11 +54,12 @@ async function loadComplaints(){
       var displayText = plainReport(rep.text_en || rep.text || '');
       var short = displayText.slice(0, 120);
       if(displayText.length > 120) short += '…';
+      var pic = rep.images ? ' 🖼' + (rep.images > 1 ? rep.images : '') : '';
       row.innerHTML =
         '<span class="nm">' + esc(rep.time ? rep.time.replace('T', ' ').slice(0, 19) : '?') + '</span>' +
         '<span class="ip tech">' + esc(rep.module || 'no module') + '</span>' +
         '<span class="mini" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
-          esc(short) + '</span>';
+          esc(short) + esc(pic) + '</span>';
       row.onclick = function(){ openComplaintDetail(rep); };
       // The whole row answers a click, so it must say where the keyboard does
       // the same job: a real button inside it, named by data-keyboard.
@@ -117,6 +118,24 @@ function openComplaintDetail(rep){
       btns.appendChild(b);
     });
     actions.insertBefore(btns, actions.firstChild);
+  }
+  // Pictures sent with the report (one tap opens it full size in a new tab)
+  var bar = document.getElementById('reportPicBar');
+  var hint = document.getElementById('reportPicHint');
+  if(bar) bar.hidden = true;
+  if(hint) hint.hidden = true;
+  var pics = document.getElementById('reportPics');
+  if(pics){
+    pics.innerHTML = '';
+    pics.className = 'report-pics big';
+    for(var i = 0; i < (rep.images || 0); i++){
+      var url = '/api/report/image?id=' + encodeURIComponent(rep.id) + '&n=' + i;
+      var a = document.createElement('a');
+      a.className = 'report-pic'; a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      var im = document.createElement('img');
+      im.src = url; im.alt = 'Picture ' + (i + 1) + ' of this report';
+      a.appendChild(im); pics.appendChild(a);
+    }
   }
   m.hidden = false;
 }
@@ -177,6 +196,13 @@ function closeReport(){
   if(t){ t.value = ''; t.readOnly = false; }
   var chk = document.getElementById('reportAttachDiag');
   if(chk){ chk.hidden = false; chk.checked = true; }
+  var pbar = document.getElementById('reportPicBar');
+  var phint = document.getElementById('reportPicHint');
+  var pbox = document.getElementById('reportPics');
+  if(pbar) pbar.hidden = false;
+  if(phint) phint.hidden = false;
+  if(pbox) pbox.className = 'report-pics';
+  clearReportPictures();
   var busy = document.getElementById('reportBusy');
   if(busy) busy.classList.remove('show');
   var send = document.getElementById('reportSend');

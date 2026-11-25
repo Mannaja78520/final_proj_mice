@@ -58,8 +58,7 @@ class VoiceResources:
     def whisper(self, model, factory, force_cpu=False):
         plan = self.plan(fresh=True)
         if plan["device"] == "cuda":
-            runtime = sys.modules.get("torch")
-            plan = self.verify_gpus(plan, getattr(runtime, "cuda", None))
+            plan = self.verify_gpus(plan, self._stt_cuda_runtime())
         attempts = [("cpu", "int8")]
         if not force_cpu and plan["device"] == "cuda":
             attempts = [("cuda", "float16")] + attempts
@@ -95,6 +94,28 @@ class VoiceResources:
         if plan["ramBudgetMiB"] is not None:
             memory["cpu"] = str(max(1, plan["ramBudgetMiB"]))+"MiB"
         return plan, memory
+
+    def _stt_cuda_runtime(self):
+        """The CUDA probe for Whisper. Whisper runs on CTranslate2, not torch.
+
+        PC 2026-11-25: this PC's torch is the CPU-only build (2.15.0+cpu), so
+        torch.cuda said "no GPU" and ALL THREE Whisper models loaded on CPU
+        int8 (~3 GB RAM, slow) while CTranslate2 saw the RTX 5070 Ti fine
+        (get_cuda_device_count() == 1). Ask the runtime that will really run
+        the model. None = no torch verdict, verify_gpus then trusts a single
+        physical GPU. A torch with working CUDA keeps its UUID checks.
+        """
+        torch = sys.modules.get("torch")
+        cuda = getattr(torch, "cuda", None)
+        try:
+            if cuda is not None and cuda.is_available():
+                return cuda
+            import ctranslate2
+            if ctranslate2.get_cuda_device_count() > 0:
+                return None
+        except Exception:
+            pass
+        return cuda
 
     def verify_gpus(self, plan, cuda):
         valid = []

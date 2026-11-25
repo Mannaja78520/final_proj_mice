@@ -79,6 +79,19 @@
     <div class="mini">What were you doing? What went wrong? Write in any language.</div>
     <textarea id="reportText" placeholder="I was trying to… and then…"
               aria-label="Describe the problem"></textarea>
+    <!-- Pictures: a screenshot or photo says it faster than words (user 2026-11-25).
+         Shrunk in the page, three at most, kept only on this PC. -->
+    <div class="report-pic-bar" id="reportPicBar">
+      <button type="button" class="secondary" id="reportPicFileBtn"
+              onclick="document.getElementById('reportPicFile').click()">🖼 Add a picture</button>
+      <button type="button" class="secondary" id="reportPicCamBtn"
+              onclick="document.getElementById('reportPicCam').click()">📷 Take a photo</button>
+      <button type="button" class="secondary" id="reportPicShotBtn" hidden>🖥 Picture of this screen</button>
+      <input type="file" id="reportPicFile" accept="image/*" multiple hidden>
+      <input type="file" id="reportPicCam" accept="image/*" capture="environment" hidden>
+    </div>
+    <div class="mini" id="reportPicHint">You can also paste a picture here (Ctrl+V). Up to three.</div>
+    <div class="report-pics" id="reportPics"></div>
     <div class="checkbox-row">
       <input type="checkbox" id="reportAttachDiag" checked>
       <label for="reportAttachDiag">Attach system summary (what is connected, firmware versions, no passwords)</label>

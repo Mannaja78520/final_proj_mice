@@ -1575,7 +1575,6 @@
   "YAML sequence player": "YAML 動作シーケンスプレーヤー",
   "leaves it on what it had. It is slow — minutes, not seconds — which is the price of having no reset line. Started for you by the hub's": "元の設定のままにします。リセット用の信号線がないため、数秒ではなく数分かかります。ハブが自動で開始するために使うのは",
   ". The robot opens its own secure page (": "。ロボットが自分の安全なページを開きます（",
-  "When something is wrong": "困ったとき",
   "folder) and upload the mp3 or wav. Then a saved show can name it — a": "フォルダー）に mp3 または wav をアップロードします。その後、保存したショーからファイル名で指定できるようになります —",
   "declares every command — which module type it belongs to, its arguments and a one-line explanation. The board compiles it into a table for its own": "すべてのコマンドについて、対応するモジュールの種類、指定する値、1行の説明を定義します。ボードはこれを表にまとめ、自身の",
   "To edit a saved one, open the": "保存済みのものを編集するには、次を開きます：",
@@ -1937,6 +1936,7 @@
   "The page waits for the board to answer before showing its controls.": "ボードから応答が届くまで、操作ボタンは表示されません。",
   "The page reads camera settings after it identifies a camera.": "カメラを識別してから、カメラの設定を読み込みます。",
   "Use the globe to change the page language. Screen readers follow the selected language.": "地球アイコンでページの言語を切り替えられます。スクリーンリーダーにも選んだ言語が伝わります。",
-  "Search Help in the language selected on the page.": "ページで選択した言語でヘルプの項目を検索できます。"
+  "Search Help in the language selected on the page.": "ページで選択した言語でヘルプの項目を検索できます。",
+  "Reports can carry up to three pictures. In the Report box press Add a picture, Take a photo (phones) or Picture of this screen (desktop), or paste one with Ctrl+V. Each picture is shrunk first, shows as a small preview with a ✕ to remove it, and stays only on this PC. In Problem reports a 🖼 mark shows which reports have pictures; open one to see them.": "報告には画像を最大3枚まで付けられます。報告ボックスで「画像を追加」「写真を撮る」（スマートフォン）「この画面を撮る」（パソコン）を押すか、Ctrl+V で貼り付けます。画像は先に縮小され、✕ 付きの小さなプレビューで表示され、このPCにだけ保存されます。「問題報告」タブでは 🖼 の付いた報告に画像があり、開くと見られます。"
  }
 }
