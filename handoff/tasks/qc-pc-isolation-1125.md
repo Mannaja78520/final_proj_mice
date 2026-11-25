@@ -3,6 +3,8 @@ Owner: Claude
 Updated: 2026-11-25 19:55 (Bangkok)
 Status: working
 Branch: claude/qc-fixes-1125
+Last commit: ca51182b
+Plan: QC on the PC (no plan id; follow-up of the PC full QC of 2026-11-25)
 
 ## Doing now
 Full serial QC on the fix branch, then draft PR, merge when green, rebuild MiceHub.exe and restart the hub.

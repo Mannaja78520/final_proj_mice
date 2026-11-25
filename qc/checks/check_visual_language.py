@@ -19,6 +19,10 @@ import qc as F
 AREA = "web"
 TITLE = "no Thai text leaks into en/zh/ja pages; no popup pinned at the top-left"
 SLOW = True
+# Alone: a full run on the PC failed it with words other checks leave in the pages at that moment
+# (a Thai test name on Voice, dummy_<date> on TV) and a half-rebuilt hub page (showTab is not defined),
+# and it passes 165/165 on its own. It reads every page, so nothing else may write while it does.
+SOLO = True
 
 HERE = Path(F.CODE) / "tools" / "visual"
 
