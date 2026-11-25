@@ -15,6 +15,10 @@
                  ".ico", ".onnx", ".bak", ".tmp"],
 
   "systems": [
+    {"id": "vram-plan", "summary": "Dynamic GPU-memory planner: measures free VRAM when a model loads and places models by priority and time saved per MiB (no fixed GB tiers); spill to CPU, push out less valuable models; simulation of strategies and card sizes.",
+     "files": ["tools/vramplan.py", "tools/bench_vram.py", "config/vram_models.json", "config/vram_bench.json"],
+     "names": ["vramplan", "Arbiter", "MICE_VRAM_CAP_MIB"],
+     "checks": ["check_vram_plan"], "depends": []},
     {"id": "job-scheduler", "summary": "One shared priority scheduler (live work jumps the queue, background yields, aging prevents starvation) in front of the GPU/CPU; classes and limits are data.",
      "files": ["tools/jobsched.py", "tools/bench_sched.py", "tools/chart_sched.py", "config/scheduler.json", "main_python/hub_api_scheduler.py"],
      "names": ["jobsched", "Scheduler", "_gpu(", "/api/scheduler"],

@@ -7,7 +7,7 @@
     "cpuThreads": 0,
     "workers": 0,
     "ramReserveMiB": 2048,
-    "vramReserveMiB": 2048
+    "vramReserveMiB": 0
   },
   "limits": {
     "cpuThreads": [
@@ -23,7 +23,7 @@
       65536
     ],
     "vramReserveMiB": [
-      256,
+      0,
       65536
     ]
   },
