@@ -447,3 +447,23 @@ injection, language switch). Face_Regonize backend (port 8000) was running; an e
   switch, injection: all replied, language and source badge right, text box cleared, no console error except favicon 404.
   Ollama stopped: saved answers unchanged, model questions answered by the Qwen fallback (slower, 4-7 s, weaker Lao/injection reply).
 - Verdict: nothing clearly worse on q8_0; config/local_ai.json stays q8_0 + flash.
+
+## 2026-11-25 QC wall time: slowest-first ordering and timing report
+Question (user): why does full QC take so long, could the checks run at once? Finding: `qc/run_qc.py` already runs them in a pool
+(plain checks on `workers`, browser checks on `browserLanes`=6); 29 SOLO checks (shared port 80/5353, shared files, or timing-sensitive
+with a measured starved-margin history, see the comments in run_qc.py) run one by one after the pool. Nothing was weakened.
+Change: each full run saves per-check seconds (qc/last_timing.json, seed qc/data/qc_durations.json) and starts the slowest checks first;
+the run prints phase/lane times and the 12 slowest checks.
+Setup: cloud container, 4 cores (so 2 plain workers, 6 browser lanes), same tree, same env-only failures (no PlatformIO/torch/mujoco).
+- Old runner (main 8452142): wall 675.3 s, 10456 passed, 15 failed (13 env-only + 2 system-map headers stale, fixed here).
+- New runner: wall 651.2 s, 10458 passed, 14 failed (all env-only except the same stale headers). Same pass/fail per check.
+- Gain 24 s (3.6%) on this box: within run-to-run noise, so not a proven speed-up.
+- Where the time goes (new runner): pool phase 400 s, solo phase 250 s (38% of wall). Sum of check time 2100 s (x3.2 overlap).
+  Browser lane: 128 checks, 1452 s of work over 6 lanes (~242 s lower bound); longest single check_video_page 233 s,
+  check_visual_language 109 s, check_theme_contrast 92 s, check_network_tab 69 s. Plain lane: 254 checks, only 405 s of work.
+- Conclusion: the wait is the browser lane + the serial SOLO tail, not the plain checks. Next levers, each needing a measured
+  3-green-run proof: split check_video_page (233 s alone = the floor of the pool phase), move SOLO checks whose only reason is a
+  port to a free port, and widen browserLanes only on a PC with free cores.
+Live mode: `python tools/qc_live.py` (read-only GETs at the running hub/voice/faces/friend app, alone then all together, p50/p95/max,
+errors, contention factor). Self-test against local servers: 2 apps x 3 clients, p95 7 ms alone and 7 ms together, 0 errors.
+Not yet run against the real apps on the PC.
