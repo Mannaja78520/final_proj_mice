@@ -3,7 +3,7 @@ import json
 import re
 import stat
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 HEAD_BYTES = 16 * 1024
@@ -63,12 +63,36 @@ class AiStatus:
                 line = cls._plain(line, 360)
                 if line:
                     lines.append(line)
-        return " ".join(lines)[:360]
+        text = " ".join(lines)
+        return text if len(text) <= 360 else text[:359].rstrip() + "…"
 
     @staticmethod
     def _updated(value, mtime):
+        value = value.strip()
         try:
-            return datetime.fromisoformat(value.strip()).timestamp()
+            return datetime.fromisoformat(value).timestamp()
+        except (ValueError, OverflowError, OSError):
+            pass
+        # Task files say things like "2026-10-28 19:40 (Bangkok)", "2026-10-29 11:04 UTC",
+        # "2026-11-06 (Bangkok)" or a Buddhist-era year. Read the leading date and time and
+        # the zone word; a file that gives no date falls back to the file time.
+        match = re.match(r"(\d{4})-(\d{2})-(\d{2})(?:[ T]+(\d{1,2}):(\d{2}))?", value)
+        if not match:
+            return mtime
+        year, month, day, hour, minute = (int(part or 0) for part in match.groups())
+        if year > 2400:
+            year -= 543
+        rest = value[match.end():]
+        zone = re.search(r"(?<![\w])([+-])(\d{1,2})(?::?(\d{2}))?(?!\d)", rest)
+        if re.search(r"(?<![A-Za-z])(?:UTC|GMT|Z)(?![A-Za-z])", rest, re.I):
+            offset = 0
+        elif zone:
+            offset = (int(zone[2]) * 60 + int(zone[3] or 0)) * (-1 if zone[1] == "-" else 1)
+        else:
+            offset = 7 * 60          # the user's clock: Bangkok
+        try:
+            stamp = datetime(year, month, day, hour, minute, tzinfo=timezone(timedelta(minutes=offset)))
+            return stamp.timestamp()
         except (ValueError, OverflowError, OSError):
             return mtime
 
