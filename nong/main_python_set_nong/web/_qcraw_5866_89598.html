@@ -1,0 +1,88 @@
+
+<script>
+(function(){
+  try{
+    var x = new XMLHttpRequest();
+    x.open("POST", "/api/login", false);          // false = synchronous
+    x.setRequestHeader("Content-Type", "application/json");
+    x.send(JSON.stringify({password: "qc-test-password"}));
+  }catch(e){ /* the gate check drives a logged-OUT page on purpose */ }
+})();
+</script>
+
+<script>
+window.alert=function(){}; window.confirm=function(){return true;};
+// A report that does not arrive fails the check for a reason that has nothing
+// to do with the code under test. This used to be a bare .catch(){} — one
+// dropped fetch and a measurement simply vanished, so the suite failed at
+// random under load and passed when run alone. A suite that fails randomly is
+// one people learn to ignore.
+//
+// So a mark RETRIES. The port behind it is a single fake serial line shared by
+// every mark, and under load a request can be refused; four attempts spaced
+// 150 ms apart cover that without hiding a real failure, because a mark that
+// never lands after all four still fails the check.
+window.qcMark=function(m, tries){
+  tries = tries || 0;
+  return fetch("/api/usb/cmd?port=COM99&id=0&c=" +
+               encodeURIComponent("MOVE QCMARK " + m))
+    .then(function(r){ if (!r || !r.ok) throw new Error("mark refused"); })
+    .catch(function(){
+      // THE CABLE IS SHARED, AND THE HUB USES IT TOO. Its own port probe holds
+      // the fake port for up to 5.4 s (an RS485 census), and while it does,
+      // every mark is refused with "Access is denied". Four tries over 600 ms
+      // gave up inside that window, so the page reported NOTHING and the check
+      // said "[]" - which reads as a dead page (A26-94, 2026-09-23: identity,
+      // loop_return and modsite_back, all green alone).
+      // 40 tries x 250 ms outlasts the census; a page that truly cannot talk
+      // still fails the check, just later.
+      // KEEP TRYING UNTIL THE PAGE'S OWN WINDOW ENDS. 10 s was still not
+      // enough on 2026-09-23: check_loop_return reported nothing at all
+      // while the hub held the cable for a longer stretch. 400 x 250 ms
+      // is 100 s, inside the page window + grace, so a mark lands as soon
+      // as the cable frees and a page that truly cannot talk still fails.
+      if (tries >= 400) return;
+      return new Promise(function(go){ setTimeout(go, 250); })
+        .then(function(){ return window.qcMark(m, tries + 1); });
+    });
+};
+window.qcFail=function(e){ qcMark("ERROR-" + String(e && e.message || e)
+  .replace(/[^A-Za-z0-9]/g,"_").slice(0,60)); };
+// Wait for something to BE TRUE, not for a number of milliseconds. A fixed
+// sleep is a bet on how fast the machine is today: under load the page has not
+// finished, the driver measures an empty list, and the check reports a bug
+// that does not exist. Returns true if the condition came good, false if the
+// deadline passed, so the caller can say what it was waiting for and a real
+// failure still fails.
+window.qcWaitFor = function(cond, ms, step){
+  ms = ms || 8000; step = step || 100;
+  return new Promise(function(done){
+    var until = Date.now() + ms;
+    (function poll(){
+      var ok = false;
+      try{ ok = !!cond(); }catch(e){ ok = false; }
+      if (ok) return done(true);
+      if (Date.now() > until) return done(false);
+      setTimeout(poll, step);
+    })();
+  });
+};
+</script>
+<h1>wrapper</h1><script>
+function ready(f){ return qcWaitFor(function(){ try { var d = f.contentDocument; return d.readyState === "complete" && d.getElementById("tabBtnSetup") && f.contentWindow.palmMarks && f.contentWindow.palmMarks.length === 2; } catch (e) { return false; } }, 25000); }
+async function run(){
+  var f = document.createElement("iframe");
+  f.style.cssText = "width:390px;height:844px";
+  document.body.appendChild(f);
+  f.src = "/studio/";
+  await ready(f);
+  await new Promise(function(r){ setTimeout(r, 800); });
+  var d = f.contentDocument;
+  var tabs = ["Move", "Seq", "Video", "Shows", "Robot", "Setup"].map(function(n){ return d.getElementById("tabBtn" + n).getBoundingClientRect(); });
+  var low = Math.max.apply(null, tabs.map(function(b){ return b.bottom; }));
+  var strip = 844 - 72;              // style.css: body::after strip is 72px high
+  qcMark("TABS~" + Math.round(low) + "~" + strip);
+  qcMark("done");
+}
+window.addEventListener("load", function(){ run(); });
+</script>
