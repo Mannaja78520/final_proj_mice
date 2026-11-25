@@ -628,6 +628,16 @@
    "file": "hub_api_support.py"
   },
   {
+   "path": "/api/report/image",
+   "method": "GET",
+   "what": "",
+   "params": [
+    "id",
+    "n"
+   ],
+   "file": "hub_api_support.py"
+  },
+  {
    "path": "/api/reports",
    "method": "GET",
    "what": "",
