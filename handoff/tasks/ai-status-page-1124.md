@@ -2,7 +2,7 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T12:52:35+07:00
+Updated: 2026-11-25T12:55:00+07:00
 Last commit: 7cea7e6 (scoped release candidate)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Check for new QC owners, then run check_pc_camera and check_visual_language serially on exact 7cea7e6 with private TEMP/TMP and MICE_PEERS_DIR. After a passing replay, rerun full serial QC with the same isolation.
+Wait on the existing QC process, then claim the driver under the mutex only when free and the bridge has no new claim. Run the bounded isolated replay and, after a pass, full serial QC on unchanged 7cea7e6.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -65,6 +65,8 @@ Check for new QC owners, then run check_pc_camera and check_visual_language seri
 - Independent same-provider Codex review of 7cea7e6 completed. The 32-file scope, admin GET, bounded handoff reader, Chrome 75 fallback, and all four Help locales and eight images checked out. No feature blocker found. Review did not clear the full gate.
 
 - Separate perf QC produced its completion marker at 12:51:22. A59-2 did not run overlapping QC.
+
+- Two successive driver checks refused the claim because PIDs 8144 and 122120 were running. No replay started. Requested the next free slot in the shared bridge.
 
 ## Next
 If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
@@ -114,7 +116,7 @@ If candidate QC is green, record final review, publish a scoped PR, merge under 
 | docs/systems/hub-web.md | Generated inventory for Help images | Built | Diff lists exactly eight new captures | 777a439 |
 
 ## Blocked
-Need green exact-candidate QC before integration, build or restart. Check driver availability under the mutex.
+Shared QC busy. Wait without running concurrent checks. Need green exact-candidate QC before integration, build or restart.
 
 ## Result
 (Codex: PR link, screenshot paths, what you verified; report in Thai)
