@@ -150,6 +150,51 @@ October, so a later plain `pip install -U torch` (PyPI serves the CPU wheel on W
 the CUDA build. PyTorch's CUDA index offers `+cu128` up to 2.11.0 and `+cu130` up to 2.14.1.
 The in-process Qwen2.5-0.5B is only the backup of the Ollama model (Ollama was not running during these tests).
 
+## 2e. Final numbers with the shared character lock (`88967d5a`), LLM on the CPU and on the GPU
+
+![simulation, LLM on CPU, LLM on GPU](img/perf_scheduler_final_2026-11-25.png)
+
+Branch at `88967d5a` (requests share the character lock; switches and writes take it alone), the pool fix
+`6b11e610`, no harness. Same load as 2b and 2c: face, voice `/ask`, stt, camera, plus 4 background threads of
+`POST /translate` (class `helper`), 20 s per run, 2 runs per setting, interleaved ON, OFF, ON, OFF.
+OFF = `lease.enabled=false` and every class at priority 5. "show rate" = `perf_load.py --real` (voice and stt
+0.5 Hz, face 10 Hz); "flat out" = every live workload loops as fast as it is answered. The perf runs held the
+PC-wide QC lock, so no QC ran under them.
+
+Means of 2 runs, OFF to ON (ms; calls and jobs are per 20 s):
+
+| load | LLM | `/ask` p95 | stt p50 | stt p95 | stt calls | background jobs |
+|---|---|---|---|---|---|---|
+| show rate | CPU (torch 2.15.0+cpu) | 3861 to 2036 | 3884 to 1507 | 4564 to 3379 | 6 to 8 | 26.5 to 22.0 |
+| show rate | GPU (torch 2.11.0+cu128) | 2814 to 1358 | 2869 to 1250 | 3328 to 2308 | 8 to 10 | 32.5 to 28.5 |
+| flat out | CPU | 4896 to 2911 | 4853 to 1917 | 5033 to 4180 | 5 to 8 | 21.5 to 15.0 |
+| flat out | GPU | 2729 to 1886 | 2990 to 1985 | 3423 to 3653 | 7 to 10 | 33.0 to 15.5 |
+
+What this says:
+
+* Gate wait is no longer 0 (Voice `/health` `scheduler.classes`, cumulative since the Voice started): live
+  jobs wait 0.3 to 1.1 s at the median in both settings, and at p95 up to 2.6 s with the scheduler on against
+  3.8 s with it off; helper jobs wait about 2 to 2.5 s at the median (they are the ones that give way).
+  The queue the scheduler orders is now real.
+* At show rate the scheduler makes live work about 2.3 to 2.6 times faster at the median for stt
+  (3884 to 1507 ms on CPU, 2869 to 1250 ms on GPU) and cuts `/ask` p95 by 47% (CPU) and 52% (GPU).
+  Background throughput drops 17% (CPU) and 12% (GPU); it is delayed, not starved.
+* Flat out (live work that never pauses) the background class gives way hard (15 jobs against 21.5 to 33): a
+  stress test, not a show.
+* The LLM on the GPU helps both settings: the helper job holds the gate about 440 ms instead of about 600 ms,
+  and with the scheduler off the background throughput is 32.5 against 26.5 jobs. The stt p95 in flat out on GPU
+  is not better with the scheduler on (3423 to 3653): that is inside the noise of 2 runs.
+* The remaining time live work waits (about 1.2 to 1.5 s for stt) is Whisper itself and the CPU/GPU being shared
+  with the face app, not the queue.
+
+How the GPU run was made: a CUDA build of torch in a side folder (`E:/work/torch_cu128`, installed with
+`pip install --no-deps --target`, the system Python untouched), first on `PYTHONPATH` of the side Voice only.
+It needs the matching torchvision too: with `torch 2.11.0+cu128` and the installed `torchvision 0.29.2`,
+transformers failed with `operator torchvision::nms does not exist` and the local model did not load
+(`/translate` answered `could not load: ModuleNotFoundError: Could not import module 'Qwen2ForCausalLM'`).
+The pair is `torch==2.11.0+cu128` and `torchvision==0.26.0+cu128`, from `https://download.pytorch.org/whl/cu128`.
+After that `/health` said `llmDevice: {"device": "cuda:0"}`.
+
 ## 3. How this was run
 
 * The real hub (`MiceHub.exe` on 8642), the real Voice (8767) and the face app (8000) were left

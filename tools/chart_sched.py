@@ -35,6 +35,7 @@ def main():
     ap.add_argument("--bg-on", nargs="+", default=[],
                     help="perf_load files made with --helpers, scheduler on (averaged)")
     ap.add_argument("--bg-off", nargs="+", default=[], help="same, scheduler off")
+    ap.add_argument("--bg-title", default="4 background helper threads, Voice as shipped: live /ask and STT (ms)")
     ap.add_argument("--bg2-on", nargs="+", default=[],
                     help="like --bg-on, for a second condition (e.g. Voice without the whole-request profile lock)")
     ap.add_argument("--bg2-off", nargs="+", default=[])
@@ -65,7 +66,7 @@ def main():
     if a.bg_on and a.bg_off:
         keys = [("voice", "med_ms"), ("voice", "p95_ms"), ("stt", "med_ms"), ("stt", "p95_ms")]
         jobs_on, jobs_off = avg(a.bg_on, "helper", "calls"), avg(a.bg_off, "helper", "calls")
-        panels.append(("4 background helper threads, Voice as shipped: live /ask and STT (ms)\n"
+        panels.append((a.bg_title + "\n"
                        "background jobs done in 20 s: off %.0f, on %.0f" % (jobs_off, jobs_on), "bg",
                        [avg(a.bg_off, k, f) for k, f in keys], [avg(a.bg_on, k, f) for k, f in keys],
                        ["ask p50", "ask p95", "stt p50", "stt p95"]))
