@@ -3,7 +3,7 @@
 Branch `claude/project-thread-q4yvte` (PR #259: `tools/jobsched.py`, `config/scheduler.json`,
 `main_python/hub_api_scheduler.py`). No model, setting or quality was changed for these runs.
 
-![live wait before and after](img/perf_scheduler_2026-11-25.png)
+![live wait before and after: simulation, real apps, real apps with background load](img/perf_scheduler_2026-11-25.png)
 
 ## 1. Simulation (`tools/bench_sched.py`)
 
@@ -51,6 +51,43 @@ Reading it honestly:
 * The face app is a separate program that does not ask the hub for a GPU turn yet, so its jobs are not
   ordered by this scheduler. Only Voice and hub tools are.
 
+## 2b. Real apps with a background load beside the live work
+
+Same setup as section 2, plus 4 threads of background work for 20 s:
+`python tools/perf_load.py --seconds 20 --together-only --only face,voice,stt,camera --helpers 4`.
+Each background call is `POST /translate` with a Thai sentence and no target: the Voice helper
+translates it to English with the local model (Qwen2.5-0.5B, in the Voice process). That runs under
+the scheduler's `helper` class (priority 6), the kind of job a live question should overtake.
+What it really takes: the local model runs on the CPU on this PC (the Voice status says
+"cannot confirm GPU, using CPU" for the LLM; Whisper is on the GPU), about 0.55 s per job.
+It is a real background job, but it competes for the CPU and the Python process as much as for the GPU.
+The web translation path (Google first) was not used: it never touches the GPU gate.
+Two runs per setting, scheduler OFF = `lease.enabled=false` and every class at priority 5.
+
+"together", median / p95 in ms; background = helper jobs finished in 20 s:
+
+| | OFF run 1 | OFF run 2 | ON run 1 | ON run 2 |
+|---|---|---|---|---|
+| voice `/ask` | 2829 / 3936 | 3704 / 4878 | 3005 / 4048 | 3078 / 4073 |
+| stt `/transcribe` | 2933 / 3547 | 3777 / 5261 | 3416 / 3742 | 2850 / 3770 |
+| background jobs done | 30 | 23 | 28 | 26 |
+| face `/api/look` | 70 / 167 | 67 / 184 | 70 / 166 | 70 / 164 |
+
+Means: voice `/ask` p50 3266 (off) vs 3042 (on); stt p50 3355 vs 3133; background jobs 26.5 vs 27.
+The runs differ from each other by more than ON differs from OFF (OFF run 1 is faster than ON, OFF run 2
+slower), so this does not show an improvement. It shows no starvation either: background throughput
+is the same.
+
+Why the scheduler could not help here, from the Voice scheduler stats after the run
+(`/health` `scheduler.classes`): the wait at the gate was 0 ms at p50 and p95 for every class
+(live, helper, background). Jobs reached the gate one at a time, so there was no queue for priority
+to reorder. A helper job holds the gate for about 0.55 s, but a caller waits about 3 s, so the
+queueing happens before the gate (the Voice job pool, locks, or CPU and Python-process contention
+from the local model); this test did not find which. A live `/ask` that is answered from the saved
+FAQ does not use the gate at all. To make the gate the limit, the background job must be GPU-bound and
+the live job must also take the gate (a question that needs the local model), or the work before the
+gate must stop serializing. That is a finding for the PR, not a result of the scheduler.
+
 ## 3. How this was run
 
 * The real hub (`MiceHub.exe` on 8642), the real Voice (8767) and the face app (8000) were left
@@ -60,7 +97,7 @@ Reading it honestly:
   `config/scheduler.json` `lease.hubUrl` and `config/perf_load.json` `voice`/`stt_clips` were pointed
   at the side ports for the runs and put back afterwards.
 * The camera load read the real hub's shared stream (`pc:FHD Camera`), the same in every run.
-* Chart: `python tools/chart_sched.py --sim .local/perf/sched_sim.json --on .local/perf/sched_on.json --off .local/perf/sched_off.json --out docs/img/perf_scheduler_2026-11-25.png`.
+* Chart: `python tools/chart_sched.py --sim .local/perf/sched_sim.json --on .local/perf/sched_on.json --off .local/perf/sched_off.json --bg-on .local/perf/bg_on1.json .local/perf/bg_on2.json --bg-off .local/perf/bg_off1.json .local/perf/bg_off2.json --out docs/img/perf_scheduler_2026-11-25.png`.
 
 ## 4. QC status on this PC (not final)
 
