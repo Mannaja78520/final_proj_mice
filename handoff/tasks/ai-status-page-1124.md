@@ -2,7 +2,7 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T14:46:44+07:00
+Updated: 2026-11-25T14:51:29+07:00
 Last commit: a0f1a383 (release candidate on b20e09ae)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Run final preflight covering the failed checks and AI work/Help/translation on exact a0f1a383 with standard Windows TEMP/TMP and isolated camera peers. Start one sequential full gate only if preflight passes.
+Full serial QC is running on frozen a0f1a383 with standard TEMP/TMP and a private camera peer directory. Await _out/ai-status-1124/full-a0f1a383.done.json.
 
 ## Done
 - Built AI work in Hub Tools, administrator GET, bounded handoff reader, four locales and Hub Help. Focused QC 83/0 and both admin/read-bound sabotages tripped their assertions.
@@ -46,6 +46,8 @@ Run final preflight covering the failed checks and AI work/Help/translation on e
 - Normal-temp comparison: candidate 272/3, current main 269/6. Face count, Gacha stock/jam, camera and plan integrity all passed. Both trees reproduce the three Voice fallback failures. Main also has the three Tools-title failures fixed on the candidate. Logs: _out/ai-status-1124/normal-temp-replay-931b7264.log and normal-temp-baseline-b20e09ae.log. Shared QC released.
 
 - Translated the matched Voice fallback and its related status text in th/ja/zh; Hub Help explains the status consistently in four languages. Exact eight-file delta, no Voice app or friend code changes. Build/diff passed on a0f1a383 and WIP d7caafd0.
+
+- Corrected preflight PASS 459/0 in 205.2s, including all replayed failures, contextual Help, locale coverage and AI work. Evidence: _out/ai-status-1124/preflight-a0f1a383.log.
 
 ## Next
 After a green full gate, record the final scoped review and publish, merge, build and restart. If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
@@ -66,19 +68,19 @@ After a green full gate, record the final scoped review and publish, merge, buil
 | apps/ai-status/app.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
 | apps/ai-status/index.html | Planned AI work integration | Built | focused QC and native text check | d7bb1ec |
 | apps/ai-status/status.js | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
-| main_python/web/help/parts/hub.html | Localize AI work and fallback status / Help | Built | Build and diff pass; focused QC pending | a0f1a383 |
+| main_python/web/help/parts/hub.html | Localize AI work and fallback status / Help | Built | Focused preflight passed | a0f1a383 |
 | main_python/web/help/shots.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
-| main_python/web/help.html | Localize AI work and fallback status / Help | Built | Build and diff pass; focused QC pending | a0f1a383 |
+| main_python/web/help.html | Localize AI work and fallback status / Help | Built | Focused preflight passed | a0f1a383 |
 | docs/systems.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
 | docs/systems/hub-apps.md | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
 | qc/checks/check_ai_status.py | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
 | shared/web/lang/en.json | Localize AI work and Tools labels / Help | Built | Focused preflight passed | 931b7264 |
-| shared/web/lang/th.json | Localize AI work and fallback status / Help | Built | Build and diff pass; focused QC pending | a0f1a383 |
-| shared/web/lang/ja.json | Localize AI work and fallback status / Help | Built | Build and diff pass; focused QC pending | a0f1a383 |
-| shared/web/lang/zh.json | Localize AI work and fallback status / Help | Built | Build and diff pass; focused QC pending | a0f1a383 |
-| shared/web/lang/help/en.json | Localize AI work and fallback status / Help | Built | Build and diff pass; focused QC pending | a0f1a383 |
-| shared/web/lang/help/ja.json | Localize AI work and fallback status / Help | Built | Build and diff pass; focused QC pending | a0f1a383 |
-| shared/web/lang/help/zh.json | Localize AI work and fallback status / Help | Built | Build and diff pass; focused QC pending | a0f1a383 |
+| shared/web/lang/th.json | Localize AI work and fallback status / Help | Built | Focused preflight passed | a0f1a383 |
+| shared/web/lang/ja.json | Localize AI work and fallback status / Help | Built | Focused preflight passed | a0f1a383 |
+| shared/web/lang/zh.json | Localize AI work and fallback status / Help | Built | Focused preflight passed | a0f1a383 |
+| shared/web/lang/help/en.json | Localize AI work and fallback status / Help | Built | Focused preflight passed | a0f1a383 |
+| shared/web/lang/help/ja.json | Localize AI work and fallback status / Help | Built | Focused preflight passed | a0f1a383 |
+| shared/web/lang/help/zh.json | Localize AI work and fallback status / Help | Built | Focused preflight passed | a0f1a383 |
 | main_python/web/help/img/en-light-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
 | main_python/web/help/img/en-dark-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
 | main_python/web/help/img/th-light-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
@@ -99,7 +101,7 @@ After a green full gate, record the final scoped review and publish, merge, buil
 | shared/web/mice-lang.js | Reuse locale placeholders for dynamic tool labels | Built | Visual-language preflight passed | 931b7264 |
 
 ## Blocked
-The reproduced blockers have scoped fixes or a corrected fixture. Full QC is still required for merge, build and restart.
+A59-2 holds the shared driver during full QC. Release awaits a green result.
 
 ## Result
 (Codex: PR link, screenshot paths, what you verified; report in Thai)
