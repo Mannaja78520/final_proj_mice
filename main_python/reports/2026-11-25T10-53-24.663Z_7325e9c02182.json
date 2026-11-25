@@ -1,0 +1,12 @@
+{
+  "id": "7325e9c02182",
+  "images": [],
+  "time": "2026-11-25T10:53:24.663Z",
+  "text": "STUDIO FREEZE {\"gapMs\":1617,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":false,\"wifi\":false,\"keys\":1,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":7,\"longTasks\":[{\"ms\":87,\"at\":20426},{\"ms\":98,\"at\":20513},{\"ms\":414,\"at\":20612},{\"ms\":109,\"at\":21040},{\"ms\":78,\"at\":21256},{\"ms\":86,\"at\":21385},{\"ms\":91,\"at\":21594},{\"ms\":1613,\"at\":21700}],\"slowCalls\":[{\"u\":\"/api/list?kind=projects\",\"ms\":414,\"at\":507},{\"u\":\"/api/list?kind=sequences\",\"ms\":413,\"at\":508},{\"u\":\"/api/list?kind=models\",\"ms\":410,\"at\":511},{\"u\":\"/api/list?kind=sequences\",\"ms\":411,\"at\":510},{\"u\":\"/api/shows\",\"ms\":412,\"at\":509}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36"
+}

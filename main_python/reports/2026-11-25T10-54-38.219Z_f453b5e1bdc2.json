@@ -1,0 +1,13 @@
+{
+  "id": "f453b5e1bdc2",
+  "images": [],
+  "time": "2026-11-25T10:54:38.219Z",
+  "text": "STUDIO FREEZE {\"gapMs\":1650,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":1,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":11,\"longTasks\":[{\"ms\":98,\"at\":1431},{\"ms\":206,\"at\":1545},{\"ms\":74,\"at\":1751},{\"ms\":85,\"at\":1828},{\"ms\":114,\"at\":2009},{\"ms\":50,\"at\":2140},{\"ms\":128,\"at\":2201},{\"ms\":62,\"at\":2486},{\"ms\":1630,\"at\":2609}],\"slowCalls\":[{\"u\":\"/api/list?kind=sequences\",\"ms\":473,\"at\":554},{\"u\":\"/api/shows\",\"ms\":475,\"at\":553},{\"u\":\"/api/ports\",\"ms\":443,\"at\":589},{\"u\":\"/api/ports\",\"ms\":442,\"at\":590},{\"u\":\"video_motion_policy.json\",\"ms\":93,\"at\":1102},{\"u\":\"/api/whoami\",\"ms\":135,\"at\":1061},{\"u\":\"/api/list?kind=models&deep=1\",\"ms\":95,\"at\":1103},{\"u\":\"/api/login\",\"ms\":232,\"at\":1029},{\"u\":\"/api/gestures\",\"ms\":7,\"at\":1423},{\"u\":\"/api/voice/config\",\"ms\":112,\"at\":1432},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=INFO\",\"ms\":303,\"at\":1242},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=LIMIT%3F\",\"ms\":42,\"at\":1921},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=FILES%20%2Fmoves\",\"ms\":84,\"at\":1923},{\"u\":\"/api/gestures\",\"ms\":53,\"at\":1956},{\"u\":\"/api/gestures/fit\",\"ms\":29,\"at\":4230}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+  "text_en": "Sure! {\"label\": \"Point up high\", \"word\": \"ฟ้า\", \"keys\": [{\"R\": [0.2, 3, 0.4], \"palmR\": \"sideways\", \"t\": 99999, \"hold\": -5, \"x\": 1}]}"
+}
