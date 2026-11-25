@@ -2,10 +2,19 @@
 
 Owner: claude (thread cmsg_01R7BbYxaTb3Yv9YS3gQaaA3MfPQXswnhS8juMgMuyVc2P)
 Updated: 2026-11-25
+Branch: claude/project-thread-yzc9lu
+Last commit: see git log
+Plan: none (user ask 2026-11-25)
+
+## Goal
+All apps (hub, voice, face, camera) at once on the PC, fast, GPU used well, CPU fallback, AMD too, no quality loss.
+
+## Blocked
+- nothing
 Ask (user, own words): ทุกอย่างรันพร้อมกันได้โดยไม่มีปัญหา กล้อง ประสิทธิภาพสูงสุด GPU decode/encode, voice ใช้พร้อม facereg, CPU backup, dynamic; ไม่ลดคุณภาพ; report มีรูป
 
 ## Doing now
-Charts + report + friend doc (Thai, with images).
+Rerunning full QC after fixing systems map, template fields, check_voice_view.
 
 ## Done
 - tools/perf_profile.py + tools/perf_load.py (+ config) measure every app alone and together.

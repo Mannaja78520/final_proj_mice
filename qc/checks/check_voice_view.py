@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import time
 from pathlib import Path
 
 import qc as F
@@ -267,6 +268,15 @@ def _slow_road(t):
          "an unknown face with the watcher up skips their slow history", repr(asked))
     b._cached_person_at = 0
     b._watcher_present = lambda *a, **k: None
+    # The look runs on a worker and a question waits only face.askWaitSeconds
+    # (2026-11-25), so the first call may answer before it ends: wait for the
+    # worker, then the same question gets the history name.
+    b.get_detected_person()
+    for _ in range(100):
+        if not getattr(b, "_person_busy", False):
+            break
+        time.sleep(0.1)
+    b._cached_person_at = time.time()
     t.ok(b.get_detected_person() == "Old Name" and asked == ["history"],
          "with the watcher down, their history is still the fallback", repr(asked))
 
