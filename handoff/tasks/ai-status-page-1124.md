@@ -2,7 +2,7 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T12:21:46+07:00
+Updated: 2026-11-25T12:52:35+07:00
 Last commit: 7cea7e6 (scoped release candidate)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Wait for the separate perf QC job (PID 38584) to exit. Then claim the free driver and run the bounded isolated replay on candidate 7cea7e6.
+Check for new QC owners, then run check_pc_camera and check_visual_language serially on exact 7cea7e6 with private TEMP/TMP and MICE_PEERS_DIR. After a passing replay, rerun full serial QC with the same isolation.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -63,6 +63,8 @@ Wait for the separate perf QC job (PID 38584) to exit. Then claim the free drive
 - Shared QC claim released. Another driver PID 38584 started after our full run. No other process was stopped. Hypothesis for one bounded replay: a private QC temp directory and MICE_PEERS_DIR will isolate camera peers and browser profiles. Fixed input 7cea7e6, two serial checks, stop after both report or the browser timeout. Start another full run only if the replay passes.
 
 - Independent same-provider Codex review of 7cea7e6 completed. The 32-file scope, admin GET, bounded handoff reader, Chrome 75 fallback, and all four Help locales and eight images checked out. No feature blocker found. Review did not clear the full gate.
+
+- Separate perf QC produced its completion marker at 12:51:22. A59-2 did not run overlapping QC.
 
 ## Next
 If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
@@ -112,7 +114,7 @@ If candidate QC is green, record final review, publish a scoped PR, merge under 
 | docs/systems/hub-web.md | Generated inventory for Help images | Built | Diff lists exactly eight new captures | 777a439 |
 
 ## Blocked
-Shared QC occupied by another run. Need green exact-candidate QC before integration, build or restart.
+Need green exact-candidate QC before integration, build or restart. Check driver availability under the mutex.
 
 ## Result
 (Codex: PR link, screenshot paths, what you verified; report in Thai)
