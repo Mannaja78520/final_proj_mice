@@ -28,6 +28,12 @@
     if (dict[t] === t) return null;
     return {from: t, to: dict[t]};
   }
+  function translatedAttribute(value) {
+    if (!value) return null;
+    var exact = lookup(value);
+    var translated = exact ? exact.to : pattern(value);
+    return translated && translated !== value ? translated : null;
+  }
   function node(n) {
     if (n.nodeType === 3) {
       if (n.parentNode && SKIP[n.parentNode.nodeName]) return;
@@ -37,9 +43,8 @@
     }
     if (n.nodeType !== 1 || n.nodeName === "SCRIPT" || n.nodeName === "STYLE") return;
     for (var i = 0; i < ATTRS.length; i++) {
-      var v = n.getAttribute(ATTRS[i]);
-      var h = v && lookup(v);
-      if (h) n.setAttribute(ATTRS[i], h.to);
+      var value = translatedAttribute(n.getAttribute(ATTRS[i]));
+      if (value) n.setAttribute(ATTRS[i], value);
     }
     if (SKIP[n.nodeName]) return;     // code and text boxes keep their text, but their placeholder/title above are translated (2026-11-23)
     for (var c = n.firstChild; c; c = c.nextSibling) node(c);
@@ -55,8 +60,8 @@
         var m = list[i];
         if (m.type === "characterData") node(m.target);
         else if (m.type === "attributes") {      // a title / label set after the first pass (tool tiles, dialogs)
-          var av = m.target.getAttribute(m.attributeName), ah = av && lookup(av);
-          if (ah) m.target.setAttribute(m.attributeName, ah.to);
+          var value = translatedAttribute(m.target.getAttribute(m.attributeName));
+          if (value) m.target.setAttribute(m.attributeName, value);
         }
         else for (var j = 0; j < m.addedNodes.length; j++) node(m.addedNodes[j]);
       }

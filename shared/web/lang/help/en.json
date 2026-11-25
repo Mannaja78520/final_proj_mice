@@ -1,6 +1,12 @@
 {
  "name": "en",
  "strings": {
+  "ดูความคืบหน้างาน AI": "See AI work progress",
+  "เข้าสู่ระบบด้วยบัญชีผู้ดูแล Hub แล้วเปิด งาน AI จากเมนูเครื่องมือ หน้าเปิดในแท็บใหม่": "Sign in as a Hub administrator, then open AI work from Tools in a new tab.",
+  "แต่ละงานแสดง AI ที่รับผิดชอบ สิ่งที่กำลังทำ และเวลาที่อัปเดตล่าสุด หน้านี้อ่านจากไฟล์ติดตามงานและโหลดข้อมูลใหม่ทุก 15 วินาที": "Each task shows its AI, current activity and time since the last update. This page reads the task handoffs and refreshes every 15 seconds.",
+  "สถานะกำลังทำ รอดำเนินการ และเสร็จแล้วอ้างอิงจากบันทึกของผู้รับงาน หากไม่มีการอัปเดตหลายชั่วโมง ให้ดูป้ายไม่มีการอัปเดตล่าสุด": "In progress, Waiting and Finished follow the task notes. No recent update means the notes are several hours old.",
+  "เปิดแสดงรายละเอียดทางเทคนิคเพื่อดูโมเดล สาขา Git และคอมมิตล่าสุดที่มีในบันทึก": "Turn on Show technical details to see the model, Git branch and last commit when recorded.",
+  "ตัวอย่างหน้าความคืบหน้างาน AI": "Example AI work page",
   "อัปเดตเฟิร์มแวร์ของบอร์ด": "Update board firmware",
   "เปิด Firmware แล้วเลือกเฟิร์มแวร์ที่เครื่องนี้สร้างไว้สำหรับบอร์ดชนิดนั้น หากยังไม่มีไฟล์ ให้ทำตามคำสั่ง build ที่แสดงในรายการ": "Open Firmware and choose the available build for the board type. If none is available, follow the build command shown in the list.",
   "เลือกบอร์ดปลายทางในแถวของเฟิร์มแวร์ แล้วตรวจชนิดบอร์ดและวิธีเชื่อมต่อในหน้าต่างยืนยันก่อนเริ่ม": "Choose the target board on that firmware row. Confirm the board type and connection before starting.",
@@ -647,7 +653,7 @@
   "4. 🎡 Lucky Wheel (วงล้อเสี่ยงโชค)": "4. 🎡 Lucky Wheel (Prize wheel)",
   "2. ตัวคูณความเร็วประจำไฟล์": "2. File speed multiplier",
   "บนหน้า Hub โดยไม่ต้องเสียบสาย USB": "directly on the Hub page without plugging in a USB cable",
-  "เสียงกับการจดจำใบหน้า: แอพเสียงรู้ว่าใครยืนอยู่หน้ากล้องจาก Reconize และทักทายได้เอง ไม่ต้องผ่าน Hub": "Voice and face recognition: the Voice app learns who is standing in front of the camera from Reconize and can greet them by itself, with no hub.",
+  "เสียงกับการจดจำใบหน้า: แอพเสียงรู้ว่าใครยืนอยู่หน้ากล้องจาก Reconize และทักทายได้เอง ไม่ต้องผ่าน Hub หากจำใครไม่ได้ จะแสดงข้อความไม่พบคนที่รู้จักแทนชื่อ": "Voice and face recognition: the Voice app learns who is standing in front of the camera from Reconize and can greet them by itself, with no hub. When Voice cannot recognize anyone, it shows a status message in place of a name.",
   "ตัวลื่นไม่มีทางทำให้ท่ากระตุกกว่าแบบเดิม: คีย์ไหนที่เส้นโค้งกระตุกกว่าแบบหยุดทุกคีย์ จะถูกลดความเร็วลงเอง (": "Smoothing will never make movements jerkier than before: any keyframe where the curved path would be jerkier than stopping at each key is automatically slowed down (",
   "3. แถบไทม์ไลน์และเครื่องเล่นท่าทาง": "3. Timeline and motion player",
   "โหมดไฟเลี้ยงและ Brownout Guard": "Power mode and Brownout Guard",

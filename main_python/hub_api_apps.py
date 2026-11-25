@@ -9,6 +9,7 @@ from pathlib import Path
 import json
 import os
 import shutil
+import ai_status
 import hub_api_resources
 import subprocess
 import sys
@@ -45,6 +46,16 @@ class AppRoutes:
         return True
 
     def api_apps(self, method, path, q):
+        if path == "/api/ai-status" and method == "GET":
+            # Task handoff text is visible only to a Hub administrator.
+            user = self.logged_in_user()
+            if not user:
+                return self.send_err("Sign in to view AI work.", 401)
+            if not _hub.auth().is_super(user):
+                return self.send_err("Ask a Hub administrator to view AI work.", 403)
+            return self.send_json(ai_status.AiStatus.from_config(
+                _hub.DATA, _hub.asset("config", "ai_status.json")).read())
+
         if path == "/api/apps":
             # what the hub page offers to open — rendered from the registry, so
             # a new app appears without editing hub.html

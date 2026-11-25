@@ -1,4 +1,47 @@
 {
+  "hub-ai-status": {
+    "url": "/app/ai-status/",
+    "ready": "#task-list article",
+    "clip": "body",
+    "viewport": {
+      "width": 1100,
+      "height": 730
+    },
+    "responses": {
+      "/api/ai-status": {
+        "ok": true,
+        "available": true,
+        "tasks": [
+          {
+            "name": "Nong Studio",
+            "agent": "Codex",
+            "state": "working",
+            "updated": 1783500000,
+            "activity": ""
+          },
+          {
+            "name": "MICE Hub",
+            "agent": "Claude",
+            "state": "done",
+            "updated": 1783499000,
+            "activity": ""
+          },
+          {
+            "name": "Help",
+            "agent": "Gemini",
+            "state": "blocked",
+            "updated": 1783498000,
+            "activity": ""
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "eval": "window.Date.now = () => 1783500300000"
+      }
+    ]
+  },
   "hub-module-card": {
     "url": "/#modules",
     "clip": ".card:has(#modFind)",

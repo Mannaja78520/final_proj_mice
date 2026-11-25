@@ -28,6 +28,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/checks/check_adapter_reopen_fast.py`
 - `qc/checks/check_advanced.py`
 - `qc/checks/check_ago_text.py`
+- `qc/checks/check_ai_status.py`
 - `qc/checks/check_ai_watch.py`
 - `qc/checks/check_alone_apps.py`
 - `qc/checks/check_amp_kind.py`
@@ -459,7 +460,6 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/data/usability_dom.js`
 - `qc/data/usability_hub.js`
 - `qc/data/video_group.cjs`
-- `qc/last_timing.json`
 - `qc/lib/browser.py`
 - `qc/lib/fake_friend.py`
 - `qc/lib/fake_serial.py`
@@ -500,9 +500,10 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 
 - nothing
 
-## Checks that test it (218)
+## Checks that test it (219)
 
 - `check_advanced`
+- `check_ai_status`
 - `check_amp_wiring`
 - `check_app_browser`
 - `check_app_handout`
@@ -721,4 +722,4 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `check_yaml_save_load`
 - `check_zero_lock`
 
-Run them: `python qc/run_qc.py --no-build check_advanced check_amp_wiring check_app_browser check_app_handout check_app_lifecycle check_arm_mirror check_bench_nongpins check_board_auth check_board_frame check_boot_noise check_branch check_browser_budget check_bus_dongle check_bus_group check_cam_viewers check_camera_hub check_cast_mix check_chatty_board check_checked_dispatch check_code_patches check_connection check_crash_gate check_design_system check_designer_first check_dev_tools check_diagnostics check_dialog_escape check_dialog_language check_docs check_driver_waits check_dummy check_edge_cases check_extensions check_firmware_build check_flaky_retry check_flash check_flash_confirm check_flash_remote check_flash_type check_flat_view_drag`
+Run them: `python qc/run_qc.py --no-build check_advanced check_ai_status check_amp_wiring check_app_browser check_app_handout check_app_lifecycle check_arm_mirror check_bench_nongpins check_board_auth check_board_frame check_boot_noise check_branch check_browser_budget check_bus_dongle check_bus_group check_cam_viewers check_camera_hub check_cast_mix check_chatty_board check_checked_dispatch check_code_patches check_connection check_crash_gate check_design_system check_designer_first check_dev_tools check_diagnostics check_dialog_escape check_dialog_language check_docs check_driver_waits check_dummy check_edge_cases check_extensions check_firmware_build check_flaky_retry check_flash check_flash_confirm check_flash_remote check_flash_type`
