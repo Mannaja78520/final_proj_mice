@@ -26,6 +26,16 @@ CODE = Path(__file__).resolve().parents[2]
 class LocalLlm:
     """The local language model: loading, preloading, warming, unloading and one completion."""
 
+    def _drop_llm(self):
+        """The GPU planner needs this room for something more valuable: let the model go, it reloads when next asked."""
+        self._llm = None
+        self._llm_loaded_model = None
+        try:
+            import torch
+            torch.cuda.empty_cache()
+        except Exception:                            # noqa: BLE001
+            pass
+
     def llm_device(self):
         """Where the local model runs and, if it is the CPU, why (GPU first)."""
         where, why = getattr(self, "_llm_where", ("", ""))
@@ -90,6 +100,14 @@ class LocalLlm:
             mdl = None
             resource_plan, memory_budget = self._resources.torch_plan(torch)
             why = []        # why this model is not on the GPU: shown in status, GPU first (user 2026-11-25)
+            free_before = None
+            if resource_plan["device"] == "cuda":
+                # Live free VRAM + priority decide, not a fixed budget: a model that does not fit runs on the
+                # CPU (same quality), and a less valuable resident model is pushed out for a more valuable one.
+                placed = self._resources.place("llm:" + mid, self._drop_llm)
+                free_before = (placed.get("card") or {}).get("freeMiB")
+                if placed["device"] != "cuda":
+                    resource_plan = {**resource_plan, "device": "cpu", "warning": placed["why"]}
             if resource_plan["device"] != "cuda":
                 gpus = resource_plan.get("hardwareGpuCount", 0)
                 why.append("no usable GPU in the plan (%d seen, torch.cuda=%s, budget: %s)" % (
@@ -120,6 +138,8 @@ class LocalLlm:
             self._resources.mark("llm:" + mid, resource_plan, str(mdl.device))
             self._llm = (tok, mdl)
             self._llm_loaded_model = mid
+            self._resources.vram().loaded("llm:" + mid, "cuda" if str(mdl.device).startswith("cuda") else "cpu",
+                                          self._drop_llm, free_before)
             self._llm_where = (str(mdl.device), "; ".join(why) if str(mdl.device) == "cpu" else "")
             if torch.cuda.is_available():
                 try:

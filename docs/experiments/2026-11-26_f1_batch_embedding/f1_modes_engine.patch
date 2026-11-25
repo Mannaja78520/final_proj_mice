@@ -1,0 +1,59 @@
+--- /e/final_proj/mice/Face_Regonize/backend/app/face_recognition/engine.py	2026-11-24 16:30:31.892218300 +0700
++++ f1/backend/app/face_recognition/engine.py	2026-11-26 01:34:39.729722100 +0700
+@@ -457,8 +457,54 @@
+             faces.append(Face(bbox=bbox, kps=kps, det_score=det_score))
+ 
+         rec_model = app.models["recognition"]
+-        for face in faces:
+-            rec_model.get(image_bgr, face)
++        try:
++            _mode_f1 = open(os.environ["F1_MODE_FILE"]).read().strip()
++        except Exception:
++            _mode_f1 = "loop"
++        if _mode_f1 == "loop" or not faces:
++            for face in faces:
++                rec_model.get(image_bgr, face)
++        else:
++            from insightface.utils import face_align
++            aligned = [face_align.norm_crop(image_bgr, landmark=f.kps, image_size=rec_model.input_size[0]) for f in faces]
++            n = len(aligned)
++            if _mode_f1 == "hybrid":
++                if n <= 2:   # shape 1 session (exactly what the loop does today)
++                    for f in faces:
++                        rec_model.get(image_bgr, f)
++                    aligned = None
++                else:        # second session that only ever sees batch 8
++                    global _rec_big
++                    try:
++                        _rec_big
++                    except NameError:
++                        import onnxruntime as _ort
++                        _rec_big = _ort.InferenceSession(rec_model.model_file, providers=["CUDAExecutionProvider"])
++                    outs = []
++                    for i in range(0, n, 8):
++                        chunk = aligned[i:i + 8]
++                        real = len(chunk)
++                        chunk = chunk + [chunk[-1]] * (8 - real)
++                        blob_ = cv2.dnn.blobFromImages(chunk, 1.0 / rec_model.input_std, rec_model.input_size,
++                                                       (rec_model.input_mean,) * 3, swapRB=True)
++                        outs.append(_rec_big.run(rec_model.output_names, {rec_model.input_name: blob_})[0][:real])
++                    feats = np.concatenate(outs, axis=0)
++                    for i, f in enumerate(faces):
++                        f.embedding = np.asarray(feats[i], dtype=np.float32).flatten()
++                    aligned = None
++            elif _mode_f1 == "pad8":
++                target = max(8, n)
++            elif _mode_f1 == "pad4":
++                target = 4 if n <= 4 else 8 if n <= 8 else n
++            else:  # "batch" = F1 as the friend tried it
++                target = n
++            if aligned is not None:
++                if target > n:
++                    aligned = aligned + [aligned[-1]] * (target - n)
++                feats = rec_model.get_feat(aligned)
++                for i, f in enumerate(faces):
++                    e = np.asarray(feats[i], dtype=np.float32).flatten()
++                    f.embedding = e
+         t_embed = time.perf_counter()
+ 
+     if timings is not None:

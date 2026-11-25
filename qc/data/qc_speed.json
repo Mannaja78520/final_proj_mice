@@ -22,5 +22,12 @@
   // original failure stands and blocks. User decision 2026-09-22 (A26-93):
   // four full gates that night, main included, each red on a different
   // browser check that passed alone. 0 turns the rule off.
-  "browserRetriesAlone": 2
+  "browserRetriesAlone": 2,
+
+  // HARD LIMIT per check, seconds (qc/lib/check_pool.py). A check still running
+  // past max(this, 3 x its slowest healthy time) has its process tree and its
+  // browsers killed and fails with "timed out after N s", so one hung check can
+  // never stall the whole run (three scheduled runs stopped at ~340/415 on
+  // 2026-11-25). Generous on purpose: the slowest healthy check is ~250 s.
+  "checkTimeoutFloorSecs": 600
 }

@@ -21,6 +21,36 @@ class VoiceResources:
             self.policy = None
             self.warning = "อ่านนโยบายประสิทธิภาพไม่ได้ ใช้ CPU แบบประหยัดชั่วคราว"
 
+    def vram(self):
+        """The live GPU-memory arbiter (tools/vramplan.py): measures free VRAM when a model loads."""
+        arb = self.__dict__.get("_vram")
+        if arb is None:
+            sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
+            import vramplan
+            shipped = Path(__file__).resolve().parents[2]
+            reg = vramplan.Registry.from_file(shipped / "config" / "vram_models.json",
+                                              Path(os.environ.get("MICE_LEARNED_VRAM") or shipped / ".local" / "vram_learned.json"))
+            arb = self._vram = vramplan.Arbiter(reg, self._gpu_probe)
+        return arb
+
+    def _gpu_probe(self):
+        """Total and free VRAM of the GPU we use, right now (None when there is none)."""
+        if self.policy is None:
+            return None
+        snap = self.policy.capabilities.snapshot(force=True)
+        from resource_hardware import visible_gpus
+        gpus = visible_gpus(snap.get("gpus", []), snap.get("visibleDevices"))
+        if not gpus:
+            return None
+        return {"totalMiB": gpus[0]["totalMiB"], "freeMiB": gpus[0]["freeMiB"]}
+
+    def place(self, key, unload=None):
+        """Where this model should load now ('cuda' or 'cpu'), by live free VRAM and priority."""
+        try:
+            return self.vram().request(key, unload)
+        except Exception as exc:                     # noqa: BLE001 - never block a load on the planner itself
+            return {"device": "cpu", "evict": [], "why": "GPU planner failed: %s" % exc, "card": None}
+
     def plan(self, fresh=False):
         if self.policy is not None:
             return self.policy.resolve(snapshot=self.policy.capabilities.snapshot(force=fresh))
@@ -55,23 +85,30 @@ class VoiceResources:
         return factory.from_pretrained(model, torch_dtype=torch.float32, low_cpu_mem_usage=True,
                                        trust_remote_code=True, **options)
 
-    def whisper(self, model, factory, force_cpu=False):
+    def whisper(self, model, factory, force_cpu=False, unload=None):
         plan = self.plan(fresh=True)
         if plan["device"] == "cuda":
             plan = self.verify_gpus(plan, self._stt_cuda_runtime())
         attempts = [("cpu", "int8")]
+        free_before = None
         if not force_cpu and plan["device"] == "cuda":
-            attempts = [("cuda", "float16")] + attempts
+            placed = self.place("stt:" + model, unload)       # live free VRAM + priority, no fixed tiers
+            plan = {**plan, "vramPlan": placed["why"]}
+            if placed["device"] == "cuda":
+                attempts = [("cuda", "float16")] + attempts
+                free_before = (placed.get("card") or {}).get("freeMiB")
         error = None
         for device, compute in attempts:
             try:
                 selected_device = "cuda:" + str(plan["deviceIndex"]) if device != "cpu" else "cpu"
-                self.admit(plan, "stt", selected_device)
+                if device == "cpu":
+                    self.admit(plan, "stt", selected_device)
                 loaded = factory(model, device=device, compute_type=compute,
                                  cpu_threads=plan["cpuThreads"], num_workers=plan["workers"],
                                  device_index=plan["deviceIndex"] if device != "cpu" else 0)
                 actual = getattr(getattr(loaded, "model", None), "device", device)
                 self.mark("stt:" + model, plan, str(actual), compute)
+                self.vram().loaded("stt:" + model, "cuda" if device != "cpu" else "cpu", unload, free_before)
                 return loaded
             except Exception as exc:
                 error = exc
@@ -161,6 +198,11 @@ class VoiceResources:
             self.resident[key] = {**plan, "actualDevice":device, "compute":compute}
 
     def drop(self, kind):
+        try:
+            for k in [k for k in self.resident if k.startswith(kind + ":")]:
+                self.vram().released(k)
+        except Exception:                            # noqa: BLE001
+            pass
         with self.records_lock():
             self.resident = {k:v for k,v in self.resident.items() if not k.startswith(kind+":")}
 

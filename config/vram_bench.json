@@ -1,0 +1,14 @@
+{
+  "_note": "Service times for tools/bench_vram.py. gpuMs/cpuMs = one job on that device. swapOverheadMs = fixed cost to bring a model that is not on the GPU back (init), plus size / swapMiBperS. 'source' says where each number came from; REPLACE the estimates with real PC measurements (tools/bench_vram.py --measured file).",
+  "swapMiBperS": 12000,
+  "cpuWorkers": 4,
+  "models": {
+    "stt": {"key": "stt:large-v3",               "gpuMs": 750,  "cpuMs": 3090, "swapOverheadMs": 400, "source": "measured PR #251 (STT 3.09 s CPU, 0.75 s GPU)"},
+    "llm": {"key": "llm:Qwen2.5-0.5B-Instruct",   "gpuMs": 150,  "cpuMs": 550,  "swapOverheadMs": 200, "source": "cpuMs measured 2026-11-25 (helper hold ~0.55 s); gpuMs ESTIMATE"},
+    "tts": {"key": "tts:spark",                   "gpuMs": 1200, "cpuMs": 7000, "swapOverheadMs": 600, "source": "ESTIMATE"},
+    "bg":  {"key": "llm:Qwen2.5-0.5B-Instruct-bg", "gpuMs": 150, "cpuMs": 550,  "swapOverheadMs": 200, "source": "translate/helper background job, same model as llm"}
+  },
+  "visitor": {"chain": ["stt", "llm", "tts"], "everyS": 6.0},
+  "background": {"model": "bg", "everyS": 1.5},
+  "durationS": 600
+}

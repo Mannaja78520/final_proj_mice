@@ -24,7 +24,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 
 - nothing
 
-## Checks that test it (199)
+## Checks that test it (200)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -52,6 +52,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_chatty_board`
 - `check_code_patches`
 - `check_crash_gate`
+- `check_data_isolation`
 - `check_design_system`
 - `check_designer_first`
 - `check_dev_tools`
@@ -226,4 +227,4 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_wifi_ssid`
 - `check_zero_lock`
 
-Run them: `python qc/run_qc.py --no-build check_accounts check_accounts_firmware check_adapter_fast_fail check_advanced check_app_lifecycle check_app_window check_bench_nongpins check_board_auth check_board_frame check_board_login_sync check_board_password check_boot_noise check_branch check_build_split check_bus_dongle check_bus_flash check_bus_group check_bus_wifi_path check_cam_boards_data check_cam_controls check_camera check_camera_hub check_cast_mix check_chatty_board check_code_patches check_crash_gate check_design_system check_designer_first check_dev_tools check_diagnostics check_discovery check_driver_waits check_face_photos check_faces_app check_faces_concurrency check_faces_count check_faces_cursor check_faces_dedupe check_faces_login check_faces_login_default`
+Run them: `python qc/run_qc.py --no-build check_accounts check_accounts_firmware check_adapter_fast_fail check_advanced check_app_lifecycle check_app_window check_bench_nongpins check_board_auth check_board_frame check_board_login_sync check_board_password check_boot_noise check_branch check_build_split check_bus_dongle check_bus_flash check_bus_group check_bus_wifi_path check_cam_boards_data check_cam_controls check_camera check_camera_hub check_cast_mix check_chatty_board check_code_patches check_crash_gate check_data_isolation check_design_system check_designer_first check_dev_tools check_diagnostics check_discovery check_driver_waits check_face_photos check_faces_app check_faces_concurrency check_faces_count check_faces_cursor check_faces_dedupe check_faces_login`

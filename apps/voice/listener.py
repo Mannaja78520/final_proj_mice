@@ -62,17 +62,25 @@ class Listener:
         self._stt_loading = True
         try:
             mid = scfg.get("model", "small")
-            self._stt = self._whisper_model(mid)
+            self._stt = self._whisper_model(mid, self._drop_main_stt)
             self._stt_loaded_model = mid
         except Exception as e:                              # noqa: BLE001
             self._stt_err = "%s: %s" % (e.__class__.__name__, e)
         finally:
             self._stt_loading = False
 
-    def _whisper_model(self, mid):
+    def _whisper_model(self, mid, unload=None):
         """Honor this machine's budget on primary and language-specific loads."""
         from faster_whisper import WhisperModel
-        return self._resources.whisper(mid, WhisperModel)
+        return self._resources.whisper(mid, WhisperModel, unload=unload)
+
+    def _drop_main_stt(self):
+        """The GPU planner needed this room for something more valuable: reload lazily (CPU or GPU, by then)."""
+        self._stt = None
+        self._stt_loaded_model = None
+
+    def _drop_own_stt(self, mid):
+        (getattr(self, "_stt_own", None) or {}).pop(mid, None)
 
     def _own_model(self, lang):
         """The model trained for this one language, loaded once, or None.
@@ -93,7 +101,7 @@ class Listener:
             errors = self._stt_own_err = {}
         if mid not in got:
             try:
-                got[mid] = self._whisper_model(mid)
+                got[mid] = self._whisper_model(mid, lambda mid=mid: self._drop_own_stt(mid))
             except Exception as e:                      # noqa: BLE001
                 errors[mid] = "%s: %s" % (e.__class__.__name__, e)
                 raise

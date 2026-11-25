@@ -1,0 +1,16 @@
+{
+  "_note": "Dynamic GPU memory planner (tools/vramplan.py). NO fixed tiers by card size: the planner measures free VRAM at the moment a model loads and places models by priority. This file only says how important each kind of model is and a first guess of its size; real sizes are measured after the first load and remembered (.local/vram_learned.json). priority: lower number = more important, may push a higher number off the GPU. cpuSlowdown: how many times slower it runs on the CPU (bigger = worth more GPU memory). savedMs: how many ms one job saves on the GPU compared with the CPU (first guess; the planner puts the models that save the most time per MiB on the GPU first, among the live ones). canCpu false = it can only run on the GPU, so it is unloaded instead of spilled.",
+  "headroom": {"fraction": 0.05, "minMiB": 256, "_note": "kept free for other apps' spikes and the models' working memory"},
+  "rules": [
+    {"match": "^stt:.*(large|turbo)", "mib": 3400, "priority": 0, "cpuSlowdown": 6, "savedMs": 2300, "canCpu": true},
+    {"match": "^stt:.*medium",        "mib": 1900, "priority": 0, "cpuSlowdown": 5, "savedMs": 1500, "canCpu": true},
+    {"match": "^stt:.*small",         "mib": 700,  "priority": 0, "cpuSlowdown": 4, "savedMs": 600, "canCpu": true},
+    {"match": "^stt:",                "mib": 300,  "priority": 0, "cpuSlowdown": 3, "savedMs": 200, "canCpu": true},
+    {"match": "^llm:.*(0\\.5b|0_5b)", "mib": 1200, "priority": 1, "cpuSlowdown": 8, "savedMs": 400, "canCpu": true},
+    {"match": "^llm:.*(1\\.5b|1_5b)", "mib": 3400, "priority": 1, "cpuSlowdown": 8, "savedMs": 1500, "canCpu": true},
+    {"match": "^llm:.*(3b)",          "mib": 6800, "priority": 1, "cpuSlowdown": 10, "savedMs": 3000, "canCpu": true},
+    {"match": "^llm:",                "mib": 2500, "priority": 1, "cpuSlowdown": 8, "savedMs": 800, "canCpu": true},
+    {"match": "^tts:",                "mib": 3072, "priority": 2, "cpuSlowdown": 6, "savedMs": 5800, "canCpu": true},
+    {"match": "^",                    "mib": 1000, "priority": 5, "cpuSlowdown": 2, "savedMs": 200, "canCpu": true}
+  ]
+}

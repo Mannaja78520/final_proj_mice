@@ -150,7 +150,7 @@ def run(t):
         s, b = _post_raw(base, "/api/model/upload?name=" + urllib.parse.quote(bad), b"x")
         t.ok(s >= 400, "a model named %r is refused" % bad)
 
-    _cleanup(name)
+    _cleanup(name, main)
 
 
 def _post(base, path, obj):
@@ -168,9 +168,9 @@ def _post_raw(base, path, body):
         return 0, repr(e)
 
 
-def _cleanup(name):
-    for p in ((F.STUDIO / "projects" / (name + ".json")),
-              (F.STUDIO / "sequences" / "_qc_seq.yaml")):
+def _cleanup(name, main):
+    for p in ((main.PROJECTS / (name + ".json")),
+              (main.SEQUENCES / "_qc_seq.yaml")):
         try:
             p.unlink()
         except OSError:
