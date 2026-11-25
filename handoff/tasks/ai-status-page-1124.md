@@ -2,7 +2,7 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T11:14:45+07:00
+Updated: 2026-11-25T12:17:48+07:00
 Last commit: 7cea7e6 (scoped release candidate)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Full serial QC is running on frozen candidate 7cea7e6 with the default plan path. Await _out/ai-status-1124/full-7cea7e6.done.json.
+Review candidate 7cea7e6 and prepare a bounded, isolated replay of the camera and visual-language checks. Wait for the shared driver to be free.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -58,6 +58,9 @@ Full serial QC is running on frozen candidate 7cea7e6 with the default plan path
 - Created clean candidate 7cea7e6 from main fc39932 at _out/ai-status-1124/release. Exactly 32 owned files are in the candidate. Both WIP handoffs stay on the shared branch, and the agent inventory matches the candidate.
 
 - Candidate preflight passed 208/0 for check_handoff_first, check_packing_list and check_plan_live. Evidence: _out/ai-status-1124/preflight-7cea7e6.log.
+
+- Scoped full serial QC exited 1 after 3678.8s: 10652 passed, 8 failed. All three prior preflight checks and AI work passed. The camera test received live peer frames, and visual-language had iframe and mixed-text failures. Exact log: _out/ai-status-1124/full-7cea7e6.log and .done.json. Candidate has no tracked source diff after QC.
+- Shared QC claim released. Another driver PID 38584 started after our full run. No other process was stopped. Hypothesis for one bounded replay: a private QC temp directory and MICE_PEERS_DIR will isolate camera peers and browser profiles. Fixed input 7cea7e6, two serial checks, stop after both report or the browser timeout. Start another full run only if the replay passes.
 
 ## Next
 If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
@@ -107,7 +110,7 @@ If candidate QC is green, record final review, publish a scoped PR, merge under 
 | docs/systems/hub-web.md | Generated inventory for Help images | Built | Diff lists exactly eight new captures | 777a439 |
 
 ## Blocked
-A59-2 holds the shared QC driver for the running gate. Integration, build and restart are unclaimed.
+Shared QC occupied by another run. Need green exact-candidate QC before integration, build or restart.
 
 ## Result
 (Codex: PR link, screenshot paths, what you verified; report in Thai)
