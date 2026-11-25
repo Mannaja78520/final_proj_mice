@@ -135,3 +135,11 @@ def run(t):
          "shipped config is valid and live outranks translation")
     left = [str(p.name) for p in (F.CODE / "apps" / "voice").glob("*.py") if "self._lock" in p.read_text(encoding="utf-8")]
     t.ok(not left, "Voice has no plain GPU lock left that bypasses the scheduler", str(left))
+
+    # 7. A single job reaches the gate from its own request thread, not through a
+    # FIFO pool in front of it (that pool hid the queue from the priority gate:
+    # PC measurement 2026-11-25, gate wait 0 ms while callers waited ~3 s).
+    sys.path.insert(0, str(F.CODE / "apps" / "voice"))
+    from resources import VoiceResources
+    got = VoiceResources(F.CODE).map(lambda _x: threading.get_ident(), [1])
+    t.ok(got == [threading.get_ident()], "one translation job runs on the caller's thread, ahead of any pool queue", str(got))
