@@ -2,8 +2,8 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T13:32:14+07:00
-Last commit: ee6a7172 (current-main candidate)
+Updated: 2026-11-25T13:34:49+07:00
+Last commit: 931b7264 (localized release candidate)
 
 ## User ask (Thai, 2026-11-24)
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LaPHxqrTy1gy5i5h9CNTes: "Is there a place to see which GPT is working and how far it has got?"
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Fix the reproduced dynamic Tools title/ARIA-label translation. Reuse the shared language placeholder support for attributes and update localized Hub Help in this step. Then recheck the same visual journey and locale contract.
+Recheck visual language, AI work, translations, handoff and system inventory on frozen 931b7264. Run the full serial gate only if this preflight is green. Use private temp and peer directories.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -80,6 +80,8 @@ Fix the reproduced dynamic Tools title/ARIA-label translation. Reuse the shared 
 - Matched QC: clean current main b20e09ae visual-language 161/4. Candidate ee6a7172 targeted 209/3 with AI work 21/0, camera 13/0, system map 13/0. Both leak the Tools dynamic title in en/zh/ja. Main also leaked a loading string. Evidence: _out/ai-status-1124/matched-b20e09ae.log and matched-ee6a7172.log.
 - Root cause: Tools builds a Thai title and aria-label with the inserted app name. The automatic shared attribute translation checks literal keys only; placeholder support already exists for other dynamic strings. Shared QC released after matched checks.
 
+- Fixed the shared localized attributes using the existing placeholder matcher. Added the Tools label in en/ja/zh and translated loading and network status text in th/ja/zh. Hub Help and its four languages now note that AI work opens in a new tab. Build, syntax and staged diff check pass. Candidate 931b7264; WIP source checkpoint 3c6395ad.
+
 ## Next
 If matched user journeys pass, run the full serial gate on ee6a7172. If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
 
@@ -99,19 +101,19 @@ If matched user journeys pass, run the full serial gate on ee6a7172. If candidat
 | apps/ai-status/app.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
 | apps/ai-status/index.html | Planned AI work integration | Built | focused QC and native text check | d7bb1ec |
 | apps/ai-status/status.js | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
-| main_python/web/help/parts/hub.html | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
+| main_python/web/help/parts/hub.html | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
 | main_python/web/help/shots.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
-| main_python/web/help.html | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
+| main_python/web/help.html | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
 | docs/systems.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
 | docs/systems/hub-apps.md | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
 | qc/checks/check_ai_status.py | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
-| shared/web/lang/en.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
-| shared/web/lang/th.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
-| shared/web/lang/ja.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
-| shared/web/lang/zh.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
-| shared/web/lang/help/en.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
-| shared/web/lang/help/ja.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
-| shared/web/lang/help/zh.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
+| shared/web/lang/en.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
+| shared/web/lang/th.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
+| shared/web/lang/ja.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
+| shared/web/lang/zh.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
+| shared/web/lang/help/en.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
+| shared/web/lang/help/ja.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
+| shared/web/lang/help/zh.json | Localize AI work and Tools labels / Help | Built | Build and diff pass; focused QC pending | 931b7264 |
 | main_python/web/help/img/en-light-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
 | main_python/web/help/img/en-dark-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
 | main_python/web/help/img/th-light-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
@@ -129,7 +131,7 @@ If matched user journeys pass, run the full serial gate on ee6a7172. If candidat
 
 | docs/systems/app-voice.md | Regenerate clean inventory after current-main sync | Generated | Exact generated diff; QC pending | ee6a7172 |
 
-| shared/web/mice-lang.js | Reuse locale placeholders for dynamic tool labels | Planned | Red controls on clean main and candidate | uncommitted |
+| shared/web/mice-lang.js | Reuse locale placeholders for dynamic tool labels | Built | Syntax and generated diff pass; focused QC pending | 931b7264 |
 
 ## Blocked
 Visual-language QC remains red. Shared QC released after replay. Need a green full gate before merge, build or restart.
