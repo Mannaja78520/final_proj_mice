@@ -2,8 +2,8 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T13:22:05+07:00
-Last commit: 7cea7e6 (scoped release candidate)
+Updated: 2026-11-25T13:22:50+07:00
+Last commit: ee6a7172 (current-main candidate)
 
 ## User ask (Thai, 2026-11-24)
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LaPHxqrTy1gy5i5h9CNTes: "Is there a place to see which GPT is working and how far it has got?"
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Finish the scoped integration on b20e09ae. Record the additional generated app-voice inventory from the clean main tree, stage only the explicit generated and AI work paths, and inspect the exact result.
+Run a matched visual-language check on clean b20e09ae and ee6a7172. Then classify the result with candidate AI work, camera, and system-map checks. One process at a time, matched private temp/peer setup, one run per tree.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -75,8 +75,10 @@ Finish the scoped integration on b20e09ae. Record the additional generated app-v
 
 - Current-main cherry-pick regenerated Help, API and system inventories. The clean generator also corrects b20e09ae's app-voice inventory of private, absent profiles and their check references. System-map QC requires the clean generated inventory; no Voice source or settings edits.
 
+- Current-main candidate ee6a7172 committed in _out/ai-status-1124/release-current. Exact diff is the 32 owned AI work paths and one clean generated Voice inventory. Existing current-main changes preserved.
+
 ## Next
-Run the bounded same-check language comparison on current main and its AI work candidate. If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
+If matched user journeys pass, run the full serial gate on ee6a7172. If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
 
 ## Facts found
 - main_python/hub_api_apps.py:50 supplies the registry-driven Tools list. A manifest in apps/ adds a tile.
@@ -122,7 +124,7 @@ Run the bounded same-check language comparison on current main and its AI work c
 | docs/systems/qc.md | Generated check inventory | Built | not run | 64d425f |
 | docs/systems/hub-web.md | Generated inventory for Help images | Built | Diff lists exactly eight new captures | 777a439 |
 
-| docs/systems/app-voice.md | Regenerate clean inventory after current-main sync | Generated output pending commit | Exact generated diff; QC pending | uncommitted |
+| docs/systems/app-voice.md | Regenerate clean inventory after current-main sync | Generated | Exact generated diff; QC pending | ee6a7172 |
 
 ## Blocked
 Visual-language QC remains red. Shared QC released after replay. Need a green full gate before merge, build or restart.
