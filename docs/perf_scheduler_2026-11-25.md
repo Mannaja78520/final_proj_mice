@@ -195,6 +195,32 @@ transformers failed with `operator torchvision::nms does not exist` and the loca
 The pair is `torch==2.11.0+cu128` and `torchvision==0.26.0+cu128`, from `https://download.pytorch.org/whl/cu128`.
 After that `/health` said `llmDevice: {"device": "cuda:0"}`.
 
+## 2f. Putting the CUDA build on the real Voice (not done yet)
+
+Status: tested on the side Voice only (section 2e). The install into the Python the real Voice uses
+(`C:\Program Files\Python312`, packages in `%APPDATA%\Python\Python312\site-packages`) was not run: stopping the
+real Voice and replacing its torch was refused by the PC permission check, so it stays with the person who owns
+the booth PC. Torch is loaded by the running Voice (and by any QC Voice started from this Python), so the install
+needs the real Voice stopped first, and no QC running.
+
+What it takes, in order (about 2.7 GB download, from `download.pytorch.org`):
+
+1. Save the packages: `python -m pip freeze > mice_system\.local\backup\pip_freeze_before_torch_cuda_2026-11-26.txt`
+2. Stop only the real Voice (the `python -u ...\mice_system\apps\voice\service.py` process on port 8767).
+3. `python -m pip install -r requirements-torch-cuda.txt` (torch 2.11.0+cu128 with torchvision 0.26.0+cu128, a pair).
+4. Start the real Voice again, the same command as before: `python -u E:\final_proj\mice\mice_system\apps\voice\service.py`.
+5. Check: `GET http://127.0.0.1:8767/health` shows `llmDevice: {"device": "cuda:0"}` and a real question still
+   answers; `python -m pip check` (the CPU build's result is saved before the install for comparison).
+
+Rollback, one command (the state of 2026-11-26: torch 2.15.0+cpu, torchvision 0.29.2):
+`python -m pip install --force-reinstall --no-deps torch==2.15.0+cpu torchvision==0.29.2+cpu --index-url https://download.pytorch.org/whl/cpu`
+then restart the Voice.
+
+So a later `pip install -U torch` cannot silently bring the CPU build back unseen: `requirements.txt` now points to
+`requirements-torch-cuda.txt`, and `GET /health` `llmDevice.warning` says "PyTorch on this PC is a CPU-only build
+(2.15.0+cpu), so the local model cannot use the GPU" when torch has no CUDA while a GPU is present (checked in
+`check_job_scheduler`). The Whisper side (CTranslate2 with `nvidia-cublas-cu12`) did not need this change.
+
 ## 3. How this was run
 
 * The real hub (`MiceHub.exe` on 8642), the real Voice (8767) and the face app (8000) were left

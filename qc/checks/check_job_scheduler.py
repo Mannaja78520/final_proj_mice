@@ -209,3 +209,28 @@ def run(t):
     H.command, H.path = "GET", "/ask?q=hi"
     guarded(lambda h: seen.append(lock._writer is None and lock._readers == 1))(H())
     t.ok(seen == [True, True], "a profile switch takes the lock alone; a question shares it", str(seen))
+
+    # 8. A CPU-only PyTorch beside a GPU is said out loud in the Voice status.
+    import types
+    sys.path.insert(0, str(F.CODE / "apps" / "faces"))
+    sys.path.insert(0, str(F.CODE / "apps" / "voice"))
+    import local_llm
+
+    def device_of(cuda_build, gpu):
+        had = sys.modules.get("torch")
+        sys.modules["torch"] = types.SimpleNamespace(__version__="9.9.9", version=types.SimpleNamespace(cuda=cuda_build))
+        try:
+            fake = types.SimpleNamespace(_resources=types.SimpleNamespace(
+                status=lambda: {"loaded": {"stt:small": {"hardwareGpuCount": 1 if gpu else 0}}}),
+                _llm_where=("cpu", "no usable GPU in the plan"))
+            return local_llm.LocalLlm.llm_device(fake)
+        finally:
+            if had is None:
+                sys.modules.pop("torch", None)
+            else:
+                sys.modules["torch"] = had
+
+    t.ok("requirements.txt" in device_of(None, True).get("warning", ""),
+         "a CPU-only torch with a GPU present says so in the Voice status")
+    t.ok("warning" not in device_of("12.8", True) and "warning" not in device_of(None, False),
+         "no warning when torch has CUDA, or when there is no GPU")

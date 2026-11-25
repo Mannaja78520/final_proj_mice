@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import re
+import sys
 import threading
 import time
 import unicodedata
@@ -28,7 +29,22 @@ class LocalLlm:
     def llm_device(self):
         """Where the local model runs and, if it is the CPU, why (GPU first)."""
         where, why = getattr(self, "_llm_where", ("", ""))
-        return {"device": where, "cpuBecause": why}
+        out = {"device": where, "cpuBecause": why}
+        # A CPU-only PyTorch on a PC that has a GPU is the usual reason the local
+        # model sits on the CPU (2026-11-26: torch 2.15.0+cpu beside an RTX 5070 Ti).
+        # Say it in plain words where the person looking at the status will read it.
+        torch = sys.modules.get("torch")
+        built_for = getattr(getattr(torch, "version", None), "cuda", "unknown") if torch else "unknown"
+        try:
+            loaded = (self._resources.status() or {}).get("loaded") or {}
+            gpu_seen = any((rec or {}).get("hardwareGpuCount") for rec in loaded.values())
+        except Exception:                                     # noqa: BLE001 - a status line must never fail
+            gpu_seen = False
+        if built_for is None and gpu_seen:
+            out["warning"] = ("PyTorch on this PC is a CPU-only build (%s), so the local model cannot use the GPU. "
+                              "Install the CUDA build: see the torch lines in requirements.txt."
+                              % getattr(torch, "__version__", "?"))
+        return out
 
     def llm_status(self):
         lcfg = self.cfg.get("llm", {})
