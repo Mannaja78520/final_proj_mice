@@ -2,7 +2,7 @@
  "name": "en",
  "strings": {
   "ดูความคืบหน้างาน AI": "See AI work progress",
-  "เข้าสู่ระบบด้วยบัญชีผู้ดูแล Hub แล้วเปิด งาน AI จากเมนูเครื่องมือ": "Sign in as a Hub administrator, then open AI work from Tools.",
+  "เข้าสู่ระบบด้วยบัญชีผู้ดูแล Hub แล้วเปิด งาน AI จากเมนูเครื่องมือ หน้าเปิดในแท็บใหม่": "Sign in as a Hub administrator, then open AI work from Tools in a new tab.",
   "แต่ละงานแสดง AI ที่รับผิดชอบ สิ่งที่กำลังทำ และเวลาที่อัปเดตล่าสุด หน้านี้อ่านจากไฟล์ติดตามงานและโหลดข้อมูลใหม่ทุก 15 วินาที": "Each task shows its AI, current activity and time since the last update. This page reads the task handoffs and refreshes every 15 seconds.",
   "สถานะกำลังทำ รอดำเนินการ และเสร็จแล้วอ้างอิงจากบันทึกของผู้รับงาน หากไม่มีการอัปเดตหลายชั่วโมง ให้ดูป้ายไม่มีการอัปเดตล่าสุด": "In progress, Waiting and Finished follow the task notes. No recent update means the notes are several hours old.",
   "เปิดแสดงรายละเอียดทางเทคนิคเพื่อดูโมเดล สาขา Git และคอมมิตล่าสุดที่มีในบันทึก": "Turn on Show technical details to see the model, Git branch and last commit when recorded.",

@@ -1,6 +1,8 @@
 {
  "name": "ไทย",
  "strings": {
+  "loading…": "กำลังโหลด…",
+  "Could not ask this hub about other PCs.": "ถาม Hub นี้เกี่ยวกับพีซีเครื่องอื่นไม่ได้",
   "AI work": "งาน AI",
   "AI work — MICE": "งาน AI — MICE",
   "See who is working and what they are doing.": "ดูว่า AI ตัวไหนกำลังทำอะไร",

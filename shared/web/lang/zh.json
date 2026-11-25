@@ -1,6 +1,9 @@
 {
  "name": "中文",
  "strings": {
+  "เปิด {} (แท็บใหม่)": "打开 {}（新标签页）",
+  "loading…": "正在加载…",
+  "Could not ask this hub about other PCs.": "无法从此中心获取其他电脑的信息。",
   "AI work": "AI 工作",
   "AI work — MICE": "AI 工作 — MICE",
   "See who is working and what they are doing.": "查看哪些 AI 正在工作以及它们在做什么。",
