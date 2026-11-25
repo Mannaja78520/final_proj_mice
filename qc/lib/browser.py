@@ -606,22 +606,57 @@ def _rmtree(p):
         time.sleep(0.4)
 
 
-def sweep():
+_OWNER = None
+
+
+def _owner_alive(path):
+    """True if the file/dir's name carries the pid of a process that is still running.
+
+    Profiles and driver pages are named `<kind>_<pid>_<ms>`. A nested QC run (check_dev_tools
+    -> tools/sabotage.py -> run_qc.py) called sweep() at its start and deleted EVERY driver
+    page and browser profile in the shared folders, including those of the outer run's
+    browser checks that were running at that moment: the page then got a 404 for its own
+    driver ("QC DIAG: page GET yes (404) ... login POST NO"), reported nothing, sat out
+    seconds+grace and failed, and passed alone. Seen in 7 of 8 full runs, 2026-11-26.
+    """
+    global _OWNER
+    import re
+    if _OWNER is None:
+        _OWNER = re.compile(r"^(?:profile|_qc[a-z]+)_(\d+)_\d+")
+    m = _OWNER.match(Path(path).name)
+    if not m:
+        return False
+    import runlock
+    return runlock.pid_alive(int(m.group(1)))
+
+
+def sweep(scratch=None, webs=None):
     """Delete scratch left by earlier runs (including any from older versions
-    that still wrote into the repo)."""
-    for p in list(SCRATCH.glob("profile_*")) + list(QC.glob("_profile_*")):
-        _rmtree(str(p))
-    left = list(QC.glob("_boot_dom.html*")) + list(SCRATCH.glob("*.html*"))
+    that still wrote into the repo) - never what a RUNNING process owns."""
+    scratch = SCRATCH if scratch is None else Path(scratch)
+    for p in list(scratch.glob("profile_*")) + list(QC.glob("_profile_*")):
+        if _owner_alive(p):
+            continue
+        if p.is_file():                       # a browser log: not a directory
+            try:
+                p.unlink()
+            except OSError:
+                pass
+        else:
+            _rmtree(str(p))
+    left = list(QC.glob("_boot_dom.html*")) + [p for p in scratch.glob("*.html*")
+                                                if not _owner_alive(p)]
     # Driver pages are written INTO the web folders, because a page can only be
     # opened from the server that serves it. Each caller deletes its own, but a
     # run that is killed or crashes does not - and the leftovers then sit in a
     # source directory looking like source. Found 2026-08-20: five of them in
     # nong/main_python_set_nong/web, and nothing in promote.py's skip rules
     # would have stopped them travelling into the real tree.
-    for web in (CODE / "main_python" / "web",
-                CODE / "nong" / "main_python_set_nong" / "web"):
-        for pat in ("_qcdriver_*.html", "_qcraw_*.html", "_qcmod_*.html"):
-            left += list(web.glob(pat))
+    for web in (webs if webs is not None else
+                (CODE / "main_python" / "web",
+                 CODE / "nong" / "main_python_set_nong" / "web")):
+        for pat in ("_qcdriver_*.html", "_qcraw_*.html", "_qcmod_*.html", "_qctalk_*.html"):
+            left += [p for p in Path(web).glob(pat) if not _owner_alive(p)]
     for p in left:
         try:
             p.unlink()
