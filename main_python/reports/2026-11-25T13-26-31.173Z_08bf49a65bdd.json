@@ -1,0 +1,12 @@
+{
+  "id": "08bf49a65bdd",
+  "images": [],
+  "time": "2026-11-25T13:26:31.173Z",
+  "text": "STUDIO FREEZE {\"gapMs\":6133,\"playing\":false,\"live\":false,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":2,\"gpu\":{\"geometries\":24,\"textures\":0,\"programs\":3},\"heapMB\":8,\"longTasks\":[{\"ms\":696,\"at\":1306},{\"ms\":6108,\"at\":2900}],\"slowCalls\":[{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=LIMIT%3F\",\"ms\":17,\"at\":1213},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=FILES%20%2Fmoves\",\"ms\":18,\"at\":1215},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=MOVE%20QCMARK%20HOLDDRAG\",\"ms\":125,\"at\":1878},{\"u\":\"/api/play/stop\",\"ms\":22,\"at\":2001},{\"u\":\"/api/gestures\",\"ms\":16,\"at\":2018},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=STOP\",\"ms\":20,\"at\":2022},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=INFO\",\"ms\":10,\"at\":2043},{\"u\":\"/api/voice/config\",\"ms\":4,\"at\":2081},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=POSE%20155%2025%20111.5%2068.5%2090%2040%2090%2090%2090%209\",\"ms\":14,\"at\":2119},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=INFO\",\"ms\":14,\"at\":2181},{\"u\":\"/api/play/stop\",\"ms\":3,\"at\":2241},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=STOP\",\"ms\":9,\"at\":2244},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=INFO\",\"ms\":14,\"at\":2253},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=POSE%20155%2025%20117%2080.7%2090%2040%2090%2090%2090%2090.\",\"ms\":26,\"at\":2313},{\"u\":\"/api/usb/cmd?port=COM99&id=0&c=INFO\",\"ms\":12,\"at\":2372}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36"
+}
