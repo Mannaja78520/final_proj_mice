@@ -1,6 +1,8 @@
 {
  "name": "中文",
  "strings": {
+  "nobody I know": "没有识别到熟人",
+  "nobody I know is in front of the camera": "摄像头前没有识别到熟人",
   "เปิด {} (แท็บใหม่)": "打开 {}（新标签页）",
   "loading…": "正在加载…",
   "Could not ask this hub about other PCs.": "无法从此中心获取其他电脑的信息。",

@@ -1,6 +1,8 @@
 {
  "name": "日本語",
  "strings": {
+  "nobody I know": "知っている人は見つかりません",
+  "nobody I know is in front of the camera": "カメラの前に知っている人は見つかりません",
   "เปิด {} (แท็บใหม่)": "{} を開く（新しいタブ）",
   "loading…": "読み込み中…",
   "Could not ask this hub about other PCs.": "このハブから他の PC の情報を取得できませんでした。",

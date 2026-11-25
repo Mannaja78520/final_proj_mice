@@ -1,6 +1,8 @@
 {
  "name": "ไทย",
  "strings": {
+  "nobody I know": "ไม่พบคนที่รู้จัก",
+  "nobody I know is in front of the camera": "ไม่พบคนที่รู้จักหน้ากล้อง",
   "loading…": "กำลังโหลด…",
   "Could not ask this hub about other PCs.": "ถาม Hub นี้เกี่ยวกับพีซีเครื่องอื่นไม่ได้",
   "AI work": "งาน AI",

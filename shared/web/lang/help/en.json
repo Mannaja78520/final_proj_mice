@@ -653,7 +653,7 @@
   "4. 🎡 Lucky Wheel (วงล้อเสี่ยงโชค)": "4. 🎡 Lucky Wheel (Prize wheel)",
   "2. ตัวคูณความเร็วประจำไฟล์": "2. File speed multiplier",
   "บนหน้า Hub โดยไม่ต้องเสียบสาย USB": "directly on the Hub page without plugging in a USB cable",
-  "เสียงกับการจดจำใบหน้า: แอพเสียงรู้ว่าใครยืนอยู่หน้ากล้องจาก Reconize และทักทายได้เอง ไม่ต้องผ่าน Hub": "Voice and face recognition: the Voice app learns who is standing in front of the camera from Reconize and can greet them by itself, with no hub.",
+  "เสียงกับการจดจำใบหน้า: แอพเสียงรู้ว่าใครยืนอยู่หน้ากล้องจาก Reconize และทักทายได้เอง ไม่ต้องผ่าน Hub หากจำใครไม่ได้ จะแสดงข้อความไม่พบคนที่รู้จักแทนชื่อ": "Voice and face recognition: the Voice app learns who is standing in front of the camera from Reconize and can greet them by itself, with no hub. When Voice cannot recognize anyone, it shows a status message in place of a name.",
   "ตัวลื่นไม่มีทางทำให้ท่ากระตุกกว่าแบบเดิม: คีย์ไหนที่เส้นโค้งกระตุกกว่าแบบหยุดทุกคีย์ จะถูกลดความเร็วลงเอง (": "Smoothing will never make movements jerkier than before: any keyframe where the curved path would be jerkier than stopping at each key is automatically slowed down (",
   "3. แถบไทม์ไลน์และเครื่องเล่นท่าทาง": "3. Timeline and motion player",
   "โหมดไฟเลี้ยงและ Brownout Guard": "Power mode and Brownout Guard",
