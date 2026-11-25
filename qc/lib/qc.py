@@ -225,6 +225,15 @@ def start_hub(fake=True):
                                         / ("mice_qc_ext_%d.json" % _hub_port[0]))
     # A hub in QC never starts a real voice helper (A55-1): a check that points
     # the helper at a dead port expects "not running", not a model loading.
+    # The apps on this PC find each other through files in one temp folder. A QC hub that shared it
+    # with the REAL hub on the same PC saw its Cameras and Voice apps (and read the real webcam through
+    # them): the camera checks failed on a PC that had MiceHub open and passed in the cloud. A
+    # throwaway folder per QC run keeps the QC hub alone. A check that sets its own folder wins.
+    _peers_now = os.environ.get("MICE_PEERS_DIR", "")
+    if not _peers_now or "mice_qc_peers_" in _peers_now:
+        # a fresh folder per hub: a worker process runs several checks one after another, and a later
+        # hub must not meet the peers an earlier one left
+        os.environ["MICE_PEERS_DIR"] = str(Path(tempfile.gettempdir()) / ("mice_qc_peers_%d_%d" % (os.getpid(), time.time_ns())))
     os.environ["MICE_VOICE_AUTOSTART"] = "0"
     # QC pages are shown exactly as written ("off"): the checks look for the page's own words. The
     # Thai default (mice-lang.js) has its own check, check_language.
