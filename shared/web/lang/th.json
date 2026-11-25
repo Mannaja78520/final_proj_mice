@@ -1346,7 +1346,6 @@
   "Save these moves on the robot, under the name at the top, so it can play them by itself.": "บันทึกท่าเหล่านี้ลงหุ่นด้วยชื่อที่ด้านบน เพื่อให้หุ่นเล่นเองได้",
   "back on top, always (the hand may move)": "หลังมือด้านบนเสมอ (มืออาจขยับ)",
   "shrug pivot ↑ (mm above shoulders)": "จุดหมุนการยกไหล่ ↑ (มม. เหนือไหล่)",
-  "Looking for cameras… this takes a few seconds.": "กำลังค้นหากล้อง… ใช้เวลาไม่กี่วินาที",
   "Use my own sizes": "ใช้ขนาดของฉันเอง",
   "What the rig's camera sees": "สิ่งที่กล้องของหุ่นเห็น",
   "The address is the PC showing the code — the same one the list above uses. Upper or lower case, dash or no dash.": "ที่อยู่คือเครื่องที่แสดงรหัส — อันเดียวกับที่รายการด้านบนใช้ ตัวพิมพ์เล็กหรือใหญ่ มีขีดหรือไม่มีก็ได้",
@@ -1401,6 +1400,21 @@
   "takes the cable for about a minute": "ใช้สายประมาณหนึ่งนาที",
   "this board has no cable of its own, so the image goes out on the bus as ordinary commands — several minutes, and it keeps the firmware it has if anything goes wrong": "บอร์ดนี้ไม่มีสายของตัวเอง ภาพเฟิร์มแวร์จึงส่งผ่านบัสเป็นคำสั่งธรรมดา ใช้เวลาหลายนาที และถ้ามีอะไรผิดพลาด บอร์ดจะยังคงเฟิร์มแวร์เดิมไว้",
   "sent to the spare slot — if it does not finish, the board keeps what it has": "ส่งไปยังช่องสำรอง ถ้าไม่เสร็จ บอร์ดจะยังคงของเดิมไว้",
-  "AI loaded": "AI โหลดแล้ว"
+  "AI loaded": "AI โหลดแล้ว",
+  "🖼 Add a picture": "🖼 เพิ่มรูป",
+  "📷 Take a photo": "📷 ถ่ายรูป",
+  "🖥 Picture of this screen": "🖥 รูปหน้าจอนี้",
+  "You can also paste a picture here (Ctrl+V). Up to three.": "วางรูปที่นี่ได้ด้วย (Ctrl+V) ได้สูงสุดสามรูป",
+  "Remove this picture": "เอารูปนี้ออก",
+  "That is not a picture.": "นี่ไม่ใช่รูปภาพ",
+  "Three pictures at most. Remove one to add another.": "ใส่ได้สูงสุดสามรูป เอาออกหนึ่งรูปก่อนจึงจะเพิ่มได้",
+  "That picture could not be used. Try another one.": "ใช้รูปนี้ไม่ได้ ลองรูปอื่น",
+  "The screen picture was not taken.": "ยังไม่ได้จับภาพหน้าจอ",
+  "🐛 Report a problem": "🐛 แจ้งปัญหา",
+  "📋 Complaint detail": "📋 รายละเอียดรายงาน",
+  "Report sent — thank you.": "ส่งรายงานแล้ว ขอบคุณครับ",
+  "Write what happened first.": "เขียนก่อนว่าเกิดอะไรขึ้น",
+  "Sending…": "กำลังส่ง…",
+  "That did not send. Try again, or copy your text somewhere safe and send it later.": "ส่งไม่สำเร็จ ลองอีกครั้ง หรือคัดลอกข้อความเก็บไว้แล้วส่งภายหลัง"
  }
 }

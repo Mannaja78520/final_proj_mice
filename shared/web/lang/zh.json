@@ -1581,7 +1581,6 @@
   "Save these moves on the robot, under the name at the top, so it can play them by itself.": "把这些动作以顶部的名称保存到机器人上，让它能自己播放。",
   "back on top, always (the hand may move)": "始终手背朝上（手可能会移动）",
   "shrug pivot ↑ (mm above shoulders)": "耸肩支点 ↑（高于肩膀的毫米数）",
-  "Looking for cameras… this takes a few seconds.": "正在查找摄像头…需要几秒钟。",
   "Use my own sizes": "使用我自己的尺寸",
   "What the rig's camera sees": "机器人的摄像头看到的内容",
   "The address is the PC showing the code — the same one the list above uses. Upper or lower case, dash or no dash.": "地址是显示代码的那台电脑 — 与上面列表使用的相同。大小写、带不带连字符均可。",
@@ -1655,6 +1654,21 @@
   "takes the cable for about a minute": "会占用数据线约一分钟",
   "this board has no cable of its own, so the image goes out on the bus as ordinary commands — several minutes, and it keeps the firmware it has if anything goes wrong": "这块板子没有自己的数据线，所以固件镜像会作为普通命令通过总线发送——需要几分钟，如果出错，它会保留原有固件",
   "sent to the spare slot — if it does not finish, the board keeps what it has": "已发送到备用分区——如果没有完成，板子会保留原有固件",
-  "AI loaded": "AI 已加载"
+  "AI loaded": "AI 已加载",
+  "🖼 Add a picture": "🖼 添加图片",
+  "📷 Take a photo": "📷 拍照",
+  "🖥 Picture of this screen": "🖥 截取此屏幕",
+  "You can also paste a picture here (Ctrl+V). Up to three.": "也可以在此粘贴图片（Ctrl+V），最多三张。",
+  "Remove this picture": "移除这张图片",
+  "That is not a picture.": "这不是图片。",
+  "Three pictures at most. Remove one to add another.": "最多三张图片。请先移除一张再添加。",
+  "That picture could not be used. Try another one.": "无法使用这张图片，请换一张。",
+  "The screen picture was not taken.": "没有截取屏幕图片。",
+  "🐛 Report a problem": "🐛 报告问题",
+  "📋 Complaint detail": "📋 报告详情",
+  "Report sent — thank you.": "报告已发送，谢谢。",
+  "Write what happened first.": "请先写下发生了什么。",
+  "Sending…": "正在发送…",
+  "That did not send. Try again, or copy your text somewhere safe and send it later.": "没有发送成功。请重试，或先复制文字保存，稍后再发送。"
  }
 }

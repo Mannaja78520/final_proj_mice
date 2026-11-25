@@ -70,7 +70,7 @@
      "depends": []},
 
     {"id": "hub-support", "summary": "Self-update, the diagnostics text and problem reports.",
-     "files": ["main_python/hub_api_support.py", "main_python/hub_update.py"],
+     "files": ["main_python/hub_api_support.py", "main_python/report_images.py", "main_python/hub_update.py"],
      "names": ["/api/app/version", "/api/app\"", "/api/selfupdate", "/api/diag", "/api/report", "diagnostics",
                "update_state", "do_update"],
      "depends": []},
