@@ -10,7 +10,7 @@ Plan: (none yet; user ask 2026-11-25 "work like CPU/GPU: slice, queue, let urgen
 Every heavy job goes through shared priority queues in front of the GPU/CPU so a live voice answer / face match is never stuck behind background work; classes, priorities, slots are data.
 
 ## Doing now
-Full cloud QC on the branch, then PR. Next: real all-apps measurement on the PC.
+Hub lease built (quick-checked). Next: commit/push, then full QC + real all-apps measurement on the PC when the QC thread frees it, then merge.
 
 ## File status
 Baseline: origin/main at branch start
@@ -23,6 +23,10 @@ Baseline: origin/main at branch start
 | `qc/checks/check_job_scheduler.py` | order, aging, reentrancy, checkpoint, reload, shipped config, no plain voice lock left | done | 8 ok | 9d66f67 |
 | `apps/voice/{service,answerer,listener,local_llm,translator}.py` | `self._lock` replaced by `self._gpu(<class>)`; scheduler in /status | done | check_voice_fast, check_voice_gpu_and_ask_speed pass (quick) | 9d66f67 |
 | `apps/voice/help/{en,th,zh,ja}.html` | one sentence on queue order | done | not run in browser | 9d66f67 |
+| `main_python/hub_api_scheduler.py`, `main_python/main.py` | hub lease endpoints (loopback only, ttl 60 s), hub's own `gate()` | done | check_job_scheduler_lease 7 ok, sabotage-proven (quick, cloud) | this checkpoint |
+| `tools/jobsched.py` | + LeaseTable/LeaseClient, timeout, cross-thread gate | done | same | this checkpoint |
+| `main_python/hub_video.py` | sound extraction runs under class `encode` (cpu) | done | not run (no ffmpeg here) | this checkpoint |
+| `qc/checks/check_job_scheduler_lease.py`, `docs/friend/gpu_lease_request_2026-11-25.md` | new check; friend request | done | quick | this checkpoint |
 | `docs/systems.json`, `docs/systems/*`, `MiceHub.spec` | new system job-scheduler; jobsched.py shipped in exe | done | check_systems pass | 9d66f67 |
 
 ## Facts found
@@ -35,8 +39,8 @@ Baseline: origin/main at branch start
 - Library + Voice wiring + QC + Help (this commit).
 
 ## Next
-1. Cross-process: hub-hosted lease (`/api/scheduler/lease`) so Voice STT, face match and camera encode share one GPU order; friend apps need a tiny change to ask it.
-2. Move hub report/image jobs (main_python/report_images.py) onto class `background`.
+1. Hub port is hardcoded 8642 in config/scheduler.json lease.hubUrl; pass the real port via env if the hub moves.
+2. Cameras: hub relay only pipes ffmpeg bytes (no decode in hub); camera GPU decode is in the friend app (see docs/friend/gpu_lease_request_2026-11-25.md).
 3. PC measurement: `python tools/perf_load.py` before/after with all apps running; chart.
 
 ## Blocked

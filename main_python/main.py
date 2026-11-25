@@ -1630,6 +1630,8 @@ import hub_compress  # noqa: E402
 import hub_legacy  # noqa: E402
 import hub_api_resources  # noqa: E402
 hub_api_resources.bind(sys.modules[__name__])
+import hub_api_scheduler  # noqa: E402
+hub_api_scheduler.bind(sys.modules[__name__])
 import voice_helper  # noqa: E402
 
 
@@ -1676,7 +1678,7 @@ ALONE = [None]      # the AloneMode when started with --alone <app>, else None
 
 
 # ---------------------------------------------------------------- handler
-class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes, hub_api_help.HelpRoutes,
+class Handler(hub_api_scheduler.SchedulerRoutes, hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes, hub_api_help.HelpRoutes,
               hub_api_extensions.ExtensionRoutes, hub_api_themes.ThemeRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_busmap.BusMapRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, hub_api_cameras.CamerasRoutes, hub_api_peers.PeersRoutes, BaseHTTPRequestHandler):
     # HTTP/1.1, so a browser can KEEP ITS CONNECTION.
     #
@@ -2716,6 +2718,9 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes, hub_api_
                                    "modules": scan_modules(force),
                                    "ports": serial_ports()})
 
+        r = self.api_scheduler(method, path, q)   # hub_api_scheduler.py
+        if r is not hub_api_scheduler.NOT_MINE:
+            return r
         r = self.api_resources(method, path, q)
         if r is not hub_api_resources.NOT_MINE:
             return r
