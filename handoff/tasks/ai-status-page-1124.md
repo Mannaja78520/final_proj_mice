@@ -1,8 +1,8 @@
 # ai-status-page-1124 — "AI work" status page in the MICE hub
-Owner: codex:11240934-20dc
+Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T09:59:13+07:00
+Updated: 2026-11-25 10:03 +0700
 Last commit: this checkpoint (branch claude/project-thread-181856)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Check contextual Hub Help and reconcile this branch with current main before full QC.
+Run full QC in this worktree with --jobs 1, holding the shared QC driver. Freeze the feature tree until it exits.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -49,8 +49,11 @@ Check contextual Hub Help and reconcile this branch with current main before ful
 
 - Recovered eight final Help captures. All eight match the previous browser capture exports byte for byte. The previous contextual check recorded English dark mode only.
 
+- Checkpoint 777a439 pushed after pull --rebase. Current origin/main fc39932 is an ancestor.
+- Contextual Hub Help returned 8/8 localized headings and matching light/dark illustrations in Edge with the fake Hub. Evidence: _out/ai-status-1124/verify_help_resume.log.
+
 ## Next
-Finish checking all Help variants, run full QC, then review and release.
+Read the full QC result, release the driver, and run the final review before an eligible merge.
 
 ## Facts found
 - main_python/hub_api_apps.py:50 supplies the registry-driven Tools list. A manifest in apps/ adds a tile.
@@ -81,23 +84,23 @@ Finish checking all Help variants, run full QC, then review and release.
 | shared/web/lang/help/en.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
 | shared/web/lang/help/ja.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
 | shared/web/lang/help/zh.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
-| main_python/web/help/img/en-light-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
-| main_python/web/help/img/en-dark-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
-| main_python/web/help/img/th-light-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
-| main_python/web/help/img/th-dark-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
-| main_python/web/help/img/ja-light-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
-| main_python/web/help/img/ja-dark-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
-| main_python/web/help/img/zh-light-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
-| main_python/web/help/img/zh-dark-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
+| main_python/web/help/img/en-light-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
+| main_python/web/help/img/en-dark-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
+| main_python/web/help/img/th-light-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
+| main_python/web/help/img/th-dark-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
+| main_python/web/help/img/ja-light-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
+| main_python/web/help/img/ja-dark-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
+| main_python/web/help/img/zh-light-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
+| main_python/web/help/img/zh-dark-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
 | config/ai_status.json | AI work config or generated API documentation | Built | parser and syntax checks only | 64d425f |
 | main_python/api_index.json | AI work config or generated API documentation | Built | parser and syntax checks only | 64d425f |
 | docs/HUB_API.md | AI work config or generated API documentation | Built | parser and syntax checks only | 64d425f |
 | docs/systems/agents.md | Generated handoff file inventory | Built | not run | 64d425f |
 | docs/systems/qc.md | Generated check inventory | Built | not run | 64d425f |
-| docs/systems/hub-web.md | Generated inventory for Help images | Built | Diff lists exactly eight new captures | this checkpoint |
+| docs/systems/hub-web.md | Generated inventory for Help images | Built | Diff lists exactly eight new captures | 777a439 |
 
 ## Blocked
-No current blocker. A58-24 is still running independently. Avoid shared QC, build and restart resources until claimed.
+No current blocker. A59-2 holds the shared QC claim. A58-24 is separate. Build and restart resources are unclaimed.
 
 ## Result
 (Codex: PR link, screenshot paths, what you verified; report in Thai)
