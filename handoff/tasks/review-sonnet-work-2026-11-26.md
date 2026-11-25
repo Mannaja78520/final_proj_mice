@@ -1,6 +1,13 @@
 # Review of recent Sonnet work (scheduler, lease, QC pool/lock, Voice lock, #269)
 
-Owner: Claude (Opus) cloud thread "Review hard designs with Opus". Read-only review + fixes of clear bugs.
+Owner: claude:review-ahsb4a
+Updated: 2026-11-26 05:15 Thai
+Branch: claude/project-thread-ahsb4a (PR #271)
+Last commit: see PR #271
+Plan: none (review asked by the user 2026-11-26)
+
+## Goal
+User: are there hidden problems in the hard work Sonnet did? Read-only review, fix clear bugs.
 
 ## Doing now
 Done; PR open on claude/project-thread-ahsb4a.
