@@ -78,7 +78,7 @@ def run(t):
     code = ("import sys, time; sys.path.insert(0, r'%s'); import runlock; "
             "from pathlib import Path; "
             "l = runlock.RunLock(Path(r'%s'), say=lambda m: None, poll=%s); "
-            "ok = l.acquire(timeout=40); print('GOT', sys.argv[1], flush=True); "
+            "ok = l.acquire(timeout=40); print('GOT', sys.argv[1], time.time(), flush=True); "
             "time.sleep(0.5); l.release()")
     import time as _t
     slow = subprocess.Popen([sys.executable, "-c", code % (F.QC / "lib", path, 1.5), "first"],
@@ -90,9 +90,10 @@ def run(t):
     holder_lock.release()
     got = []
     for p_ in (slow, fast):
-        out = p_.communicate(timeout=60)[0]
-        got.append(out.strip())
-    t.ok(got == ["GOT first", "GOT second"] and slow.returncode == 0 and fast.returncode == 0,
+        out = p_.communicate(timeout=60)[0].split()
+        got.append((out[1], float(out[2])) if len(out) == 3 else (None, 0.0))
+    t.ok(got[0][0] == "first" and got[1][0] == "second" and got[0][1] < got[1][1]
+         and slow.returncode == 0 and fast.returncode == 0,
          "the waiter that came first is served first, although the later one polls faster",
          repr(got))
     t.ok(not list((runlock.QUEUE_DIR / path.name).glob("*.ticket")),
