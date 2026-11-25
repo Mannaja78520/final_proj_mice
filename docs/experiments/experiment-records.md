@@ -516,3 +516,19 @@ Raw runs, fresh worktree, PC otherwise idle (other threads' QC not running):
   needs three green crowded runs each (25 min a run) and run 2 already showed the crowd is at its limit (4 flakes at 6 lanes).
   Next lever: give those pages a readiness signal instead of a connect/timer margin, then move one at a time.
 - Not done (stop rule): widening workers/browserLanes (run 2 flaked more than run 1 at the current width).
+
+### 2026-11-25 later: why the crowd failed, one run at a time, firmware built once
+- Run 3 (full, 993 s wall, 26 failed) was overlapped by another thread's full run and a `--only check_panel` run: log shows
+  `WinError 10048` and `{'_raw': '[]'}` (pages reporting nothing). The QC SILENT waits (190-478 s) and report_pictures 278 s in
+  run 2 fit the same cause: a second run on the fake serial port / port 80. Not proven for every case: run 2's log was overwritten.
+- Fix: `qc/lib/runlock.py` (lock file in the temp dir with pid + start; a second run waits and names the holder; dead holder taken
+  over; `--no-lock` / `--list` skip). `check_run_lock` proves wait + takeover; two sabotages (takeover off, wait off) were caught.
+- Firmware artifact cache `qc/lib/fw_cache.py`, outside the repo (`~/.platformio/qc_artifact_cache/<key>/`), key = sha256(firmware +
+  config + shared-web inputs, PlatformIO + every platform/package version, env). Restore verifies size + sha256 per file; stored only
+  after check_build_split's own assertions passed; `--rebuild-firmware` / MICE_QC_REBUILD=1 forces a build. `check_fw_cache` proves
+  hit, miss on input / toolchain / env change, corrupt and truncated entry rejected; three sabotages caught.
+  Measured (check_build_split + 3 small checks, `--jobs 1`): first run, cache empty (pio object cache warm) 136 s; same tree
+  with build dirs removed, cache hit 31 s. Cold fresh tree without any cache stays 414-474 s once per machine per firmware change.
+- promote.py gate: left as is. It runs run_qc.py, so it uses the cache; the key covers every input and the toolchain, a hit
+  still runs every assertion on the restored binaries, and an unknown key always builds for real.
+- Not done: SOLO checks stay SOLO; three green crowded runs each is not measurable while other threads run QC on this PC.
