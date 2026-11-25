@@ -464,10 +464,12 @@ class Links:
         out = src.with_name("%s_%d_%d.mp3" % (jid, round(start * 10), round(end * 10)))
         if not out.is_file():
             cut = ["-ss", "%.2f" % max(0.0, start)] + (["-to", "%.2f" % end] if end > start else [])
-            r = subprocess.run(ff + ["-hide_banner", "-loglevel", "error", "-y", "-i", str(src)]
-                               + cut + ["-vn", "-ac", "2", "-ar", "44100", "-b:a", "128k", str(out)],
-                               capture_output=True, text=True, timeout=300,
-                               creationflags=NO_WINDOW)
+            import hub_api_scheduler                # encoding yields to live work (config/scheduler.json)
+            with hub_api_scheduler.gate("encode"):
+                r = subprocess.run(ff + ["-hide_banner", "-loglevel", "error", "-y", "-i", str(src)]
+                                   + cut + ["-vn", "-ac", "2", "-ar", "44100", "-b:a", "128k", str(out)],
+                                   capture_output=True, text=True, timeout=300,
+                                   creationflags=NO_WINDOW)
             if r.returncode != 0 or not out.is_file():
                 return None, "The sound could not be taken out of this video (it may have none)."
         self.jobs[jid]["sound"] = str(out)

@@ -95,6 +95,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_hub_users`
 - `check_id3_skip`
 - `check_identity`
+- `check_job_scheduler`
 - `check_joint_select`
 - `check_key_click`
 - `check_keyboard_only`

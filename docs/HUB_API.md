@@ -110,6 +110,7 @@ A `-` in the table means the code has no comment for that URL yet.
 | POST | `/api/save` | - | - | hub_api_studio.py |
 | GET | `/api/scan` | - | force | main.py |
 | GET | `/api/scanusb` | - | force, full, port | main.py |
+| GET | `/api/scheduler` | - | - | hub_api_scheduler.py |
 | GET | `/api/selfupdate` | - | - | hub_api_support.py |
 | POST | `/api/seqdelete` | - | - | hub_api_studio.py |
 | GET | `/api/seqsteps` | - | name | hub_api_studio.py |

@@ -97,6 +97,7 @@ MARKUP_RE = re.compile(r"[*#_`]")                   # spoken text wears no markd
 
 sys.path.insert(0, str(CODE / "tools"))
 import registry                                      # noqa: E402
+import jobsched                                      # noqa: E402
 # What we asked the face app for, in one place (A13): /api/look, present.
 sys.path.insert(0, str(CODE / "apps" / "faces"))
 import friend_api                                    # noqa: E402
@@ -105,7 +106,7 @@ from face_history import HistoryCursor, local_when    # noqa: E402
 sys.path.insert(0, str(CODE / "apps" / "voice"))
 import providers                                     # noqa: E402
 import local_ai                                      # noqa: E402
-from profiles import Profiles, ProfileError, guarded  # noqa: E402
+from profiles import Profiles, ProfileError, guarded, SharedLock  # noqa: E402
 from user_voice import UserVoice, PERSON as USER_PERSON  # noqa: E402
 # What a question asks for beyond its words (A45-24): reply language,
 # read-aloud, a new verse, Thai-letter loanwords. Data in voice_intents.json.
@@ -147,7 +148,7 @@ class Brain(FaceLink, Translator, Listener, Speaker, Faq, LocalLlm, Answerer):
     def __init__(self, cfg_path, faq_path=None):
         from resources import VoiceResources
         self._resources = VoiceResources(CODE)
-        self.profile_lock = threading.RLock()
+        self.profile_lock = SharedLock()
         self.profiles = None
         self.cfg_path = Path(cfg_path)
         self.cfg = registry.load(self.cfg_path)
@@ -165,11 +166,25 @@ class Brain(FaceLink, Translator, Listener, Speaker, Faq, LocalLlm, Answerer):
         self._preload_thread = None
         self._tts_lock = threading.Lock()   # protects per-line synthesis slots
         self.faq_err = ""            # why the answers file could not be read
-        self._lock = threading.Lock()   # one GPU: answers and listening queue
+        # One GPU, shared by priority (tools/jobsched.py, config/scheduler.json):
+        # a live question jumps ahead of translation/helper/warm-up work.
+        self._sched = jobsched.Scheduler.from_file(CODE / "config" / "scheduler.json")
         self._cached_person = ""
         self._cached_person_at = 0.0
         self._reconize_token = ""
         self._reconize_token_exp = 0.0
+
+    def _gpu(self, klass):
+        """Wait for this PC's model by priority: `with self._gpu("live"):`.
+        Classes and their order are data in config/scheduler.json."""
+        sched = self.__dict__.get("_sched")
+        if sched is None:                          # a Brain built without __init__ (tests, helpers)
+            sched = self.__dict__.setdefault("_sched", jobsched.Scheduler.from_file(CODE / "config" / "scheduler.json"))
+        return sched.gate(klass)
+
+    def scheduler_status(self):
+        self._gpu("normal")                        # makes sure the scheduler exists
+        return self._sched.status()
 
     def enable_profiles(self):
         if self.profiles is None:
@@ -215,7 +230,7 @@ class Brain(FaceLink, Translator, Listener, Speaker, Faq, LocalLlm, Answerer):
             if want != getattr(self, "_%s_loaded_model" % kind):
                 drop.append(kind)
         if drop:
-            with self._lock:
+            with self._gpu("background"):
                 for kind in drop:
                     self._resources.drop(kind)
                     setattr(self, "_%s_loaded_model" % kind, None)
@@ -443,6 +458,8 @@ class Brain(FaceLink, Translator, Listener, Speaker, Faq, LocalLlm, Answerer):
             "ok": True,
             "service": "voice",
             "resources": self._resources.status(),
+            "scheduler": self.scheduler_status(),
+            "llmDevice": self.llm_device(),
             "faqFile": self.faq_path.name,
             "parts": {"faq": faq, "llm": self.llm_status(),
                       "stt": self.stt_status(), "tts": self.tts_status()},

@@ -268,7 +268,7 @@ class Answerer:
 
         def one(pid, prov):
             if prov.get("kind") == "local":
-                with self._lock:
+                with self._gpu("live"):
                     ok, why_not = self._ensure_llm()
                     if not ok:
                         return None, why_not
@@ -309,7 +309,7 @@ class Answerer:
         def one(pid, prov):
             for i, prompt in enumerate((system, system + "\n" + retry)):
                 if prov.get("kind") == "local":
-                    with self._lock:
+                    with self._gpu("live"):
                         ok, why_not = self._ensure_llm()
                         if not ok:
                             return None, why_not
@@ -480,7 +480,7 @@ class Answerer:
 
     def _generate_local(self, system, history, limit, is_verse, lang):
         """This PC's model, with its one wrong-language retry."""
-        with self._lock:
+        with self._gpu("live"):
             ok, why_not = self._ensure_llm()
             if not ok:
                 return None, why_not

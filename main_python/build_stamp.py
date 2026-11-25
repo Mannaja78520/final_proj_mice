@@ -47,6 +47,7 @@ AREAS = (
     ("config", "**/*"),
     ("apps", "**/*"),
     ("tools", "registry.py"),
+    ("tools", "jobsched.py"),
     ("firmware/src/web", "WebUI.h"),
 )
 # Source, not the things the hub writes while it runs: a password hash, a list

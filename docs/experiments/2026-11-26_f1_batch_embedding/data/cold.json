@@ -1,0 +1,28 @@
+{
+ "EXHAUSTIVE (default)": {
+  "session_load_ms": 457,
+  "first_call_batch1_ms": 794,
+  "first_call_batch6_ms": 118,
+  "first_call_batch2_ms": 45,
+  "first_call_batch3_ms": 43,
+  "first_call_batch4_ms": 41,
+  "first_call_batch5_ms": 42,
+  "first_call_batch7_ms": 44,
+  "first_call_batch8_ms": 50,
+  "revisit_batch1_after_8_ms": 42.4,
+  "batch1_again_ms": 3.8
+ },
+ "HEURISTIC": {
+  "session_load_ms": 186,
+  "first_call_batch1_ms": 45,
+  "first_call_batch6_ms": 41,
+  "first_call_batch2_ms": 37,
+  "first_call_batch3_ms": 41,
+  "first_call_batch4_ms": 42,
+  "first_call_batch5_ms": 44,
+  "first_call_batch7_ms": 41,
+  "first_call_batch8_ms": 39,
+  "revisit_batch1_after_8_ms": 36.0,
+  "batch1_again_ms": 7.8
+ }
+}

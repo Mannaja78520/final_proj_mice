@@ -11,7 +11,8 @@ numpy>=1.24.0
 scipy>=1.10.0
 
 # Optional Local LLM (PyTorch + HuggingFace Transformers)
-# Note: For CUDA support on Windows, install torch with CUDA from pytorch.org
+# Note: on Windows `pip install torch` gives the CPU-only build; for the GPU install the CUDA pair FIRST:
+#   python -m pip install -r requirements-torch-cuda.txt   (why, check and the way back are in that file)
 torch>=2.2.0
 transformers>=4.40.0
 accelerate>=0.28.0

@@ -1,3 +1,5 @@
+> **แทนที่ด้วย `friend_requests_to_send_2026-11-26.md` (ฉบับเดียวที่ส่งเพื่อน)**
+
 # ขอเพื่อนปรับแอปให้เร็วขึ้น รันพร้อมกันกับระบบเสียงได้ (2026-11-25)
 
 ไม่ได้แก้โค้ดของเพื่อนเลย อ่านอย่างเดียว และวัดบน PC จริง (RTX 5070 Ti 12 GB)
@@ -17,7 +19,7 @@
 
 | # | ขอให้ทำ | ทำไม (ตัวเลขวัดจริง) | สำคัญ |
 |---|---|---|---|
-| F1 | **ทำ embedding ทุกหน้าในรูปเดียวเป็น batch เดียว** ใน `/api/look` ปกติ: `engine.py:461` ยังวน `rec_model.get(image_bgr, face)` ทีละหน้า ใช้แบบเดียวกับ `engine.py:501` (`get_feat(aligned)`) ที่ทำไว้แล้วใน `/look/batch` | รูป 6 หน้า: server 42 ms; เคยวัด 8 หน้า วนลูป 39.5 ms → batch 11.7 ms (เร็ว 3.4 เท่า) ผลลัพธ์เหมือนเดิม | P1 |
+| F1 | **(ปิดแล้ว: เพื่อนลองและ revert ถูกต้อง ข้อมูลที่ถูกต้องและทางแก้ดู `face_f1_batch_embedding_2026-11-26.md`)** ทำ embedding ทุกหน้าในรูปเดียวเป็น batch เดียว ใน `/api/look` ปกติ: `engine.py:461` ยังวน `rec_model.get(image_bgr, face)` ทีละหน้า ใช้แบบเดียวกับ `engine.py:501` (`get_feat(aligned)`) ที่ทำไว้แล้วใน `/look/batch` | รูป 6 หน้า: server 42 ms; เคยวัด 8 หน้า วนลูป 39.5 ms → batch 11.7 ms (เร็ว 3.4 เท่า) ผลลัพธ์เหมือนเดิม | P1 |
 | F2 | **หลีกทางให้เสียงตอนกำลังคุย**: เวลามีงานเสียง (hub บอกได้) ให้งานเบื้องหลัง (Event Photo, import, วิดีโอ, กล้องที่ไม่มีใครดู) พักหรือลดเฟรม ส่วน `/api/look` ของหุ่นยังทำต่อ ใช้ `yield_to_interactive()` ที่มีอยู่แล้วกับ `api/recognition.py` และ `photo_processing_service.py` ด้วย | stress: ถอดเสียง 0.75 → 2.8 s, /ask 0.06 → 2.9 s เพราะ GPU เต็ม | P1 |
 | F3 | **อ่านกล้องจาก hub ไม่เปิดกล้องเอง** รับ URL `http://127.0.0.1:8642/api/dev/cam.stream?dev=pc:<ชื่อกล้อง>` (MJPEG) เป็นแหล่งกล้องของ camera node (ข้อ D1/G3 เดิม) | Windows ให้โปรแกรมเดียวถือกล้อง; เปิดซ้ำ = ภาพดำ และจำหน้าสองรอบ เปลือง GPU สองเท่า | P1 |
 | F4 | **จำกัด VRAM และเธรดของ onnxruntime** ตั้ง `gpu_mem_limit` (~1.5-2 GB) + `arena_extend_strategy=kSameAsRequested` ใน CUDA provider options และ `intra_op_num_threads=2`, `inter_op_num_threads=1` ใน SessionOptions | ตอนนี้ VRAM 1.3-1.5 GB ขึ้นลงตามโหลด CPU พุ่งถึง 139% ตอนโหลดหนัก จำกัดไว้ทุกแอปจะไม่แย่งกันจนช้า | P2 |
