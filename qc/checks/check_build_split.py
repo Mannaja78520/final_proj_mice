@@ -183,14 +183,33 @@ def run(t):
         probe.unlink(missing_ok=True)
     cache = F.FIRMWARE / ".pio" / "qc_build_cache.json"
     built = _cached(cache, key)
+    fresh = []                  # envs really compiled this run (cached after the asserts pass)
+    acache = None
     if built is None:
-        with _cf.ThreadPoolExecutor(max_workers=len(ENVS) + 1) as pool:
-            built = dict(zip(list(ENVS) + [LEGACY], pool.map(
-                lambda e: _run([str(PIO), "run", "-e", e], F.FIRMWARE), list(ENVS) + [LEGACY])))
+        # BUILD ONCE, CHECK A CACHE (user 2026-11-25: firmware changed once, yet
+        # every gate rebuilt it). Per env, keyed on inputs + toolchain + env;
+        # a hit restores the binaries and every assertion below still runs.
+        import fw_cache
+        acache = fw_cache.ArtifactCache(key, fw_cache.toolchain_key(PIO),
+                                        F.FIRMWARE / ".pio" / "build")
+        built, todo = {}, []
+        for e in list(ENVS) + [LEGACY]:
+            out = acache.restore(e)
+            if out is None:
+                todo.append(e)
+            else:
+                built[e] = (0, out)
+                print("      build: cache hit %s %s" % (e, acache.key(e)[:12]))
+        if todo:
+            print("      build: cache miss %s" % ", ".join(todo))
+            with _cf.ThreadPoolExecutor(max_workers=len(todo)) as pool:
+                built.update(zip(todo, pool.map(
+                    lambda e: _run([str(PIO), "run", "-e", e], F.FIRMWARE), todo)))
+            fresh = todo
         if all(code == 0 for code, _o in built.values()):
             _store(cache, key, built)
         print("      (%d environments built in %.0fs, together)"
-              % (len(ENVS), time.time() - t0))
+              % (len(fresh), time.time() - t0))
     else:
         print("      (firmware inputs unchanged - reused the last good build)")
 
@@ -234,6 +253,12 @@ def run(t):
                  "%s is smaller than the all-types build" % env,
                  "%s %.1f%% vs %.1f%% — the split saved nothing"
                  % (env, sizes[env], allt))
+
+    # Green only now: the build compiled AND every assertion above held.
+    if fresh and acache is not None and not t.failed:
+        for e in fresh:
+            if built[e][0] == 0:
+                acache.store(e, built[e][1])
 
 
 def _first_error(out):

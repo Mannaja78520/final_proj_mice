@@ -356,6 +356,9 @@ def _timing_report(timings, phases, wall, full_run, top=12):
 
 
 def main(argv):
+    if "--rebuild-firmware" in argv:
+        # pool children inherit the environment, not argv (qc/lib/fw_cache.py)
+        os.environ["MICE_QC_REBUILD"] = "1"
     quick = "--quick" in argv
     listing = "--list" in argv
     # HOW MANY AT ONCE. Default is most of the machine: the suite spent 836s on
