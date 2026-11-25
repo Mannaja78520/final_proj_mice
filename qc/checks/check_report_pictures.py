@@ -79,6 +79,13 @@ def run(t):
     if not browser.available():
         t.give_up("headless browser not found")
     fake_serial.reset()
+    # A PC that runs the real voice helper would translate these reports (text_en), and the list then
+    # shows the English twin instead of the words the check looks for. Point the hub at a dead helper.
+    import tempfile
+    dead = os.path.join(tempfile.gettempdir(), "mice_qc_voice_dead_%d.json" % os.getpid())
+    with open(dead, "w", encoding="utf-8") as f:
+        f.write('{"service": "http://127.0.0.1:9"}')
+    os.environ["MICE_VOICE_CONFIG"] = dead
     base, _main = F.start_hub()
     browser.raw_page("<h1>wrapper</h1><script>" + DRIVER + "</script>", base, seconds=120)
     marks = list(fake_serial.qc_marks)
