@@ -106,7 +106,7 @@ from face_history import HistoryCursor, local_when    # noqa: E402
 sys.path.insert(0, str(CODE / "apps" / "voice"))
 import providers                                     # noqa: E402
 import local_ai                                      # noqa: E402
-from profiles import Profiles, ProfileError, guarded  # noqa: E402
+from profiles import Profiles, ProfileError, guarded, SharedLock  # noqa: E402
 from user_voice import UserVoice, PERSON as USER_PERSON  # noqa: E402
 # What a question asks for beyond its words (A45-24): reply language,
 # read-aloud, a new verse, Thai-letter loanwords. Data in voice_intents.json.
@@ -148,7 +148,7 @@ class Brain(FaceLink, Translator, Listener, Speaker, Faq, LocalLlm, Answerer):
     def __init__(self, cfg_path, faq_path=None):
         from resources import VoiceResources
         self._resources = VoiceResources(CODE)
-        self.profile_lock = threading.RLock()
+        self.profile_lock = SharedLock()
         self.profiles = None
         self.cfg_path = Path(cfg_path)
         self.cfg = registry.load(self.cfg_path)

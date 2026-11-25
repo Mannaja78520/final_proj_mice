@@ -143,3 +143,65 @@ def run(t):
     from resources import VoiceResources
     got = VoiceResources(F.CODE).map(lambda _x: threading.get_ident(), [1])
     t.ok(got == [threading.get_ident()], "one translation job runs on the caller's thread, ahead of any pool queue", str(got))
+
+    # 8. Requests share the character lock; a switch/settings write is alone.
+    from profiles import SharedLock, guarded
+    lock = SharedLock()
+    inside, peak, lk = [0], [0], threading.Lock()
+
+    def reader():
+        with lock.shared():
+            with lk:
+                inside[0] += 1
+                peak[0] = max(peak[0], inside[0])
+            time.sleep(0.15)
+            with lk:
+                inside[0] -= 1
+
+    rs = [threading.Thread(target=reader) for _ in range(4)]
+    for r in rs:
+        r.start()
+    for r in rs:
+        r.join(5)
+    t.ok(peak[0] == 4, "four requests are inside the character lock at once", str(peak[0]))
+
+    ev = []
+
+    def slow_reader():
+        with lock.shared():
+            ev.append("r-in")
+            time.sleep(0.3)
+            ev.append("r-out")
+
+    def writer():
+        with lock.exclusive():
+            ev.append("w-in")
+            time.sleep(0.05)
+            ev.append("w-out")
+
+    def late_reader():
+        with lock.shared():
+            ev.append("late-in")
+
+    a = threading.Thread(target=slow_reader)
+    a.start()
+    time.sleep(0.05)
+    w = threading.Thread(target=writer)
+    w.start()
+    time.sleep(0.05)
+    b = threading.Thread(target=late_reader)
+    b.start()
+    for x in (a, w, b):
+        x.join(5)
+    t.ok(ev == ["r-in", "r-out", "w-in", "w-out", "late-in"],
+         "a switch waits for running requests, runs alone, and is not starved by later ones", str(ev))
+
+    class H:
+        command, path = "POST", "/profiles?x=1"
+        brain = type("B", (), {"profile_lock": lock, "profiles": None})()
+
+    seen = []
+    guarded(lambda h: seen.append(lock._writer == threading.get_ident()))(H())
+    H.command, H.path = "GET", "/ask?q=hi"
+    guarded(lambda h: seen.append(lock._writer is None and lock._readers == 1))(H())
+    t.ok(seen == [True, True], "a profile switch takes the lock alone; a question shares it", str(seen))
