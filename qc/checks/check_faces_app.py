@@ -110,7 +110,10 @@ def run(t):
     t.eq(code, 200, "and that list serves with no login")
     entry = (json.loads(raw).get("partners") or {}).get("reconize") or {}
     for key in ("open", "api", "health", "folder"):
-        t.ok(entry.get(key), "the entry names the %s" % key, entry)
+        # The whole answer, not just the entry: in the full parallel gate on the PC this failed 4 times
+        # with an empty entry that passes alone, and "{}" cannot say whether the file was unreadable
+        # ({"ok": false, "error": ...}) or the partner was missing (2026-11-25).
+        t.ok(entry.get(key), "the entry names the %s" % key, raw[:400])
 
     # ---- nothing secret under apps/, ever -----------------------------
     leaks = []

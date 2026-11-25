@@ -356,6 +356,9 @@ def _timing_report(timings, phases, wall, full_run, top=12):
 
 
 def main(argv):
+    if "--rebuild-firmware" in argv:
+        # pool children inherit the environment, not argv (qc/lib/fw_cache.py)
+        os.environ["MICE_QC_REBUILD"] = "1"
     quick = "--quick" in argv
     listing = "--list" in argv
     # HOW MANY AT ONCE. Default is most of the machine: the suite spent 836s on
@@ -470,7 +473,11 @@ def main(argv):
         print("%s[%s]%s %s" % (B, getattr(mod, "AREA", "?"), D,
                                getattr(mod, "TITLE", f.stem)))
         timings[f.stem] = {"secs": round(secs, 2),
-                           "lane": lane_of.get(f.stem, "plain")}
+                           "lane": lane_of.get(f.stem, "plain"),
+                           # seconds into the run when the main process saw it
+                           # finish; end - secs = start, so idle gaps in a
+                           # lane can be read afterwards
+                           "end": round(time.time() - t_all, 1)}
         if printed:
             sys.stdout.write(printed)
         n_fail = 0
@@ -768,7 +775,20 @@ def _run():
     return main(sys.argv[1:])
 
 
+def _take_run_lock(argv):
+    """One QC run at a time on this PC (qc/lib/runlock.py). Returns the lock
+    or None. Waits and says who holds it; --no-lock and --list skip it."""
+    if "--no-lock" in argv or "--list" in argv:
+        return None
+    import runlock
+    lock = runlock.RunLock(say=lambda m: print(m, file=sys.__stderr__, flush=True))
+    lock.acquire()
+    return lock
+
+
 if __name__ == "__main__":
+    _lock = _take_run_lock(sys.argv)
+    sys.argv = [a for a in sys.argv if a != "--no-lock"]
     _df = _done_file(sys.argv)
     if _df:                       # strip it so main() never sees an unknown flag
         _i = sys.argv.index("--done-file") if "--done-file" in sys.argv else None
@@ -778,5 +798,7 @@ if __name__ == "__main__":
         _code = _run()
     except SystemExit as e:
         _code = e.code if isinstance(e.code, int) else 1
+    if _lock:
+        _lock.release()
     _write_done(_df, _code)
     sys.exit(_code)
