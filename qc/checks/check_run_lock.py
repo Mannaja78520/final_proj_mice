@@ -68,6 +68,36 @@ def run(t):
          "rc %s" % outsider.returncode)
     holder_lock.release()
 
+    # First come, first served: the waiter that arrived FIRST gets the lock when it frees,
+    # even though the later one polls faster (2026-11-26: a run waited 40 minutes behind
+    # runs that arrived after it).
+    order = []
+    holder_lock = runlock.RunLock(path, say=lambda m: None)
+    t.ok(holder_lock.acquire(timeout=1), "a holder takes the lock for the queue case")
+    os.environ.pop(runlock.OWNER_ENV, None)
+    code = ("import sys, time; sys.path.insert(0, r'%s'); import runlock; "
+            "from pathlib import Path; "
+            "l = runlock.RunLock(Path(r'%s'), say=lambda m: None, poll=%s); "
+            "ok = l.acquire(timeout=40); print('GOT', sys.argv[1], flush=True); "
+            "time.sleep(0.5); l.release()")
+    import time as _t
+    slow = subprocess.Popen([sys.executable, "-c", code % (F.QC / "lib", path, 1.5), "first"],
+                            stdout=subprocess.PIPE, text=True)
+    _t.sleep(2.5)                                   # `first` has its ticket
+    fast = subprocess.Popen([sys.executable, "-c", code % (F.QC / "lib", path, 0.05), "second"],
+                            stdout=subprocess.PIPE, text=True)
+    _t.sleep(2.5)
+    holder_lock.release()
+    got = []
+    for p_ in (slow, fast):
+        out = p_.communicate(timeout=60)[0]
+        got.append(out.strip())
+    t.ok(got == ["GOT first", "GOT second"] and slow.returncode == 0 and fast.returncode == 0,
+         "the waiter that came first is served first, although the later one polls faster",
+         repr(got))
+    t.ok(not list((runlock.QUEUE_DIR / path.name).glob("*.ticket")),
+         "no ticket is left behind once everyone is served")
+
     src = (F.QC / "run_qc.py").read_text(encoding="utf-8")
     t.ok("RunLock" in src and "--no-lock" in src,
          "run_qc.py takes the lock and offers --no-lock")
