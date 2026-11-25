@@ -532,3 +532,11 @@ Raw runs, fresh worktree, PC otherwise idle (other threads' QC not running):
 - promote.py gate: left as is. It runs run_qc.py, so it uses the cache; the key covers every input and the toolchain, a hit
   still runs every assertion on the restored binaries, and an unknown key always builds for real.
 - Not done: SOLO checks stay SOLO; three green crowded runs each is not measurable while other threads run QC on this PC.
+
+### 2026-11-25 final full run on the branch (PC to itself, lock held, artifact + object caches warm)
+- Wall 832 s (13.9 min), against 1524 s for the baseline run 1 (same PC, cold firmware tree): -45%. Parallel phase 524 s, SOLO phase 297 s,
+  check_build_split 1.8 s. 10682 passed, 9 failed, no FLAKY, no QC SILENT, no QC SLOW. A filtered `check_settings_transfer` run
+  from another thread started 9 s before it (seconds of overlap).
+- The 9 failures are the failures main already has (th/ja/zh text leaks, "no page threw", the camera-reader checks); the system-map
+  failure of that run was my own new files and is fixed in the next commit (check_systems green).
+- The remaining wall is real work: browser lane 2233 s of checks on 6 lanes, plus the SOLO tail (~297 s). Not touched.
