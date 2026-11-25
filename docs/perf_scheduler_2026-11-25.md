@@ -88,6 +88,68 @@ FAQ does not use the gate at all. To make the gate the limit, the background job
 the live job must also take the gate (a question that needs the local model), or the work before the
 gate must stop serializing. That is a finding for the PR, not a result of the scheduler.
 
+## 2c. Why section 2b showed nothing, and what the scheduler does once that is out of the way
+
+**Re-test with the pool fix (`6b11e610`, a single job skips the FIFO pool).** Same load as 2b, 2 runs each.
+Gate wait stayed 0 ms in every class and latency stayed about 3 s (voice `/ask` 2784 to 2994 ms p50 both
+ways, STT 2831 to 3262 ms). The pool was not the only thing in front of the gate.
+
+**Cause found: `apps/voice/profiles.py` `guarded()`.** It wraps every `do_GET` and `do_POST` of the Voice
+HTTP handler in `with brain.profile_lock:` (a `threading.RLock`), so the whole request, including
+the time it waits at the priority gate and runs the model, holds one global lock. Requests reach the gate
+one at a time, in arrival order, and the priority gate never sees a queue. (The lock exists so that a character
+switch cannot split a request between two characters.)
+
+**Experiment, not shipped:** a harness (outside the repo) replaced `guarded` by the identity before
+`service.py` imported it, so requests no longer share that lock. Everything else is the branch as pushed.
+Two runs per setting. Scheduler OFF = `lease.enabled=false` and every class at priority 5.
+
+Live load flat out (each live workload loops as fast as it is answered; helper = 4 background threads),
+median / p95 ms and calls in 20 s:
+
+| | OFF 1 | OFF 2 | ON 1 | ON 2 |
+|---|---|---|---|---|
+| voice `/ask` (saved-answer path) | 44 / 3322 (28 calls) | 45 / 3765 (23) | 60 / 1423 (58) | 51 / 1424 (58) |
+| stt `/transcribe` | 3175 / 3675 (7) | 3902 / 4053 (6) | 1630 / 1793 (13) | 1613 / 1760 (13) |
+| background helper jobs done | 22 | 24 | 5 | 5 |
+| gate wait, helper (p50) | 2719 ms | 3031 ms | 21047 ms | 2750 ms* |
+
+*Voice scheduler stats are cumulative since the process started, so the second ON column mixes in the
+earlier runs. The first ON run is the clean one: live waited 593 ms p50, helper 21 s.
+
+With a live load that never pauses, the background class waits almost the whole 20 s (5 jobs against 22 to 24):
+priority works, and this is the stress case, not a show.
+
+Show-rate live load (`perf_load.py --real`: voice and stt 0.5 Hz, face 10 Hz; helper 4 threads flat out):
+
+| | OFF 1 | OFF 2 | ON 1 | ON 2 |
+|---|---|---|---|---|
+| voice `/ask` p50 / p95 | 51 / 2353 | 57 / 2722 | 64 / 1623 | 46 / 1954 |
+| stt p50 / p95 | 2593 / 3017 | 2187 / 3599 | 1023 / 1306 | 968 / 1269 |
+| background helper jobs done | 27 | 27 | 23 | 24 |
+| background helper call p50 | 2250 | 2379 | 3388 | 3110 |
+
+Means, OFF to ON: STT p50 2390 to 996 ms (2.4 times faster), STT p95 3308 to 1287 ms, `/ask` p95
+2538 to 1788 ms, background throughput 27 to 23.5 jobs (13% fewer; each background call waits about 1 s longer).
+Live work gets clearly faster, background work is slowed a little and not starved.
+
+Not done and not claimed: the fix itself. Removing the whole-request lock is a concurrency change in
+Voice (everything behind it was serialized by it, including model loading and the cached state in `Brain`),
+so it needs its own change and its own checks. A shared/exclusive lock is the likely shape: ordinary
+requests share it, and only the calls that change the active character or the stores (`POST /profiles`,
+`/config`, `/faq`, `/keys`, `/preload`, `/unload`) take it exclusively. The `/ask` saved-answer
+path also does not take the gate (it needs no model), so it is not ordered by the scheduler.
+
+## 2d. Why the helper model runs on the CPU
+
+`GET /health` on the branch Voice: `llmDevice: {device: "cpu", cpuBecause: "no usable GPU in the plan (1 seen,
+torch.cuda=False ...)"}`. The cause on this PC: `torch 2.15.0+cpu` (a CPU-only wheel, `torch.version.cuda` is
+None) in `C:\Program Files\Python312`. The GPU is fine: Whisper runs on it through CTranslate2 and the plan sees
+the RTX 5070 Ti with 12227 MiB, 6138 MiB free. `docs/bridge_archive` records `torch 2.11.0+cu128` on this PC in
+October, so a later plain `pip install -U torch` (PyPI serves the CPU wheel on Windows) most likely replaced
+the CUDA build. PyTorch's CUDA index offers `+cu128` up to 2.11.0 and `+cu130` up to 2.14.1.
+The in-process Qwen2.5-0.5B is only the backup of the Ollama model (Ollama was not running during these tests).
+
 ## 3. How this was run
 
 * The real hub (`MiceHub.exe` on 8642), the real Voice (8767) and the face app (8000) were left
@@ -97,7 +159,7 @@ gate must stop serializing. That is a finding for the PR, not a result of the sc
   `config/scheduler.json` `lease.hubUrl` and `config/perf_load.json` `voice`/`stt_clips` were pointed
   at the side ports for the runs and put back afterwards.
 * The camera load read the real hub's shared stream (`pc:FHD Camera`), the same in every run.
-* Chart: `python tools/chart_sched.py --sim .local/perf/sched_sim.json --on .local/perf/sched_on.json --off .local/perf/sched_off.json --bg-on .local/perf/bg_on1.json .local/perf/bg_on2.json --bg-off .local/perf/bg_off1.json .local/perf/bg_off2.json --out docs/img/perf_scheduler_2026-11-25.png`.
+* Chart: `python tools/chart_sched.py --sim .local/perf/sched_sim.json --on .local/perf/sched_on.json --off .local/perf/sched_off.json --bg-on .local/perf/bg2_on1.json .local/perf/bg2_on2.json --bg-off .local/perf/bg2_off1.json .local/perf/bg2_off2.json --bg2-on .local/perf/bg4_on1.json .local/perf/bg4_on2.json --bg2-off .local/perf/bg4_off1.json .local/perf/bg4_off2.json --bg2-title "Experiment: Voice without whole-request lock, show-rate live load" --out docs/img/perf_scheduler_2026-11-25.png` (the chart's 4th panel is the shipped Voice with the pool fix, section 2c; section 2b's first runs are `bg_*`).
 
 ## 4. QC status on this PC (not final)
 
