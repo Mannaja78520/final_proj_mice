@@ -772,7 +772,20 @@ def _run():
     return main(sys.argv[1:])
 
 
+def _take_run_lock(argv):
+    """One QC run at a time on this PC (qc/lib/runlock.py). Returns the lock
+    or None. Waits and says who holds it; --no-lock and --list skip it."""
+    if "--no-lock" in argv or "--list" in argv:
+        return None
+    import runlock
+    lock = runlock.RunLock(say=lambda m: print(m, file=sys.__stderr__, flush=True))
+    lock.acquire()
+    return lock
+
+
 if __name__ == "__main__":
+    _lock = _take_run_lock(sys.argv)
+    sys.argv = [a for a in sys.argv if a != "--no-lock"]
     _df = _done_file(sys.argv)
     if _df:                       # strip it so main() never sees an unknown flag
         _i = sys.argv.index("--done-file") if "--done-file" in sys.argv else None
@@ -782,5 +795,7 @@ if __name__ == "__main__":
         _code = _run()
     except SystemExit as e:
         _code = e.code if isinstance(e.code, int) else 1
+    if _lock:
+        _lock.release()
     _write_done(_df, _code)
     sys.exit(_code)
