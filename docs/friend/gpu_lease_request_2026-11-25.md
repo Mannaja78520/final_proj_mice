@@ -1,3 +1,5 @@
+> **แทนที่ด้วย `friend_requests_to_send_2026-11-26.md` (ฉบับเดียวที่ส่งเพื่อน)**
+
 # Friend apps: ask the hub for the GPU before heavy work (2026-11-25)
 
 We do not edit friend code. This is what the friend would change so Face_Regonize
