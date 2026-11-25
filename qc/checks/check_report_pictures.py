@@ -75,7 +75,7 @@ window.addEventListener("load", function(){ run(); });
 """
 
 
-def run(t):
+def _run(t):
     if not browser.available():
         t.give_up("headless browser not found")
     fake_serial.reset()
@@ -120,3 +120,15 @@ def run(t):
         t.eq(g("reset"), "0~0", "the next report starts empty with add buttons back (%s)" % lang)
     t.ok("R~count~3" in marks, "the hub keeps real pictures only, at most 3, not the fake", [m for m in marks if m.startswith("R~")])
     t.ok("R~trav~404~404" in marks, "a path in the id or a missing number gives 404", [m for m in marks if m.startswith("R~")])
+
+
+def run(t):
+    # The worker process runs more checks after this one: the dead voice helper must not leak into them.
+    prev = os.environ.get("MICE_VOICE_CONFIG")
+    try:
+        return _run(t)
+    finally:
+        if prev is None:
+            os.environ.pop("MICE_VOICE_CONFIG", None)
+        else:
+            os.environ["MICE_VOICE_CONFIG"] = prev

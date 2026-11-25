@@ -10,6 +10,7 @@ Pages, languages and what to ignore are DATA in tools/visual/pages.json; the sca
 is tools/visual/probe.js, the same function the screenshot tool uses.
 """
 import json
+import os
 from pathlib import Path
 
 import browser
@@ -80,7 +81,7 @@ window.addEventListener("load", function(){ run(); });
 """
 
 
-def run(t):
+def _run(t):
     if not browser.available():
         t.give_up("headless browser not found — install Edge/Chromium or run --quick")
     fake_serial.reset()
@@ -139,3 +140,15 @@ def run(t):
         if m.startswith("STUCK~"):
             _, lang, pid, n = m.split("~")
             t.ok(int(n) == 0, "no popup pinned at the corner on %s (%s)" % (pid, lang), m)
+
+
+def run(t):
+    # The worker process runs more checks after this one: the dead voice helper must not leak into them.
+    prev = os.environ.get("MICE_VOICE_CONFIG")
+    try:
+        return _run(t)
+    finally:
+        if prev is None:
+            os.environ.pop("MICE_VOICE_CONFIG", None)
+        else:
+            os.environ["MICE_VOICE_CONFIG"] = prev
