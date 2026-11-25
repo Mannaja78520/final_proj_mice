@@ -34,7 +34,7 @@ import qc as F
 
 AREA = "hub"
 TITLE = "this PC's camera is opened once by the hub and shared, and let go when unwatched"
-SOLO = True                       # a hub of its own, and a pipe held open
+SOLO = False                       # a hub of its own, and a pipe held open
 
 FAKE = r'''
 import sys, time

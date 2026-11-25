@@ -16,7 +16,7 @@ import qc as F
 AREA = "web"
 TITLE = "Report pictures: pick, preview, send, view - th/en/zh/ja, and the hub refuses fakes"
 SLOW = False
-SOLO = True   # leaves Thai/Chinese reports in the list for a moment: check_visual_language must not see them
+SOLO = False   # leaves Thai/Chinese reports in the list for a moment: check_visual_language must not see them
 
 DRIVER = """
 function ready(f){ return qcWaitFor(function(){ try { var d = f.contentDocument; return d.readyState === "complete" && f.contentWindow.MiceLang && d.body && d.body.innerText.length > 20; } catch (e) { return false; } }, 25000); }
