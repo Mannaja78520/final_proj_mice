@@ -48,16 +48,17 @@ def run(t):
 
     # Proof it can fail: a template placeholder, a bad date and a stale page are refused.
     with tempfile.TemporaryDirectory() as tmp:
-        M.ENTRIES = Path(tmp)
+        M.ENTRIES = Path(tmp) / "entries"
+        M.ENTRIES.mkdir()
         M.PAGE = Path(tmp) / "page.md"
-        (Path(tmp) / "2026-01-01-x.md").write_text(
+        (M.ENTRIES / "2026-01-01-x.md").write_text(
             "---\ndate: 2026-01-01\nkind: fixed\nprs: 1\narea: qc\ntitle: t\n---\nMethod: real\n", encoding="utf-8")
         M.PAGE.write_text(M.render(), encoding="utf-8")
         t.ok(not M.problems(), "a clean entry passes", "; ".join(M.problems()))
-        (Path(tmp) / "2026-01-01-x.md").write_text(
+        (M.ENTRIES / "2026-01-01-x.md").write_text(
             "---\ndate: 2026-01-01\nkind: fixed\nprs: 1\narea: qc\ntitle: t\n---\nMethod: (optional) how\n", encoding="utf-8")
         t.ok(any("placeholder" in p for p in M.problems()), "an unfilled placeholder is refused", "the log would show template text")
-        (Path(tmp) / "2026-01-01-x.md").write_text(
+        (M.ENTRIES / "2026-01-01-x.md").write_text(
             "---\ndate: 2026-01-01\nkind: fixed\nprs: 1\narea: qc\ntitle: changed\n---\nMethod: real\n", encoding="utf-8")
         t.ok(any("stale" in p for p in M.problems()), "a page not rebuilt after an edit is refused", "page and entries disagree")
 
