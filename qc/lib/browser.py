@@ -71,7 +71,8 @@ def _launch(url, prof, flags=()):
         # software WebGL: with --disable-gpu Studio's 3D view throws on load
         subprocess.Popen([EDGE, "--headless=new", "--use-angle=swiftshader",
                           "--enable-unsafe-swiftshader", "--no-sandbox",
-                          "--no-first-run", "--disable-extensions", "--" + TAG]
+                          "--no-first-run", "--disable-extensions", "--" + TAG,
+                          "--enable-logging", "--log-file=" + prof + ".edge.log", "--v=0"]
                          + list(flags) + ["--user-data-dir=" + prof, url],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          start_new_session=True)
@@ -80,8 +81,9 @@ def _launch(url, prof, flags=()):
                     "Start-Process -FilePath '%s' -ArgumentList "
                     "'--headless=new','--disable-gpu','--no-sandbox',"
                     "'--no-first-run','--disable-extensions','--%s',%s"
+                    "'--enable-logging','--log-file=%s.edge.log','--v=0',"
                     "'--user-data-dir=%s','%s' -NoNewWindow"
-                    % (EDGE, TAG, "".join("'%s'," % f for f in flags), prof, url)],
+                    % (EDGE, TAG, "".join("'%s'," % f for f in flags), prof, prof, url)],
                    timeout=60)
 
 
@@ -357,6 +359,7 @@ def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True,
     prof = str(SCRATCH / ("profile_%s" % _tag()))
     import fake_serial
     _before = len(fake_serial.qc_marks)      # before the browser can say anything
+    _LAST.update(prof=prof, page=drv.name, t0=time.time())
     try:
         _launch(query, prof, flags)
         _wait_for_done(seconds, start=_before)
@@ -364,6 +367,53 @@ def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True,
         drv.unlink(missing_ok=True)
         kill()
         _rmtree(prof)
+
+
+# What the last launched page was, so a silent page can be explained (diagnose).
+_LAST = {"prof": None, "page": None, "t0": 0.0}
+
+
+def _tail(path, n=400):
+    try:
+        return Path(path).read_text(encoding="utf-8", errors="replace").splitlines()[-n:]
+    except OSError:
+        return []
+
+
+def diagnose(last=None, requests=None, running=None):
+    """One line on WHY a page reported nothing (the QC SILENT flake).
+
+    It says, from what this process can see: did the browser fetch the driver
+    page from the hub, did it log in, did it load scripts, how long ago was its
+    last request, did Edge write errors to its own log or leave a crash dump,
+    how many of our browser processes are alive. Asked 2026-11-26: the silent
+    pages pass alone, load alone does not reproduce them, a relaunch does not
+    cure them - so the next one has to explain itself.
+    """
+    last = last or _LAST
+    if requests is None:
+        import qc as _F
+        requests = list(getattr(_F, "HUB_REQUESTS", []))
+    since = last.get("t0") or 0.0
+    mine = [r for r in requests if r[0] >= since]
+    page = last.get("page") or ""
+    got = [r for r in mine if page and page in r[2]]
+    login = [r for r in mine if r[2] == "/api/login"]
+    assets = [r for r in mine if r[2].split("?")[0].endswith((".js", ".css"))]
+    marks = [r for r in mine if "/api/" in r[2] and r[2] != "/api/login"]
+    prof = last.get("prof") or ""
+    errs = [l.strip()[:140] for l in _tail(prof + ".edge.log")
+            if any(k in l.lower() for k in ("error", "fatal", "crash", "net::"))
+            and "fallback_task_provider" not in l][-3:]
+    dumps = len(list(Path(prof).glob("**/*.dmp"))) if prof and Path(prof).exists() else 0
+    age = ("%.0fs ago" % (time.time() - mine[-1][0])) if mine else "never"
+    procs = _running() if running is None else running
+    return ("QC DIAG: page GET %s (%s); login POST %s; %d script/style requests; "
+            "%d other hub calls; last hub request %s; browser processes %s; crash dumps %d; "
+            "browser log errors: %s"
+            % ("yes" if got else "NO", ",".join(str(r[3]) for r in got[:2]) or "-",
+               "yes" if login else "NO", len(assets), len(marks), age, procs, dumps,
+               " || ".join(errs) or "none"))
 
 
 def _wait_for_done(seconds, grace=150, start=None):
@@ -410,6 +460,7 @@ def _wait_for_done(seconds, grace=150, start=None):
         # a browser that never ran the driver, and a driver whose marks were
         # all refused while the hub held the cable - so say which is which
         # instead of leaving "[]" for the next person to guess at (A26-94).
+        print(diagnose(), flush=True)
         print("QC SILENT: the page reported nothing in %.0fs (%d browser(s) of "
               "ours alive, %d bytes on the wire) - it either never ran or could "
               "not reach the cable"
@@ -500,6 +551,7 @@ window.qcWaitFor = function(cond, ms, step){
     prof = str(SCRATCH / ("profile_%s" % _tag()))
     import fake_serial
     _before = len(fake_serial.qc_marks)      # before the browser can say anything
+    _LAST.update(prof=prof, page=name, t0=time.time())
     try:
         _launch("%s/studio/%s" % (base, name), prof, flags)
         # Wait for the page to SAY it is finished, exactly like page() does.
@@ -543,6 +595,10 @@ def _rmtree(p):
     rmtree leaves a profile dir behind. Retry briefly, then give up quietly —
     sweep() clears any stragglers on the next run."""
     import shutil
+    try:
+        Path(str(p) + ".edge.log").unlink(missing_ok=True)
+    except OSError:
+        pass                  # Edge still holds its log: sweep() takes it next run
     for _ in range(6):
         shutil.rmtree(p, ignore_errors=True)
         if not Path(p).exists():
@@ -550,22 +606,57 @@ def _rmtree(p):
         time.sleep(0.4)
 
 
-def sweep():
+_OWNER = None
+
+
+def _owner_alive(path):
+    """True if the file/dir's name carries the pid of a process that is still running.
+
+    Profiles and driver pages are named `<kind>_<pid>_<ms>`. A nested QC run (check_dev_tools
+    -> tools/sabotage.py -> run_qc.py) called sweep() at its start and deleted EVERY driver
+    page and browser profile in the shared folders, including those of the outer run's
+    browser checks that were running at that moment: the page then got a 404 for its own
+    driver ("QC DIAG: page GET yes (404) ... login POST NO"), reported nothing, sat out
+    seconds+grace and failed, and passed alone. Seen in 7 of 8 full runs, 2026-11-26.
+    """
+    global _OWNER
+    import re
+    if _OWNER is None:
+        _OWNER = re.compile(r"^(?:profile|_qc[a-z]+)_(\d+)_\d+")
+    m = _OWNER.match(Path(path).name)
+    if not m:
+        return False
+    import runlock
+    return runlock.pid_alive(int(m.group(1)))
+
+
+def sweep(scratch=None, webs=None):
     """Delete scratch left by earlier runs (including any from older versions
-    that still wrote into the repo)."""
-    for p in list(SCRATCH.glob("profile_*")) + list(QC.glob("_profile_*")):
-        _rmtree(str(p))
-    left = list(QC.glob("_boot_dom.html*")) + list(SCRATCH.glob("*.html*"))
+    that still wrote into the repo) - never what a RUNNING process owns."""
+    scratch = SCRATCH if scratch is None else Path(scratch)
+    for p in list(scratch.glob("profile_*")) + list(QC.glob("_profile_*")):
+        if _owner_alive(p):
+            continue
+        if p.is_file():                       # a browser log: not a directory
+            try:
+                p.unlink()
+            except OSError:
+                pass
+        else:
+            _rmtree(str(p))
+    left = list(QC.glob("_boot_dom.html*")) + [p for p in scratch.glob("*.html*")
+                                                if not _owner_alive(p)]
     # Driver pages are written INTO the web folders, because a page can only be
     # opened from the server that serves it. Each caller deletes its own, but a
     # run that is killed or crashes does not - and the leftovers then sit in a
     # source directory looking like source. Found 2026-08-20: five of them in
     # nong/main_python_set_nong/web, and nothing in promote.py's skip rules
     # would have stopped them travelling into the real tree.
-    for web in (CODE / "main_python" / "web",
-                CODE / "nong" / "main_python_set_nong" / "web"):
-        for pat in ("_qcdriver_*.html", "_qcraw_*.html", "_qcmod_*.html"):
-            left += list(web.glob(pat))
+    for web in (webs if webs is not None else
+                (CODE / "main_python" / "web",
+                 CODE / "nong" / "main_python_set_nong" / "web")):
+        for pat in ("_qcdriver_*.html", "_qcraw_*.html", "_qcmod_*.html", "_qctalk_*.html"):
+            left += [p for p in Path(web).glob(pat) if not _owner_alive(p)]
     for p in left:
         try:
             p.unlink()

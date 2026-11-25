@@ -61,7 +61,7 @@
       "promote.py": "staging -> real tree, only when QC is green",
       "MiceHub.spec": "the ONE way to build MiceHub.exe",
       "requirements.txt": "Python packages",
-      "requirements-torch-cuda.txt": "PyTorch with CUDA for Voice on an NVIDIA GPU",
+      "requirements-torch-cuda.txt": "Python packages for the GPU (CUDA) build of torch",
       "PATCHES.md": "index of the numbered code patches (tools/save_code_patch.py)",
       "promt.md": "the user's prompt log, written by the .claude hook",
       ".gitignore": "what git never keeps",
