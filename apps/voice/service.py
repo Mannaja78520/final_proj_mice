@@ -459,6 +459,7 @@ class Brain(FaceLink, Translator, Listener, Speaker, Faq, LocalLlm, Answerer):
             "service": "voice",
             "resources": self._resources.status(),
             "scheduler": self.scheduler_status(),
+            "llmDevice": self.llm_device(),
             "faqFile": self.faq_path.name,
             "parts": {"faq": faq, "llm": self.llm_status(),
                       "stt": self.stt_status(), "tts": self.tts_status()},

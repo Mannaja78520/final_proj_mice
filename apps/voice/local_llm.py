@@ -25,6 +25,11 @@ CODE = Path(__file__).resolve().parents[2]
 class LocalLlm:
     """The local language model: loading, preloading, warming, unloading and one completion."""
 
+    def llm_device(self):
+        """Where the local model runs and, if it is the CPU, why (GPU first)."""
+        where, why = getattr(self, "_llm_where", ("", ""))
+        return {"device": where, "cpuBecause": why}
+
     def llm_status(self):
         lcfg = self.cfg.get("llm", {})
         if not lcfg.get("enabled"):
@@ -68,6 +73,11 @@ class LocalLlm:
             tok = AutoTokenizer.from_pretrained(mid, trust_remote_code=True)
             mdl = None
             resource_plan, memory_budget = self._resources.torch_plan(torch)
+            why = []        # why this model is not on the GPU: shown in status, GPU first (user 2026-11-25)
+            if resource_plan["device"] != "cuda":
+                gpus = resource_plan.get("hardwareGpuCount", 0)
+                why.append("no usable GPU in the plan (%d seen, torch.cuda=%s, budget: %s)" % (
+                    gpus, torch.cuda.is_available(), resource_plan.get("warning") or "GPU free memory under the reserve"))
             if resource_plan["device"] == "cuda":
                 dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
                 try:
@@ -75,7 +85,8 @@ class LocalLlm:
                         mid, torch_dtype=dtype, device_map="auto", max_memory=memory_budget,
                         attn_implementation="sdpa",
                         trust_remote_code=True)
-                except Exception:
+                except Exception as exc:                    # noqa: BLE001
+                    why.append("GPU load failed: %s: %s" % (exc.__class__.__name__, str(exc)[:160]))
                     torch.cuda.empty_cache()
                     try:
                         from transformers import BitsAndBytesConfig
@@ -85,13 +96,15 @@ class LocalLlm:
                         mdl = AutoModelForCausalLM.from_pretrained(
                             mid, quantization_config=quant, device_map="auto", max_memory=memory_budget,
                             trust_remote_code=True)
-                    except Exception:
+                    except Exception as exc:                # noqa: BLE001
+                        why.append("4-bit GPU load failed: %s: %s" % (exc.__class__.__name__, str(exc)[:160]))
                         mdl = self._resources.cpu_load(mid, AutoModelForCausalLM, AutoConfig, torch, resource_plan)
             else:
                 mdl = self._resources.cpu_load(mid, AutoModelForCausalLM, AutoConfig, torch, resource_plan)
             self._resources.mark("llm:" + mid, resource_plan, str(mdl.device))
             self._llm = (tok, mdl)
             self._llm_loaded_model = mid
+            self._llm_where = (str(mdl.device), "; ".join(why) if str(mdl.device) == "cpu" else "")
             if torch.cuda.is_available():
                 try:
                     dummy_in = tok(["hi"], return_tensors="pt").to(mdl.device)
