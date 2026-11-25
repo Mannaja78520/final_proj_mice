@@ -2,7 +2,7 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T13:39:42+07:00
+Updated: 2026-11-25T14:28:30+07:00
 Last commit: 931b7264 (localized release candidate)
 
 ## User ask (Thai, 2026-11-24)
@@ -33,56 +33,15 @@ cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave 
 Full serial QC is running on frozen 931b7264 in a fresh private temp and peer directory. Await _out/ai-status-1124/full-931b7264.done.json.
 
 ## Done
-- Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
-- Pulled the shared branch at d7cd8b7. Worktree started clean and detached because the named branch is checked out by the friend Help job.
-
-- Registered A59-2 in the real system plan and claimed exact files in the shared bridge. The friend job owns separate paths.
-- Pushed initial checkpoint cbfb06a after rebasing concurrent work.
-
-- The Gemini design panel returned no review after a CLI output redirection failure. No approval recorded.
-- Built the Tools page, administrator route, reader, four language packs and Hub Help. Parser, linked checkout resolution and plain wording passed direct checks. JS and Python parsed successfully.
-
-- Targeted QC 83/0. Administrator access and read-bound sabotages each tripped the intended assertion. The first read-bound mutation left the bounded stream read intact, so it was corrected and rerun.
-- Edge at 360px verified login, Tools link, four state rows, technical toggle, offline last view and 15.0 s refresh. Initial screenshots revealed literal question marks from PowerShell redirection. Rewrote translations with a UTF-8 source file, added native-script assertions and fixed heading spacing.
-
-- Native text and the shared Chrome 75 DOM fallback passed the second Edge run. Review also confirmed the admin gate and bounded parser. Fixed a shared-header startup race by using one language script loader.
-
-- Recovered eight final Help captures. All eight match the previous browser capture exports byte for byte. The previous contextual check recorded English dark mode only.
-
-- Checkpoint 777a439 pushed after pull --rebase. Current origin/main fc39932 is an ancestor.
-- Contextual Hub Help returned 8/8 localized headings and matching light/dark illustrations in Edge with the fake Hub. Evidence: _out/ai-status-1124/verify_help_resume.log.
-
-- Serial full QC at 1d21fff exited 1 after 4021.6s: 10682 passed, 3 failed. AI work 21/0, PC camera 13/0, visual language 165/0. Evidence: _out/ai-status-1124/full-1d21fff.log and .done.json.
-- The inherited friend handoff lacks Branch and Plan. Our top-level MICE_PLAN override caused the packing-list crash and canonical plan-path failure. No feature assertion failed. Shared QC driver released.
-
-- Created clean candidate 7cea7e6 from main fc39932 at _out/ai-status-1124/release. Exactly 32 owned files are in the candidate. Both WIP handoffs stay on the shared branch, and the agent inventory matches the candidate.
-
-- Candidate preflight passed 208/0 for check_handoff_first, check_packing_list and check_plan_live. Evidence: _out/ai-status-1124/preflight-7cea7e6.log.
-
-- Scoped full serial QC exited 1 after 3678.8s: 10652 passed, 8 failed. All three prior preflight checks and AI work passed. The camera test received live peer frames, and visual-language had iframe and mixed-text failures. Exact log: _out/ai-status-1124/full-7cea7e6.log and .done.json. Candidate has no tracked source diff after QC.
-- Shared QC claim released. Another driver PID 38584 started after our full run. No other process was stopped. Hypothesis for one bounded replay: a private QC temp directory and MICE_PEERS_DIR will isolate camera peers and browser profiles. Fixed input 7cea7e6, two serial checks, stop after both report or the browser timeout. Start another full run only if the replay passes.
-
-- Independent same-provider Codex review of 7cea7e6 completed. The 32-file scope, admin GET, bounded handoff reader, Chrome 75 fallback, and all four Help locales and eight images checked out. No feature blocker found. Review did not clear the full gate.
-
-- Separate perf QC produced its completion marker at 12:51:22. A59-2 did not run overlapping QC.
-
-- Two successive driver checks refused the claim because PIDs 8144 and 122120 were running. No replay started. Requested the next free slot in the shared bridge.
-
-- Isolated replay exited 1 after 192.0s: camera 13/0, visual-language 142/5. Camera peer contamination cleared. Home still showed missing showTab, a Photobooth tooltip leak, and untranslated loading/error text. Log: _out/ai-status-1124/replay-7cea7e6.log. Third full QC did not start, and our driver claim was released.
-- Diff from the first QC input to the scoped candidate consists only of the agent inventory and the two omitted handoffs. Both camera and visual-language passed in first full QC. Compare exact main before deciding whether this is inherited or candidate-specific.
-
-- Remote main moved to b20e09ae before baseline replay, with unrelated Hub, Help, API, and locale updates. Merge preview found one conflict, generated docs/systems/hub-web.md. Prior source and evidence are preserved at 7cea7e6.
-
-- Current-main cherry-pick regenerated Help, API and system inventories. The clean generator also corrects b20e09ae's app-voice inventory of private, absent profiles and their check references. System-map QC requires the clean generated inventory; no Voice source or settings edits.
-
-- Current-main candidate ee6a7172 committed in _out/ai-status-1124/release-current. Exact diff is the 32 owned AI work paths and one clean generated Voice inventory. Existing current-main changes preserved.
-
-- Matched QC: clean current main b20e09ae visual-language 161/4. Candidate ee6a7172 targeted 209/3 with AI work 21/0, camera 13/0, system map 13/0. Both leak the Tools dynamic title in en/zh/ja. Main also leaked a loading string. Evidence: _out/ai-status-1124/matched-b20e09ae.log and matched-ee6a7172.log.
-- Root cause: Tools builds a Thai title and aria-label with the inserted app name. The automatic shared attribute translation checks literal keys only; placeholder support already exists for other dynamic strings. Shared QC released after matched checks.
-
-- Fixed the shared localized attributes using the existing placeholder matcher. Added the Tools label in en/ja/zh and translated loading and network status text in th/ja/zh. Hub Help and its four languages now note that AI work opens in a new tab. Build, syntax and staged diff check pass. Candidate 931b7264; WIP source checkpoint 3c6395ad.
-
-- Localized candidate preflight PASS 509/0 in 157.6s. Same visual-language check now passes. AI work, Help, handoff, camera, systems and translation checks passed. Evidence: _out/ai-status-1124/preflight-931b7264.log.
+- Built AI work in Hub Tools, administrator GET, bounded handoff reader, four locales and Hub Help. Focused QC 83/0 and both admin/read-bound sabotages tripped their assertions.
+- Edge at 360px verified login, Tools link, four task states, technical switch, offline last view, 15.0s refresh and the Chrome 75 DOM fallback. Eight final Help captures and their four localized headings loaded correctly. Evidence: _out/ai-status-1124/browser_check.log and verify_help_resume.log.
+- Earlier Gemini design attempt returned no review. Independent Codex review confirmed the 32-file candidate's access, read bound and Help/locale coverage. Follow-up review of current 931b7264 confirmed exact translations come first, attribute writes are guarded against loops, and the release diff is 34 files.
+- First serial full QC at 1d21fff: 10682 passed, 3 failed. The inherited WIP friend handoff lacked fields, and our MICE_PLAN override caused two plan failures. The AI work, camera and visual-language checks passed. Evidence: _out/ai-status-1124/full-1d21fff.log.
+- Scoped candidate 7cea7e6 retained the 32 AI work paths and left both handoffs on the shared WIP branch. Preflight 208/0. Full 10652/8 after a live camera peer and visual-language failures. Isolated replay fixed camera (13/0); visual-language remained red. Evidence: _out/ai-status-1124/full-7cea7e6.log and replay-7cea7e6.log. Claims were released between runs; no other job was stopped.
+- Current-main candidate ee6a7172 rebased onto b20e09ae. Regenerated common inventories, Help and API; the clean app-voice inventory removes references to absent private profiles. Candidate adds no Voice code/settings edits.
+- Matched checks on b20e09ae and ee6a7172 reproduced the dynamic Thai Tools title in en/zh/ja. Main also leaked loading text. Candidate AI work 21/0, camera 13/0, systems 13/0. Evidence: _out/ai-status-1124/matched-b20e09ae.log and matched-ee6a7172.log.
+- Candidate 931b7264 and WIP 3c6395ad fix dynamic Tools labels using existing locale placeholders, translate loading/network messages and keep localized Help in sync. Exact preflight PASS 509/0, including visual-language, AI work, Help, handoff, camera, systems and translations. Evidence: _out/ai-status-1124/preflight-931b7264.log.
+- Full serial QC is still running. Partial log shows face-count/Gacha errors and plan-probe failures. The latter detect that our temp folder sits inside a checkout. For the next bounded replay keep standard TEMP/TMP and isolate only MICE_PEERS_DIR. Do not merge on a red gate.
 
 ## Next
 After a green full gate, record the final scoped review and publish, merge, build and restart. If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
