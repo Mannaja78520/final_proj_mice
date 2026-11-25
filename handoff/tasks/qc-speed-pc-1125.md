@@ -10,7 +10,7 @@ Plan: none (measurement task from the owner: why 25-60 min on the PC vs 8.6 min 
 User 2026-11-25: full QC is slow on the PC, run as much as possible in parallel. Never weaken a test.
 
 ## Doing now
-SOLO move on claude/qc-solo-pool; watchdog next on a new branch. (PR #260/#262 merged) (full QC equal to main still to run when the PC is free).
+PRs #260, #262, #264, #265 merged. Open: QC SILENT pages (see experiment-records 2026-11-26 combined tree). Branch claude/qc-page-relaunch is an experiment, not for merge. (full QC equal to main still to run when the PC is free).
 
 ## Done
 - Two full runs measured (1524 s, 1541 s); numbers in docs/experiments/experiment-records.md (2026-11-25 PC).
