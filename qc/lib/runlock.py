@@ -19,6 +19,11 @@ LOCK_FILE = Path(tempfile.gettempdir()) / "mice_qc_run.lock"
 # is PART of the holder's run; without this it waited for its own parent's lock
 # forever: three scheduled full runs stalled at ~340 of 415 checks, 2026-11-25.
 OWNER_ENV = "MICE_QC_LOCK_OWNER"
+# First come, first served. Waiters take a numbered ticket in this folder and only
+# the lowest LIVE ticket may take the lock. Before, every waiter polled and whoever
+# polled at the right instant won: one run waited 40 minutes behind runs that
+# arrived after it (2026-11-26).
+QUEUE_DIR = Path(tempfile.gettempdir()) / "mice_qc_queue"
 
 
 def pid_alive(pid):
@@ -81,41 +86,76 @@ class RunLock:
                        "cwd": os.getcwd()}, f)
         return True
 
+    def _queue(self):
+        """The tickets for THIS lock file (a test lock has its own queue)."""
+        return QUEUE_DIR / self.path.name
+
+    def _first_in_line(self, ticket):
+        """True when no earlier ticket belongs to a live process. Dead ones are removed."""
+        for t in sorted(self._queue().glob("*.ticket")):
+            if t == ticket:
+                return True
+            pid = t.stem.split("_")[-1]
+            if pid.isdigit() and pid_alive(int(pid)):
+                return False
+            try:
+                t.unlink()
+            except OSError:
+                pass
+        return True
+
+    @staticmethod
+    def _drop(ticket):
+        if ticket is not None:
+            try:
+                ticket.unlink()
+            except OSError:
+                pass
+
     def acquire(self, timeout=None):
-        """Wait for the lock. True when held, False if `timeout` seconds passed."""
+        """Wait for the lock, in arrival order. True when held, False after `timeout` s."""
         deadline = None if timeout is None else time.time() + timeout
         told = None
-        while True:
-            if inherited(self.path):
-                return True              # nested run: the parent's lock covers it
-            if self._try_create():
-                self.held = True
-                os.environ[OWNER_ENV] = str(self.pid)
-                return True
-            cur = holder(self.path)
-            if cur is not None and cur.get("pid") == self.pid:
-                self.held = True
-                os.environ[OWNER_ENV] = str(self.pid)
-                return True
-            if cur is not None and not pid_alive(cur.get("pid")):
-                self.say("QC lock: holder pid %s is gone, taking over" % cur.get("pid"))
-                try:
-                    self.path.unlink()
-                except OSError:
-                    pass
-                continue
-            if cur is None:
-                # half-written or just removed: look again shortly, never spin
-                time.sleep(0.2)
-            else:
-                who = "pid %s since %s in %s" % (cur.get("pid"), cur.get("started"), cur.get("cwd"))
-                if who != told:
-                    self.say("QC lock: another QC run holds the machine (%s); waiting. "
-                             "--no-lock skips this." % who)
-                    told = who
-                time.sleep(self.poll)
-            if deadline is not None and time.time() > deadline:
-                return False
+        ticket = None
+        try:
+            self._queue().mkdir(parents=True, exist_ok=True)
+            ticket = self._queue() / ("%020d_%d.ticket" % (time.time_ns(), self.pid))
+            ticket.write_text("x", encoding="utf-8")
+        except OSError:
+            ticket = None                 # no queue available: plain polling as before
+        try:
+            while True:
+                if inherited(self.path):
+                    return True           # nested run: the parent's lock covers it
+                if (ticket is None or self._first_in_line(ticket)) and self._try_create():
+                    self.held = True
+                    os.environ[OWNER_ENV] = str(self.pid)
+                    return True
+                cur = holder(self.path)
+                if cur is not None and cur.get("pid") == self.pid:
+                    self.held = True
+                    os.environ[OWNER_ENV] = str(self.pid)
+                    return True
+                if cur is not None and not pid_alive(cur.get("pid")):
+                    self.say("QC lock: holder pid %s is gone, taking over" % cur.get("pid"))
+                    try:
+                        self.path.unlink()
+                    except OSError:
+                        pass
+                    continue
+                if cur is None:
+                    time.sleep(0.2)       # half-written or just removed: look again shortly
+                else:
+                    who = "pid %s since %s in %s" % (cur.get("pid"), cur.get("started"), cur.get("cwd"))
+                    if who != told:
+                        self.say("QC lock: another QC run holds the machine (%s); waiting. "
+                                 "--no-lock skips this." % who)
+                        told = who
+                    time.sleep(self.poll)
+                if deadline is not None and time.time() > deadline:
+                    return False
+        finally:
+            self._drop(ticket)
 
     def release(self):
         if not self.held:
