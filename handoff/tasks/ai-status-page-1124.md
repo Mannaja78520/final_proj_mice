@@ -2,7 +2,7 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T14:28:30+07:00
+Updated: 2026-11-25T14:38:01+07:00
 Last commit: 931b7264 (localized release candidate)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Full serial QC is running on frozen 931b7264 in a fresh private temp and peer directory. Await _out/ai-status-1124/full-931b7264.done.json.
+With standard Windows TEMP/TMP, isolate only MICE_PEERS_DIR and rerun the failed checks on exact 931b7264. One serial replay, then full only if green. If still red, run the same checks once against current main b20e09ae and classify.
 
 ## Done
 - Built AI work in Hub Tools, administrator GET, bounded handoff reader, four locales and Hub Help. Focused QC 83/0 and both admin/read-bound sabotages tripped their assertions.
@@ -41,7 +41,7 @@ Full serial QC is running on frozen 931b7264 in a fresh private temp and peer di
 - Current-main candidate ee6a7172 rebased onto b20e09ae. Regenerated common inventories, Help and API; the clean app-voice inventory removes references to absent private profiles. Candidate adds no Voice code/settings edits.
 - Matched checks on b20e09ae and ee6a7172 reproduced the dynamic Thai Tools title in en/zh/ja. Main also leaked loading text. Candidate AI work 21/0, camera 13/0, systems 13/0. Evidence: _out/ai-status-1124/matched-b20e09ae.log and matched-ee6a7172.log.
 - Candidate 931b7264 and WIP 3c6395ad fix dynamic Tools labels using existing locale placeholders, translate loading/network messages and keep localized Help in sync. Exact preflight PASS 509/0, including visual-language, AI work, Help, handoff, camera, systems and translations. Evidence: _out/ai-status-1124/preflight-931b7264.log.
-- Full serial QC is still running. Partial log shows face-count/Gacha errors and plan-probe failures. The latter detect that our temp folder sits inside a checkout. For the next bounded replay keep standard TEMP/TMP and isolate only MICE_PEERS_DIR. Do not merge on a red gate.
+- Full serial QC at 931b7264: 10740 passed, 9 failed in 3488.1s. AI work 21/0, camera 13/0, systems 13/0. Red: face-count connection abort, Gacha stock/jam, 3 plan probe errors from our temp path inside the checkout, and 3 untranslated Voice fallback assertions. Exact evidence: _out/ai-status-1124/full-931b7264.log. The source tree still matches the candidate. Shared QC released.
 
 ## Next
 After a green full gate, record the final scoped review and publish, merge, build and restart. If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
@@ -95,7 +95,7 @@ After a green full gate, record the final scoped review and publish, merge, buil
 | shared/web/mice-lang.js | Reuse locale placeholders for dynamic tool labels | Built | Visual-language preflight passed | 931b7264 |
 
 ## Blocked
-A59-2 owns the shared QC driver while full serial QC runs. Merge, build and restart await that result.
+Full QC is red. Driver released while preparing the corrected replay. Merge, build and restart await a green result.
 
 ## Result
 (Codex: PR link, screenshot paths, what you verified; report in Thai)
