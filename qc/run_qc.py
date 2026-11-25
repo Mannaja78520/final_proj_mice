@@ -27,6 +27,7 @@ sys.path.insert(0, str(QC / "lib"))
 sys.path.insert(0, str(QC))
 
 import qc as F  # noqa: E402
+import check_pool  # noqa: E402
 
 
 # ---- proof that a particular tree passed ------------------------------
@@ -61,7 +62,7 @@ def tree_fingerprint():
             continue
         # The receipt itself, and files the RUNNING system writes, are not
         # source: including them would invalidate every receipt immediately.
-        if f.name in (".qc-receipt.json", "last_timing.json", "promt.md", "PLAN.html",
+        if f.name in (".qc-receipt.json", "last_timing.json", "last_progress.json", "promt.md", "PLAN.html",
                       "settings_shared.json", "hub_auth.json",
                       "hub_password.txt", "faces_login.json", "BRIDGE.md", "HANDOVER.md",
                       "plan_state.js", "system_integral.html", "system_integral_state.js"):
@@ -102,6 +103,9 @@ SPEED = _speed()
 # with the 1-second checks and ends with a 90-second one waits on it alone.
 # qc/data/qc_durations.json is the committed seed for a fresh clone. 2026-11-25.
 TIMING_FILE = CODE / "qc" / "last_timing.json"
+# Written every ~10 s during a run (what is running, how long, what finished
+# last): git-ignored and not part of tree_fingerprint. qc/lib/check_pool.py.
+PROGRESS_FILE = CODE / "qc" / "last_progress.json"
 TIMING_SEED = QC / "data" / "qc_durations.json"
 
 
@@ -213,13 +217,6 @@ SOLO = {
     "check_name_claim",     # answers mDNS on 5353
     "check_mdns",           # the same
     "check_build_split",    # writes firmware/.pio, which other checks read
-    # Not a shared RESOURCE - a shared clock. It sleeps 150ms and expects the
-    # hub's show thread to have advanced by then, which is true on an idle
-    # machine and not true with ten workers competing for cores. It failed on
-    # the first parallel gate and passed three times out of three alone, which
-    # is the signature: the check is fine, the margin is not. Measuring time
-    # needs a quiet machine.
-    "check_hub_clock",
     # It ADDS A THEME to the real shared/web/themes.css and takes it out again -
     # which is the only honest way to prove a new theme needs no code. But that
     # file is served to every page, so while it runs, any other check reading
@@ -230,49 +227,20 @@ SOLO = {
     # as an empty one, and puts it back. Any check reading the app registry
     # while that is happening sees a fault that is not theirs.
     "check_tools_list",
-    # Complete multi-client Gacha journey: no marks in the crowded run,
-    # then green alone twice. Keep all assertions/budgets; isolate startup
-    # and the generated module-page journey from other heavy browsers.
-    "check_gacha_ui",
-    # Another clock, not another resource. It drives a browser on fixed
-    # setTimeout deadlines - pause at 1000ms, resume, finish at +4000 - and
-    # then asserts the robot walked the timeline in ORDER. With ten workers
-    # competing those deadlines slip and the order changes. It failed once in
-    # a parallel gate on 2026-08-20 and passed twice alone, which is the
-    # signature: the check is right, the margin is not.
-    "check_studio_playback",
-    # These spawn the REAL voice helper as a second process next to their own
-    # hub, then knock on it over HTTP. With ten workers competing, the helper
-    # or the hub was starved past its connect window and the check died with
-    # WinError 10061 (refused) 129 s in — while passing alone in 3.7 s. Same
-    # signature twice on 2026-08-25 gates; a refused socket is not an answer
-    # any assertion can weigh.
-    "check_translate",
-    "check_voice",
-    # check_voice_stt and check_voice_tts also boot the real helper and were
-    # added to SOLO 2026-09-12: they crashed in the parallel gate with the same
-    # refused-socket signature but passed alone, same root cause - the helper
-    # subprocess was starved past its connect window.
-    "check_voice_stt",
-    "check_voice_tts",
-    # Two hubs POST a 1.3 MB image to each other, then a browser page has 30 s
-    # to report. Failed 3 full gates in a row on 2026-09-17, green alone each
-    # time (40 s) - the same starved-margin signature as above.
-    "check_flash_remote",
     # It lists every file in the tree to prove each has one subsystem, and
     # other checks create and delete files while they run: the first full
     # gate 2026-09-21 saw studio's header "out of date" for a file that
     # existed only for a moment. Alone, it sees the tree as it really is.
     "check_systems",
-    # A browser drives Studio's crash preview on timers. Red in two full gates
-    # in a row 2026-09-21 ("the crash-gate driver reported"), green alone in
-    # 8 s each time - the starved-margin signature again.
-    "check_crash_gate",
-    # Both drive the hub page through a flash on browser timers. Between them
-    # red in five full gates on 2026-09-21 ("the hub page reported back") and
-    # green alone and together (65 s) every time.
-    "check_flash_type",
-    "check_flash_confirm",
+    # MOVED TO THE POOL 2026-11-26 (they were SOLO for "starved margin" - the
+    # check is right, the margin slips with ten workers - hub_clock,
+    # studio_playback, gacha_ui, translate, voice, voice_stt, voice_tts,
+    # flash_remote, crash_gate, flash_type, flash_confirm, chatty_board):
+    # green in a crowded full run with the PC to itself, three times in a
+    # row (docs/experiments/experiment-records.md). The earlier red gates
+    # coincided with other QC runs overlapping on the same PC; runlock.py
+    # now stops that. If one goes red in the crowd again, put it back HERE
+    # with the date and the evidence - never loosen its assertions.
 }
 
 
@@ -527,26 +495,42 @@ def main(argv):
     def _red(results, crash):
         return bool(crash) or not results or any(not g for g, _l, _d in results)
 
+    def _budget(f):
+        """Hard limit for one check: the floor, or 3x its slowest healthy time."""
+        return check_pool.budget_for(
+            f.stem, durations, SPEED.get("checkTimeoutFloorSecs") or 600)
+
+    def _kill_browsers(pid):
+        import browser
+        browser.kill(browser.tag_for(pid))
+
+    def _result_of(f, kind, value, secs):
+        """A CheckPool outcome as the 7-tuple _one returns. A timeout or a dead
+        process is a FAILED check (crash text), never a hang or a silent pass."""
+        if kind == "done":
+            if isinstance(value, tuple) and value and value[0] == "__error__":
+                return (str(f), "", [], secs, "", value[1], "")
+            return value
+        return (str(f), "", [], secs, value, "", "")
+
     def _alone(f):
         """One more run of one check, in a fresh process, with nothing beside it."""
-        import concurrent.futures as _cf
-        with _cf.ProcessPoolExecutor(max_workers=1, max_tasks_per_child=1) as pool:
-            return pool.submit(_one, str(f)).result()
+        pool = check_pool.CheckPool(_one, 1, on_kill=_kill_browsers)
+        pool.submit(str(f), str(f), _budget(f))
+        while True:
+            for _key, kind, value, secs in pool.poll():
+                return _result_of(f, kind, value, secs)
+            time.sleep(0.2)
 
     def run_isolated(items):
-        """Keep sequential checks sequential without retaining their hub threads."""
-        if not items:
-            return
-        import concurrent.futures as _cf
-        with _cf.ProcessPoolExecutor(max_workers=1,
-                                     max_tasks_per_child=1) as pool:
-            for f, mod in items:
-                (_path, _title, results, secs, crash, err,
-                 printed) = pool.submit(_one, str(f)).result()
-                if err:
-                    broken.append((f.stem, err))
-                else:
-                    report(f, mod, results, secs, crash, _said(results, crash, printed))
+        """Keep sequential checks sequential, each in a fresh process."""
+        for f, mod in items:
+            (_path, _title, results, secs, crash, err,
+             printed) = _alone(f)
+            if err:
+                broken.append((f.stem, err))
+            else:
+                report(f, mod, results, secs, crash, _said(results, crash, printed))
 
     solo = [(f, m) for f, m in wanted
             if f.stem in SOLO or getattr(m, "SOLO", False)]
@@ -605,37 +589,42 @@ def main(argv):
         run_isolated(first)
         heavy_paths = {str(f) for f, _m in heavy}
         suspect = []        # browser checks that failed in the crowd: retried alone
-        pools, futs, by_path = [], [], {}
+        pools, by_path = [], {}
         t_pool = time.time()
         for group, width in ((para, jobs), (heavy, browser_jobs)):
             if not group:
                 continue
             group = longest_first(group, durations)
-            # Hub threads outlive a check. Reusing a worker accumulates HTTP,
-            # scanner and route-probe services until browser checks time out.
-            pool = _cf.ProcessPoolExecutor(max_workers=width,
-                                           max_tasks_per_child=1)
+            # One process per check (hub threads outlive a check), each with a
+            # hard time limit - qc/lib/check_pool.py.
+            pool = check_pool.CheckPool(_one, width, on_kill=_kill_browsers)
             pools.append(pool)
             for f, m in group:
                 by_path[str(f)] = (f, m)
-                futs.append(pool.submit(_one, str(f)))
-        try:
-            for fut in _cf.as_completed(futs):
-                path_s, _title, results, secs, crash, err, printed = fut.result()
-                f, mod = by_path[path_s]
+                pool.submit(str(f), str(f), _budget(f))
+        beat = check_pool.Heartbeat(PROGRESS_FILE, len(para) + len(heavy), pools)
+        while any(p.busy() for p in pools):
+            got = [r for p in pools for r in p.poll()]
+            for key, kind, value, secs_w in got:
+                f, mod = by_path[key]
+                path_s, _title, results, secs, crash, err, printed = _result_of(
+                    f, kind, value, secs_w)
+                beat.finished(f.stem)
                 if err:
                     broken.append((f.stem, err))
                     continue
-                if path_s in heavy_paths and retries and _red(results, crash):
+                # a check that hit its hard limit is not retried: it would
+                # only hang again, for another full budget
+                if path_s in heavy_paths and retries and _red(results, crash)                         and kind != "timeout":
                     suspect.append((f, mod, results, secs, crash, printed))
                     continue
                 report(f, mod, results, secs, crash, _said(results, crash, printed))
                 done_n += 1
                 if done_n % 10 == 0:
                     _plan("QC %d/%d checks" % (done_n, total_n))
-        finally:
-            for pool in pools:
-                pool.shutdown(wait=True)
+            beat.tick()
+            if not got:
+                time.sleep(0.2)
         for f, mod, results, secs, crash, printed in suspect:
             again = [_alone(f) for _ in range(retries)]
             if all(not _red(r[2], r[4]) and not r[5] for r in again):
