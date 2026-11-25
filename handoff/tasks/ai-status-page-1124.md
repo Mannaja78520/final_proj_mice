@@ -2,8 +2,8 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T11:11:48+07:00
-Last commit: 1d21fff (first full-QC input)
+Updated: 2026-11-25T11:13:29+07:00
+Last commit: 7cea7e6 (scoped release candidate)
 
 ## User ask (Thai, 2026-11-24)
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LaPHxqrTy1gy5i5h9CNTes: "Is there a place to see which GPT is working and how far it has got?"
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Prepare an isolated release candidate from current main with only this task's feature files. Regenerate the task inventory. Preserve both WIP task files on the shared branch.
+Run a serial QC preflight and the full serial gate on candidate 7cea7e6 with the default plan path. Freeze the candidate during QC.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -55,8 +55,10 @@ Prepare an isolated release candidate from current main with only this task's fe
 - Serial full QC at 1d21fff exited 1 after 4021.6s: 10682 passed, 3 failed. AI work 21/0, PC camera 13/0, visual language 165/0. Evidence: _out/ai-status-1124/full-1d21fff.log and .done.json.
 - The inherited friend handoff lacks Branch and Plan. Our top-level MICE_PLAN override caused the packing-list crash and canonical plan-path failure. No feature assertion failed. Shared QC driver released.
 
+- Created clean candidate 7cea7e6 from main fc39932 at _out/ai-status-1124/release. Exactly 32 owned files are in the candidate. Both WIP handoffs stay on the shared branch, and the agent inventory matches the candidate.
+
 ## Next
-Verify the scoped diff, claim free QC driver and rerun the full serial gate with the default plan path.
+If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
 
 ## Facts found
 - main_python/hub_api_apps.py:50 supplies the registry-driven Tools list. A manifest in apps/ adds a tile.
@@ -98,7 +100,7 @@ Verify the scoped diff, claim free QC driver and rerun the full serial gate with
 | config/ai_status.json | AI work config or generated API documentation | Built | parser and syntax checks only | 64d425f |
 | main_python/api_index.json | AI work config or generated API documentation | Built | parser and syntax checks only | 64d425f |
 | docs/HUB_API.md | AI work config or generated API documentation | Built | parser and syntax checks only | 64d425f |
-| docs/systems/agents.md | Generated handoff file inventory | Built | not run | 64d425f |
+| docs/systems/agents.md | Regenerate candidate inventory | Staged in candidate | Generated; candidate gate pending | 7cea7e6 |
 | docs/systems/qc.md | Generated check inventory | Built | not run | 64d425f |
 | docs/systems/hub-web.md | Generated inventory for Help images | Built | Diff lists exactly eight new captures | 777a439 |
 
