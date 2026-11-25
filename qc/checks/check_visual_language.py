@@ -84,6 +84,15 @@ def run(t):
     if not browser.available():
         t.give_up("headless browser not found — install Edge/Chromium or run --quick")
     fake_serial.reset()
+    # The Voice page shows what the voice helper last said. Another check's helper (or the real one on
+    # this PC) answers with its own test sentence, a Thai name, and the page then "leaks" it into en/zh/ja.
+    # Point the hub at a dead helper: the page is read the way a hub with no helper shows it.
+    import os
+    import tempfile
+    dead = os.path.join(tempfile.gettempdir(), "mice_qc_voice_dead_vl_%d.json" % os.getpid())
+    with open(dead, "w", encoding="utf-8") as f:
+        f.write('{"service": "http://127.0.0.1:9"}')
+    os.environ["MICE_VOICE_CONFIG"] = dead
     base, _main = F.start_hub()
     cfg = json.loads((HERE / "pages.json").read_text(encoding="utf-8"))
     pages = [{"id": p["id"], "url": p["url"], "wait": p.get("wait"),
