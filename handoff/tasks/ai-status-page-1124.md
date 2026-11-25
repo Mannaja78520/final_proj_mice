@@ -2,7 +2,7 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T13:19:19+07:00
+Updated: 2026-11-25T13:20:33+07:00
 Last commit: 7cea7e6 (scoped release candidate)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Compare the same visual-language check on clean main fc39932 and frozen candidate 7cea7e6, serially with isolated temp/peers per tree. Use the official check once each and stop to classify the difference.
+Reapply the scoped AI work commit on latest main b20e09ae in a fresh worktree. Resolve the generated hub-web inventory through its generator and rebuild Help/API outputs.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -71,8 +71,10 @@ Compare the same visual-language check on clean main fc39932 and frozen candidat
 - Isolated replay exited 1 after 192.0s: camera 13/0, visual-language 142/5. Camera peer contamination cleared. Home still showed missing showTab, a Photobooth tooltip leak, and untranslated loading/error text. Log: _out/ai-status-1124/replay-7cea7e6.log. Third full QC did not start, and our driver claim was released.
 - Diff from the first QC input to the scoped candidate consists only of the agent inventory and the two omitted handoffs. Both camera and visual-language passed in first full QC. Compare exact main before deciding whether this is inherited or candidate-specific.
 
+- Remote main moved to b20e09ae before baseline replay, with unrelated Hub, Help, API, and locale updates. Merge preview found one conflict, generated docs/systems/hub-web.md. Prior source and evidence are preserved at 7cea7e6.
+
 ## Next
-If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
+Run the bounded same-check language comparison on current main and its AI work candidate. If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
 
 ## Facts found
 - main_python/hub_api_apps.py:50 supplies the registry-driven Tools list. A manifest in apps/ adds a tile.
