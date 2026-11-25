@@ -358,11 +358,45 @@ def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True,
     import fake_serial
     _before = len(fake_serial.qc_marks)      # before the browser can say anything
     try:
-        _launch(query, prof, flags)
-        _wait_for_done(seconds, start=_before)
+        _launch_and_wait(lambda p: _launch(query, p, flags), prof, seconds, _before)
     finally:
         drv.unlink(missing_ok=True)
         kill()
+        _rmtree(prof)
+
+
+# A browser that starts but never reports. Seen in about one full run in three on
+# the PC (2026-11-25/26: gestures, video_page, responsive, studio_peer, ...): the
+# marks list stays EMPTY ("QC SILENT ... 6 bytes on the wire"), the check sits out
+# seconds+grace (190-478 s), fails, and passes when re-run alone. Healthy pages
+# report within seconds (stress: 8 copies of one check at once all reported, 28 s),
+# so a page with no report at all after FIRST_REPORT_SECS gets ONE fresh browser
+# (new profile). The page is then driven in full and judged exactly as before; a
+# second silent browser still ends as QC SILENT and fails.
+FIRST_REPORT_SECS = 75
+
+
+def _launch_and_wait(launch, prof, seconds, start, first_report=None, grace=150):
+    """launch(profile_dir) the browser, wait for the first report, relaunch once
+    if there is none, then wait for "done"."""
+    import fake_serial
+    launch(prof)
+    limit = FIRST_REPORT_SECS if first_report is None else first_report
+    deadline = time.time() + limit
+    while time.time() < deadline:
+        if len(fake_serial.qc_marks) > start:
+            break
+        time.sleep(0.2)
+    else:
+        print("QC RELAUNCH: the page reported nothing in %.0fs; starting the browser "
+              "once more with a fresh profile" % limit, flush=True)
+        kill()
+        _wait_until_gone()
+        _rmtree(prof)
+        launch(prof + "_again")
+        prof = prof + "_again"
+    _wait_for_done(seconds, start=start, grace=grace)
+    if prof.endswith("_again"):
         _rmtree(prof)
 
 
@@ -501,7 +535,6 @@ window.qcWaitFor = function(cond, ms, step){
     import fake_serial
     _before = len(fake_serial.qc_marks)      # before the browser can say anything
     try:
-        _launch("%s/studio/%s" % (base, name), prof, flags)
         # Wait for the page to SAY it is finished, exactly like page() does.
         # A fixed sleep is a race: with several browser checks in one run the
         # machine is loaded, Edge starts slowly, and the page gets killed
@@ -509,7 +542,8 @@ window.qcWaitFor = function(cond, ms, step){
         # their own. An intermittently failing suite is one people learn to
         # ignore, which is worse than no suite. A driver that never marks
         # "done" simply waits the full time as before.
-        _wait_for_done(seconds, start=_before)
+        _launch_and_wait(lambda p: _launch("%s/studio/%s" % (base, name), p, flags),
+                         prof, seconds, _before)
     finally:
         f.unlink(missing_ok=True)
         kill()
