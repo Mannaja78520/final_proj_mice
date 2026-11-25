@@ -1,0 +1,42 @@
+{
+ "loop": {
+  "gpu": 19.4,
+  "vram": 8143.7,
+  "clk": 944.9,
+  "pw": 27.9,
+  "srv_cpu": 55.4,
+  "srv_rss": 1388.9,
+  "ram_avail": 9448.4,
+  "cpu_all": 12.3
+ },
+ "batch": {
+  "gpu": 12.6,
+  "vram": 8146.0,
+  "clk": 1020.8,
+  "pw": 26.1,
+  "srv_cpu": 49.9,
+  "srv_rss": 1389.5,
+  "ram_avail": 9471.2,
+  "cpu_all": 11.0
+ },
+ "pad4": {
+  "gpu": 13.5,
+  "vram": 8091.4,
+  "clk": 829.3,
+  "pw": 26.2,
+  "srv_cpu": 46.4,
+  "srv_rss": 1389.1,
+  "ram_avail": 9496.3,
+  "cpu_all": 12.4
+ },
+ "hybrid": {
+  "gpu": 11.3,
+  "vram": 7972.2,
+  "clk": 663.9,
+  "pw": 22.5,
+  "srv_cpu": 34.7,
+  "srv_rss": 1388.7,
+  "ram_avail": 9750.8,
+  "cpu_all": 11.0
+ }
+}
