@@ -105,6 +105,13 @@ def js_strings(path):
     return literal_text(io.open(path, encoding="utf-8", newline="").read())
 
 
+def real_files(paths):
+    """Served files only. Browser checks write `_qcdriver_*` / `_qcraw_*` / `_qcmod_*`
+    pages into the web folders and delete them again; one that vanished between
+    glob and read crashed this check (FileNotFoundError, 2026-11-26)."""
+    return [p for p in paths if not p.name.startswith("_qc")]
+
+
 def run(t):
     parser = VisibleText()
     parser.feed('<div class="tech">hidden <b>undefined</b><input><br></div>'
@@ -134,9 +141,14 @@ def run(t):
 
     pages, jss = [], []
     for g in PAGE_GLOBS:
-        pages.extend(sorted(F.CODE.glob(g)))
+        pages.extend(real_files(sorted(F.CODE.glob(g))))
     for g in JS_GLOBS:
-        jss.extend(sorted(F.CODE.glob(g)))
+        jss.extend(real_files(sorted(F.CODE.glob(g))))
+    from pathlib import PurePath
+    t.ok([p.name for p in real_files([PurePath("web/_qcraw_1_2.html"), PurePath("web/_qcdriver_3_4.html"),
+                                      PurePath("web/hub.html")])] == ["hub.html"],
+         "the scan skips the temporary driver pages other checks create and delete",
+         "a page deleted between listing and reading crashed this check in a crowded run (2026-11-26)")
     t.ok(len(pages) >= 6, "the scan found the served pages", str(len(pages)))
 
     bad, scanned = [], []
