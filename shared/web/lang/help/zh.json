@@ -1570,7 +1570,6 @@
   "YAML sequence player": "YAML 动作序列播放器",
   "leaves it on what it had. It is slow — minutes, not seconds — which is the price of having no reset line. Started for you by the hub's": "让它继续使用原来的设置。这个过程很慢，需要几分钟，而不是几秒钟，这是没有复位线带来的代价。控制中心会通过以下功能自动为你启动：",
   ". The robot opens its own secure page (": "。机器人会打开自己的安全页面（",
-  "When something is wrong": "出问题时",
   "folder) and upload the mp3 or wav. Then a saved show can name it — a": "文件夹），然后上传 mp3 或 wav 文件。之后，已保存的演出就能通过文件名使用它——",
   "declares every command — which module type it belongs to, its arguments and a one-line explanation. The board compiles it into a table for its own": "定义所有命令，包括它适用的模块类型、需要传入的参数，以及一句简短说明。开发板会将这些信息整理成表，供自身的",
   "To edit a saved one, open the": "要编辑已保存的内容，请打开",
@@ -1932,6 +1931,7 @@
   "The page waits for the board to answer before showing its controls.": "页面会等板卡响应后再显示控制项。",
   "The page reads camera settings after it identifies a camera.": "页面识别到摄像头后才会读取摄像头设置。",
   "Use the globe to change the page language. Screen readers follow the selected language.": "点击地球图标可切换页面语言。屏幕阅读器会使用所选的语言。",
-  "Search Help in the language selected on the page.": "使用页面上选定的语言搜索帮助主题。"
+  "Search Help in the language selected on the page.": "使用页面上选定的语言搜索帮助主题。",
+  "Reports can carry up to three pictures. In the Report box press Add a picture, Take a photo (phones) or Picture of this screen (desktop), or paste one with Ctrl+V. Each picture is shrunk first, shows as a small preview with a ✕ to remove it, and stays only on this PC. In Problem reports a 🖼 mark shows which reports have pictures; open one to see them.": "报告最多可附三张图片。在报告框中点击“添加图片”、“拍照”（手机）或“截取此屏幕”（电脑），也可按 Ctrl+V 粘贴。图片会先被缩小，显示为带 ✕ 的小预览，可随时移除，并且只保存在这台电脑上。在“问题报告”页签中，带 🖼 标记的报告含有图片，打开即可查看。"
  }
 }

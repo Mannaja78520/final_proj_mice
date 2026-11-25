@@ -89,6 +89,19 @@
 .report-panel .checkbox-row input{width:18px;height:18px}
 .report-actions{display:flex;flex-direction:column;gap:var(--sp-2);margin-top:var(--sp-2)}
 .report-actions button{width:100%;min-height:44px}
+.report-panel{max-height:100%;overflow-y:auto}
+.report-panel [hidden]{display:none!important}
+.report-pic-bar{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.report-pic-bar button{flex:1 1 auto;min-height:44px}
+.report-pics{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.report-pics:empty{display:none}
+.report-pic{position:relative;width:96px;height:96px;border:1px solid var(--line);
+  border-radius:var(--r-md);overflow:hidden;background:var(--sunk)}
+.report-pic img{width:100%;height:100%;object-fit:cover;display:block}
+.report-pic-x{position:absolute;top:2px;right:2px;width:32px;height:32px;min-height:0;
+  padding:0;border-radius:50%;line-height:1}
+.report-pics.big .report-pic{width:100%;max-width:200px;height:auto;min-height:96px}
+.report-pics.big .report-pic img{height:auto;object-fit:contain}
 .report-busy{display:none;color:var(--mut);font-size:14px}
 .report-busy.show{display:block}
 
@@ -380,6 +393,19 @@
     <div class="mini">What were you doing? What went wrong? Write in any language.</div>
     <textarea id="reportText" placeholder="I was trying to… and then…"
               aria-label="Describe the problem"></textarea>
+    <!-- Pictures: a screenshot or photo says it faster than words (user 2026-11-25).
+         Shrunk in the page, three at most, kept only on this PC. -->
+    <div class="report-pic-bar" id="reportPicBar">
+      <button type="button" class="secondary" id="reportPicFileBtn"
+              onclick="document.getElementById('reportPicFile').click()">🖼 Add a picture</button>
+      <button type="button" class="secondary" id="reportPicCamBtn"
+              onclick="document.getElementById('reportPicCam').click()">📷 Take a photo</button>
+      <button type="button" class="secondary" id="reportPicShotBtn" hidden>🖥 Picture of this screen</button>
+      <input type="file" id="reportPicFile" accept="image/*" multiple hidden>
+      <input type="file" id="reportPicCam" accept="image/*" capture="environment" hidden>
+    </div>
+    <div class="mini" id="reportPicHint">You can also paste a picture here (Ctrl+V). Up to three.</div>
+    <div class="report-pics" id="reportPics"></div>
     <div class="checkbox-row">
       <input type="checkbox" id="reportAttachDiag" checked>
       <label for="reportAttachDiag">Attach system summary (what is connected, firmware versions, no passwords)</label>
@@ -1082,7 +1108,8 @@ async function submitReport(){
       module: (window.CURRENT_MOD && window.CURRENT_MOD.id) || '',
       build: (window.BUILD_VER || ''),
       time: new Date().toISOString(),
-      attachDiag: document.getElementById('reportAttachDiag').checked
+      attachDiag: document.getElementById('reportAttachDiag').checked,
+      images: reportPics.slice()
     };
     const r = await fetch('/api/report', {
       method: 'POST',
@@ -1173,11 +1200,12 @@ async function loadComplaints(){
       var displayText = plainReport(rep.text_en || rep.text || '');
       var short = displayText.slice(0, 120);
       if(displayText.length > 120) short += '…';
+      var pic = rep.images ? ' 🖼' + (rep.images > 1 ? rep.images : '') : '';
       row.innerHTML =
         '<span class="nm">' + esc(rep.time ? rep.time.replace('T', ' ').slice(0, 19) : '?') + '</span>' +
         '<span class="ip tech">' + esc(rep.module || 'no module') + '</span>' +
         '<span class="mini" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
-          esc(short) + '</span>';
+          esc(short) + esc(pic) + '</span>';
       row.onclick = function(){ openComplaintDetail(rep); };
       // The whole row answers a click, so it must say where the keyboard does
       // the same job: a real button inside it, named by data-keyboard.
@@ -1236,6 +1264,24 @@ function openComplaintDetail(rep){
       btns.appendChild(b);
     });
     actions.insertBefore(btns, actions.firstChild);
+  }
+  // Pictures sent with the report (one tap opens it full size in a new tab)
+  var bar = document.getElementById('reportPicBar');
+  var hint = document.getElementById('reportPicHint');
+  if(bar) bar.hidden = true;
+  if(hint) hint.hidden = true;
+  var pics = document.getElementById('reportPics');
+  if(pics){
+    pics.innerHTML = '';
+    pics.className = 'report-pics big';
+    for(var i = 0; i < (rep.images || 0); i++){
+      var url = '/api/report/image?id=' + encodeURIComponent(rep.id) + '&n=' + i;
+      var a = document.createElement('a');
+      a.className = 'report-pic'; a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      var im = document.createElement('img');
+      im.src = url; im.alt = 'Picture ' + (i + 1) + ' of this report';
+      a.appendChild(im); pics.appendChild(a);
+    }
   }
   m.hidden = false;
 }
@@ -1296,6 +1342,13 @@ function closeReport(){
   if(t){ t.value = ''; t.readOnly = false; }
   var chk = document.getElementById('reportAttachDiag');
   if(chk){ chk.hidden = false; chk.checked = true; }
+  var pbar = document.getElementById('reportPicBar');
+  var phint = document.getElementById('reportPicHint');
+  var pbox = document.getElementById('reportPics');
+  if(pbar) pbar.hidden = false;
+  if(phint) phint.hidden = false;
+  if(pbox) pbox.className = 'report-pics';
+  clearReportPictures();
   var busy = document.getElementById('reportBusy');
   if(busy) busy.classList.remove('show');
   var send = document.getElementById('reportSend');
@@ -1307,6 +1360,148 @@ function closeReport(){
   }
 }
 onTab('complaints', loadComplaints);
+
+// Pictures on a problem report: pick, paste, take a photo, or grab the screen.
+// Written in plain ES5 (no ?. or ??) for the TV browsers (Chrome 70+).
+// Every picture is shrunk HERE first (long side 1280, JPEG) so a phone photo of
+// 6 MB leaves as ~150 KB; the hub checks it again (report_images.py).
+var reportPics = [];          // data: URLs waiting to be sent
+var REPORT_PIC_MAX = 3;
+var REPORT_PIC_BYTES = 400 * 1024;   // under the hub's 450 KB wall (3 pictures must fit its 2 MB request cap)
+
+function reportPicNote(msg){
+  var el = document.getElementById('reportSaid');
+  if(el) el.textContent = window.MiceLang ? window.MiceLang.say(msg) : msg;
+}
+
+// File/Blob -> small JPEG data URL (white behind transparent PNGs).
+function shrinkPicture(file){
+  return new Promise(function(resolve, reject){
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function(){
+      URL.revokeObjectURL(url);
+      var w = img.naturalWidth, h = img.naturalHeight;
+      var side = Math.max(w, h), size = 1280, q = 0.72, out = '';
+      for(var i = 0; i < 5; i++){
+        var k = Math.min(1, size / side);
+        var c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(w * k));
+        c.height = Math.max(1, Math.round(h * k));
+        var g = c.getContext('2d');
+        g.fillStyle = '#fff';
+        g.fillRect(0, 0, c.width, c.height);
+        g.drawImage(img, 0, 0, c.width, c.height);
+        out = c.toDataURL('image/jpeg', q);
+        if(out.length * 0.75 <= REPORT_PIC_BYTES) break;
+        size = Math.round(size * 0.75); q = Math.max(0.5, q - 0.07);
+      }
+      if(out.length * 0.75 > REPORT_PIC_BYTES) reject(new Error('too big'));
+      else resolve(out);
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('not a picture')); };
+    img.src = url;
+  });
+}
+
+function addReportPictures(files){
+  var list = Array.prototype.slice.call(files || []).filter(function(f){
+    return /^image\//.test(f.type);
+  });
+  if(!list.length){ reportPicNote('That is not a picture.'); return Promise.resolve(); }
+  var chain = Promise.resolve();
+  list.forEach(function(f){
+    chain = chain.then(function(){
+      if(reportPics.length >= REPORT_PIC_MAX){
+        reportPicNote('Three pictures at most. Remove one to add another.');
+        return;
+      }
+      return shrinkPicture(f).then(function(u){
+        reportPics.push(u);
+        reportPicNote('');
+        drawReportPictures();
+      }, function(){ reportPicNote('That picture could not be used. Try another one.'); });
+    });
+  });
+  return chain;
+}
+
+function drawReportPictures(){
+  var box = document.getElementById('reportPics');
+  if(!box) return;
+  box.innerHTML = '';
+  reportPics.forEach(function(u, i){
+    var cell = document.createElement('div');
+    cell.className = 'report-pic';
+    var im = document.createElement('img');
+    im.src = u; im.alt = 'Picture ' + (i + 1);
+    var x = document.createElement('button');
+    x.type = 'button'; x.className = 'report-pic-x';
+    x.textContent = '✕'; x.title = 'Remove this picture';
+    x.setAttribute('aria-label', 'Remove this picture');
+    x.onclick = function(){ reportPics.splice(i, 1); drawReportPictures(); };
+    cell.appendChild(im); cell.appendChild(x);
+    box.appendChild(cell);
+  });
+  var full = reportPics.length >= REPORT_PIC_MAX;
+  ['reportPicFile', 'reportPicCam', 'reportPicShot'].forEach(function(id){
+    var b = document.getElementById(id + 'Btn');
+    if(b) b.disabled = full;
+  });
+}
+
+function clearReportPictures(){ reportPics = []; drawReportPictures(); }
+
+// One tap = a picture of this very screen. Only where the browser can share a
+// screen (desktop); phones and TVs keep the photo / file buttons.
+function grabReportScreen(){
+  var m = document.getElementById('reportModal');
+  navigator.mediaDevices.getDisplayMedia({video: true}).then(function(stream){
+    var v = document.createElement('video');
+    v.muted = true; v.srcObject = stream;
+    return v.play().then(function(){
+      if(m) m.style.visibility = 'hidden';       // not the report box itself
+      return new Promise(function(r){ setTimeout(r, 450); });
+    }).then(function(){
+      var c = document.createElement('canvas');
+      c.width = v.videoWidth; c.height = v.videoHeight;
+      c.getContext('2d').drawImage(v, 0, 0);
+      stream.getTracks().forEach(function(t){ t.stop(); });
+      if(m) m.style.visibility = '';
+      return new Promise(function(r){ c.toBlob(r, 'image/png'); });
+    });
+  }).then(function(blob){
+    if(m) m.style.visibility = '';
+    if(blob) return addReportPictures([blob]);
+  }).catch(function(){
+    if(m) m.style.visibility = '';
+    reportPicNote('The screen picture was not taken.');
+  });
+}
+
+function startReportPictures(){
+  var file = document.getElementById('reportPicFile');
+  var cam = document.getElementById('reportPicCam');
+  if(file) file.onchange = function(){ addReportPictures(file.files).then(function(){ file.value = ''; }); };
+  if(cam) cam.onchange = function(){ addReportPictures(cam.files).then(function(){ cam.value = ''; }); };
+  var shot = document.getElementById('reportPicShotBtn');
+  if(shot){
+    var can = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+    shot.hidden = !can;
+    shot.onclick = grabReportScreen;
+  }
+  var m = document.getElementById('reportModal');
+  if(m) m.addEventListener('paste', function(e){
+    var items = (e.clipboardData && e.clipboardData.items) || [];
+    var got = [];
+    for(var i = 0; i < items.length; i++){
+      if(items[i].kind === 'file' && /^image\//.test(items[i].type)) got.push(items[i].getAsFile());
+    }
+    if(got.length){ e.preventDefault(); addReportPictures(got); }
+  });
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startReportPictures);
+else startReportPictures();
 
 // ---- network & linking -------------------------------------------------
 // Every module the hub can reach, however it is reached, with the group it

@@ -312,7 +312,7 @@ OPEN = {
     "/api/faces/start",
     # A report is a complaint, not a command: it changes nothing on any
     # board, and complaining must never need a password (A21-6).
-    "/api/report",
+    "/api/report", "/api/report/image",
     "/api/robot/status", "/api/robot/files", "/api/robot/download",
     "/api/dev/status", "/api/dev/files", "/api/dev/download", "/api/dev/peers",
 }
