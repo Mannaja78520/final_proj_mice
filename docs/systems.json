@@ -15,6 +15,10 @@
                  ".ico", ".onnx", ".bak", ".tmp"],
 
   "systems": [
+    {"id": "job-scheduler", "summary": "One shared priority scheduler (live work jumps the queue, background yields, aging prevents starvation) in front of the GPU/CPU; classes and limits are data.",
+     "files": ["tools/jobsched.py", "tools/bench_sched.py", "config/scheduler.json"],
+     "names": ["jobsched", "Scheduler", "_gpu(", "/api/scheduler"],
+     "checks": ["check_job_scheduler"], "depends": []},
     {"id": "hub-resources", "summary": "Machine-local configurable CPU/GPU/RAM policy, bounded capability discovery, next-load Voice budgets and independent client display choices.",
      "files": ["main_python/resource_policy.py", "main_python/resource_hardware.py", "main_python/resource_settings.py", "main_python/hub_api_resources.py", "config/resource_policy.json"],
      "names": ["/api/resources", "ResourcePolicy", "VoiceResources", "MiceResources"],

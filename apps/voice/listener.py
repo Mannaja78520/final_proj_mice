@@ -236,7 +236,7 @@ class Listener:
         """This PC's whisper. Bias words apply only when the language is
         already known: detecting it first just to pick a prompt would double
         every wait."""
-        with self._lock:
+        with self._gpu("live"):
             self._load_stt()
             if not self._stt:
                 return None, ("speech-in is not available (%s)"

@@ -156,7 +156,7 @@ class LocalLlm:
 
     def unload(self):
         """Unload LLM and STT models from memory and free GPU/RAM."""
-        with self._lock:
+        with self._gpu("background"):
             self._resources.clear()
             self._llm = None
             self._stt = None

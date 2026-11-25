@@ -1,0 +1,16 @@
+{
+  "_note": "Shared job scheduler (tools/jobsched.py). Lower priority number runs first. agingSeconds: every N seconds of waiting a job moves up one step, so low classes are delayed, never starved. yieldMargin: how much more urgent a waiting job must be before a long job steps aside at its next checkpoint. slots: how many jobs may use the resource at once (raise on a GPU with room to spare). Add a kind of work = add a class.",
+  "resources": {
+    "gpu": {"slots": 1, "agingSeconds": 20, "yieldMargin": 2},
+    "cpu": {"slots": 4, "agingSeconds": 30, "yieldMargin": 2}
+  },
+  "classes": {
+    "live":       {"priority": 0, "resource": "gpu", "note": "someone is waiting at the booth: hearing a question, answering it"},
+    "speech":     {"priority": 1, "resource": "gpu", "note": "speaking the answer"},
+    "normal":     {"priority": 5, "resource": "gpu", "note": "anything not named"},
+    "helper":     {"priority": 6, "resource": "gpu", "note": "interpreter/helper replies"},
+    "translate":  {"priority": 7, "resource": "gpu", "note": "translating many languages at once"},
+    "background": {"priority": 9, "resource": "gpu", "note": "preload, warm-up, reports, encoding"},
+    "cpu-light":  {"priority": 5, "resource": "cpu"}
+  }
+}

@@ -154,6 +154,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/checks/check_hub_users.py`
 - `qc/checks/check_id3_skip.py`
 - `qc/checks/check_identity.py`
+- `qc/checks/check_job_scheduler.py`
 - `qc/checks/check_joint_fields.py`
 - `qc/checks/check_joint_rules.py`
 - `qc/checks/check_joint_select.py`
@@ -460,7 +461,6 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/data/usability_dom.js`
 - `qc/data/usability_hub.js`
 - `qc/data/video_group.cjs`
-- `qc/last_timing.json`
 - `qc/lib/browser.py`
 - `qc/lib/fake_friend.py`
 - `qc/lib/fake_serial.py`
