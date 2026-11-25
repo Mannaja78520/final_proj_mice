@@ -24,6 +24,7 @@ TITLE = "voice: Whisper GPU check follows CTranslate2; /ask does not wait for th
 
 
 def run(t):
+    run_vendors(t)
     sys.path.insert(0, str(F.CODE / "apps" / "voice"))
     import resources
     import face_link
@@ -91,3 +92,28 @@ def run(t):
              "looks=%d" % f2.looks)
     finally:
         face_link.faces_on = real_on
+
+
+def run_vendors(t):
+    """AMD and Intel GPUs are told apart from NVIDIA by data (config/gpu_vendors.json)."""
+    sys.path.insert(0, str(F.CODE / "main_python"))
+    sys.path.insert(0, str(F.CODE / "tools"))
+    import resource_hardware as hw
+    import ollama_serve
+    got = {a["name"]: a for a in hw.classify_adapters(
+        ["NVIDIA GeForce RTX 5070 Ti Laptop GPU", "AMD Radeon RX 7800 XT", "Intel(R) UHD Graphics",
+         "Microsoft Basic Render Driver", "Parsec Virtual Display Adapter"])}
+    t.ok(len(got) == 3, "virtual/basic adapters are ignored", "got %s" % list(got))
+    t.ok(got["NVIDIA GeForce RTX 5070 Ti Laptop GPU"]["cudaRuntime"], "NVIDIA can run CUDA", "")
+    amd = got["AMD Radeon RX 7800 XT"]
+    t.ok(amd["vendor"] == "amd" and not amd["cudaRuntime"] and amd["ollamaEnv"].get("OLLAMA_VULKAN") == "1"
+         and amd["sttBackend"] == "cpu", "AMD: no CUDA, Ollama via Vulkan, Whisper on CPU", "got %r" % amd)
+    real = hw.adapter_names
+    try:
+        hw.adapter_names = lambda: ["AMD Radeon RX 7800 XT"]
+        t.ok(ollama_serve._vendor_env({}).get("OLLAMA_VULKAN") == "1", "AMD-only PC starts Ollama with Vulkan", "")
+        t.ok(ollama_serve._vendor_env({"gpuBackend": "off"}) == {}, "gpuBackend off leaves Ollama alone", "")
+        hw.adapter_names = lambda: ["AMD Radeon RX 7800 XT", "NVIDIA GeForce RTX 4060"]
+        t.ok(ollama_serve._vendor_env({}) == {}, "NVIDIA present: Ollama keeps its CUDA default", "")
+    finally:
+        hw.adapter_names = real

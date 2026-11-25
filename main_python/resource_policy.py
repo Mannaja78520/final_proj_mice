@@ -100,7 +100,11 @@ class ResourcePolicy:
             warning = (warning + " " if warning else "") + "งบ RAM ไม่พอสำหรับโหลด AI ใหม่ ปรับหน่วยความจำสำรองหรือเลือกงานที่เล็กลง"
         return {"revision": saved["revision"], "profile": profile["id"], "label": profile["label"],
                 "hardwareGpuCount": len(h.get("gpus", [])), "device": device, "deviceIndex": usable[0]["index"] if device == "cuda" else 0, "cpuThreads": threads, "workers": workers, "ramBudgetMiB": ram,
-                "gpus": usable if device == "cuda" else [], "warning": warning}
+                "gpus": usable if device == "cuda" else [], "warning": warning,
+                # Other-vendor GPUs (AMD/Intel): not CUDA, but Ollama can use them
+                # (config/gpu_vendors.json). Whisper stays on CPU for them for now.
+                "accelerators": [{"name": a["name"], "vendor": a["vendor"], "sttBackend": a["sttBackend"]}
+                                 for a in h.get("adapters", []) if not a.get("cudaRuntime")]}
 
     def status(self):
         saved = self.store.read()

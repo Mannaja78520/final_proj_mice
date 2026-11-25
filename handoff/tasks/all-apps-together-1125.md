@@ -13,6 +13,8 @@ Charts + report + friend doc (Thai, with images).
 - /ask no longer blocks on the face look (worker + prefetch on /transcribe): 2.6 s -> 0.06 s median.
 - Rejected: Whisper int8_float16 (text only 72% same as float16).
 
+- AMD/Intel support: config/gpu_vendors.json, resource_hardware.classify_adapters, plan "accelerators", ollama_serve gpuBackend (Vulkan). Whisper stays CPU there. Not tested on real AMD.
+
 ## Facts found
 - PC torch is 2.15.0+cpu; ctranslate2 4.8.2 has CUDA; cublas64_12.dll came only from torch/lib.
 - apps/voice/face_link.py get_detected_person was synchronous per /ask (~2.3 s).
@@ -25,6 +27,7 @@ Charts + report + friend doc (Thai, with images).
 | apps/voice/service.py | pip nvidia DLL dirs; prefetch on /transcribe | done | same | this checkpoint |
 | apps/voice/face_link.py | person look on worker, deadline | done | same | this checkpoint |
 | qc/checks/check_voice_gpu_and_ask_speed.py | new check | done | QC quiet PASS | this checkpoint |
+| main_python/resource_hardware.py, resource_policy.py, tools/ollama_serve.py, config/gpu_vendors.json, config/local_ai.json | AMD/Intel detection | done | check voice_gpu_and_ask_speed (fakes) | this checkpoint |
 | tools/perf_profile.py, tools/perf_load.py | new tools | done | run on PC | this checkpoint |
 | config/perf_profile.json, config/perf_load.json | tool data | done | run on PC | this checkpoint |
 

@@ -46,3 +46,17 @@
 
 - ไลบรารี CUDA ต้องเป็น 12.8 ขึ้นไป (torch ต้องเป็น `cu128`) ไม่งั้นขึ้น `no kernel image is available` หรือค้างตอนเริ่ม
 - Python บน Windows ไม่หา DLL จาก PATH: ใช้ `os.add_dll_directory()` กับโฟลเดอร์ `site-packages/nvidia/*/bin` (Face_Regonize มี `cuda_dlls.py` ทำแล้ว ดีมาก)
+
+## รองรับการ์ดจอ AMD / Intel ด้วย (ไม่ใช่แค่ NVIDIA)
+
+ฝั่งเรา: ตรวจชนิดการ์ดจออัตโนมัติ (`config/gpu_vendors.json` เพิ่มยี่ห้อ = เพิ่มแถว) NVIDIA ใช้ CUDA, AMD/Intel ให้ Ollama ใช้ Vulkan, ถอดเสียงตกไป CPU จนกว่าจะมีตัวรองรับ ไม่มีการ์ดเลยก็ใช้ CPU ทั้งหมด
+ฝั่งเพื่อนขอให้ทำให้แอปไม่ผูกกับ CUDA อย่างเดียว:
+
+| # | ขอให้ทำ | ทำไม |
+|---|---|---|
+| A1 | Face_Regonize เลือก provider ของ onnxruntime ตามที่เครื่องมีจริง ลำดับ: `CUDAExecutionProvider` (NVIDIA) → `DmlExecutionProvider` (AMD/Intel บน Windows ผ่านแพ็กเกจ `onnxruntime-directml`) → `CPUExecutionProvider` และเก็บลำดับไว้ในไฟล์ตั้งค่า ไม่เขียนตายตัว (ตอนนี้ `engine.py:158` ระบุ CUDA+CPU) | AMD ไม่มี CUDA ตอนนี้จะตกไป CPU ทั้งหมดและช้ามาก |
+| A2 | ตอนเริ่มโปรแกรม ทดสอบ provider จริงด้วยรูปเล็กก่อนใช้ (มีใน `hardware_info_service.verified_providers` แล้ว) และแสดงชื่อ provider ที่ใช้อยู่ในหน้า status | `get_available_providers()` บอกว่ามีแต่ใช้ไม่ได้ถ้าขาดไลบรารี |
+| A3 | ใช้เฉพาะฟังก์ชันที่ DirectML รองรับ ทดสอบความแม่น (คะแนนจับคู่) เทียบ CPU ก่อน ถ้าต่างเกินเกณฑ์ให้ตกไป CPU | ไม่ลดความแม่น |
+| A4 | ส่วนที่ใช้ nvJPEG / TensorRT / `h264_nvenc` ต้องมีทางสำรองเสมอ: CPU decode, ffmpeg `h264_amf` (AMD) หรือ `h264_qsv` (Intel), และ `libx264` | NVENC ใช้ได้เฉพาะ NVIDIA |
+
+ยังไม่ได้ทดสอบกับการ์ด AMD จริง (PC นี้เป็น NVIDIA) ฝั่งเราทดสอบการตรวจชนิดกับชื่อการ์ดจำลองเท่านั้น
