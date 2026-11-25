@@ -2,7 +2,7 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T12:55:00+07:00
+Updated: 2026-11-25T13:19:19+07:00
 Last commit: 7cea7e6 (scoped release candidate)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Wait on the existing QC process, then claim the driver under the mutex only when free and the bridge has no new claim. Run the bounded isolated replay and, after a pass, full serial QC on unchanged 7cea7e6.
+Compare the same visual-language check on clean main fc39932 and frozen candidate 7cea7e6, serially with isolated temp/peers per tree. Use the official check once each and stop to classify the difference.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -67,6 +67,9 @@ Wait on the existing QC process, then claim the driver under the mutex only when
 - Separate perf QC produced its completion marker at 12:51:22. A59-2 did not run overlapping QC.
 
 - Two successive driver checks refused the claim because PIDs 8144 and 122120 were running. No replay started. Requested the next free slot in the shared bridge.
+
+- Isolated replay exited 1 after 192.0s: camera 13/0, visual-language 142/5. Camera peer contamination cleared. Home still showed missing showTab, a Photobooth tooltip leak, and untranslated loading/error text. Log: _out/ai-status-1124/replay-7cea7e6.log. Third full QC did not start, and our driver claim was released.
+- Diff from the first QC input to the scoped candidate consists only of the agent inventory and the two omitted handoffs. Both camera and visual-language passed in first full QC. Compare exact main before deciding whether this is inherited or candidate-specific.
 
 ## Next
 If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
@@ -116,7 +119,7 @@ If candidate QC is green, record final review, publish a scoped PR, merge under 
 | docs/systems/hub-web.md | Generated inventory for Help images | Built | Diff lists exactly eight new captures | 777a439 |
 
 ## Blocked
-Shared QC busy. Wait without running concurrent checks. Need green exact-candidate QC before integration, build or restart.
+Visual-language QC remains red. Shared QC released after replay. Need a green full gate before merge, build or restart.
 
 ## Result
 (Codex: PR link, screenshot paths, what you verified; report in Thai)
