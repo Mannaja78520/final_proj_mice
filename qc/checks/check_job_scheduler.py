@@ -234,3 +234,61 @@ def run(t):
          "a CPU-only torch with a GPU present says so in the Voice status")
     t.ok("warning" not in device_of("12.8", True) and "warning" not in device_of(None, False),
          "no warning when torch has CUDA, or when there is no GPU")
+
+    # 9. Review 2026-11-26: the hub lease must follow the local gate exactly.
+    # A nested gate asked the hub for a SECOND lease while its own outer gate
+    # held the only one (20 s wait on itself), and a checkpoint stepped aside
+    # locally but kept the lease, so the live job that took its place waited
+    # 20 s for it. A fake hub records what was held at each ask.
+    class FakeHub:
+        url = "fake"
+
+        def __init__(self):
+            self.held, self.asks = set(), []
+
+        def acquire(self, klass):
+            self.asks.append((klass, len(self.held)))
+            tok = "T%d" % len(self.asks)
+            self.held.add(tok)
+            return tok
+
+        def release(self, tok):
+            self.held.discard(tok)
+
+    lcfg = json.loads(json.dumps(CFG))
+    lcfg["lease"] = {"enabled": True, "hubUrl": "fake", "resources": ["gpu"]}
+    s5 = jobsched.Scheduler(lcfg)
+    hub = s5._lease = FakeHub()
+    with s5.gate("live"):
+        with s5.gate("background"):
+            pass
+    t.ok(hub.asks == [("live", 0)] and not hub.held, "a nested gate does not ask the hub for a second lease",
+         str(hub.asks))
+
+    hub.asks.clear()
+    started, go_on = threading.Event(), threading.Event()
+
+    def long_job():
+        with s5.gate("background") as g:
+            started.set()
+            go_on.wait(3)
+            g.checkpoint()
+
+    lj = threading.Thread(target=long_job, daemon=True)
+    lj.start()
+    started.wait(3)
+    lv = threading.Thread(target=lambda: s5.gate("live").__enter__().__exit__(), daemon=True)
+    lv.start()
+    time.sleep(0.2)
+    go_on.set()
+    lj.join(3)
+    lv.join(3)
+    t.ok(("live", 0) in hub.asks, "a job stepping aside at a checkpoint gives the hub lease back first",
+         "lease asks (class, leases held at that moment): %s" % hub.asks)
+    t.ok(not hub.held and not lj.is_alive() and not lv.is_alive(), "every lease is returned at the end", str(hub.held))
+
+    src = (F.CODE / "apps" / "voice" / "service.py").read_text(encoding="utf-8")
+    body = src[src.find("def watch_faq_audio"):]
+    t.ok("brain.profile_lock.shared()" in body[:1500],
+         "the 5-second answers watcher shares the character lock instead of blocking every new question",
+         "an exclusive poll waits for the slowest running request and holds new ones meanwhile")

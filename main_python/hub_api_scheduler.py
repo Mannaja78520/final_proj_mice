@@ -33,8 +33,10 @@ def table():
 
 
 def gate(klass):
-    """For the hub's own heavy jobs (video sound, encoding): `with gate("encode"):`."""
-    return table().sched.gate(klass)
+    """For the hub's own heavy jobs (video sound, encoding): `with gate("encode"):`.
+    No HTTP lease to itself: the lease table shares this scheduler's GPU slot,
+    so a GPU-class job here would wait its full lease wait on its own place."""
+    return table().sched.gate(klass, lease=False)
 
 
 class SchedulerRoutes:
