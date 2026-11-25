@@ -30,12 +30,13 @@ def run(t):
     gone.wait()
     live, dead = os.getpid(), gone.pid
 
-    keep = [web / ("_qcdriver_%d_111.html" % live), web / ("_qcraw_%d_222.html" % live),
-            web / ("_qctalk_%d_333.html" % live), scratch / ("profile_%d_444" % live),
-            scratch / ("profile_%d_555.edge.log" % live)]
-    drop = [web / ("_qcdriver_%d_111.html" % dead), web / ("_qcraw_%d_222.html" % dead),
-            web / "_qcmod_legacy.html", scratch / ("profile_%d_444" % dead),
-            scratch / ("profile_%d_555.edge.log" % dead)]
+    def pages(pid):
+        return [web.joinpath("_qcdriver_%d_111.html" % pid), web.joinpath("_qcraw_%d_222.html" % pid),
+                web.joinpath("_qctalk_%d_333.html" % pid), scratch / ("profile_%d_444" % pid),
+                scratch / ("profile_%d_555.edge.log" % pid)]
+
+    keep = pages(live)
+    drop = pages(dead) + [web.joinpath("_qcmod_legacy.html")]
     for p in keep + drop:
         if p.name.startswith("profile_") and not p.name.endswith(".log"):
             (p / "x").mkdir(parents=True)
