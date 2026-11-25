@@ -490,3 +490,29 @@ never sent its `VL~done` mark, so browser.page() sat out `seconds + grace` (60 +
   clock-sensitive browser checks (flash_type 43 s, flash_confirm 42 s, chatty_board 29 s, report_pictures 23 s ...) whose history
   of starved-margin failures is in run_qc.py. Moving them into the pool would trade time for flakes, so not done.
 - Stop rule: round 3 (splitting visual_language by language) is estimated at under 10% and is left for a measured follow-up.
+
+### 2026-11-25 PC (24 threads, 31 GB, SSD): why a full gate is 25 min here, 8.6 min in the cloud
+Raw runs, fresh worktree, PC otherwise idle (other threads' QC not running):
+- Run 1 (baseline, cold firmware tree): wall 1524 s. Parallel phase 782 s, SOLO phase 320 s, check_build_split 414 s run alone FIRST.
+- Run 2 (shared PlatformIO object cache): wall 1541 s but not comparable: 4 browser checks failed in the crowd and were re-run
+  alone twice each (parallel phase 882 s of which the pool itself ended at 491 s), and check_report_pictures spent 270 s in a
+  page that never reported (QC SILENT). build_split fell from 414 s to 2 s (build dirs kept from run 1).
+- Process start cost is NOT the cause: python start 0.03 s, `import qc` 0.07 s, powershell -NoProfile 0.21 s, one Get-CimInstance
+  0.7 s, SSDs. Defender real-time protection is on (exclusions not readable without admin) but nothing measured points at it.
+- Firmware, measured directly (5 envs at once, `pio run`): no cache cold 474 s; shared `PLATFORMIO_BUILD_CACHE_DIR` populating
+  477 s (same); same build with the cache warm 42 s (-91%). One env alone cold: 55 s (cam) - five at once is 8.6x slower than one,
+  so the five compilers contend for something (not CPU: 24 threads). Cause not found; the warm cache avoids it.
+- Fix landed: check_build_split passes a machine-wide cache dir (`~/.platformio/qc_object_cache`) to pio (keyed on compile command
+  + source content, so a hit is the object a fresh compile would make). Same assertions; new assertion proven by breaking it.
+  Every new worktree / staging tree used to pay the cold 414-474 s before any other check could start (it runs first, alone).
+- Timing file now stores `end` (seconds into the run) per check, so lane idle gaps can be read: plain lane finished at 169 s,
+  browser lane pool at 491 s; 10 plain workers idle for ~320 s while 6 browser lanes work. Browser work is 2233 s of checks.
+- Where the rest goes: (a) browser checks that fail in the crowd and are re-run alone twice (4 flaky in run 2, 1 in run 1;
+  real failures on main cost 2 extra alone runs each, e.g. visual_language 2 x ~110 s); (b) QC SILENT waits: a page that never
+  reports sits out seconds+grace (190 s, 270 s, 478 s seen in run 2); (c) SOLO tail 232 s of clock-sensitive checks.
+- SOLO list kept, with the measured reason: short_name (port 80), name_claim + mdns (5353): real single resources, all under 8 s
+  together. themes + tools_list (edit shared files while others read them), systems (lists the tree). The starved-margin set
+  (hub_clock, studio_playback, flash_*, crash_gate, voice*, translate, gacha_ui, chatty_board, report_pictures) was NOT moved: moving
+  needs three green crowded runs each (25 min a run) and run 2 already showed the crowd is at its limit (4 flakes at 6 lanes).
+  Next lever: give those pages a readiness signal instead of a connect/timer margin, then move one at a time.
+- Not done (stop rule): widening workers/browserLanes (run 2 flaked more than run 1 at the current width).

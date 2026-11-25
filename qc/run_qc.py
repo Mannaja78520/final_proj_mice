@@ -470,7 +470,11 @@ def main(argv):
         print("%s[%s]%s %s" % (B, getattr(mod, "AREA", "?"), D,
                                getattr(mod, "TITLE", f.stem)))
         timings[f.stem] = {"secs": round(secs, 2),
-                           "lane": lane_of.get(f.stem, "plain")}
+                           "lane": lane_of.get(f.stem, "plain"),
+                           # seconds into the run when the main process saw it
+                           # finish; end - secs = start, so idle gaps in a
+                           # lane can be read afterwards
+                           "end": round(time.time() - t_all, 1)}
         if printed:
             sys.stdout.write(printed)
         n_fail = 0
