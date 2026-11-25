@@ -2,7 +2,7 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T11:13:29+07:00
+Updated: 2026-11-25T11:14:45+07:00
 Last commit: 7cea7e6 (scoped release candidate)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Run a serial QC preflight and the full serial gate on candidate 7cea7e6 with the default plan path. Freeze the candidate during QC.
+Full serial QC is running on frozen candidate 7cea7e6 with the default plan path. Await _out/ai-status-1124/full-7cea7e6.done.json.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -56,6 +56,8 @@ Run a serial QC preflight and the full serial gate on candidate 7cea7e6 with the
 - The inherited friend handoff lacks Branch and Plan. Our top-level MICE_PLAN override caused the packing-list crash and canonical plan-path failure. No feature assertion failed. Shared QC driver released.
 
 - Created clean candidate 7cea7e6 from main fc39932 at _out/ai-status-1124/release. Exactly 32 owned files are in the candidate. Both WIP handoffs stay on the shared branch, and the agent inventory matches the candidate.
+
+- Candidate preflight passed 208/0 for check_handoff_first, check_packing_list and check_plan_live. Evidence: _out/ai-status-1124/preflight-7cea7e6.log.
 
 ## Next
 If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
@@ -105,7 +107,7 @@ If candidate QC is green, record final review, publish a scoped PR, merge under 
 | docs/systems/hub-web.md | Generated inventory for Help images | Built | Diff lists exactly eight new captures | 777a439 |
 
 ## Blocked
-Release gate pending. Shared QC, integration, build and restart are unclaimed.
+A59-2 holds the shared QC driver for the running gate. Integration, build and restart are unclaimed.
 
 ## Result
 (Codex: PR link, screenshot paths, what you verified; report in Thai)
