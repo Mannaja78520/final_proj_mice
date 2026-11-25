@@ -2,7 +2,7 @@
 Owner: codex:11240934-20dc
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-24T10:01:44+07:00
+Updated: 2026-11-25T09:59:13+07:00
 Last commit: this checkpoint (branch claude/project-thread-181856)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Capture the final eight Help images with the shared language picker mounted. Verify the images in contextual Hub Help, then run full QC.
+Check contextual Hub Help and reconcile this branch with current main before full QC.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -47,8 +47,10 @@ Capture the final eight Help images with the shared language picker mounted. Ver
 
 - Native text and the shared Chrome 75 DOM fallback passed the second Edge run. Review also confirmed the admin gate and bounded parser. Fixed a shared-header startup race by using one language script loader.
 
+- Recovered eight final Help captures. All eight match the previous browser capture exports byte for byte. The previous contextual check recorded English dark mode only.
+
 ## Next
-Run full QC on the final feature tree, then review, draft PR and release.
+Finish checking all Help variants, run full QC, then review and release.
 
 ## Facts found
 - main_python/hub_api_apps.py:50 supplies the registry-driven Tools list. A manifest in apps/ adds a tile.
@@ -79,20 +81,20 @@ Run full QC on the final feature tree, then review, draft PR and release.
 | shared/web/lang/help/en.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
 | shared/web/lang/help/ja.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
 | shared/web/lang/help/zh.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
-| main_python/web/help/img/en-light-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
-| main_python/web/help/img/en-dark-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
-| main_python/web/help/img/th-light-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
-| main_python/web/help/img/th-dark-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
-| main_python/web/help/img/ja-light-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
-| main_python/web/help/img/ja-dark-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
-| main_python/web/help/img/zh-light-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
-| main_python/web/help/img/zh-dark-hub-ai-status.webp | Planned AI work integration | Pending | not run | uncommitted |
+| main_python/web/help/img/en-light-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
+| main_python/web/help/img/en-dark-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
+| main_python/web/help/img/th-light-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
+| main_python/web/help/img/th-dark-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
+| main_python/web/help/img/ja-light-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
+| main_python/web/help/img/ja-dark-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
+| main_python/web/help/img/zh-light-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
+| main_python/web/help/img/zh-dark-hub-ai-status.webp | Browser capture | Captured | Byte match to browser export | this checkpoint |
 | config/ai_status.json | AI work config or generated API documentation | Built | parser and syntax checks only | 64d425f |
 | main_python/api_index.json | AI work config or generated API documentation | Built | parser and syntax checks only | 64d425f |
 | docs/HUB_API.md | AI work config or generated API documentation | Built | parser and syntax checks only | 64d425f |
 | docs/systems/agents.md | Generated handoff file inventory | Built | not run | 64d425f |
 | docs/systems/qc.md | Generated check inventory | Built | not run | 64d425f |
-| docs/systems/hub-web.md | Generated inventory for Help images | Pending | not run | uncommitted |
+| docs/systems/hub-web.md | Generated inventory for Help images | Built | Diff lists exactly eight new captures | this checkpoint |
 
 ## Blocked
 No current blocker. A58-24 is still running independently. Avoid shared QC, build and restart resources until claimed.
