@@ -15,8 +15,9 @@
 
 ## คู่มือในแอพ (2026-11-24)
 
-- **Face_Regonize** มี [สาขา `add-mice-help`](https://github.com/ChocolateOwO/Face_Regonize/tree/add-mice-help) ให้เจ้าของ repo ตรวจและ merge ได้ ชุดคู่มือ `3ea59d1` และปุ่ม Help `7436718` อยู่บนหน้า Login และ Dashboard
-- **Photobooth** มีสาขา `add-mice-help` ในเครื่อง ชุดคู่มือ `ee9e201` และปุ่ม Help `d11cffa` อยู่บนหน้า Organizer ผ่านการทดสอบแล้ว รออนุญาตให้ push ไปยัง repo ของเพื่อน
+- **Face_Regonize**: คอมมิตของเราอยู่บน `main` ของ repo เพื่อนแล้ว (และสาขา `add-mice-help`) ชุดคู่มือ `3ea59d1` และปุ่ม Help `7436718` อยู่บนหน้า Login และ Dashboard
+- **Photobooth**: คอมมิตของเราอยู่บน `main` ของ repo เพื่อนแล้ว (ตรวจ 2026-11-25) ชุดคู่มือ `ee9e201` และปุ่ม Help `d11cffa` อยู่บนหน้า Organizer ไม่มีสาขา `add-mice-help` ที่ปลายทาง
+- ไม่ได้แตะ All-Jao-Games (รอเจ้าของดูก่อน)
 
 ปุ่ม Help เปิดคู่มือและภาพจากเว็บของแอพเองที่ `/help/index.html` ใช้ได้เมื่อเปิดแอพเดี่ยว เมื่อ Hub ตั้งค่าให้ใช้โฟลเดอร์ของแอพที่มีชุดคู่มือแล้ว หน้า Help ของ Hub จะอ่าน `help/help.json` และโหลดเนื้อหากับภาพจากโฟลเดอร์ `help/` ของแอพ
 
