@@ -455,6 +455,12 @@ class Brain(FaceLink, Translator, Listener, Speaker, Faq, LocalLlm, Answerer):
         return re.sub(r'\s+', ' ', cleaned).strip()
 
 
+    def _vram_status(self):
+        try:
+            return self._resources.vram().status()
+        except Exception as exc:                 # noqa: BLE001 - a status line must never fail
+            return {"error": str(exc)}
+
     def health(self):
         n = len(self.faqs())
         if self.faq_err:
@@ -469,6 +475,7 @@ class Brain(FaceLink, Translator, Listener, Speaker, Faq, LocalLlm, Answerer):
             "resources": self._resources.status(),
             "scheduler": self.scheduler_status(),
             "llmDevice": self.llm_device(),
+            "vram": self._vram_status(),
             "faqFile": self.faq_path.name,
             "parts": {"faq": faq, "llm": self.llm_status(),
                       "stt": self.stt_status(), "tts": self.tts_status()},

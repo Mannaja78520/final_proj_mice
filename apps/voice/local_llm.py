@@ -41,6 +41,26 @@ class LocalLlm:
             pass
         return True
 
+    def _cpu_llm(self):
+        """EXPERIMENT (MICE_VRAM_STRATEGY=hybrid): a second copy of the local model on the CPU for background
+        helper jobs that would otherwise queue behind live work on the GPU."""
+        got = self.__dict__.get("_llm_cpu_copy")
+        if got:
+            return got
+        lock = self.__dict__.setdefault("_load_lock_llm_cpu", threading.Lock())
+        with lock:
+            got = self.__dict__.get("_llm_cpu_copy")
+            if got:
+                return got
+            import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+            mid = self.cfg.get("llm", {}).get("model", str(CODE / "llm"))
+            tok = AutoTokenizer.from_pretrained(mid, trust_remote_code=True)
+            mdl = AutoModelForCausalLM.from_pretrained(mid, torch_dtype=torch.float32, low_cpu_mem_usage=True,
+                                                       trust_remote_code=True).to("cpu")
+            self._llm_cpu_copy = (tok, mdl)
+            return self._llm_cpu_copy
+
     def llm_device(self):
         """Where the local model runs and, if it is the CPU, why (GPU first)."""
         where, why = getattr(self, "_llm_where", ("", ""))
@@ -236,7 +256,7 @@ class LocalLlm:
                 pass
         return True
 
-    def _complete(self, messages, max_tokens=None, details=False):
+    def _complete(self, messages, max_tokens=None, details=False, model=None):
         """One model call on exactly the messages given - no persona added.
 
         Callers hold the lock and have already checked the model is loaded.
@@ -248,7 +268,7 @@ class LocalLlm:
         to look for (user 2026-09-18: *it cuts replies off*).
         """
         import torch
-        tok, mdl = self._llm
+        tok, mdl = model or self._llm
         try:
             text = tok.apply_chat_template(
                 messages, tokenize=False, add_generation_prompt=True,

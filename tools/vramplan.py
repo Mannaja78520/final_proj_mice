@@ -129,6 +129,7 @@ class Arbiter:
     def __init__(self, registry, probe, cap_mib=None):
         self.reg, self._probe = registry, probe
         self.cap_mib = cap_mib if cap_mib is not None else int(os.environ.get("MICE_VRAM_CAP_MIB") or 0) or None
+        self.strategy = (os.environ.get("MICE_VRAM_STRATEGY") or "spill").lower()   # spill (default) | swap | hybrid
         self._lock = threading.RLock()
         self._held = {}                              # key -> {"mib", "unload", "device", "pending"}
         self._clean = {}                             # key -> True when its before-reading had no eviction mixed in
@@ -167,12 +168,15 @@ class Arbiter:
                                 "cpuSlowdown": i["cpuSlowdown"], "savedMs": i["savedMs"], "canCpu": i["canCpu"]})
             # Models at least as important as the newcomer are never moved for it (no thrashing);
             # the rest compete with it for what is left, and the losers are pushed out.
-            immovable = sum(d["mib"] for d in demands[1:] if d["priority"] <= info["priority"])
-            movable = [demands[0]] + [d for d in demands[1:] if d["priority"] > info["priority"]]
-            plan = pack(capacity - immovable, movable)
-            evict = [d["key"] for d in movable[1:] if plan[d["key"]] != "cuda"]
-            if plan[key] != "cuda":
-                evict = []                           # losing is not a reason to push anyone else out
+            if self.strategy == "swap":
+                plan, evict = self._swap_plan(key, info, capacity, demands)
+            else:
+                immovable = sum(d["mib"] for d in demands[1:] if d["priority"] <= info["priority"])
+                movable = [demands[0]] + [d for d in demands[1:] if d["priority"] > info["priority"]]
+                plan = pack(capacity - immovable, movable)
+                evict = [d["key"] for d in movable[1:] if plan[d["key"]] != "cuda"]
+                if plan[key] != "cuda":
+                    evict = []                           # losing is not a reason to push anyone else out
             done, refused = [], False
             for k in evict:
                 held = self._held.get(k)
@@ -202,6 +206,22 @@ class Arbiter:
                    "only %d MiB of room for %d MiB: runs on the CPU, same quality" % (max(0, capacity), info["mib"]))
             return {"device": device, "evict": done, "why": why, "card": after or card}
 
+    def _swap_plan(self, key, info, capacity, demands):
+        """EXPERIMENT (MICE_VRAM_STRATEGY=swap): every model that fits ALONE goes on the GPU and the others are
+        unloaded to make room, whatever their priority; an unloaded model reloads when it is next used. The
+        opposite of pinning: nothing is spilled to the CPU while it could take a turn on the card."""
+        if info["mib"] > capacity:
+            return {key: "cpu" if info["canCpu"] else "unload"}, []
+        others = sorted(demands[1:], key=lambda d: (-d["priority"], d["savedMs"] / max(1, d["mib"])))   # least valuable first
+        need = info["mib"] + sum(d["mib"] for d in others) - capacity
+        evict = []
+        for d in others:
+            if need <= 0:
+                break
+            evict.append(d["key"])
+            need -= d["mib"]
+        return {key: "cuda"}, evict
+
     def loaded(self, key, device, unload=None, before_free_mib=None):
         """Tell us a load finished. Measures its real size when the before-reading is clean (no eviction mixed in)."""
         with self._lock:
@@ -225,7 +245,7 @@ class Arbiter:
         with self._lock:
             card = self.card()
             mine = sum(v["mib"] for v in self._held.values() if v["device"] == "cuda")
-            return {"card": card, "capMiB": self.cap_mib,
+            return {"card": card, "capMiB": self.cap_mib, "strategy": self.strategy,
                     "note": "" if card else "no GPU reading (AMD/Intel or no NVIDIA tool): models run on the CPU",
                     "headroomMiB": self._headroom(card, mine) if card else 0,
                     "othersPeakMiB": self.reg.others_peak(),
