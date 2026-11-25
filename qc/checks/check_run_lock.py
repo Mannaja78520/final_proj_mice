@@ -4,6 +4,7 @@
 (WinError 10048) and each failed the other's timing checks. qc/lib/runlock.py is
 the lock run_qc.py takes before it runs anything.
 """
+import os
 import subprocess
 import sys
 import tempfile
@@ -27,6 +28,7 @@ def run(t):
     second = runlock.RunLock(path, pid=1, say=notes.append, poll=0.1)
     t.ok(runlock.pid_alive(first.pid), "the holder pid reads as alive")
     # pid=1 is not our pid, so it is a rival; holder is us (alive) -> waits
+    os.environ.pop(runlock.OWNER_ENV, None)      # a rival is not a child of the holder
     got = second.acquire(timeout=0.6)
     t.ok(not got, "a second run does not get it while the first is alive", str(got))
     t.ok(any("waiting" in n and str(first.pid) in n for n in notes),
@@ -45,6 +47,26 @@ def run(t):
     third = runlock.RunLock(path, say=notes.append)
     t.ok(third.acquire(timeout=1), "a dead holder's lock is taken over")
     third.release()
+
+    # A run started BY the holder (a check that runs QC, e.g. sabotage.py) must
+    # not wait for its own parent: 2026-11-25 three scheduled runs hung that way.
+    holder_lock = runlock.RunLock(path, say=notes.append)
+    t.ok(holder_lock.acquire(timeout=1), "a holder takes the lock again for the next case")
+    code = ("import sys; sys.path.insert(0, r'%s'); import runlock; "
+            "from pathlib import Path; "
+            "l = runlock.RunLock(Path(r'%s'), say=print, poll=0.1); "
+            "sys.exit(0 if l.acquire(timeout=3) else 7)" % (F.QC / "lib", path))
+    child = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                           timeout=60)
+    t.ok(child.returncode == 0, "a run started by the holder does not wait for its lock",
+         "rc %s %s" % (child.returncode, child.stdout[-200:]))
+    env = dict(os.environ)
+    env.pop(runlock.OWNER_ENV, None)
+    outsider = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                              timeout=60, env=env)
+    t.ok(outsider.returncode == 7, "an unrelated run still waits for it",
+         "rc %s" % outsider.returncode)
+    holder_lock.release()
 
     src = (F.QC / "run_qc.py").read_text(encoding="utf-8")
     t.ok("RunLock" in src and "--no-lock" in src,
