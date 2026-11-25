@@ -2,7 +2,7 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25T14:38:01+07:00
+Updated: 2026-11-25T14:45:13+07:00
 Last commit: 931b7264 (localized release candidate)
 
 ## User ask (Thai, 2026-11-24)
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-With standard Windows TEMP/TMP, isolate only MICE_PEERS_DIR and rerun the failed checks on exact 931b7264. One serial replay, then full only if green. If still red, run the same checks once against current main b20e09ae and classify.
+Translate the reproduced Voice no-match label and message using the existing Thai/Japanese/Chinese packs. Update Hub Help about the same status in all four languages. Build and mirror the minimal edit to WIP; no Voice app code or friend repo changes.
 
 ## Done
 - Built AI work in Hub Tools, administrator GET, bounded handoff reader, four locales and Hub Help. Focused QC 83/0 and both admin/read-bound sabotages tripped their assertions.
@@ -42,6 +42,8 @@ With standard Windows TEMP/TMP, isolate only MICE_PEERS_DIR and rerun the failed
 - Matched checks on b20e09ae and ee6a7172 reproduced the dynamic Thai Tools title in en/zh/ja. Main also leaked loading text. Candidate AI work 21/0, camera 13/0, systems 13/0. Evidence: _out/ai-status-1124/matched-b20e09ae.log and matched-ee6a7172.log.
 - Candidate 931b7264 and WIP 3c6395ad fix dynamic Tools labels using existing locale placeholders, translate loading/network messages and keep localized Help in sync. Exact preflight PASS 509/0, including visual-language, AI work, Help, handoff, camera, systems and translations. Evidence: _out/ai-status-1124/preflight-931b7264.log.
 - Full serial QC at 931b7264: 10740 passed, 9 failed in 3488.1s. AI work 21/0, camera 13/0, systems 13/0. Red: face-count connection abort, Gacha stock/jam, 3 plan probe errors from our temp path inside the checkout, and 3 untranslated Voice fallback assertions. Exact evidence: _out/ai-status-1124/full-931b7264.log. The source tree still matches the candidate. Shared QC released.
+
+- Normal-temp comparison: candidate 272/3, current main 269/6. Face count, Gacha stock/jam, camera and plan integrity all passed. Both trees reproduce the three Voice fallback failures. Main also has the three Tools-title failures fixed on the candidate. Logs: _out/ai-status-1124/normal-temp-replay-931b7264.log and normal-temp-baseline-b20e09ae.log. Shared QC released.
 
 ## Next
 After a green full gate, record the final scoped review and publish, merge, build and restart. If candidate QC is green, record final review, publish a scoped PR, merge under standing approval, then rebuild and restart.
@@ -95,7 +97,7 @@ After a green full gate, record the final scoped review and publish, merge, buil
 | shared/web/mice-lang.js | Reuse locale placeholders for dynamic tool labels | Built | Visual-language preflight passed | 931b7264 |
 
 ## Blocked
-Full QC is red. Driver released while preparing the corrected replay. Merge, build and restart await a green result.
+Only the Voice locale fallback reproduced in normal-temp candidate replay. No shared QC claim while applying the targeted locale fix.
 
 ## Result
 (Codex: PR link, screenshot paths, what you verified; report in Thai)
