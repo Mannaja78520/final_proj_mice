@@ -467,3 +467,12 @@ Setup: cloud container, 4 cores (so 2 plain workers, 6 browser lanes), same tree
 Live mode: `python tools/qc_live.py` (read-only GETs at the running hub/voice/faces/friend app, alone then all together, p50/p95/max,
 errors, contention factor). Self-test against local servers: 2 apps x 3 clients, p95 7 ms alone and 7 ms together, 0 errors.
 Not yet run against the real apps on the PC.
+### 2026-11-25 All apps at once on the PC (hub + voice + Ollama + Face_Regonize + camera + Chrome)
+Tools: tools/perf_profile.py (RAM/VRAM per app, GPU enc/dec), tools/perf_load.py (alone, together, --real). Raw: .local/perf/ (PC only). Report with charts: docs/experiments/2026-11-25_all_apps_together.md.
+- Before: torch 2.15.0+cpu, so Whisper's GPU check said no GPU; also cublas64_12.dll missing. 3 Whisper models CPU int8. STT /transcribe median 3086 ms, p95 6164 ms (tts_cache clips). Direct th-medium 6.5 s clip: CPU int8 44-58 s vs GPU float16 0.6 s.
+- After (CTranslate2 probe + pip nvidia-cublas-cu12 12.9.2.10 + DLL dirs): STT median 751 ms, p95 2242 ms. VRAM voice 0 -> 4712 MiB, RAM voice 4331 -> 3093 MiB. Total VRAM 4.2 -> 9.0 GB of 12.
+- /ask: 2615 ms median before; 3.07 s vs 0.73 s with a name given proved the sync face look; after (worker + prefetch on /transcribe, askWaitSeconds 0.4): 61 ms median, 554 ms p95. Ollama think itself 197 ms.
+- Face /api/look t1.jpg (1280x886, 6 faces): 73 ms alone (server took_ms 42); together stress 139 ms before, 204 ms after (voice now on the GPU too); --real (face 10/s) 87 ms. STT together: --real 1151 ms, stress 2832 ms.
+- Rejected: Whisper th-medium int8_float16: VRAM 2069 -> 1149 MiB, but text vs float16 only 0.72 mean similarity (min 0.44), 10 clips: quality drop.
+- GPU encoder/decoder 0% in every run: PC camera gives raw nv12/yuyv (no H.264/MJPEG), hub re-encodes 640 px 10 fps q6 JPEG on CPU. Encode test (lavfi): 720p30 q4 1.61 MB/s RSS 212 MB; 1080p30 2.73 MB/s RSS 411 MB.
+- Second opinions: Gemini 4 Neon medium and Codex gpt-6.2-sol medium both ranked cublas fix and Ollama-first /ask on top.

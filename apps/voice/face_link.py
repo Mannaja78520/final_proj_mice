@@ -573,12 +573,55 @@ class FaceLink:
             return self._seen_person
         if hasattr(self, "_cached_person_at") and (now - self._cached_person_at < 2.0):
             return getattr(self, "_cached_person", "")
-        person = self._query_faces_service()
-        # Their history only when the watcher did NOT answer: its "nobody
-        # known" is the answer. Asking anyway cost 2.47 s per look at an
-        # unknown face on the PC (2026-10-15, real camera).
-        if not person and not getattr(self, "_watcher_ok", False):
-            person = self._query_reconize_direct()
-        self._cached_person = person or ""
-        self._cached_person_at = now
-        return self._cached_person
+        return self._person_within_deadline(now)
+
+    def _refresh_person(self):
+        """One look at who is there. Runs on a worker thread, one at a time."""
+        try:
+            person = self._query_faces_service()
+            # Their history only when the watcher did NOT answer: its "nobody
+            # known" is the answer. Asking anyway cost 2.47 s per look at an
+            # unknown face on the PC (2026-10-15, real camera).
+            if not person and not getattr(self, "_watcher_ok", False):
+                person = self._query_reconize_direct()
+            self._cached_person = person or ""
+            self._cached_person_at = time.time()
+        finally:
+            self._person_busy = False
+            self._person_done.set()
+
+    def prefetch_person(self):
+        """Start the look while the visitor is still being heard (POST /transcribe).
+
+        Hearing takes ~0.7 s on the GPU and the look ~2.3 s, so the name is
+        ready (or nearly) when /ask comes: the question is not slowed and the
+        greeting still has the name (user 2026-11-25: faster, never worse).
+        """
+        if not faces_on(self.cfg):
+            return
+        lock = self.__dict__.setdefault("_person_lock", threading.Lock())
+        with lock:
+            if not getattr(self, "_person_busy", False):
+                self._person_busy = True
+                self._person_done = threading.Event()
+                threading.Thread(target=self._refresh_person, daemon=True).start()
+
+    def _person_within_deadline(self, now):
+        """The name for a question, without making the question wait for the camera.
+
+        PC 2026-11-25: every /ask first did this look, synchronously:
+        POST /ask 3.07 s with it, 0.73 s with a name given (the model itself
+        answers in 0.2 s). The look runs on a worker thread now; a question
+        waits at most `face.askWaitSeconds` (default 0.4) for it, then uses the
+        last answer if it is younger than `face.askStaleSeconds` (default 30),
+        else nobody. The next question finds the refreshed name.
+        """
+        fc = self.cfg.get("face") or {}
+        wait = float(fc.get("askWaitSeconds", 0.4))
+        stale = float(fc.get("askStaleSeconds", 30))
+        self.prefetch_person()
+        done = self._person_done
+        done.wait(wait)
+        if time.time() - getattr(self, "_cached_person_at", 0.0) <= stale or done.is_set():
+            return getattr(self, "_cached_person", "")
+        return ""

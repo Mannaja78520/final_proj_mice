@@ -1,0 +1,13 @@
+{
+  "workloads": ["face", "voice", "stt", "llm", "camera"],
+  "face_api": "http://127.0.0.1:8000",
+  "face_image": "E:/final_proj/mice/Face_Regonize/backend/.venv/Lib/site-packages/insightface/data/images/t1.jpg",
+  "stt_clips": "apps/voice/tts_cache",
+  "voice": "http://127.0.0.1:8767",
+  "llm": "http://127.0.0.1:11435",
+  "llm_model": "typhoon25-4b",
+  "hub": "http://127.0.0.1:8642",
+  "camera_dev": "pc:FHD Camera",
+  "ratesHz": {"face": 10, "voice": 0.5, "stt": 0.5, "llm": 0.5},
+  "questions": ["สวัสดี", "ตู้นี้ทำอะไรได้บ้าง", "เปิดเพลงให้หน่อย", "ราคาเท่าไหร่", "how are you"]
+}
