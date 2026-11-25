@@ -10,6 +10,7 @@ Pages, languages and what to ignore are DATA in tools/visual/pages.json; the sca
 is tools/visual/probe.js, the same function the screenshot tool uses.
 """
 import json
+import os
 from pathlib import Path
 
 import browser
@@ -19,6 +20,10 @@ import qc as F
 AREA = "web"
 TITLE = "no Thai text leaks into en/zh/ja pages; no popup pinned at the top-left"
 SLOW = True
+# Alone: a full run on the PC failed it with words other checks leave in the pages at that moment
+# (a Thai test name on Voice, dummy_<date> on TV) and a half-rebuilt hub page (showTab is not defined),
+# and it passes 165/165 on its own. It reads every page, so nothing else may write while it does.
+SOLO = True
 
 HERE = Path(F.CODE) / "tools" / "visual"
 
@@ -76,10 +81,19 @@ window.addEventListener("load", function(){ run(); });
 """
 
 
-def run(t):
+def _run(t):
     if not browser.available():
         t.give_up("headless browser not found — install Edge/Chromium or run --quick")
     fake_serial.reset()
+    # The Voice page shows what the voice helper last said. Another check's helper (or the real one on
+    # this PC) answers with its own test sentence, a Thai name, and the page then "leaks" it into en/zh/ja.
+    # Point the hub at a dead helper: the page is read the way a hub with no helper shows it.
+    import os
+    import tempfile
+    dead = os.path.join(tempfile.gettempdir(), "mice_qc_voice_dead_vl_%d.json" % os.getpid())
+    with open(dead, "w", encoding="utf-8") as f:
+        f.write('{"service": "http://127.0.0.1:9"}')
+    os.environ["MICE_VOICE_CONFIG"] = dead
     base, _main = F.start_hub()
     cfg = json.loads((HERE / "pages.json").read_text(encoding="utf-8"))
     pages = [{"id": p["id"], "url": p["url"], "wait": p.get("wait"),
@@ -126,3 +140,15 @@ def run(t):
         if m.startswith("STUCK~"):
             _, lang, pid, n = m.split("~")
             t.ok(int(n) == 0, "no popup pinned at the corner on %s (%s)" % (pid, lang), m)
+
+
+def run(t):
+    # The worker process runs more checks after this one: the dead voice helper must not leak into them.
+    prev = os.environ.get("MICE_VOICE_CONFIG")
+    try:
+        return _run(t)
+    finally:
+        if prev is None:
+            os.environ.pop("MICE_VOICE_CONFIG", None)
+        else:
+            os.environ["MICE_VOICE_CONFIG"] = prev
