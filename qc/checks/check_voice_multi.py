@@ -67,7 +67,10 @@ def _helper(cfg, faq, url):
     return proc, port, log_path
 
 
-def _wait_health(port, host="127.0.0.1", secs=15):
+def _wait_health(port, host="127.0.0.1", secs=60):
+    # A condition wait, so a fast machine returns at once. 15 s was too short in the full parallel gate
+    # on the PC (a Python helper importing its modules while a dozen browsers run): red in the crowd,
+    # green alone in 19 s (2026-11-25).
     deadline = time.time() + secs
     while time.time() < deadline:
         try:
