@@ -540,3 +540,16 @@ Raw runs, fresh worktree, PC otherwise idle (other threads' QC not running):
 - The 9 failures are the failures main already has (th/ja/zh text leaks, "no page threw", the camera-reader checks); the system-map
   failure of that run was my own new files and is fixed in the next commit (check_systems green).
 - The remaining wall is real work: browser lane 2233 s of checks on 6 lanes, plus the SOLO tail (~297 s). Not touched.
+
+### 2026-11-26 twelve SOLO checks moved into the pool (PC to itself, lock held, three crowded full runs)
+Moved: check_hub_clock, check_studio_playback, check_gacha_ui, check_translate, check_voice, check_voice_stt, check_voice_tts,
+check_flash_remote, check_crash_gate, check_flash_type, check_flash_confirm, check_chatty_board. All their assertions are unchanged.
+- Round 1: 536 s wall (parallel 302 s, SOLO 231 s). All 12 green. Red only on two guard assertions in check_qc_parallel (they
+  encoded the old policy for hub_clock and studio_playback; removed with the move) and check_dev_tools (QC lock deadlock, fixed in #262).
+- Round 2: 605 s, 10799 passed, 0 failed; check_gestures flaked (passed alone 2/2), one QC SILENT 190 s on a page (not one of the 12).
+- Round 3: 549 s, 10799 passed, 0 failed, no flake, no SILENT.
+- Before (same tree, same PC, those 12 in the SOLO tail): 832 s. After: 536-605 s (-27 to -36%). The earlier "starved margin" reds
+  in the crowd coincided with overlapping QC runs on this PC (see the lock entry above); with one run at a time they did not recur in 3 runs.
+- Still SOLO, with the real reason: short_name (port 80), name_claim + mdns (5353), build_split (writes firmware/.pio), themes (rewrites
+  the shared stylesheet), tools_list (breaks an app.json), systems (lists the tree), report_pictures + visual_language (shared report data),
+  and the module-level SOLO ones (faces_* fake ports, camera_hub, pc_camera, alone_apps). SOLO tail is now ~228 s; check_visual_language is 111 s of it.
