@@ -87,13 +87,13 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
 def run(t):
     if not browser.available():
         t.give_up("headless Edge not found - this needs a real browser")
-    seq = F.STUDIO / "sequences" / (NAME + ".yaml")
-    proj = F.STUDIO / "projects" / (NAME + ".json")
+    fake_serial.reset()
+    base, _main = F.start_hub()
+    seq = _main.SEQUENCES / (NAME + ".yaml")        # this check's own copy (qc.isolate_data)
+    proj = _main.PROJECTS / (NAME + ".json")
     extras = [seq, proj, seq.with_name(seq.name + ".bak"), proj.with_name(proj.name + ".bak")]
     for f in extras:
         f.unlink(missing_ok=True)
-    fake_serial.reset()
-    base, _main = F.start_hub()
     try:
         browser.page(DRIVER, query="%s/studio/_qcdriver.html?dev=usb%%3A%s"
                      % (base, fake_serial.PORT), seconds=30)

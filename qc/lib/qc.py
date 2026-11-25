@@ -201,6 +201,42 @@ def dead_port():
 _hub_port = [_free_port()]
 
 
+def isolate_data(main):
+    """Give THIS check process its own copy of the studio data folders.
+
+    projects/, sequences/ and shows/ are shared by every hub that runs
+    from the same tree, and ~35 checks save into them under fixed names
+    (qc_video_page, qc_welcome, dummy_<date>.yaml ...). One copy of each check
+    is fine; two overlapping runs, or two checks using the same name, overwrote
+    each other: 3 copies of check_video_page at once passed 1 of 3, and nine
+    checks failed the same way (2026-11-26). The auth file, gestures, app list
+    and peers folder were already per-process; this is the same rule for the
+    data. The copy keeps whatever the tree ships (some checks play the shipped
+    sequences) and is removed when the process ends. A check that points
+    main.PROJECTS / SEQUENCES somewhere itself still wins.
+    """
+    if getattr(main, "_qc_data_box", None):
+        return main._qc_data_box
+    import atexit
+    import shutil
+    import tempfile
+    box = Path(tempfile.mkdtemp(prefix="mice_qc_data_%d_" % os.getpid()))
+    root = Path(main.PROJECTS).parent
+    for name in ("projects", "sequences", "shows"):
+        src = root / name
+        if src.is_dir():
+            shutil.copytree(src, box / name)
+        else:
+            (box / name).mkdir()
+    # models/ holds 27 MB of robot meshes the checks only READ; copying that
+    # into every one of ~150 hubs would cost more than it protects.
+    main.PROJECTS, main.SEQUENCES = box / "projects", box / "sequences"
+    main.SHOWS = main.shows_mod.Shows(box / "shows", main.SEQUENCES)
+    main._qc_data_box = box
+    atexit.register(shutil.rmtree, str(box), True)
+    return box
+
+
 def start_hub(fake=True):
     """Boot the hub in-process on a free port, with the fake module on COM99.
 
@@ -246,6 +282,7 @@ def start_hub(fake=True):
     import webbrowser
     webbrowser.open = lambda *a, **k: None      # never pop a browser in QC
     import main
+    isolate_data(main)
     main.HOST = "127.0.0.1"  # isolated fake Hub; never expose a test listener to the LAN
     import socketserver
     main.Handler.log_message = lambda *a, **k: None   # QC output stays readable
