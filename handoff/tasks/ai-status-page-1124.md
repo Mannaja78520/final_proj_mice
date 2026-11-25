@@ -2,8 +2,8 @@
 Owner: codex:11251000-b23d
 Plan: system A59-2
 Branch: claude/project-thread-181856
-Updated: 2026-11-25 10:03 +0700
-Last commit: this checkpoint (branch claude/project-thread-181856)
+Updated: 2026-11-25T11:11:48+07:00
+Last commit: 1d21fff (first full-QC input)
 
 ## User ask (Thai, 2026-11-24)
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3LaPHxqrTy1gy5i5h9CNTes: "Is there a place to see which GPT is working and how far it has got?"
@@ -30,7 +30,7 @@ then rebuild MiceHub.exe from a clean main worktree on the PC (standing approval
 cmsg_01R7BbYxaTb3Yv9YS3gQaaA3GFKFwe31L9cSDhiS4Mbs2z), restart the hub and leave it running. Do not edit friend repos.
 
 ## Doing now
-Run full QC in this worktree with --jobs 1, holding the shared QC driver. Freeze the feature tree until it exits.
+Prepare an isolated release candidate from current main with only this task's feature files. Regenerate the task inventory. Preserve both WIP task files on the shared branch.
 
 ## Done
 - Read HANDOFF.md, CLAUDE.md, the task and shared coordination rules.
@@ -52,8 +52,11 @@ Run full QC in this worktree with --jobs 1, holding the shared QC driver. Freeze
 - Checkpoint 777a439 pushed after pull --rebase. Current origin/main fc39932 is an ancestor.
 - Contextual Hub Help returned 8/8 localized headings and matching light/dark illustrations in Edge with the fake Hub. Evidence: _out/ai-status-1124/verify_help_resume.log.
 
+- Serial full QC at 1d21fff exited 1 after 4021.6s: 10682 passed, 3 failed. AI work 21/0, PC camera 13/0, visual language 165/0. Evidence: _out/ai-status-1124/full-1d21fff.log and .done.json.
+- The inherited friend handoff lacks Branch and Plan. Our top-level MICE_PLAN override caused the packing-list crash and canonical plan-path failure. No feature assertion failed. Shared QC driver released.
+
 ## Next
-Read the full QC result, release the driver, and run the final review before an eligible merge.
+Verify the scoped diff, claim free QC driver and rerun the full serial gate with the default plan path.
 
 ## Facts found
 - main_python/hub_api_apps.py:50 supplies the registry-driven Tools list. A manifest in apps/ adds a tile.
@@ -66,24 +69,24 @@ Read the full QC result, release the driver, and run the final review before an 
 | --- | --- | --- | --- | --- |
 | handoff/tasks/ai-status-page-1124.md | Take task and record branch baseline | In progress | git diff --check | this checkpoint |
 
-| main_python/ai_status.py | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| main_python/ai_status.py | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
 | main_python/hub_api_apps.py | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
 | apps/ai-status/app.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
-| apps/ai-status/index.html | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
-| apps/ai-status/status.js | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
-| main_python/web/help/parts/hub.html | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| apps/ai-status/index.html | Planned AI work integration | Built | focused QC and native text check | d7bb1ec |
+| apps/ai-status/status.js | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
+| main_python/web/help/parts/hub.html | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
 | main_python/web/help/shots.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
-| main_python/web/help.html | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| main_python/web/help.html | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
 | docs/systems.json | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
 | docs/systems/hub-apps.md | Planned AI work integration | Built | parser and syntax checks only | 64d425f |
-| qc/checks/check_ai_status.py | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
-| shared/web/lang/en.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
-| shared/web/lang/th.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
-| shared/web/lang/ja.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
-| shared/web/lang/zh.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
-| shared/web/lang/help/en.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
-| shared/web/lang/help/ja.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
-| shared/web/lang/help/zh.json | Planned AI work integration | Built | focused QC and native text check | this checkpoint |
+| qc/checks/check_ai_status.py | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
+| shared/web/lang/en.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
+| shared/web/lang/th.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
+| shared/web/lang/ja.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
+| shared/web/lang/zh.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
+| shared/web/lang/help/en.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
+| shared/web/lang/help/ja.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
+| shared/web/lang/help/zh.json | Planned AI work integration | Built | focused QC and native text check | b0b4e9b |
 | main_python/web/help/img/en-light-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
 | main_python/web/help/img/en-dark-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
 | main_python/web/help/img/th-light-hub-ai-status.webp | Browser capture | Verified | Edge contextual Help and byte match to export | 777a439 |
@@ -100,7 +103,7 @@ Read the full QC result, release the driver, and run the final review before an 
 | docs/systems/hub-web.md | Generated inventory for Help images | Built | Diff lists exactly eight new captures | 777a439 |
 
 ## Blocked
-No current blocker. A59-2 holds the shared QC claim. A58-24 is separate. Build and restart resources are unclaimed.
+Release gate pending. Shared QC, integration, build and restart are unclaimed.
 
 ## Result
 (Codex: PR link, screenshot paths, what you verified; report in Thai)
