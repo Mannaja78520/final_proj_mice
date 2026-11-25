@@ -41,7 +41,7 @@ def run(t):
 
     threads = []
     for name, klass in (("bg1", "background"), ("bg2", "background"), ("bg3", "background"), ("live", "live")):
-        th = threading.Thread(target=job, args=(klass, name))
+        th = threading.Thread(target=job, args=(klass, name), daemon=True)
         th.start()
         threads.append(th)
         time.sleep(0.03)
@@ -60,11 +60,15 @@ def run(t):
             with s2.gate("live"):
                 time.sleep(0.02)
 
-    feeders = [threading.Thread(target=stream) for _ in range(3)]
+    feeders = [threading.Thread(target=stream, daemon=True) for _ in range(3)]
     for f in feeders:
         f.start()
     time.sleep(0.05)
-    bg = threading.Thread(target=lambda: (s2.gate("background").__enter__(), done.append(1)))
+    def background_turn():
+        with s2.gate("background"):             # let go again: a slot kept forever starves the feeders
+            done.append(1)
+
+    bg = threading.Thread(target=background_turn, daemon=True)
     bg.start()
     bg.join(6)
     stop.set()
@@ -80,7 +84,7 @@ def run(t):
             with s.gate("background"):
                 box.append("inner")
 
-    th = threading.Thread(target=nested)
+    th = threading.Thread(target=nested, daemon=True)
     th.start()
     th.join(3)
     t.ok(box == ["inner"] and not th.is_alive(), "a thread asking twice does not deadlock itself")
@@ -96,7 +100,7 @@ def run(t):
                 time.sleep(0.05)
                 g.checkpoint()
 
-    lj = threading.Thread(target=long_job)
+    lj = threading.Thread(target=long_job, daemon=True)
     lj.start()
     time.sleep(0.08)
     with s3.gate("live"):
@@ -158,7 +162,7 @@ def run(t):
             with lk:
                 inside[0] -= 1
 
-    rs = [threading.Thread(target=reader) for _ in range(4)]
+    rs = [threading.Thread(target=reader, daemon=True) for _ in range(4)]
     for r in rs:
         r.start()
     for r in rs:
@@ -183,13 +187,13 @@ def run(t):
         with lock.shared():
             ev.append("late-in")
 
-    a = threading.Thread(target=slow_reader)
+    a = threading.Thread(target=slow_reader, daemon=True)
     a.start()
     time.sleep(0.05)
-    w = threading.Thread(target=writer)
+    w = threading.Thread(target=writer, daemon=True)
     w.start()
     time.sleep(0.05)
-    b = threading.Thread(target=late_reader)
+    b = threading.Thread(target=late_reader, daemon=True)
     b.start()
     for x in (a, w, b):
         x.join(5)

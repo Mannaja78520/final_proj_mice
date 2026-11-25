@@ -39,7 +39,7 @@ def run(t):
 
     th = []
     for k in ("background", "translate", "live"):
-        x = threading.Thread(target=ask, args=(k,))
+        x = threading.Thread(target=ask, args=(k,), daemon=True)
         x.start()
         th.append(x)
         time.sleep(0.3)
