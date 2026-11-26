@@ -51,8 +51,13 @@ def boot_helper(cfg, faq):
          "--faq", str(faq), "--port", str(PORT)],
         stdout=log, stderr=subprocess.STDOUT,
         env=dict(os.environ, PYTHONUNBUFFERED="1"))
-    deadline = time.time() + 15
+    # The helper imports a lot before it listens; at low priority in a busy run (polite mode, 2026-11-26)
+    # 15 s was not enough ("the real helper came up" failed in the full run, green alone in 58 s).
+    # Wait for the answer, not for a number: up to 60 s, and stop at once if the process died.
+    deadline = time.time() + 60
     while time.time() < deadline:
+        if proc.poll() is not None:
+            return None
         try:
             with urllib.request.urlopen(
                     "http://127.0.0.1:%d/health" % PORT, timeout=2) as r:
