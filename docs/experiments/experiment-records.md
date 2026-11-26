@@ -569,3 +569,128 @@ check_flash_remote, check_crash_gate, check_flash_type, check_flash_confirm, che
   crowd's silent page, but a real shared-name collision (a unique work name per run would remove it).
 - Open: why the page of check_video_page (and gestures) sends no mark in a full run. Next step: capture the browser console of a
   silent page (--enable-logging, or the DevTools protocol) the moment QC SILENT fires.
+
+## 2026-11-26 F1 round 2-3 (PC RTX 5070 Ti Laptop, driver 621, onnxruntime 1.29.0, buffalo_l rec model w600k_r50)
+
+Raw files: `docs/experiments/2026-11-26_f1_round2/data/` (rec3.json, rec4.json, e2e_load.json, res_p3.json, e2e_load.log). Scripts: `../scripts/`. Report: `docs/friend/face_f1_batch_embedding_2026-11-26.md`.
+
+### Round 1-2: embedding per frame, recognition model only (ms; 600 frames per cell, shapes touched once before timing)
+| Pattern | Method | mean | p50 | p95 | p99 | max |
+| --- | --- | --- | --- | --- | --- | --- |
+| robot 1,1,1,2,1,1,1,3,1 | loop (today) | 5.5 | 3.99 | 12.07 | 14.33 | 15.3 |
+| robot 1,1,1,2,1,1,1,3,1 | hybrid (merged) | 5.0 | 3.89 | 8.97 | 9.72 | 11.4 |
+| robot 1,1,1,2,1,1,1,3,1 | buckets 1/2/4/8 plain | 4.44 | 4.02 | 6.18 | 6.67 | 7.7 |
+| robot 1,1,1,2,1,1,1,3,1 | buckets 1/2/4/8 plain, arena SameAsRequested | 4.36 | 3.96 | 6.26 | 6.75 | 8.5 |
+| robot 1,1,1,2,1,1,1,3,1 | buckets 1/2/4/8 + IO + CUDA graph | 3.05 | 2.69 | 5.33 | 5.58 | 7.9 |
+| robot 1,1,1,2,1,1,1,3,1 | 1/8 sessions + IO + CUDA graph | 3.94 | 2.71 | 8.22 | 8.45 | 9.8 |
+| robot 1,1,1,2,1,1,1,3,1 | hybrid, default workspace | 5.07 | 4.12 | 9.01 | 9.45 | 11.1 |
+| robot 1,1,1,2,1,1,1,3,1 | hybrid, max_workspace=0 | 5.06 | 4.0 | 9.0 | 9.52 | 12.0 |
+| robot 1,1,1,2,1,1,1,3,1 | graph buckets 1/2/4/8, max_workspace=0 | 3.08 | 2.72 | 5.51 | 5.86 | 6.0 |
+| robot 1,1,1,2,1,1,1,3,1 | graph buckets 1/4/8, max_workspace=0 | 3.38 | 2.75 | 5.8 | 6.01 | 8.7 |
+| robot 1,1,1,2,1,1,1,3,1 | graph buckets 1/2/8, max_workspace=0 | 3.42 | 2.74 | 8.23 | 8.61 | 9.2 |
+| robot 1,1,1,2,1,1,1,3,1 | graph buckets 1/8, max_workspace=0 | 3.93 | 2.69 | 8.24 | 10.01 | 11.3 |
+| robot 1,1,1,2,1,1,1,3,1 | graph buckets 1/2/4/8, default workspace | 3.09 | 2.72 | 5.35 | 5.67 | 7.4 |
+| event crowd (Poisson mean 3, 1-8) | loop (today) | 12.64 | 11.11 | 26.22 | 31.56 | 37.4 |
+| event crowd (Poisson mean 3, 1-8) | hybrid (merged) | 7.95 | 8.73 | 10.01 | 11.32 | 12.0 |
+| event crowd (Poisson mean 3, 1-8) | buckets 1/2/4/8 plain | 6.01 | 6.05 | 8.9 | 9.55 | 11.2 |
+| event crowd (Poisson mean 3, 1-8) | buckets 1/2/4/8 plain, arena SameAsRequested | 5.95 | 6.05 | 9.03 | 9.51 | 14.6 |
+| event crowd (Poisson mean 3, 1-8) | buckets 1/2/4/8 + IO + CUDA graph | 4.89 | 5.2 | 8.15 | 8.88 | 11.3 |
+| event crowd (Poisson mean 3, 1-8) | 1/8 sessions + IO + CUDA graph | 7.21 | 8.03 | 8.47 | 11.06 | 12.0 |
+| event crowd (Poisson mean 3, 1-8) | hybrid, default workspace | 7.95 | 8.72 | 9.95 | 10.66 | 12.3 |
+| event crowd (Poisson mean 3, 1-8) | hybrid, max_workspace=0 | 7.99 | 8.76 | 10.01 | 11.04 | 12.1 |
+| event crowd (Poisson mean 3, 1-8) | graph buckets 1/2/4/8, max_workspace=0 | 4.88 | 5.2 | 8.13 | 8.52 | 10.1 |
+| event crowd (Poisson mean 3, 1-8) | graph buckets 1/4/8, max_workspace=0 | 5.43 | 5.26 | 8.22 | 8.8 | 11.0 |
+| event crowd (Poisson mean 3, 1-8) | graph buckets 1/2/8, max_workspace=0 | 5.96 | 7.9 | 8.38 | 10.16 | 10.9 |
+| event crowd (Poisson mean 3, 1-8) | graph buckets 1/8, max_workspace=0 | 7.21 | 8.04 | 8.53 | 10.69 | 11.4 |
+| event crowd (Poisson mean 3, 1-8) | graph buckets 1/2/4/8, default workspace | 4.93 | 5.26 | 8.17 | 8.37 | 11.2 |
+| uniform random 1-8 | loop (today) | 18.46 | 18.36 | 33.38 | 36.49 | 38.0 |
+| uniform random 1-8 | hybrid (merged) | 8.36 | 8.77 | 9.93 | 11.09 | 12.2 |
+| uniform random 1-8 | buckets 1/2/4/8 plain | 7.16 | 8.66 | 9.05 | 11.02 | 12.0 |
+| uniform random 1-8 | buckets 1/2/4/8 plain, arena SameAsRequested | 7.18 | 8.74 | 9.19 | 10.89 | 11.6 |
+| uniform random 1-8 | buckets 1/2/4/8 + IO + CUDA graph | 6.12 | 7.87 | 8.34 | 10.05 | 11.2 |
+| uniform random 1-8 | 1/8 sessions + IO + CUDA graph | 7.62 | 8.06 | 8.54 | 11.1 | 11.7 |
+| uniform random 1-8 | hybrid, default workspace | 8.35 | 8.79 | 9.89 | 11.52 | 12.9 |
+| uniform random 1-8 | hybrid, max_workspace=0 | 8.35 | 8.78 | 9.87 | 11.11 | 12.0 |
+| uniform random 1-8 | graph buckets 1/2/4/8, max_workspace=0 | 6.11 | 7.85 | 8.26 | 10.29 | 11.3 |
+| uniform random 1-8 | graph buckets 1/4/8, max_workspace=0 | 6.5 | 7.88 | 8.31 | 10.28 | 11.5 |
+| uniform random 1-8 | graph buckets 1/2/8, max_workspace=0 | 6.72 | 7.95 | 8.59 | 10.53 | 11.3 |
+| uniform random 1-8 | graph buckets 1/8, max_workspace=0 | 7.62 | 8.06 | 8.74 | 11.06 | 11.5 |
+| uniform random 1-8 | graph buckets 1/2/4/8, default workspace | 6.18 | 7.93 | 8.39 | 10.27 | 11.5 |
+| fixed 6 | loop (today) | 24.15 | 23.72 | 28.14 | 29.22 | 30.2 |
+| fixed 6 | hybrid (merged) | 8.92 | 8.81 | 9.56 | 11.16 | 13.0 |
+| fixed 6 | buckets 1/2/4/8 plain | 8.93 | 8.81 | 9.83 | 11.32 | 11.9 |
+| fixed 6 | buckets 1/2/4/8 plain, arena SameAsRequested | 9.03 | 8.92 | 9.63 | 11.72 | 14.6 |
+| fixed 6 | buckets 1/2/4/8 + IO + CUDA graph | 8.17 | 8.06 | 8.68 | 11.01 | 11.3 |
+| fixed 6 | 1/8 sessions + IO + CUDA graph | 8.96 | 8.31 | 10.65 | 33.82 | 55.5 |
+| fixed 6 | hybrid, default workspace | 8.92 | 8.81 | 9.47 | 11.77 | 13.2 |
+| fixed 6 | hybrid, max_workspace=0 | 8.92 | 8.8 | 9.57 | 11.02 | 12.1 |
+| fixed 6 | graph buckets 1/2/4/8, max_workspace=0 | 8.12 | 8.01 | 8.6 | 11.19 | 11.8 |
+| fixed 6 | graph buckets 1/4/8, max_workspace=0 | 8.15 | 8.02 | 9.28 | 10.54 | 11.5 |
+| fixed 6 | graph buckets 1/2/8, max_workspace=0 | 8.14 | 8.02 | 8.93 | 10.74 | 11.4 |
+| fixed 6 | graph buckets 1/8, max_workspace=0 | 8.2 | 8.1 | 8.94 | 10.6 | 11.2 |
+| fixed 6 | graph buckets 1/2/4/8, default workspace | 8.26 | 8.15 | 8.74 | 10.99 | 11.4 |
+| fixed 2 | loop (today) | 8.12 | 7.61 | 9.71 | 10.85 | 11.8 |
+| fixed 2 | hybrid (merged) | 8.03 | 7.51 | 9.77 | 11.25 | 12.4 |
+| fixed 2 | buckets 1/2/4/8 plain | 4.17 | 4.01 | 4.87 | 5.8 | 6.8 |
+| fixed 2 | buckets 1/2/4/8 plain, arena SameAsRequested | 4.21 | 4.03 | 4.92 | 5.66 | 6.7 |
+| fixed 2 | buckets 1/2/4/8 + IO + CUDA graph | 3.1 | 3.06 | 3.27 | 4.6 | 5.7 |
+| fixed 2 | 1/8 sessions + IO + CUDA graph | 8.33 | 8.22 | 8.84 | 10.81 | 12.0 |
+| fixed 2 | hybrid, default workspace | 8.01 | 7.53 | 9.6 | 10.81 | 11.6 |
+| fixed 2 | hybrid, max_workspace=0 | 7.95 | 7.48 | 9.75 | 10.67 | 11.5 |
+| fixed 2 | graph buckets 1/2/4/8, max_workspace=0 | 3.11 | 3.06 | 3.28 | 4.81 | 6.4 |
+| fixed 2 | graph buckets 1/4/8, max_workspace=0 | 5.35 | 5.26 | 5.63 | 7.75 | 8.6 |
+| fixed 2 | graph buckets 1/2/8, max_workspace=0 | 3.12 | 3.07 | 3.28 | 4.82 | 6.2 |
+| fixed 2 | graph buckets 1/8, max_workspace=0 | 8.19 | 8.09 | 8.7 | 10.33 | 11.3 |
+| fixed 2 | graph buckets 1/2/4/8, default workspace | 3.1 | 3.06 | 3.27 | 5.09 | 6.6 |
+| fixed 1 | loop (today) | 3.95 | 3.71 | 4.84 | 5.85 | 7.1 |
+| fixed 1 | hybrid (merged) | 4.05 | 3.75 | 5.03 | 5.72 | 6.4 |
+| fixed 1 | buckets 1/2/4/8 plain | 4.05 | 3.76 | 4.97 | 5.88 | 6.4 |
+| fixed 1 | buckets 1/2/4/8 plain, arena SameAsRequested | 4.08 | 3.84 | 4.87 | 5.8 | 6.9 |
+| fixed 1 | buckets 1/2/4/8 + IO + CUDA graph | 2.69 | 2.66 | 2.8 | 3.8 | 5.9 |
+| fixed 1 | 1/8 sessions + IO + CUDA graph | 2.71 | 2.67 | 2.86 | 4.23 | 5.3 |
+| fixed 1 | hybrid, default workspace | 4.05 | 3.77 | 4.96 | 5.64 | 6.2 |
+| fixed 1 | hybrid, max_workspace=0 | 4.08 | 3.8 | 4.96 | 6.0 | 6.9 |
+| fixed 1 | graph buckets 1/2/4/8, max_workspace=0 | 2.69 | 2.66 | 2.84 | 4.1 | 5.6 |
+| fixed 1 | graph buckets 1/4/8, max_workspace=0 | 2.71 | 2.66 | 2.82 | 4.39 | 5.7 |
+| fixed 1 | graph buckets 1/2/8, max_workspace=0 | 2.7 | 2.65 | 2.9 | 4.42 | 5.0 |
+| fixed 1 | graph buckets 1/8, max_workspace=0 | 2.71 | 2.67 | 2.83 | 4.06 | 5.5 |
+| fixed 1 | graph buckets 1/2/4/8, default workspace | 2.73 | 2.69 | 2.88 | 4.11 | 5.6 |
+
+VRAM added by the session set (MiB, nvidia-smi delta): rec3 {"loop: 1 session (baseline)": 0, "hybrid: + 1 session bs8": 326, "buckets 1/2/4/8 plain (4 sessions)": 1302, "buckets 1/2/4/8 plain, arena=SameAsRequested": 1142, "buckets 1/2/4/8 + IO + CUDA graph (4 sessions)": 1872, "1+8 sessions + IO + CUDA graph (2 sessions)": 902}; rec4 {"loop baseline": 0, "hybrid default workspace (+1 session)": 320, "hybrid, max_workspace=0 (+1 session)": 642, "graph buckets 1/2/4/8, max_workspace=0 (4 sessions)": 1848, "graph buckets 1/4/8, max_workspace=0 (3 sessions)": 1514, "graph buckets 1/2/8, max_workspace=0 (3 sessions)": 1286, "graph buckets 1/8, max_workspace=0 (2 sessions)": 964, "graph buckets 1/2/4/8, default workspace (4 sessions)": 1892}
+
+Accuracy vs per-face loop, n = 1..8 (normalised embeddings): {"loop (today)": {"min_cos": 0.9999999, "max_abs_diff": 0.0}, "hybrid (merged)": {"min_cos": 0.9999998, "max_abs_diff": 7.460266351699829e-05}, "buckets 1/2/4/8 plain": {"min_cos": 0.9999998, "max_abs_diff": 8.797645568847656e-05}, "buckets 1/2/4/8 plain, arena SameAsRequested": {"min_cos": 0.9999998, "max_abs_diff": 8.797645568847656e-05}, "buckets 1/2/4/8 + IO + CUDA graph": {"min_cos": 0.9999998, "max_abs_diff": 8.797645568847656e-05}, "1/8 sessions + IO + CUDA graph": {"min_cos": 0.9999998, "max_abs_diff": 7.460266351699829e-05}}
+
+First attempt (15 sessions built at once) pushed VRAM to 11786/12227 MiB with the GPU at 100%: hybrid mean 49.2 ms, p95 403.5 ms (not used for results; killed).
+Model file declares output batch = 1; bound output of N fails (`Got invalid dimensions for output`). Fixed in memory with onnx (dim_param N).
+
+### Round 3: /api/look end to end with background load (perf_load: stt, voice /ask, camera MJPEG; llm port 11435 unreachable, 9 errors per window)
+20 s windows, 10 req/s, 1 client, modes switched by file, round 0 order loop,hybrid,bucketgraph and round 1 reversed.
+| Window | Mode | p50 | p95 | p99 | max | req/s | stt med/p95 | ask med |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| robot stream 1,1,1,2,1,0,1,1,3,1 | real r0 | loop | 40.3 | 88.9 | 1274.9 | 1500.7 | 8.65 | 183.7/391.7 | 53.9 |
+| robot stream 1,1,1,2,1,0,1,1,3,1 | real r1 | loop | 41.1 | 1240.4 | 1507.7 | 1507.7 | 4.75 | 158.7/158.7 | 178.9 |
+| robot stream 1,1,1,2,1,0,1,1,3,1 | real r0 | hybrid | 39.2 | 1109.7 | 1526.5 | 1526.5 | 3.85 | 161.9/168.2 | 34.9 |
+| robot stream 1,1,1,2,1,0,1,1,3,1 | real r1 | hybrid | 39.9 | 67.1 | 1206.4 | 1218.6 | 8.85 | 157.5/174.3 | 157.7 |
+| robot stream 1,1,1,2,1,0,1,1,3,1 | real r0 | bucketgraph | 38.8 | 69.1 | 931.7 | 1143.8 | 8.9 | 159.0/175.2 | 172.9 |
+| robot stream 1,1,1,2,1,0,1,1,3,1 | real r1 | bucketgraph | 39.4 | 79.7 | 982.1 | 1230.4 | 8.85 | 159.9/928.4 | 35.0 |
+| robot stream 1,1,1,2,1,0,1,1,3,1 | stress r0 | loop | 41.4 | 1383.3 | 1657.7 | 1657.7 | 3.95 | 167.7/1019.5 | 168.2 |
+| robot stream 1,1,1,2,1,0,1,1,3,1 | stress r1 | loop | 44.5 | 1218.9 | 1673.8 | 1673.8 | 4.85 | 162.5/1459.3 | 159.2 |
+| robot stream 1,1,1,2,1,0,1,1,3,1 | stress r0 | hybrid | 41.7 | 859.8 | 1210.0 | 1293.5 | 5.4 | 159.6/1260.6 | 58.0 |
+| robot stream 1,1,1,2,1,0,1,1,3,1 | stress r1 | hybrid | 48.5 | 829.4 | 1048.4 | 1159.2 | 5.25 | 167.8/1343.7 | 165.0 |
+| robot stream 1,1,1,2,1,0,1,1,3,1 | stress r0 | bucketgraph | 43.4 | 844.0 | 942.2 | 1347.0 | 5.15 | 167.1/1235.2 | 164.2 |
+| robot stream 1,1,1,2,1,0,1,1,3,1 | stress r1 | bucketgraph | 46.3 | 838.5 | 957.6 | 1019.5 | 5.4 | 168.5/1281.8 | 163.2 |
+| crowd random 1-6 | real r0 | loop | 47.1 | 1477.7 | 1531.5 | 1531.5 | 4.4 | 148.0/150.7 | 176.4 |
+| crowd random 1-6 | real r1 | loop | 44.6 | 69.5 | 1039.3 | 1214.5 | 8.95 | 157.9/181.5 | 168.8 |
+| crowd random 1-6 | real r0 | hybrid | 40.7 | 54.1 | 1000.6 | 1004.2 | 9.05 | 174.8/192.3 | 43.1 |
+| crowd random 1-6 | real r1 | hybrid | 43.7 | 60.7 | 1084.8 | 1273.1 | 8.7 | 167.5/195.2 | 161.3 |
+| crowd random 1-6 | real r0 | bucketgraph | 38.3 | 56.7 | 989.0 | 1016.9 | 9.15 | 152.6/195.1 | 154.8 |
+| crowd random 1-6 | real r1 | bucketgraph | 38.8 | 54.0 | 1152.4 | 1204.6 | 8.9 | 171.1/181.6 | 40.7 |
+| crowd random 1-6 | stress r0 | loop | 61.6 | 891.2 | 944.0 | 951.2 | 5.4 | 167.0/1177.4 | 166.5 |
+| crowd random 1-6 | stress r1 | loop | 47.6 | 1223.5 | 1243.5 | 1243.5 | 5.0 | 157.8/1557.8 | 160.4 |
+| crowd random 1-6 | stress r0 | hybrid | 51.7 | 867.7 | 914.9 | 947.3 | 5.9 | 165.9/1210.7 | 163.4 |
+| crowd random 1-6 | stress r1 | hybrid | 40.5 | 831.3 | 1290.7 | 1339.1 | 5.5 | 163.5/1035.2 | 164.6 |
+| crowd random 1-6 | stress r0 | bucketgraph | 45.9 | 890.5 | 1214.9 | 1214.9 | 4.8 | 164.3/1166.1 | 163.6 |
+| crowd random 1-6 | stress r1 | bucketgraph | 39.7 | 1233.5 | 1283.2 | 1283.2 | 3.0 | 162.4/1576.2 | 158.8 |
+
+Resources while measuring (mean of all windows, per mode): {"loop": {"gpu": 47.8, "vram": 11779.0, "clk": 1391.4, "pw": 30.6, "srv_cpu": 68.2, "srv_rss": 3298.9, "ram_avail": 7282.2, "cpu_all": 18.0}, "hybrid": {"gpu": 28.4, "vram": 11801.5, "clk": 954.3, "pw": 27.3, "srv_cpu": 57.2, "srv_rss": 3247.2, "ram_avail": 8011.8, "cpu_all": 14.0}, "bucketgraph": {"gpu": 24.8, "vram": 11802.3, "clk": 880.5, "pw": 25.0, "srv_cpu": 48.0, "srv_rss": 3169.0, "ram_avail": 8335.7, "cpu_all": 12.5}}
+
