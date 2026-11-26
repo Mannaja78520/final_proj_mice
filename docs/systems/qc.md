@@ -419,6 +419,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/checks/check_voice_guard.py`
 - `qc/checks/check_voice_helper.py`
 - `qc/checks/check_voice_identify.py`
+- `qc/checks/check_voice_idle_unload.py`
 - `qc/checks/check_voice_intents.py`
 - `qc/checks/check_voice_move.py`
 - `qc/checks/check_voice_multi.py`
@@ -471,7 +472,6 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/data/usability_dom.js`
 - `qc/data/usability_hub.js`
 - `qc/data/video_group.cjs`
-- `qc/last_timing.json`
 - `qc/lib/browser.py`
 - `qc/lib/check_pool.py`
 - `qc/lib/fake_friend.py`

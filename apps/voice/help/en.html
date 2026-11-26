@@ -83,6 +83,7 @@
     </div>
   </div>
 
+  <p><b>Idle models leave the graphics card:</b> when nobody has asked the Voice helper anything for 15 minutes, its models are unloaded from GPU memory (about 5 GB on this PC) so that other programs, such as CAD, get the card. The helper keeps running; the next question loads the models again, and the Voice status says "warming up" meanwhile (a few seconds longer for that first answer). The minutes are <b>idleUnloadMinutes</b> in config/voice.json (0 = never). It never unloads while a question is being answered or in presence/greeter mode. Optionally list programs in <b>yieldVramWhen</b> (for example SLDWORKS.exe): while one is running and the helper is idle, the models go after one minute.</p>
   <p>If Load the AI, Unload the AI or reading the status fails, the button comes back to press again, with an error message. Loading a real model can take a while depending on the machine.</p>
   <p><b>The on-device AI (Ollama) starts by itself when used:</b> You do not need to start it after switching on the computer, and it is not set to open at login. Pressing Load the AI or asking the first question opens it with a hidden window and waits until it is ready (normally no more than about 40 seconds). If it does not come up, it says why in plain words and does not retry for 1 minute; press Load the AI again.</p>
   <p>Press the talk button and you see "opening the microphone…" at once. If the browser has not yet allowed the microphone, it tells you how to fix it, and you can still type the question instead.</p>

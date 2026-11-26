@@ -3,6 +3,9 @@
  "faqThreshold": 0.75,
  "faqAskAgain": 0,
  "scenario": "Mall greeter",
+ "idleUnloadMinutes": 15,
+ "yieldVramWhen": [],
+ "yieldVramMinutes": 1,
  "presence": {
   "on": false,
   "seconds": 60,
