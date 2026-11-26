@@ -26,6 +26,10 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
   - *Problem:* measured 2026-11-26 on the PC: at 6 GB the small hearing model loaded first and kept the GPU while the Thai one (saves 2.5 s per visitor) ran on the CPU; at 10 GB a busy local AI sent a newcomer to the CPU, so a bigger card had fewer models on the GPU than 8 GB.
   - *Method:* an equally important model is replaced only by one that saves more time than everything it pushes out; a busy model is asked again until its idle moment (8 s, config) before the newcomer falls back to the CPU; the Thai hearing size uses the measured saving (2877 ms CPU vs 422 ms GPU).
   - *Numbers:* a QC check now walks 2 to 16 GB in 256 MiB steps and fails if a bigger card ever saves less time. Re-measurement: docs/perf_vram_2026-11-26.md.
+- QC no longer leaves headless browsers running after a crash, Ctrl+C or a timed-out check — `qc`
+  - *Problem:* 119 headless Edge processes from QC runs stayed alive on the PC (up to 67 h old, about 4 GB of memory) after killed runs, crashes and timed-out checks.
+  - *Method:* the runner joins a Windows job object that kills everything it started when it ends (even if killed hard); Ctrl+C and SIGTERM end the run cleanly; every run starts by killing browsers whose owner is gone or older than 6 h (never a live run's); a full run fails if it leaves a browser behind. Proven with real processes in check_no_orphans.
+  - *Numbers:* a hard-killed runner now takes its child and a detached grandchild with it within 15 s (was: they lived on).
 
 ## 2026-11-25
 
