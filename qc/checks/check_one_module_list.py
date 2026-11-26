@@ -57,6 +57,8 @@ PAGE = """
 function sleep(ms){ return new Promise(function(go){ setTimeout(go, ms); }); }
 document.getElementById('f').addEventListener('load', async function(){
   var d = this.contentDocument;
+  var T0 = Date.now(); function stage(n){ qcMark('STAGE ' + n + ' ' + (Date.now() - T0)); }
+  stage('loaded');
   // The list arrives from several scans. Waiting for TWO ROWS is a bet on
   // how fast the machine is today - the far-PC answers can land seconds
   // after the local cable rows, and a read before them measures an early
@@ -72,6 +74,7 @@ document.getElementById('f').addEventListener('load', async function(){
           || (d.getElementById('homeTools') && d.getElementById('homeTools').getAttribute('aria-busy') === 'true'))
          && Date.now() < until)
     await sleep(250);
+  stage('rows-ready');
   await sleep(500);                       // let the vias finish drawing too
   function rows(sel){
     return [].slice.call(d.querySelectorAll(sel)).map(function(r){
@@ -98,7 +101,9 @@ document.getElementById('f').addEventListener('load', async function(){
   // has to have finished probing first - counting before it draws anything
   // measures a page with nothing in it, and the duplicate this exists to catch
   // is drawn by that very card.
+  stage('before-scanUsb');
   await this.contentWindow.scanUsb();
+  stage('after-scanUsb');
   var deadline = Date.now() + 15000;
   while (!d.querySelector('#usbmods .via, #usbmods .mod')
          && Date.now() < deadline) await sleep(250);
@@ -128,7 +133,9 @@ document.getElementById('f').addEventListener('load', async function(){
       return Promise.resolve(String(u).indexOf('/api/modules') === 0
                              ? made : {ok: true, ports: [], modules: []}); }});
   };
+  stage('before-scan2');
   await w.scan(true);
+  stage('after-scan2');
   await sleep(400);
   qcMark('SUM2 ' + (sum ? sum.textContent : 'missing').replace(/ /g, '~'));
 
@@ -305,6 +312,8 @@ def run(t):
         said = _kv_line(marks, "SUM")
         t.contains(said, "module", "Home still says how many modules there are")
         four = _kv_line(marks, "SUM2")
+        t.ok(four != "", "the page got as far as reading the Home sentence after the second scan",
+             "stages (ms since load): %s" % [m for m in marks if m.startswith(("STAGE", "SUM", "ERROR"))])
         for word in ("4 modules", "1 on a USB cable", "1 on the RS485 bus",
                      "1 over WiFi", "1 through another PC"):
             t.contains(four, word,

@@ -18,6 +18,10 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
   - *Problem:* the PC assistant's keep-running check had to be turned on by a double-click, and after a restart nobody told the AIs to continue.
   - *Method:* whichever AI starts a task (Claude, GPT Codex, Gemini) runs python tools/pc_assistant_ensure.py first: it installs the check once (idempotent, no questions) unless the user pressed Stop PC Assistant, which leaves a "turned off" flag. The check has no logon trigger and removes itself when the PC restarts or shuts down; after a restart the user's first message to any AI means continue, and a new session is told to read HANDOFF.md and handoff/tasks, resume and run the ensure step again. The rule is in HANDOFF.md, the shared memory, the Codex and Gemini task-start text and the SessionStart hint.
   - *Numbers:* tested with throwaway tasks and a sandbox copy of the launchers; nothing was registered on the real PC. See docs/pc_assistant.md.
+- check_one_module_list prints where the page's time went when the Home sentence is missing — `qc`
+  - *Problem:* check_one_module_list failed in busy full runs with "'4 modules' not found in ''" and nothing said why (green alone, and 40 of 40 with 10 copies at once).
+  - *Method:* the page now marks each stage (loaded, rows ready, before and after each scan) with milliseconds since load, and a new assertion says whether the page reached the Home sentence at all and shows those stages, so the next crowd failure explains itself. The Home sentence itself is never empty in the page (it always says counting / looking / no modules / N modules), so an empty read means the page did not get that far.
+  - *Numbers:* the check passes alone (16 s).
 
 **Fixed**
 
@@ -25,6 +29,9 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
   - *Problem:* in a busy full run the check judged a page after a fixed 7 seconds, before it had loaded, and reloaded it, so its "judged on its first load" assertion failed (green alone).
   - *Method:* it now waits until every page has loaded (up to 25 s) and then 2 s for the probes; the assertions are unchanged and a failure now prints what each page said.
   - *Numbers:* green alone (17.5 s); 8 copies at once pass 5 of 8 (the others fail only on the page-load time of 64 pages at once).
+- System map no longer lists the git-ignored qc/last_timing.json — `qc`
+  - *Problem:* the system map listed qc/last_timing.json, a git-ignored file that exists only on a PC that ran QC, so docs/systems/qc.md differed between the PC and a clean checkout and GitHub quick-qc failed.
+  - *Method:* last_timing.json joins the excluded names in docs/systems.json, like last_progress.json.
 
 ## 2026-11-26
 
