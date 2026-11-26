@@ -18,6 +18,7 @@ you touched (full log in qc/last_run.log), full QC once before merge; grep or
 tail big files (BRIDGE, PLAN.html, app.js, reports/), never read them whole.
 Token rules (all AIs, same text): HANDOFF.md section "Save tokens" (short heartbeat, no polling,
 experiment budget + stop rule, --done-file).
+Change log (all AIs, user 2026-11-25): every change adds one entry file: `python tools/changelog.py new <slug> "<title>" --kind new|improved|fixed --area <area>`; one plain line (title), Problem/Method/Numbers only if notable, then `python tools/changelog.py build`. Short; group trivial fixes. QC `check_changelog` fails a branch that changes code without one. Internal-only changes need no Help update.
 Shared memory (all AIs, user 2026-11-20): `python tools/memory.py list`; add durable facts with `tools/memory.py add`. Hard or stuck work goes to GPT Codex (`handoff/memory/gpt-overflow-rule.md`).
 
 ## Find the subsystem first (A26-76, user 2026-09-21)
