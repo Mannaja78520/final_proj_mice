@@ -32,11 +32,12 @@ Every app works alone (MiceHub.exe --alone <app>, own port) AND together: the pe
 
 - [hub](hub.md)
 
-## Checks that test it (4)
+## Checks that test it (5)
 
 - `check_alone_apps`
 - `check_board_auth`
+- `check_pc_assistant_ensure`
 - `check_rc_watchdog`
 - `check_reach`
 
-Run them: `python qc/run_qc.py --no-build check_alone_apps check_board_auth check_rc_watchdog check_reach`
+Run them: `python qc/run_qc.py --no-build check_alone_apps check_board_auth check_pc_assistant_ensure check_rc_watchdog check_reach`

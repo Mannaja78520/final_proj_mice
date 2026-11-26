@@ -10,6 +10,7 @@ Read this index, open only the files that match your task. Add a fact with
 ## feedback
 
 - [gpt-overflow-rule](gpt-overflow-rule.md): When Claude hands hard, stuck or overflow work to GPT Codex
+- [pc-assistant-ensure](pc-assistant-ensure.md): Run tools/pc_assistant_ensure.py when you start a task; after a PC restart the user's first message means continue
 - [public-repo-rules](public-repo-rules.md): The repo is public: what must never be committed
 - [rule-files-need-user-order](rule-files-need-user-order.md): AI edits rule files only when the user orders it
 - [token-saving-rules](token-saving-rules.md): Token and usage rules that apply to Claude, GPT and Gemini alike
