@@ -107,6 +107,9 @@ New file or system: add it to `docs/systems.json`, then `python tools/systems.py
 5. Assert on what reached the module (`fake_serial.wire`), not on what the UI says.
 6. `MiceHub.exe`, `promt.md`, `docs/PLAN.html` are in `promote.py` SKIP_FILES. Keep them there.
 7. Finish with `python tools/land.py --done <ids>`: quick suite, gate, promote, plan.
+   When full QC is green on the PC: mark the PR ready (not draft) and add the label `auto-merge`.
+   `.github/workflows/auto-merge.yml` then squash-merges it once CI `quick-qc` passes (owner-added label, same-repo
+   branch only; user 2026-11-26). Remove the label to stop it.
 
 ## Code style
 
