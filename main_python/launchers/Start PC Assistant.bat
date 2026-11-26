@@ -5,6 +5,7 @@ rem automatic check that keeps it running (every 3 minutes, until the PC restart
 set "REPO=%~dp0../.."
 echo.
 echo  Starting the PC assistant...
+python "%REPO%/tools/pc_assistant_ensure.py" --on >nul 2>&1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO%/tools/rc_watchdog_install.ps1" -NoStart >nul 2>&1
 if errorlevel 1 (
   echo  Could not turn on the automatic check. The assistant will still be started now,
@@ -19,6 +20,7 @@ for /f "delims=" %%S in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%
 echo.
 echo  The PC assistant is: %STATE%
 echo  If a usage limit is reached, the work is handed on automatically and picked up again after the reset.
-echo  After a restart or shutdown, open "Start PC Assistant" again. To turn it off, open "Stop PC Assistant".
+echo  After you restart or shut down the PC, just send any message to Claude, GPT or Gemini: it continues the work
+echo  and turns this on again by itself. To turn it off for good, open "Stop PC Assistant".
 echo.
 pause

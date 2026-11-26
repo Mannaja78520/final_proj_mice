@@ -223,7 +223,7 @@
     {"id": "qc", "summary": "The QC suite, its gate and the promotion tool.",
      "files": ["qc/", "promote.py", "tools/sabotage.py", "tools/sim_sweep.py", "tools/studio_sweep.py", "tools/many_boards_probe.py", "tools/helpers_probe.py", "tools/legacy_probe.py",
       "tools/qemu_esp32.py", "tools/visual/", "tools/land.py", "tools/snapshot.py",
-               "tools/save_code_patch.py", "tools/watch_main.py", "tools/qc_live.py", "tools/polite.py", "tools/rc_watchdog.ps1", "tools/rc_watchdog_install.ps1", "tools/rc_watchdog_uninstall.ps1", "tools/rc_watchdog_run.vbs", "tools/rc_heartbeat.py", "tools/resume_hint.py", "config/rc_watchdog.json", "config/extra_launchers.json", "docs/pc_assistant.md"],
+               "tools/save_code_patch.py", "tools/watch_main.py", "tools/qc_live.py", "tools/polite.py", "tools/rc_watchdog.ps1", "tools/rc_watchdog_install.ps1", "tools/rc_watchdog_uninstall.ps1", "tools/rc_watchdog_run.vbs", "tools/rc_heartbeat.py", "tools/resume_hint.py", "tools/pc_assistant_ensure.py", "config/rc_watchdog.json", "config/extra_launchers.json", "docs/pc_assistant.md"],
      "depends": []},
 
     {"id": "build", "summary": "Web asset and Studio builds.",

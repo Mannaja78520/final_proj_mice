@@ -12,6 +12,13 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
   - *Method:* double-click "Start PC Assistant" (and "Stop PC Assistant"): a low-priority check every 3 minutes keeps one session running, restarts it if it lost its connection or stopped writing its heartbeat, never touches other Claude windows, backs off after 3 starts an hour, and removes itself when the PC shuts down, restarts or you log in again. A new session is told which tasks are still "Doing now". At a usage limit the existing AI watcher hands the work on in order: GPT Codex, Gemini 4 Argon (full), regular Gemini (small steps only), one AI at a time, back to Claude when it is free.
   - *Numbers:* how to use and turn it off: docs/pc_assistant.md. Not turned on by the change itself; you start it with the .bat.
 
+**Improved**
+
+- Any AI turns the PC assistant's keep-running check on when it starts a task; after a restart the first message means continue — `tooling`
+  - *Problem:* the PC assistant's keep-running check had to be turned on by a double-click, and after a restart nobody told the AIs to continue.
+  - *Method:* whichever AI starts a task (Claude, GPT Codex, Gemini) runs python tools/pc_assistant_ensure.py first: it installs the check once (idempotent, no questions) unless the user pressed Stop PC Assistant, which leaves a "turned off" flag. The check has no logon trigger and removes itself when the PC restarts or shuts down; after a restart the user's first message to any AI means continue, and a new session is told to read HANDOFF.md and handoff/tasks, resume and run the ensure step again. The rule is in HANDOFF.md, the shared memory, the Codex and Gemini task-start text and the SessionStart hint.
+  - *Numbers:* tested with throwaway tasks and a sandbox copy of the launchers; nothing was registered on the real PC. See docs/pc_assistant.md.
+
 **Fixed**
 
 - check_no_undefined_names judges a page after it has loaded, not after a fixed 7 seconds — `qc`

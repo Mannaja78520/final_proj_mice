@@ -49,6 +49,7 @@ same file. History is in `docs/BRIDGE.md` and the STATE block of
   and say in the thread "ChatGPT/Codex can continue from handoff/tasks/<file>"
   (they have no auto-resume; a Claude session checks back after its reset).
 - Task fully done: delete its file in the PR that merges the work.
+- PC assistant (user 2026-11-27): when you start a task run `python tools/pc_assistant_ensure.py` (idempotent, no questions; it turns the keep-running check on unless the user stopped it); after a PC restart the user's first message means "continue": read this file and handoff/tasks, resume, do not ask. How it works: docs/pc_assistant.md.
 - Do not create other handoff files (the change log, `tools/changelog.py`, is the one exception: CLAUDE.md). Edit this file only when a rule or a
   path below changes, or a big feature lands (Built so far).
 - Plan rows still apply: `python tools/plan.py doing|done|note <id> ...`.

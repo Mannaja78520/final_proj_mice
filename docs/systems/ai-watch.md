@@ -32,10 +32,11 @@ PC helper (user 2026-10-29): watches Codex, Gemini and Claude logs for a usage l
 
 - nothing
 
-## Checks that test it (3)
+## Checks that test it (4)
 
 - `check_ai_fallback`
 - `check_ai_watch`
+- `check_pc_assistant_ensure`
 - `check_resource_policy`
 
-Run them: `python qc/run_qc.py --no-build check_ai_fallback check_ai_watch check_resource_policy`
+Run them: `python qc/run_qc.py --no-build check_ai_fallback check_ai_watch check_pc_assistant_ensure check_resource_policy`
