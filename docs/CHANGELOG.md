@@ -29,6 +29,9 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
   - *Problem:* in a busy full run the check judged a page after a fixed 7 seconds, before it had loaded, and reloaded it, so its "judged on its first load" assertion failed (green alone).
   - *Method:* it now waits until every page has loaded (up to 25 s) and then 2 s for the probes; the assertions are unchanged and a failure now prints what each page said.
   - *Numbers:* green alone (17.5 s); 8 copies at once pass 5 of 8 (the others fail only on the page-load time of 64 pages at once).
+- System map no longer lists the git-ignored qc/last_timing.json — `qc`
+  - *Problem:* the system map listed qc/last_timing.json, a git-ignored file that exists only on a PC that ran QC, so docs/systems/qc.md differed between the PC and a clean checkout and GitHub quick-qc failed.
+  - *Method:* last_timing.json joins the excluded names in docs/systems.json, like last_progress.json.
 
 ## 2026-11-26
 
