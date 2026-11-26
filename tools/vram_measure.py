@@ -4,6 +4,9 @@
     python tools/vram_measure.py caps           card sizes 2, 4, 6, 8, 10, 12 GB and the whole card, 2 runs each
     python tools/vram_measure.py strategies     swap and hybrid at 2, 4, 6 GB (spill = the `caps` runs)
     python tools/vram_measure.py all            all of the above        (smoke = a 10-minute dry run)
+    python tools/vram_measure.py reduced        NO stop of the real Voice: the side Voice gets a 2.0 and 2.5 GB budget
+                                                (MICE_VRAM_VOICE_BUDGET_MIB) while the real Voice holds the card;
+                                                calibration at those sizes, spill / swap / hybrid, 2 runs each
 
 What it does, and what it touches:
   * Holds the PC-wide QC lock (qc/lib/runlock.py) for the whole session, so no QC runs under the numbers.
@@ -33,6 +36,7 @@ NOWIN = 0x08000000
 DETACHED = 0x00000008
 OUT = ROOT / ".local" / "perf" / ("vram_" + time.strftime("%Y-%m-%d"))
 CLIP_DIR = ROOT / ".local" / "perf" / "clips"
+SPARK_ROOTS = []                                  # more places to look for .local/tts_spark (set from the real Voice's tree)
 
 
 def say(*a):
@@ -150,14 +154,18 @@ def start_voice(env=None, tag="voice"):
     lg = open(OUT / ("%s.log" % tag), "ab")
     subprocess.Popen([sys.executable, "-u", str(ROOT / "apps/voice/service.py"), "--port", "8768"], cwd=str(ROOT), env=e,
                      stdout=lg, stderr=lg, creationflags=NOWIN)
-    t0 = time.time()
+    t0, last, same = time.time(), None, 0
     while time.time() - t0 < 300:
         try:
-            parts = health()["parts"]
-            llm_ok = parts["llm"] == "loaded" or "could not" in parts["llm"] or "off" in parts["llm"]
-            if llm_ok and "loaded" in parts["stt"]:
-                time.sleep(4)
-                return health()
+            h = health()
+            parts = h["parts"]
+            sig = (parts["llm"], parts["stt"], json.dumps({k: v["device"] for k, v in ((h.get("vram") or {}).get("models") or {}).items()}, sort_keys=True))
+            sig = sig + (round(used_mib()[0] / 50),)           # a model that is loading moves the card's memory
+            if time.time() - t0 > 40:
+                same = same + 1 if sig == last else 0
+                if same >= 4:                               # nothing changed for about 12 s: the preload is over
+                    return h
+            last = sig
         except Exception:
             pass
         time.sleep(3)
@@ -208,16 +216,17 @@ def service_times(label, n=6):
 
 def spark_times(device, n=3):
     """Spark Thai speech with feeling, alone, on `device`: start the server, time the line, read its VRAM."""
-    py = ROOT / ".local" / "tts_spark" / "venv" / "Scripts" / "python.exe"
+    rt = next((r for r in (ROOT / ".local" / "tts_spark", *SPARK_ROOTS) if (r / "venv" / "Scripts" / "python.exe").exists()), ROOT / ".local" / "tts_spark")
+    py = rt / "venv" / "Scripts" / "python.exe"
     if not py.exists():
         say("Spark speech is not installed here: not measured")
         return None
     kill("tts_spark/server.py --port 8780")
     before = used_mib()[0]
-    env = dict(os.environ, HF_HOME=str(ROOT / ".local" / "tts_spark" / "hf"))
+    env = dict(os.environ, HF_HOME=str(rt / "hf"))
     lg = open(OUT / ("spark_%s.log" % device), "ab")
     t0 = time.time()
-    subprocess.Popen([str(py), "-u", str(ROOT / "apps/voice/tts_spark/server.py"), "--port", "8780", "--checkpoint", "raw", "--device", device],
+    subprocess.Popen([str(py), "-u", str(ROOT / "apps/voice/tts_spark/server.py"), "--port", "8780", "--checkpoint", "raw", "--device", device, "--runtime", str(rt)],
                      cwd=str(ROOT), env=env, stdout=lg, stderr=lg, creationflags=NOWIN)
     ready = None
     while time.time() - t0 < 240:
@@ -275,6 +284,53 @@ def calibrate(quick=False):
     return res
 
 
+def reduced_calibrate(budgets):
+    """Service times and swap cost, from two short side-Voice runs that fit in the room the real Voice leaves.
+    Swap mode is used on purpose for the GPU run: the model that is asked for takes the card alone, so each
+    model is timed alone on the GPU and its real VRAM is the nvidia-smi step when it loads."""
+    res = {"date": time.strftime("%Y-%m-%d %H:%M"),
+           "note": "REDUCED: the real Voice kept running; GPU times from the side Voice in swap mode with a %d MiB budget" % max(budgets)}
+    res["usedBeforeMiB"], res["totalMiB"] = used_mib()
+    stt_body, ask_free = clips()[0].read_bytes(), json.dumps({"text": "ช่วยแต่งกลอนสั้นๆ เกี่ยวกับหุ่นยนต์ให้หน่อย"}).encode()
+    helper_body = json.dumps({"text": "ตู้นี้ทำอะไรได้บ้าง ราคาเท่าไหร่ ห้องน้ำอยู่ไหน"}).encode()
+    # GPU: everything out, then one model at a time asked for -> it gets the card
+    h = start_voice({"MICE_VRAM_VOICE_BUDGET_MIB": max(budgets), "MICE_VRAM_STRATEGY": "swap"}, "calib_gpu")
+    gpu = {"budgetMiB": max(budgets), "strategy": "swap"}
+    http("/unload", b"{}")
+    time.sleep(3)
+    u0 = used_mib()[0]
+    gpu["swap_stt_cold_ms"] = http("/transcribe?lang=th", stt_body, "audio/wav")[0]
+    u1 = used_mib()[0]
+    gpu["devices_after_stt"] = devices(health())
+    gpu["stt_ms"] = times(lambda: http("/transcribe?lang=th", stt_body, "audio/wav")[0], 6)
+    gpu["hearing_vram_MiB"] = u1 - u0
+    http("/unload", b"{}")
+    time.sleep(3)
+    u2 = used_mib()[0]
+    gpu["swap_helper_cold_ms"] = http("/translate", helper_body)[0]
+    u3 = used_mib()[0]
+    gpu["devices_after_helper"] = devices(health())
+    gpu["llmDevice"] = health().get("llmDevice")
+    gpu["helper_ms"] = times(lambda: http("/translate", helper_body)[0], 6)
+    gpu["ask_free_ms"] = times(lambda: http("/ask", ask_free, timeout=120)[0], 3)
+    gpu["llm_vram_MiB"] = u3 - u2
+    for k in ("stt_ms", "helper_ms", "ask_free_ms"):
+        gpu[k + "_median"] = med(gpu[k])
+    say("GPU alone:", {k: v for k, v in gpu.items() if k.endswith("_median") or "cold" in k or "vram" in k}, gpu["devices_after_stt"], gpu["devices_after_helper"])
+    res["gpu"] = gpu
+    kill("service.py --port 8768")
+    # CPU: a budget of nothing
+    h = start_voice({"MICE_VRAM_VOICE_BUDGET_MIB": 300}, "calib_cpu")
+    warm()
+    cpu = service_times("CPU alone", 6)
+    cpu["devices"] = devices(health())
+    res["cpu"] = cpu
+    kill("service.py --port 8768")
+    res["spark"] = [spark_times("cpu")]
+    (OUT / "calibration_reduced.json").write_text(json.dumps(res, indent=1, ensure_ascii=False), encoding="utf-8")
+    return res
+
+
 def perf(tag, seconds, runs, helpers=4):
     d = OUT / tag
     d.mkdir(parents=True, exist_ok=True)
@@ -316,11 +372,18 @@ def main():
     from runlock import RunLock
     lock = RunLock(say=lambda m: print(m, flush=True))
     lock.acquire()
-    real = listener(8767)
+    reduced = phase == "reduced"                         # the real Voice stays up: nothing of it is stopped or restarted
+    real = None if reduced else listener(8767)
     real_cmd, real_cwd = (real.cmdline(), real.cwd()) if real else (None, None)
     real_root = Path(real_cmd[-1]).parents[2] if real_cmd and real_cmd[-1].endswith("service.py") else None
+    if real_root:
+        SPARK_ROOTS.append(real_root / ".local" / "tts_spark")
+    if reduced and listener(8767):
+        SPARK_ROOTS.append(Path(listener(8767).cmdline()[-1]).parents[2] / ".local" / "tts_spark")
     cfg_sched, cfg_perf = ROOT / "config/scheduler.json", ROOT / "config/perf_load.json"
     profiles = ROOT / "config" / "voice_profiles"
+    if reduced and not profiles.exists() and listener(8767):
+        real_root = Path(listener(8767).cmdline()[-1]).parents[2]
     if real_root and not profiles.exists() and (real_root / "config" / "voice_profiles").exists():
         shutil.copytree(real_root / "config" / "voice_profiles", profiles)
     cfg_sched.write_text(cfg_sched.read_text(encoding="utf-8").replace("http://127.0.0.1:8642", "http://127.0.0.1:8650"), encoding="utf-8")
@@ -333,6 +396,14 @@ def main():
             real.kill()
             time.sleep(4)
         start_hub()
+        if reduced:
+            used, total = used_mib()
+            budgets = [b for b in (2048, 2560) if b + 700 <= total - used]      # CUDA context needs about 0.4 GB on top
+            say("free on the real card:", total - used, "MiB; budgets that fit:", budgets)
+            reduced_calibrate(budgets)
+            for b in budgets:
+                for strat in ("spill", "swap", "hybrid"):
+                    one_setting("%s_budget%d" % (strat, b), {"MICE_VRAM_VOICE_BUDGET_MIB": b, "MICE_VRAM_STRATEGY": strat}, seconds, runs)
         if phase in ("smoke", "calibrate", "all"):
             calibrate(quick)
         if phase == "smoke":

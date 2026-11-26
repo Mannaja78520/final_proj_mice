@@ -163,3 +163,21 @@ def run(t):
         card.others = 1024                                    # it shrinks now ...
         room_now = arb.status()["headroomMiB"]
         t.ok(4 * 1024 <= room_now <= 0.4 * 12 * 1024, "room the other program grew into stays reserved for it, capped at a share of the card", str(room_now))
+
+    # 12. A Voice budget (testing 2 or 3 GB for the Voice while another program holds the real card).
+    import os
+    os.environ["MICE_VRAM_VOICE_BUDGET_MIB"] = "2048"
+    try:
+        full = Card(12 * 1024, others=12 * 1024)              # the real card has no room at all: it must not matter
+        arb = v.Arbiter(fresh_reg(), full.probe)
+        a = arb.request("stt:small")
+        arb.loaded("stt:small", "cuda", None, None)
+        b = arb.request("llm:Qwen2.5-0.5B-Instruct")
+        c = arb.request("stt:Thaweewat/whisper-th-medium-ct2")
+        st = arb.status()
+        t.ok(a["device"] == "cuda" and b["device"] == "cpu" and c["device"] == "cpu",
+             "a 2 GB Voice budget holds the best-value model and spills the rest, whatever the real card shows", str((a["device"], b["device"], c["device"])))
+        t.ok(st["card"]["totalMiB"] == 2048 and st["card"]["freeMiB"] < 2048 and st["voiceBudgetMiB"] == 2048,
+             "the budget shows as the card in the planner status", str(st["card"]))
+    finally:
+        os.environ.pop("MICE_VRAM_VOICE_BUDGET_MIB", None)

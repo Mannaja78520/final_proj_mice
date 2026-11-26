@@ -129,6 +129,9 @@ class Arbiter:
     def __init__(self, registry, probe, cap_mib=None):
         self.reg, self._probe = registry, probe
         self.cap_mib = cap_mib if cap_mib is not None else int(os.environ.get("MICE_VRAM_CAP_MIB") or 0) or None
+        # What the Voice itself may use, whatever else sits on the card (testing a 2 or 3 GB budget while another
+        # Voice holds 8 GB): total = the budget, free = budget - what WE hold. The real card is not read at all.
+        self.voice_budget_mib = int(os.environ.get("MICE_VRAM_VOICE_BUDGET_MIB") or 0) or None
         self.strategy = (os.environ.get("MICE_VRAM_STRATEGY") or "spill").lower()   # spill (default) | swap | hybrid
         self._lock = threading.RLock()
         self._held = {}                              # key -> {"mib", "unload", "device", "pending"}
@@ -136,12 +139,17 @@ class Arbiter:
         self.last = {}
 
     def card(self):
+        if self.voice_budget_mib:
+            held = sum(v["mib"] for v in self._held.values() if v["device"] == "cuda")
+            return {"totalMiB": self.voice_budget_mib, "freeMiB": max(0, self.voice_budget_mib - held)}
         try:
             return capped(self._probe(), self.cap_mib)
         except Exception:                            # noqa: BLE001 - no probe = no GPU knowledge = CPU
             return None
 
     def _headroom(self, card, mine_mib):
+        if self.voice_budget_mib:                    # a budget has no other programs on it: the plain headroom only
+            return self.reg.headroom_mib(card["totalMiB"])
         others = max(0, card["totalMiB"] - card["freeMiB"] - mine_mib)
         self.reg.note_others(others)
         growth = min(max(0, self.reg.others_peak() - others), int(card["totalMiB"] * 0.30))   # never more than 30% of the card
@@ -245,7 +253,7 @@ class Arbiter:
         with self._lock:
             card = self.card()
             mine = sum(v["mib"] for v in self._held.values() if v["device"] == "cuda")
-            return {"card": card, "capMiB": self.cap_mib, "strategy": self.strategy,
+            return {"card": card, "capMiB": self.cap_mib, "voiceBudgetMiB": self.voice_budget_mib, "strategy": self.strategy,
                     "note": "" if card else "no GPU reading (AMD/Intel or no NVIDIA tool): models run on the CPU",
                     "headroomMiB": self._headroom(card, mine) if card else 0,
                     "othersPeakMiB": self.reg.others_peak(),
