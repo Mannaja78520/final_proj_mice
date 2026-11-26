@@ -23,4 +23,4 @@ jobs:
         run: python -m compileall -q main_python tools qc shared
       - name: Light QC checks (no hardware)
         # Names are matched against check files; see `python qc/run_qc.py --list`.
-        run: python qc/run_qc.py --quiet changelog systems check_ref designer_first
+        run: python qc/run_qc.py --quiet check_changelog check_systems check_ref check_designer_first
