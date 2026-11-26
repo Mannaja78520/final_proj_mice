@@ -7,6 +7,7 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
 
 **New**
 
+- One combined request file for the friend apps, charts viewable anywhere — `docs`
 - PRs with the auto-merge label now merge themselves once the quick checks pass — `tools`
   - *Problem:* the owner had to type a merge approval for every PR.
   - *Method:* label `auto-merge` on a ready PR; GitHub Actions squash-merges it when the light CI check `quick-qc` passes. Only owner-added labels on same-repo branches count.
