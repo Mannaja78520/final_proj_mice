@@ -5,6 +5,3 @@ prs: -
 area: tools
 title: Coordination notes mention the auto-merge label
 ---
-Problem: (optional, notable items only) what was wrong, one line.
-Method: (optional) how we solved it, one line.
-Numbers: (optional) measured before/after; link docs/experiments/.

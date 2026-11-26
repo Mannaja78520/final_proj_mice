@@ -14,9 +14,6 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
 **Improved**
 
 - Coordination notes mention the auto-merge label — `tools`
-  - *Problem:* (optional, notable items only) what was wrong, one line.
-  - *Method:* (optional) how we solved it, one line.
-  - *Numbers:* (optional) measured before/after; link docs/experiments/.
 
 ## 2026-11-25
 
