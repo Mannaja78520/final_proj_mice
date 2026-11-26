@@ -3,12 +3,46 @@
   "swapMiBperS": 12000,
   "cpuWorkers": 4,
   "models": {
-    "stt": {"key": "stt:large-v3",               "gpuMs": 750,  "cpuMs": 3090, "swapOverheadMs": 400, "source": "measured PR #251 (STT 3.09 s CPU, 0.75 s GPU)"},
-    "llm": {"key": "llm:Qwen2.5-0.5B-Instruct",   "gpuMs": 150,  "cpuMs": 550,  "swapOverheadMs": 200, "source": "cpuMs measured 2026-11-25 (helper hold ~0.55 s); gpuMs ESTIMATE"},
-    "tts": {"key": "tts:spark",                   "gpuMs": 1200, "cpuMs": 7000, "swapOverheadMs": 600, "source": "ESTIMATE"},
-    "bg":  {"key": "llm:Qwen2.5-0.5B-Instruct-bg", "gpuMs": 150, "cpuMs": 550,  "swapOverheadMs": 200, "source": "translate/helper background job, same model as llm"}
+    "stt": {
+      "key": "stt:Thaweewat/whisper-th-medium-ct2",
+      "gpuMs": 422,
+      "cpuMs": 2877,
+      "swapOverheadMs": 5290,
+      "source": "measured 2026-11-26 on the booth PC (RTX 5070 Ti, CUDA torch): Thai hearing 3 s clip alone, GPU 422 ms, CPU 2877 ms, reload 5290 ms"
+    },
+    "llm": {
+      "key": "llm:Qwen2.5-0.5B-Instruct",
+      "gpuMs": 466,
+      "cpuMs": 821,
+      "swapOverheadMs": 4694,
+      "source": "measured 2026-11-26: helper translation alone, GPU 466 ms, CPU 821 ms, reload 4694 ms"
+    },
+    "tts": {
+      "key": "tts:spark",
+      "gpuMs": 1200,
+      "cpuMs": 9450,
+      "swapOverheadMs": 600,
+      "source": "cpuMs measured 2026-11-26 (Spark, 15 s to load); gpuMs and swapOverheadMs still ESTIMATE: the Spark GPU run was invalid (a stale CPU server answered)"
+    },
+    "bg": {
+      "key": "llm:Qwen2.5-0.5B-Instruct-bg",
+      "gpuMs": 466,
+      "cpuMs": 821,
+      "swapOverheadMs": 4694,
+      "source": "measured 2026-11-26 (same model as llm)"
+    }
   },
-  "visitor": {"chain": ["stt", "llm", "tts"], "everyS": 6.0},
-  "background": {"model": "bg", "everyS": 1.5},
+  "visitor": {
+    "chain": [
+      "stt",
+      "llm",
+      "tts"
+    ],
+    "everyS": 6.0
+  },
+  "background": {
+    "model": "bg",
+    "everyS": 1.5
+  },
   "durationS": 600
 }

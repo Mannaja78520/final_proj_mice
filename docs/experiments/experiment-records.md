@@ -747,3 +747,30 @@ a check past max(600 s, 3x its slowest healthy time) is killed and fails "timed 
 Last three crowded full runs on claude/qc-solo-2: 406 s, 405 s, 459 s, all PASS (10863 passed, 0 failed). One FLAKY in the last:
 check_freeze_stop ("a Studio page on screen keeps its show alive past the timeout by beating - 'playing-true' not found"; passed alone 2/2),
 the same check that flaked in an earlier round: it is the next candidate for a readiness signal instead of a timer.
+
+### 2026-11-26 GPU-memory planner, full run: card sizes 2 to 12 GB and spill / swap / hybrid at 2, 4, 6 GB (real PC, real Voice stopped for the run)
+Setup: merged main (planner #269), RTX 5070 Ti Laptop 12227 MiB, CUDA torch 2.11.0+cu128; real Voice stopped for the run and
+restarted after (all four models on the GPU again). `python tools\vram_measure.py all`, PC QC lock held. Side Voice 8768, side hub 8650;
+face look 10 Hz, ask and hearing 0.5 Hz, camera, 4 background helper threads; 60 s runs, 2 per setting, 0 request errors in 26 runs.
+Full write-up: docs/perf_vram_2026-11-26.md. All numbers measured; the simulator was only rerun with measured inputs.
+- Calibration alone: hearing (Thai medium, 3 s clip) GPU 422 ms / CPU 2877 ms; helper translation GPU 466 / CPU 821 ms; ask needing the
+  local model 1842 / 3232 ms; ask from saved answers 31 / 42 ms; reload to the GPU 5290 ms (Thai hearing), 4694 ms (local model);
+  Spark CPU 9450 ms per line (15.2 s load), Spark GPU NOT measured (stale CPU server answered).
+  Learned sizes: Whisper small 576 MiB, Thai medium 1856, medium 1792, local model 1029 (all four: about 5.4 GB).
+- Spill (planner as shipped) by card size, mean of 2 runs, ms (ask p50/p95/p99 | hearing p50/p95/p99 | background jobs in 60 s | on the GPU):
+  - 2 GB:  64/4236/5508 | 3991/4641/4782 | 14 | none
+  - 4 GB:  65/3621/4190 | 3669/4347/4383 | 15 | none
+  - 6 GB:  88/4949/5167 | 4292/4875/4970 | 14 | small
+  - 8 GB:  70/1872/2202 | 1087/1390/1594 | 66 | local model, small, Thai medium
+  - 10 GB: 71/2142/2797 | 1235/1793/2154 | 44 | small, Thai medium, medium
+  - 12 GB: 62/1460/1733 |  855/1229/1299 | 90 | all four
+  - whole card: 64/1841/2221 | 1113/1436/1539 | 64 | all four
+  Face look p95 168 to 214 ms and camera p95 under 141 ms at every size.
+- Strategies at 2 / 4 / 6 GB (ask p95 | hearing p50 | background jobs): spill 4236/3991/14, 3621/3669/15, 4949/4292/14;
+  swap 2124/4796/12, 3379/4627/12, 4421/4128/14; hybrid 9009/12022/79, 8393/14312/73, 6292/12476/78.
+- Findings: (1) hearing is 4 s on the CPU (2 to 6 GB) and about 1 s from 8 GB; (2) spill at 6 GB pins Whisper small, not the Thai hearing model
+  that serves Thai visitors: hearing no better than at 2 GB, about 6.8 times slower than the 422 ms the Thai model needs on the GPU; (3) at 10 GB the local model went to
+  the CPU although it was on the GPU at 8 GB (a busy model refused to be unloaded); (4) at 2 and 4 GB nothing fits with this face app (room -89 and 441 MiB
+  against 576 MiB); (5) swap did not swap (same placement as spill, within noise); (6) hybrid is 3 times slower for hearing and about 5 times faster for
+  background jobs at 2 to 6 GB; (7) the simulator with measured inputs says swap is 4 to 6 times worse and hybrid best at 6 to 8 GB: both wrong against the measurement.
+- Winner by live p95/p99: spill (shipped default). Not measured: Spark on the GPU, hybrid with the live models on the GPU (8 GB and up), the planner's memory use by speech.

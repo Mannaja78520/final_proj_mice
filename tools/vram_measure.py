@@ -221,7 +221,7 @@ def spark_times(device, n=3):
     if not py.exists():
         say("Spark speech is not installed here: not measured")
         return None
-    kill("tts_spark/server.py --port 8780")
+    kill("server.py --port 8780")
     before = used_mib()[0]
     env = dict(os.environ, HF_HOME=str(rt / "hf"))
     lg = open(OUT / ("spark_%s.log" % device), "ab")
@@ -238,14 +238,14 @@ def spark_times(device, n=3):
             time.sleep(3)
     if ready is None:
         say("Spark server on", device, "did not come up in 240 s")
-        kill("tts_spark/server.py --port 8780")
+        kill("server.py --port 8780")
         return {"device": device, "error": "not ready in 240 s"}
     after = used_mib()[0]
     body = json.dumps({"text": "สวัสดีครับ ยินดีต้อนรับสู่ตู้มหัสจรรย์ วันนี้มีอะไรให้ช่วยไหมครับ", "emotion": "neutral"}).encode()
     ms = times(lambda: http("/speak", body, base="http://127.0.0.1:8780", timeout=180)[0], n + 1)
     res = {"device": device, "loadSeconds": round(ready, 1), "vramDeltaMiB": after - before, "line_ms": ms, "line_ms_median_warm": med(ms[1:])}
     say("Spark on", device, res)
-    kill("tts_spark/server.py --port 8780")
+    kill("server.py --port 8780")
     return res
 
 
