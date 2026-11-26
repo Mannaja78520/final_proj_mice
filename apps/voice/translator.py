@@ -10,6 +10,18 @@ from langs import detect_lang
 class Translator:
     """Any language in, any language out: Google first, the local model as fallback."""
 
+    def _divert_to_cpu(self):
+        """EXPERIMENT (MICE_VRAM_STRATEGY=hybrid): True when a background helper job should run on the CPU
+        because the GPU is busy with, or has queued, live work."""
+        import os
+        if (os.environ.get("MICE_VRAM_STRATEGY") or "").lower() != "hybrid":
+            return False
+        try:
+            gpu = self._sched.status()["resources"]["gpu"]
+        except Exception:                          # noqa: BLE001
+            return False
+        return bool(gpu["running"] or gpu["waiting"])
+
     def translate(self, text):
         """Any language in, English out - or (None, why-not).
 
@@ -17,6 +29,18 @@ class Translator:
         language, the translator always answers in English. One model, two
         system prompts - never both at once.
         """
+        if self._divert_to_cpu():
+            if not self.cfg.get("llm", {}).get("enabled"):
+                return None, "the local model is switched off in config/voice.json"
+            try:
+                return self._complete([
+                    {"role": "system", "content":
+                        "You are a translator at a robot show. Translate the "
+                        "message to English exactly - keep the meaning, plain "
+                        "wording. Reply with ONLY the English translation."},
+                    {"role": "user", "content": text}], model=self._cpu_llm()), None
+            except Exception as e:              # noqa: BLE001
+                return None, "%s: %s" % (e.__class__.__name__, e)
         with self._gpu("helper"):
             ok, why_not = self._ensure_llm()
             if not ok:

@@ -7,6 +7,7 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 
 | system | what it is |
 |---|---|
+| [vram-plan](vram-plan.md) | Dynamic GPU-memory planner: measures free VRAM when a model loads and places models by priority and time saved per MiB (no fixed GB tiers); spill to CPU, push out less valuable models; simulation of strategies and card sizes. |
 | [job-scheduler](job-scheduler.md) | One shared priority scheduler (live work jumps the queue, background yields, aging prevents starvation) in front of the GPU/CPU; classes and limits are data. |
 | [hub-resources](hub-resources.md) | Machine-local configurable CPU/GPU/RAM policy, bounded capability discovery, next-load Voice budgets and independent client display choices. |
 | [hub](hub.md) | The hub program: HTTP server, the device routes (dev, modules, USB proxy, pairing, robot proxy), startup. Split into hub-* systems (A26-76, A26-93). |

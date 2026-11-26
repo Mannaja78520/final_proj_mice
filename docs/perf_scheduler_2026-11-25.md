@@ -195,15 +195,26 @@ transformers failed with `operator torchvision::nms does not exist` and the loca
 The pair is `torch==2.11.0+cu128` and `torchvision==0.26.0+cu128`, from `https://download.pytorch.org/whl/cu128`.
 After that `/health` said `llmDevice: {"device": "cuda:0"}`.
 
-## 2f. Putting the CUDA build on the real Voice (not done yet)
+## 2f. CUDA build on the real Voice (done 2026-11-26 05:04)
 
-Status: tested on the side Voice only (section 2e). The install into the Python the real Voice uses
-(`C:\Program Files\Python312`, packages in `%APPDATA%\Python\Python312\site-packages`) was not run: stopping the
-real Voice and replacing its torch was refused by the PC permission check, so it stays with the person who owns
-the booth PC. Torch is loaded by the running Voice (and by any QC Voice started from this Python), so the install
-needs the real Voice stopped first, and no QC running.
+Status: done on the booth PC with the user's own go-ahead ("stop Voice, install torch CUDA, start Voice again").
+Run under the PC QC lock (no QC running), only the real Voice stopped (pid 33564, started again as pid 10964
+with the same command at 05:03:40); hub and face app untouched. `C:\Program Files\Python312` now has
+`torch 2.11.0+cu128` and `torchvision 0.26.0+cu128` (packages in the user site). Checked on the real Voice
+`/health`: the local model (Qwen2.5-0.5B) and the three Whisper models are on `cuda`; a real question answers and
+STT works. `pip check` is unchanged (one old complaint: platformio wants click below 8.4).
 
-What it takes, in order (about 2.7 GB download, from `download.pytorch.org`):
+Real Voice, same machine, one call (cold first call), then the median of 3 warm calls:
+
+| call | before (torch 2.15.0+cpu) | after (torch 2.11.0+cu128) |
+|---|---|---|
+| `/ask` saved answer (no model) | 42 ms | 48 ms |
+| `/transcribe` 3 s clip, warm | 592 ms | 445 ms |
+| `/transcribe`, cold | 7186 ms | 5262 ms |
+| `/translate` helper (local model), warm | 472 ms | 256 ms |
+| `/translate`, cold | 1846 ms | 354 ms |
+
+The steps that were run, in order (about 2.7 GB download, from `download.pytorch.org`):
 
 1. Save the packages: `python -m pip freeze > mice_system\.local\backup\pip_freeze_before_torch_cuda_2026-11-26.txt`
 2. Stop only the real Voice (the `python -u ...\mice_system\apps\voice\service.py` process on port 8767).

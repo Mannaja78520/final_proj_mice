@@ -657,6 +657,7 @@
   "ตัวลื่นไม่มีทางทำให้ท่ากระตุกกว่าแบบเดิม: คีย์ไหนที่เส้นโค้งกระตุกกว่าแบบหยุดทุกคีย์ จะถูกลดความเร็วลงเอง (": "Smoothing will never make movements jerkier than before: any keyframe where the curved path would be jerkier than stopping at each key is automatically slowed down (",
   "3. แถบไทม์ไลน์และเครื่องเล่นท่าทาง": "3. Timeline and motion player",
   "โหมดไฟเลี้ยงและ Brownout Guard": "Power mode and Brownout Guard",
-  "3. เอวและยักไหล่ WAIST / SHRUG": "3. Waist and shrug WAIST / SHRUG"
+  "3. เอวและยักไหล่ WAIST / SHRUG": "3. Waist and shrug WAIST / SHRUG",
+  "หน่วยความจำการ์ดจอ (VRAM) จัดแบบอัตโนมัติ ไม่ตายตัวตามกี่ GB: ตอนโหลดโมเดลแต่ละตัวระบบวัดที่ว่างจริงตอนนั้น วางโมเดลที่ช่วยให้เร็วขึ้นมากที่สุดต่อ MiB ไว้บน GPU ก่อน ตัวที่ไม่พอที่จะไปใช้ CPU คุณภาพเท่าเดิมแค่ช้าลง และคืนที่ให้โมเดลที่สำคัญกว่าเมื่อจำเป็น ช่อง VRAM ที่เว้นไว้เพิ่มใส่ 0 = อัตโนมัติตามขนาดการ์ด งบ RAM/VRAM ใช้ช่วยเลือกวิธีโหลด ไม่รับประกันเพดานการใช้ทั้งหมด GPU ที่ตรวจพบยังต้องมีไลบรารีพร้อมใช้ หากใช้ไม่ได้จะกลับมาใช้ CPU": "Graphics-card memory (VRAM) is placed automatically, not by fixed GB: when each model loads, the system measures what is really free at that moment and puts the model that saves the most time per MiB on the GPU first. A model that does not fit runs on the CPU (same quality, just slower), and gives its room to a more important model when needed. The extra VRAM kept free setting 0 = automatic by card size. The RAM/VRAM budget only helps choose how to load and does not guarantee a ceiling on total use. A detected GPU still needs its libraries ready; if it cannot be used, the CPU is used instead."
  }
 }
