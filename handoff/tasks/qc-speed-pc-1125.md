@@ -32,3 +32,8 @@ PRs #260, #262, #264, #265 merged. Open: QC SILENT pages (see experiment-records
 | qc/lib/runlock.py, qc/checks/check_run_lock.py | PC-wide run lock | committed | 2 sabotages caught | see git log |
 | qc/lib/fw_cache.py, qc/checks/check_fw_cache.py, check_build_split.py | artifact cache | committed | 3 sabotages caught; hit 31 s vs 136 s | see git log |
 | qc/run_qc.py, qc/checks/check_qc_parallel.py, check_chatty_board.py | 12 checks out of SOLO | committed | 3 crowded full runs green | see git log |
+
+## Final state (2026-11-26)
+Full QC 1524 s -> 406 s (table in docs/experiments/experiment-records.md). Merged: #260 #262 #264 #265 #267 #273 #274; open: claude/qc-solo-2.
+Still serial: short_name (port 80), name_claim + mdns (5353), build_split, themes, tools_list, systems, faces_* (fake ports). Next: check_freeze_stop
+crowd flake (timer -> readiness signal). Flags: --no-lock, --rebuild-firmware (MICE_QC_REBUILD=1), qc/last_progress.json, QC DIAG line.
