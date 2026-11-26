@@ -148,12 +148,24 @@ PAGES.forEach(function(p, i){
   load(i);
 });
 
+// Judge a page only once it has LOADED. A fixed 7 s was a bet on the machine: in a busy full run /help had not
+// finished loading, was judged "busy" and reloaded, and the throw probe then counted two loads (2026-11-26, passed
+// alone). Wait until every page has loaded (up to 25 s), then 2 s for the probes (a timer in the page) to fire.
+function whenLoaded(then){
+  var end = Date.now() + 25000;
+  (function poll(){
+    var all = PAGES.every(function(p, i){ return loaded[i]; });
+    if (all || Date.now() > end) return setTimeout(then, 2000);
+    setTimeout(poll, 200);
+  })();
+}
+
 // One reload for anything that could not be reached, and only for that.
-setTimeout(function(){
+whenLoaded(function(){
   PAGES.forEach(function(p, i){
     if (verdict(i).indexOf('busy:') === 0) load(i);
   });
-  setTimeout(function(){
+  whenLoaded(function(){
     var out = [], n = [];
     PAGES.forEach(function(p, i){
       var key = p[0].replace(/ /g, '~');
@@ -163,8 +175,8 @@ setTimeout(function(){
     qcMark("PAGES " + out.join(" "));
     qcMark("TRIES " + n.join(" "));
     qcMark("done");
-  }, SETTLE);
-}, SETTLE);
+  });
+});
 </script>
 """
 
@@ -186,7 +198,7 @@ def run(t):
     base, main = F.start_hub()
     js_pages = "[" + ",".join('["%s","%s","%s","%s"]' % (n, u, g, k)
                               for n, u, g, k in PAGES) + "]"
-    browser.raw_page(PAGE.replace("__PAGES__", js_pages), base, seconds=40)
+    browser.raw_page(PAGE.replace("__PAGES__", js_pages), base, seconds=70)
 
     marks = fake_serial.qc_marks
     got = _kv(marks, "PAGES")
@@ -234,8 +246,9 @@ def run(t):
          "back clean; got %r" % once)
     t.eq(tried.get("busy~once"), "2",
          "the unreachable page was loaded a second time")
-    t.eq(tried.get("throw~probe"), "1",
-         "a page that threw is judged on its first load, never retried away")
+    t.ok(tried.get("throw~probe") == "1",
+         "a page that threw is judged on its first load, never retried away",
+         "loads %r; what each page said: %r" % (tried.get("throw~probe"), got))
 
     threw = got.get("throw~probe", "")
     t.ok(threw.startswith("threw:") and "qcNoSuchNameXYZ" in threw,

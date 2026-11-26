@@ -37,3 +37,9 @@ PRs #260, #262, #264, #265 merged. Open: QC SILENT pages (see experiment-records
 Full QC 1524 s -> 406 s (table in docs/experiments/experiment-records.md). Merged: #260 #262 #264 #265 #267 #273 #274; open: claude/qc-solo-2.
 Still serial: short_name (port 80), name_claim + mdns (5353), build_split, themes, tools_list, systems, faces_* (fake ports). Next: check_freeze_stop
 crowd flake (timer -> readiness signal). Flags: --no-lock, --rebuild-firmware (MICE_QC_REBUILD=1), qc/last_progress.json, QC DIAG line.
+
+## 2026-11-27: check_one_module_list (still open) and the PC assistant
+- check_one_module_list: unchanged. Failure text seen in a full run: "'4 modules' not found in ''" (the Home sentence is read empty). Two attempts to wait for the sentence or the module names
+  after `scan(true)` made the sentence stay empty for 15 s, i.e. the original `sleep(400)` works for a reason the waits change (probably that the page redraws only on a timer/visibility event that
+  the polling loop starves or reorders). Next: add qcMark timeline of `#homeSum` text length every 100 ms for 1.4 s after the scan IN THE ORIGINAL FLOW and read it in a failing crowd run.
+- PC assistant: watchdog, launchers, fallback chain are in docs/pc_assistant.md; not installed on the PC (the user opens "Start PC Assistant").

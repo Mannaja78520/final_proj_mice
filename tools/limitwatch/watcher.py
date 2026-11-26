@@ -175,6 +175,9 @@ class Watcher:
             from_provider=hit.provider, reason="weekly" if self.matcher.is_long(hit.provider, hit.text)
             else "long wait", reset=self._local(reset), repo=goal["repo"], tasks=names,
             agent=self.cfg["handoff_agent_id"].format(provider=worker), last_text=goal["last_text"])
+        if self.providers[worker].get("scope") == "small":
+            # regular Gemini models only do small safe steps (user 2026-11-27); Argon, Codex and Claude do the hard work
+            prompt = prompt + chr(10) * 2 + self.cfg["prompts"]["scope_small"]
         goal["worker"] = worker
         job = self._job("handoff", worker, self.providers[worker]["start"], goal["repo"], "", prompt, now)
         job["goal"] = goal["id"]
@@ -209,6 +212,12 @@ class Watcher:
                 job["status"] = "skipped"
                 self.event("SKIP %s: session %s is already running" % (job["id"], job["session"]))
                 continue
+            other = self._editing_other(job)
+            if other:                                  # ONE AI edits at a time: wait, the job stays pending
+                if job.get("waiting_for") != other:
+                    job["waiting_for"] = other
+                    self.event("WAIT %s: %s is editing; one AI at a time" % (job["id"], other))
+                continue
             try:
                 self.launcher.start(job)
             except Exception as e:  # missing CLI etc.: say it, do not loop on it
@@ -218,6 +227,7 @@ class Watcher:
                 continue
             job["status"] = "running"
             job["started"] = _iso(now)
+            self._lock_sync()
             if job.get("goal"):
                 g = self.state["goals"][job["goal"]]
                 g["snap"] = brief.snapshot(g["repo"], g["tasks"])
@@ -242,10 +252,38 @@ class Watcher:
             self.event("END %s rc=%s" % (job["id"], rc))
             if job.get("goal"):
                 self._next_round(job, now)
+        self._lock_sync()
+
+    def _editing_other(self, job):
+        """The other AI that is running right now (the single-editor rule), or None."""
+        for j in self.state["jobs"]:
+            if j is not job and j["status"] == "running" and j["provider"] != job["provider"]:
+                return j["provider"]
+        return None
+
+    def _lock_sync(self):
+        """.local/ai_active.lock names the AI that is editing; gone when none runs."""
+        rel = self.cfg.get("active_lock")
+        if not rel:
+            return
+        path = Path(self.repo_root) / rel
+        running = [j["provider"] for j in self.state["jobs"] if j["status"] == "running"]
+        try:
+            if running:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps({"tool": running[0], "since": _iso(self.now())}), encoding="utf-8")
+            elif path.exists():
+                path.unlink()
+        except OSError:
+            pass
 
     def _next_round(self, job, now):
         g = self.state["goals"][job["goal"]]
         if g.get("finished"):
+            return
+        if self.cfg.get("handback_on_reset") and self._free(g["from"], now) and self.providers.get(g["from"], {}).get("auto_resume"):
+            g["finished"] = "handed back"          # the AI that stopped is free again: no new round, the task files carry the hand-over
+            self.event("HANDBACK %s: %s is free again; no new round" % (g["repo"], g["from"]))
             return
         limited = _t(self.state["limited"].get(job["provider"]))
         if limited and limited > now and any(
