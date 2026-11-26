@@ -594,3 +594,30 @@ Side Voice 8768 and side hub 8650; face look 10 Hz, ask and hearing 0.5 Hz, came
   local model compete with the Thai hearing model that sits on the CPU at this budget.
 - Not done: 4 to 12 GB, GPU service times, real swap cost to the GPU, GPU Spark, bench_vram rerun with measured times.
   `python tools\vram_measure.py all` (needs the real Voice stopped) completes it.
+### 2026-11-26 final summary: full QC on this PC, 1524 s -> 406 s
+| step | wall | what changed |
+|---|---|---|
+| baseline (fresh tree, cold firmware, other threads' runs overlapping at times) | 1524 s | check_build_split compiled 5 envs alone first (414 s) |
+| PlatformIO object cache + firmware artifact cache + run lock | 832 s | build 474 s -> 42 s warm / 2 s hit; one run at a time |
+| 12 starved-margin SOLO checks into the pool | 536-605 s (3 runs) | hub_clock, studio_playback, gacha_ui, translate, voice*, flash_*, crash_gate, chatty_board |
+| watchdog + combined | 658 s | hard limit per check, heartbeat, died/timeout = FAIL |
+| isolate_data + sweep fix (SILENT root cause) | 551-569 s | per-check projects/sequences/shows; sweep keeps live pids |
+| 5 more out of SOLO + per-check reports folder | 406 s | visual_language, report_pictures, camera_hub, alone_apps, pc_camera |
+
+Root causes found on the way (all in the records above): the stalled scheduler runs = my own lock deadlocking nested runs;
+the "page reports nothing" flake = browser.sweep() of a nested run deleting live driver pages/profiles (QC DIAG: page GET 404);
+checks overwriting each other's fixed-name saves = shared projects/sequences/shows/reports folders.
+
+Still serial (SOLO) and why: check_short_name (port 80), check_name_claim + check_mdns (5353): real single resources;
+check_build_split (writes firmware/.pio, reads by flash/OTA/QEMU checks); check_themes (rewrites the shared stylesheet in the
+tree), check_tools_list (breaks an app.json in the tree), check_systems (lists the tree); the faces_* checks (a fake port each, 1-3 s).
+SOLO tail is now ~53 s.
+
+How to run: `python qc/run_qc.py --quiet --done-file F` (takes the PC-wide lock, first come first served, prints who holds it);
+`--no-lock` skips the lock; `--rebuild-firmware` or MICE_QC_REBUILD=1 forces a real firmware build (default reuses a green build keyed on
+inputs + toolchain); `python tools/qc_live.py` and qc/last_progress.json show what is running; QC SILENT now prints a `QC DIAG` line;
+a check past max(600 s, 3x its slowest healthy time) is killed and fails "timed out after N s".
+
+Last three crowded full runs on claude/qc-solo-2: 406 s, 405 s, 459 s, all PASS (10863 passed, 0 failed). One FLAKY in the last:
+check_freeze_stop ("a Studio page on screen keeps its show alive past the timeout by beating - 'playing-true' not found"; passed alone 2/2),
+the same check that flaked in an earlier round: it is the next candidate for a readiness signal instead of a timer.

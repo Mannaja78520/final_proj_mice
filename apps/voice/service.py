@@ -1115,7 +1115,10 @@ def watch_faq_audio(brain):
     last, felt = None, False
     while True:
         try:
-            with brain.profile_lock:
+            # SHARED, like a request: this runs every 5 s, and the exclusive form
+            # blocked every new question until the slowest in-flight one ended
+            # (writer preference). Switches stay exclusive, so the snapshot is whole.
+            with brain.profile_lock.shared():
                 if brain.profiles:
                     brain.profiles.bind(brain)
                 brain.maybe_reload()

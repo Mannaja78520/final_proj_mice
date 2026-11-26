@@ -16,7 +16,7 @@ import qc as F
 AREA = "web"
 TITLE = "Report pictures: pick, preview, send, view - th/en/zh/ja, and the hub refuses fakes"
 SLOW = False
-SOLO = True   # leaves Thai/Chinese reports in the list for a moment: check_visual_language must not see them
+SOLO = False   # its reports go to its own folder (qc.isolate_data), so check_visual_language never sees them
 
 DRIVER = """
 function ready(f){ return qcWaitFor(function(){ try { var d = f.contentDocument; return d.readyState === "complete" && f.contentWindow.MiceLang && d.body && d.body.innerText.length > 20; } catch (e) { return false; } }, 25000); }
@@ -89,7 +89,7 @@ def _run(t):
     base, _main = F.start_hub()
     browser.raw_page("<h1>wrapper</h1><script>" + DRIVER + "</script>", base, seconds=120)
     marks = list(fake_serial.qc_marks)
-    rep = os.path.join(F.CODE, "main_python", "reports")
+    rep = str(_main.REPORTS)            # this check's own folder (qc.isolate_data)
     for f in glob.glob(os.path.join(rep, "*.json")):
         try:
             if "qc pics" in open(f, encoding="utf-8").read():

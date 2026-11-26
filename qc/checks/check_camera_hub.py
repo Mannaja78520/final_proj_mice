@@ -29,7 +29,7 @@ import qc as F
 
 AREA = "hub"
 TITLE = "boards, webcams and added cameras are one list, each read once however many watch"
-SOLO = True
+SOLO = False
 
 FAKE = r'''
 import sys, time
