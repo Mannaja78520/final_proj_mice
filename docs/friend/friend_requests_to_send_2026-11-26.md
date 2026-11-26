@@ -18,7 +18,7 @@
 สาเหตุ (วัดแล้ว): บน onnxruntime 1.29 + CUDA **ทุกครั้งที่ขนาด batch ของโมเดล recognition เปลี่ยน การเรียกนั้นช้าลง ~27 ms** (RTX 5070 Ti ของเรา; RTX 4050 ของเพื่อน 120-270 ms)
 ขนาดคงที่ไม่เสีย การตั้ง `cudnn_conv_algo_search` ไม่ช่วย hybrid (ข้อ 6) เป็นคำตอบสุดท้ายที่วัดแล้ว (วัดเพิ่มอีก 3 รอบตอนทุกแอปรันพร้อมกัน) **ขอให้ทำข้อ 6**
 
-![ราคาของการสลับขนาด batch](../experiments/figures/2026-11-26_f1_shape_switch.png)
+![ราคาของการสลับขนาด batch](https://raw.githubusercontent.com/Mannaja78520/final_proj_mice/main/docs/experiments/figures/2026-11-26_f1_shape_switch.png)
 
 ---
 
@@ -48,8 +48,8 @@ POST http://127.0.0.1:8642/api/scheduler/release  {"token":"L12"}
   ตัวช่วยคัดลอกได้ ~10 บรรทัด: `tools/jobsched.py` คลาส `LeaseClient`
 - ผล: ระหว่างงานยาว งานสดของหุ่นหรือเสียงรอแค่ 1 การเรียกโมเดล ไม่ใช่ทั้งงาน
 
-![Face latency](../experiments/figures/2026-11-25_face_latency.png)
-![ทรัพยากรต่อแอพ](../experiments/figures/2026-11-25_resources_per_app.png)
+![Face latency](https://raw.githubusercontent.com/Mannaja78520/final_proj_mice/main/docs/experiments/figures/2026-11-25_face_latency.png)
+![ทรัพยากรต่อแอพ](https://raw.githubusercontent.com/Mannaja78520/final_proj_mice/main/docs/experiments/figures/2026-11-25_resources_per_app.png)
 
 **4. All-Jao-Games: ส่งข้อมูลให้ครบใน `alljao:win`**
 - quiz ส่ง `result.total` (คะแนนเต็มรอบ) — ตอนนี้ยังไม่มี ตั้งเกณฑ์ "80%" ไม่ได้
@@ -90,9 +90,9 @@ POST http://127.0.0.1:8642/api/scheduler/release  {"token":"L12"}
 | GPU ใช้งาน / CPU face server | 48% / 68% | 28% / 57% | 25% / 48% |
 | VRAM เพิ่ม | 0 | +0.33 GB | +1.85 GB |
 
-![ทุกแอปพร้อมกัน](../experiments/figures/2026-11-26_f1_round3_load_latency.png)
-![embedding ต่อเฟรม](../experiments/figures/2026-11-26_f1_round2_embed.png)
-![VRAM ที่เพิ่ม](../experiments/figures/2026-11-26_f1_round2_vram.png)
+![ทุกแอปพร้อมกัน](https://raw.githubusercontent.com/Mannaja78520/final_proj_mice/main/docs/experiments/figures/2026-11-26_f1_round3_load_latency.png)
+![embedding ต่อเฟรม](https://raw.githubusercontent.com/Mannaja78520/final_proj_mice/main/docs/experiments/figures/2026-11-26_f1_round2_embed.png)
+![VRAM ที่เพิ่ม](https://raw.githubusercontent.com/Mannaja78520/final_proj_mice/main/docs/experiments/figures/2026-11-26_f1_round2_vram.png)
 
 **7. Face_Regonize: ใช้งานบนมือถือและหลายภาษา**
 - มือถือ 390 px พัง: sidebar กว้าง ~255 px เนื้อหาเหลือ ~135 px ตารางถูกตัด ให้ยุบ sidebar ต่ำกว่า ~768 px; URL ไม่มีอยู่ (`/nonexistent`) แสดงหน้าว่าง ให้มีหน้า "ไม่พบหน้านี้"
