@@ -64,6 +64,11 @@ def _env():
 
 def _run(args, cwd, timeout=900):
     env = _env()
+    # One cache folder PER ENVIRONMENT: the five builds run at once and SCons keeps its own database
+    # (.sconsign*.dblite) in the cache folder; one shared folder gave "PermissionError ... .sconsign311.tmp ->
+    # .sconsign311.dblite" in a full run (2026-11-27, mice_lift). Objects are still reused across runs and trees.
+    if "-e" in args:
+        env["PLATFORMIO_BUILD_CACHE_DIR"] = str(Path(env["PLATFORMIO_BUILD_CACHE_DIR"]) / args[args.index("-e") + 1])
     r = subprocess.run(args, cwd=str(cwd), capture_output=True, text=True,
                        timeout=timeout, env=env)
     return r.returncode, (r.stdout or "") + (r.stderr or "")
