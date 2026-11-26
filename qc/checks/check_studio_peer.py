@@ -35,8 +35,8 @@ DRIVER = """
 window.addEventListener("load", function(){
   qcWaitFor(function(){
     return typeof rawCmd === "function" && typeof $ === "function"
-        && $("usbPort");
-  }, 8000).then(function(){
+        && $("usbPort") && typeof haveUsb === "function" && haveUsb();
+  }, 15000).then(function(){
   setTimeout(function(){
     try{
       // What Studio decided the cable and the peer are, after reading ?dev=

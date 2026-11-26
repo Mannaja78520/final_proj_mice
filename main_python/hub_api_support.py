@@ -100,7 +100,7 @@ class SupportRoutes:
             attach = bool(data.get("attachDiag"))
             rid = uuid.uuid4().hex[:12]
             # Pictures go to their own files; the report keeps only the names.
-            images = report_images.save(_hub.HERE / "reports" / "img", rid,
+            images = report_images.save(_hub.REPORTS / "img", rid,
                                         data.get("images"))
             # Build the report record
             report = {
@@ -122,7 +122,7 @@ class SupportRoutes:
                     report["diag"] = "diagnostics unavailable"
             # Write to HERE/reports/ (not SKIP_FILES - those are for promote.py)
             # but a sibling of the hub: machine-local, never in source.
-            rep_dir = _hub.HERE / "reports"
+            rep_dir = _hub.REPORTS
             rep_dir.mkdir(exist_ok=True)
             fname = rep_dir / (report["time"].replace(":", "-") + "_" + report["id"] + ".json")
             try:
@@ -137,7 +137,7 @@ class SupportRoutes:
         if path == "/api/report/image" and method == "GET":
             # One picture of a report (?id=..&n=0). Open like the list; the
             # id and number are checked as plain characters before any file.
-            got = report_images.read(_hub.HERE / "reports" / "img",
+            got = report_images.read(_hub.REPORTS / "img",
                                      (q.get("id") or [""])[0], (q.get("n") or [""])[0])
             if not got:
                 return self.send_json({"ok": False, "error": "no such picture"}, 404)
@@ -149,7 +149,7 @@ class SupportRoutes:
             # _translate_report_later); empty means no translation yet and the
             # pages fall back to the original words. No model call here - a
             # list refresh must be instant even with the helper switched off.
-            rep_dir = _hub.HERE / "reports"
+            rep_dir = _hub.REPORTS
             if not rep_dir.is_dir():
                 return self.send_json({"ok": True, "reports": []})
             out = []
@@ -190,7 +190,7 @@ class SupportRoutes:
             status = (data.get("status") or "").strip()
             if not rid or status not in ("fixed", "not-a-problem", "open"):
                 return self.send_json({"ok": False, "error": "bad payload"})
-            rep_dir = _hub.HERE / "reports"
+            rep_dir = _hub.REPORTS
             if not rep_dir.is_dir():
                 return self.send_json({"ok": False, "error": "not found"})
             for f in rep_dir.glob("*.json"):

@@ -208,7 +208,7 @@ HUB_REQUESTS = collections.deque(maxlen=3000)      # see start_hub / browser.dia
 def isolate_data(main):
     """Give THIS check process its own copy of the studio data folders.
 
-    projects/, sequences/ and shows/ are shared by every hub that runs
+    projects/, sequences/, shows/ and reports/ are shared by every hub that runs
     from the same tree, and ~35 checks save into them under fixed names
     (qc_video_page, qc_welcome, dummy_<date>.yaml ...). One copy of each check
     is fine; two overlapping runs, or two checks using the same name, overwrote
@@ -235,6 +235,8 @@ def isolate_data(main):
     # models/ holds 27 MB of robot meshes the checks only READ; copying that
     # into every one of ~150 hubs would cost more than it protects.
     main.PROJECTS, main.SEQUENCES = box / "projects", box / "sequences"
+    (box / "reports").mkdir()
+    main.REPORTS = box / "reports"      # reports a check files must not appear on other checks' pages
     main.SHOWS = main.shows_mod.Shows(box / "shows", main.SEQUENCES)
     main._qc_data_box = box
     atexit.register(shutil.rmtree, str(box), True)
