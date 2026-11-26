@@ -150,6 +150,9 @@ SHARED_WEB = asset("shared", "web")
 WEBUI_H = asset("firmware", "src", "web", "WebUI.h")
 STUDIO = DATA / "nong" / "main_python_set_nong"
 STUDIO_WEB = asset("nong", "main_python_set_nong", "web")
+# Problem reports (hub_api_support): machine-local, never in source. A name of its own so a
+# QC check process can point it at a private folder (qc/lib/qc.py isolate_data).
+REPORTS = HERE / "reports"
 PROJECTS = STUDIO / "projects"
 SEQUENCES = STUDIO / "sequences"
 MODELS = STUDIO / "models"

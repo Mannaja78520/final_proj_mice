@@ -48,7 +48,7 @@ def run(t):
     browser.raw_page("<h1>wrapper</h1><script>" + DRIVER + "</script>", base, seconds=60)
     marks = list(fake_serial.qc_marks)
     # the hub keeps every report as a file next to its code: do not leave 55 test notes behind
-    for f in glob.glob(os.path.join(F.CODE, "main_python", "reports", "*.json")):
+    for f in glob.glob(os.path.join(str(_main.REPORTS), "*.json")):
         try:
             if "qc paging" in open(f, encoding="utf-8").read():
                 os.remove(f)

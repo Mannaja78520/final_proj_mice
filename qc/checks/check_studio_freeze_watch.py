@@ -36,7 +36,7 @@ def run(t):
         t.give_up('headless Edge unavailable')
     fake_serial.reset()
     base, main = F.start_hub()
-    rep = main.HERE / "reports"
+    rep = main.REPORTS                 # this check's own folder (qc.isolate_data)
     before = set(rep.glob("*.json")) if rep.is_dir() else set()
     browser.page(DRIVER, query=base + '/studio/_qcdriver.html?dev=usb%3A' + fake_serial.PORT,
                  seconds=20)

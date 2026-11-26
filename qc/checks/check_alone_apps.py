@@ -34,7 +34,7 @@ import qc as F
 
 AREA = "hub"
 TITLE = "each app starts alone and finds the others; one camera, one owner"
-SOLO = True
+SOLO = False
 
 FAKE = r'''
 import sys, time

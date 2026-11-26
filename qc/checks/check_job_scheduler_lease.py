@@ -67,6 +67,19 @@ def run(t):
     tok = client.acquire("live")
     t.ok(bool(tok), "the client takes a place from the real hub")
     client.release(tok)
+    # A BUSY hub (408) is not a dead hub: the next job still asks (review 2026-11-26:
+    # one busy answer switched the cross-program order off for 30 s).
+    holder = client.acquire("live")
+    busy = jobsched.LeaseClient(base, wait=0.3, down_seconds=30)
+    first = busy.acquire("background")
+    client.release(holder)
+    again = busy.acquire("background")
+    t.ok(holder and first is None and bool(again), "a busy hub is asked again next time, not skipped for 30 s",
+         "first=%r again=%r" % (first, again))
+    busy.release(again)
+    import hub_api_scheduler
+    t.ok(isinstance(hub_api_scheduler.gate("background"), jobsched.Gate),
+         "the hub's own GPU work does not ask itself for a lease over HTTP")
     dead = jobsched.LeaseClient("http://127.0.0.1:9", wait=3, down_seconds=30)
     t0 = time.monotonic()
     t.ok(dead.acquire("live") is None and dead.acquire("live") is None and time.monotonic() - t0 < 3,
