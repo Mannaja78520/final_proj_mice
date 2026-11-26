@@ -262,4 +262,6 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    import polite  # our background tools run at low priority (tools/polite.py)
+    polite.apply("systems")
     sys.exit(main(sys.argv[1:]))

@@ -34,8 +34,12 @@ _TAG = re.compile(r"MICEQCBROWSER(\d+)END")
 _JOB = [None]                     # the handle must stay open for the life of the process
 
 
-def install():
-    """Put this process in a kill-on-close job object. True when it took effect."""
+def install(cpu_cap_percent=None, below_normal=False):
+    """Put this process in a kill-on-close job object. True when it took effect.
+
+    Polite mode (user 2026-11-26, the PC was laggy during QC) also makes the JOB lower every
+    process in it - including the PowerShell-launched Edge - to BELOW_NORMAL, and caps the whole
+    job at `cpu_cap_percent` of the machine so it can never be fully saturated."""
     if os.name != "nt" or _JOB[0] is not None:
         return _JOB[0] is not None
     try:
@@ -75,8 +79,16 @@ def install():
             return False
         info = _Extended()
         info.Basic.LimitFlags = 0x2000            # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        if below_normal:
+            info.Basic.LimitFlags |= 0x20         # JOB_OBJECT_LIMIT_PRIORITY_CLASS
+            info.Basic.PriorityClass = 0x4000     # BELOW_NORMAL_PRIORITY_CLASS
         if not k32.SetInformationJobObject(job, 9, ctypes.byref(info), ctypes.sizeof(info)):
             return False
+        if cpu_cap_percent:
+            class _Cpu(ctypes.Structure):
+                _fields_ = [("ControlFlags", wintypes.DWORD), ("CpuRate", wintypes.DWORD)]
+            cpu = _Cpu(0x1 | 0x4, int(cpu_cap_percent * 100))   # ENABLE | HARD_CAP, 1/100 percent
+            k32.SetInformationJobObject(job, 15, ctypes.byref(cpu), ctypes.sizeof(cpu))  # best effort
         if not k32.AssignProcessToJobObject(job, k32.GetCurrentProcess()):
             return False
         _JOB[0] = job

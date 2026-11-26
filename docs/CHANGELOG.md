@@ -18,6 +18,10 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
   - *Problem:* nobody knew how the planner behaves on a small card, or whether moving jobs to the CPU or taking turns on the GPU is better.
   - *Method:* ran the whole voice helper on this PC with a pretend card of 2, 4, 6, 8, 10 and 12 GB and the whole card, with the face app, camera and background jobs running, and compared three ways of using the CPU.
   - *Numbers:* hearing takes about 4 s with models on the CPU (2 to 6 GB) and about 1 s from 8 GB; the planner as shipped wins; at 6 GB it keeps the wrong hearing model on the CPU; the "hybrid" way makes hearing 3 times slower. See docs/perf_vram_2026-11-26.md.
+- QC, builds and measurement scripts now run at low priority so the PC stays usable — `qc`
+  - *Problem:* a full QC run left the PC laggy and hard to use.
+  - *Method:* QC (runner, pool workers, Edge launched through PowerShell, subprocesses), the exe build wrapper and our measurement scripts lower themselves to below-normal CPU, low disk and low memory priority; the QC job is capped at 80% of the machine and leaves 4 logical CPUs free. Switch off with MICE_POLITE=0, --exact-timing or "polite": false in qc/data/qc_speed.json (the tool says it runs at normal priority). The real hub, Voice and Faces are never touched.
+  - *Numbers:* see docs/experiments/experiment-records.md (2026-11-26 polite mode).
 - Coordination notes mention the auto-merge label — `tools`
 
 **Fixed**

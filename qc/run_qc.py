@@ -29,6 +29,8 @@ sys.path.insert(0, str(QC))
 import qc as F  # noqa: E402
 import check_pool  # noqa: E402
 import jobguard  # noqa: E402
+sys.path.insert(0, str(CODE / "tools"))
+import polite  # noqa: E402
 
 
 # ---- proof that a particular tree passed ------------------------------
@@ -334,8 +336,11 @@ def main(argv):
     # one core of 24 while the other 23 idled, and the user asked for the whole
     # machine to be used. Not ALL of them - each browser check starts an Edge,
     # and 24 browsers thrash a laptop rather than finishing sooner.
+    # Polite mode keeps `reserveCpus` logical CPUs free for the person using the PC.
+    _spare = int(SPEED.get("reserveCpus") or 2) if polite.enabled(argv) else 2
+    _room = max(2, (os.cpu_count() or 4) - max(2, _spare))
     jobs = _int_arg(argv, "--jobs", default=max(2, min(
-        int(SPEED.get("workers") or 10), (os.cpu_count() or 4) - 2)))
+        int(SPEED.get("workers") or 10), _room)))
     if "--serial" in argv:
         jobs = 1
     verbose = "-v" in argv or "--verbose" in argv
@@ -576,7 +581,7 @@ def main(argv):
         # Widths are DATA (qc/data/qc_speed.json), overridable per run with
         # --browsers N, so a measurement never needs a code edit.
         browser_jobs = _int_arg(argv, "--browsers",
-                                default=int(SPEED.get("browserLanes") or 3))
+                                default=min(int(SPEED.get("browserLanes") or 3), _room))
         print("%srunning %d checks on %d workers, %d browser checks on %d, "
               "%d on their own%s"
               % (B, len(para), jobs, len(heavy), browser_jobs, len(solo), D))
@@ -792,8 +797,14 @@ def _take_run_lock(argv):
 if __name__ == "__main__":
     # Before anything is started, so every child belongs to the job: the browsers die
     # with the runner even if it is killed hard (qc/lib/jobguard.py).
+    _polite = polite.enabled()
+    if _polite:
+        polite.lower_priority()          # the runner, then its children inherit it
+    else:
+        print("QC: running at NORMAL priority (polite mode off); expect a busier PC.", flush=True)
     if "--no-job" not in sys.argv:
-        jobguard.install()
+        jobguard.install(cpu_cap_percent=(SPEED.get("cpuCapPercent") if _polite else None),
+                         below_normal=_polite)
         jobguard.install_exit_hooks()
     sys.argv = [a for a in sys.argv if a != "--no-job"]
     _lock = _take_run_lock(sys.argv)

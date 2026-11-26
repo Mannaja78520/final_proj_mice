@@ -29,5 +29,15 @@
   // browsers killed and fails with "timed out after N s", so one hung check can
   // never stall the whole run (three scheduled runs stopped at ~340/415 on
   // 2026-11-25). Generous on purpose: the slowest healthy check is ~250 s.
-  "checkTimeoutFloorSecs": 600
+  "checkTimeoutFloorSecs": 600,
+
+  // POLITE MODE (user 2026-11-26: a full QC run left the PC laggy and hard to use). QC is
+  // background work: it runs at BELOW_NORMAL CPU priority, LOW I/O and memory priority (the
+  // runner, and through its job object every child incl. Edge), the whole run is capped at
+  // cpuCapPercent of the machine, and workers/browser lanes leave reserveCpus logical CPUs
+  // free. It finishes a bit later instead of making the desktop stutter. Off: "polite": false,
+  // or env MICE_POLITE=0 (the run says so). Never applied to the real hub, Voice or Faces.
+  "polite": true,
+  "reserveCpus": 4,
+  "cpuCapPercent": 80
 }
