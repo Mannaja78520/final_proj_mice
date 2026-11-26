@@ -26,6 +26,10 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
   - *Problem:* a full QC run left the PC laggy and hard to use, and other programs are open in real use.
   - *Method:* QC (runner, workers, Edge launched through PowerShell, subprocesses), the exe build wrapper and our measurement scripts run at below-normal CPU, low disk and low memory priority inside a job object with a CPU cap and a memory limit. A governor watches the whole machine every 2 seconds and starts no new check while CPU is above 75%, free RAM below 6 GB or the GPU is busy (one check per pool always runs, nothing is stopped or killed). Off: MICE_POLITE=0, --exact-timing or "polite": false (the tool says it runs at normal priority). Optional stronger yield in qc/data/qc_speed.json. The real hub, Voice and Faces are never touched.
   - *Numbers:* see docs/experiments/experiment-records.md (2026-11-26 polite mode).
+- Friend request: the face backend's video scheduler re-reads a 6.4 MB file 8 times a second — `docs`
+  - *Problem:* the friend's face backend kept one thread busy (about 29% of a core) even with no job queued.
+  - *Method:* py-spy on the running backend found the video scheduler parsing a 6.4 MB state file about 8 times a second; the cause, numbers and a one-time fix are in the friend request list (item 18), measured by stopping and restarting the backend for 5 minutes.
+  - *Numbers:* stopping it did not change the PC's lag probes, so it is not the cause of the slowness; see handoff/tasks/lag-diagnosis-1126.md.
 - Coordination notes mention the auto-merge label — `tools`
 
 **Fixed**
