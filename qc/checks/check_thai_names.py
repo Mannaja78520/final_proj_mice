@@ -45,7 +45,8 @@ def run(t):
         code, text = F.post(base + "/api/save", big)
     except OSError as e:     # the hub may close the line on an oversize body
         code, text = 400, str(e)
-    t.ok(code == 400, "a 21 MB save is refused", "%s %s" % (code, text[:80]))
+    # 413 "payload too large" is the exact refusal; 400 is what the line closing used to look like
+    t.ok(code in (400, 413), "a 21 MB save is refused", "%s %s" % (code, text[:80]))
     t.ok(not (main.PROJECTS / "toobig.json").exists(), "and nothing was written")
     t.ok(main.safe_name("track one.yaml") == "track one.yaml", "robot names still pass when plain")
     try:

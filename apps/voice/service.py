@@ -461,6 +461,15 @@ class Brain(FaceLink, Translator, Listener, Speaker, Faq, LocalLlm, Answerer):
         except Exception as exc:                 # noqa: BLE001 - a status line must never fail
             return {"error": str(exc)}
 
+    def _asleep_note(self, status):
+        """Say that the models are asleep (idle unload) or waking up, in the part's own line."""
+        idle = getattr(self, "idle_unload", None)
+        if idle and idle.warming:
+            return "warming up - loading the model again…"          # "loading" keeps the page polling
+        if idle and idle.asleep:
+            return "asleep to free GPU memory - wakes on the next question"
+        return status
+
     def health(self):
         n = len(self.faqs())
         if self.faq_err:
@@ -476,9 +485,10 @@ class Brain(FaceLink, Translator, Listener, Speaker, Faq, LocalLlm, Answerer):
             "scheduler": self.scheduler_status(),
             "llmDevice": self.llm_device(),
             "vram": self._vram_status(),
+            "idleUnload": (self.idle_unload.state() if getattr(self, "idle_unload", None) else None),
             "faqFile": self.faq_path.name,
-            "parts": {"faq": faq, "llm": self.llm_status(),
-                      "stt": self.stt_status(), "tts": self.tts_status()},
+            "parts": {"faq": faq, "llm": self._asleep_note(self.llm_status()),
+                      "stt": self._asleep_note(self.stt_status()), "tts": self.tts_status()},
             "voice": self.voice_heard(),
             # Which service does each job, and which one answered last (A45-1).
             "jobs": {j: {"use": self.chain(j),
@@ -742,6 +752,20 @@ class VoiceHandler(BaseHTTPRequestHandler):
 
     @guarded
     def do_POST(self):                              # noqa: N802
+        # idle unload (apps/voice/idle_unload.py): a request in flight keeps the models; the first
+        # one after a sleep is the one that wakes them and gets its cost measured
+        idle = getattr(self.brain, "idle_unload", None)
+        path = urlparse(self.path).path
+        counted = bool(idle) and path not in ("/unload", "/stop", "/config", "/faq", "/keys")
+        if counted:
+            idle.request_start(path)
+        try:
+            return self._do_post()
+        finally:
+            if counted:
+                idle.request_end()
+
+    def _do_post(self):
         if self.refuse_web():
             return
         path = urlparse(self.path).path
@@ -1177,6 +1201,9 @@ def main():
     # Preload models in background
     print("[voice] preloading models in background...")
     brain.preload(force=False)
+    from idle_unload import IdleUnloader
+    brain.idle_unload = IdleUnloader(brain)          # frees the GPU when nobody asks (config voice.json)
+    brain.idle_unload.start()
 
     print("[voice] answers from %s (%s)" % (brain.faq_path, brain.llm_status()))
     if (brain.cfg.get("tts") or {}).get("enabled"):
