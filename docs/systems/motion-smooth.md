@@ -24,7 +24,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 
 - nothing
 
-## Checks that test it (204)
+## Checks that test it (205)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -77,6 +77,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_flash_confirm`
 - `check_flash_remote`
 - `check_flash_type`
+- `check_freeze_stop`
 - `check_friend_api`
 - `check_gacha`
 - `check_gacha_motion`

@@ -24,7 +24,13 @@ AREA = "hub"
 TITLE = "a frozen Studio page stops the hub's show; a hidden or closed one does not"
 SLOW = True
 
+# Beats come every 1 s. A 2.5 s timeout left 1.5 s of margin and failed in the crowd (playing-false; passed
+# alone 2/2, 2026-11-26: a busy page missed two beats). 6 s leaves 5 s; the page then waits past the timeout, so
+# "alive past the timeout" still means it really kept beating.
+PAGE_BEAT_TIMEOUT = 6.0
+
 DRIVER = """
+const WAIT_MS = %d;
 const wait = ms => new Promise(r => setTimeout(r, ms));
 async function step(){
   try{
@@ -34,7 +40,7 @@ async function step(){
     pose = pose.map(function(){ return 100; }); addKey();
     keys.forEach(function(k,i){ if(i){ k.t = 1000; k.hold = 20000; } });
     playT = 0; togglePlay();
-    await wait(3500);
+    await wait(WAIT_MS);                      // longer than the hub's beat timeout: only beating keeps it alive
     qcMark("playing-" + playing);
     qcMark("done");
   }catch(e){ qcFail(e); }
@@ -86,9 +92,9 @@ def run(t):
     if not browser.available():
         t.give_up("headless Edge unavailable - the hub half above still ran")
     fake_serial.reset()
-    show.BEAT_TIMEOUT = 2.5     # beats come every 1 s; 1.0 here would be a coin toss
-    browser.page(DRIVER, query="%s/studio/_qcdriver.html?dev=usb%%3A%s"
-                 % (base, fake_serial.PORT), seconds=20)
+    show.BEAT_TIMEOUT = PAGE_BEAT_TIMEOUT     # beats come every 1 s; 1.0 here would be a coin toss
+    browser.page(DRIVER % int((PAGE_BEAT_TIMEOUT + 2.0) * 1000),
+                 query="%s/studio/_qcdriver.html?dev=usb%%3A%s" % (base, fake_serial.PORT), seconds=30)
     marks = fake_serial.qc_marks
     t.ok(not any(m.startswith("ERROR") for m in marks), "the page ran without throwing", marks[-4:])
     t.contains(marks, "playing-true",

@@ -38,6 +38,10 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
   - *Problem:* 119 headless Edge processes from QC runs stayed alive on the PC (up to 67 h old, about 4 GB of memory) after killed runs, crashes and timed-out checks.
   - *Method:* the runner joins a Windows job object that kills everything it started when it ends (even if killed hard); Ctrl+C and SIGTERM end the run cleanly; every run starts by killing browsers whose owner is gone or older than 6 h (never a live run's); a full run fails if it leaves a browser behind. Proven with real processes in check_no_orphans.
   - *Numbers:* a hard-killed runner now takes its child and a detached grandchild with it within 15 s (was: they lived on).
+- check_freeze_stop: more headroom for the page's beats in a busy run — `qc`
+  - *Problem:* check_freeze_stop failed in busy full runs (the hub stopped the show because a busy page missed two beats) and passed alone.
+  - *Method:* the hub's beat timeout in that part of the check is 6 s instead of 2.5 s (beats come every 1 s) and the page waits past it, so staying alive still proves it really kept beating.
+  - *Numbers:* green twice alone; with the timeout set below the beat interval the check fails, as it should.
 
 ## 2026-11-25
 
