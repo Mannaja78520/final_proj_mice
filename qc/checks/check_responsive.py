@@ -229,7 +229,7 @@ def run(t):
     base, main = F.start_hub()
     # A real Studio freeze report is one long unbroken JSON word: it pushed /o/
     # to 737px on a 360px phone (2026-09-24). Seed one so the card is measured full.
-    rep_dir = main.HERE / "reports"
+    rep_dir = main.REPORTS
     rep_dir.mkdir(exist_ok=True)
     seeded = rep_dir / "qc_responsive_long.json"
     seeded.write_bytes(json.dumps({"id": "qclong", "time": "2026-09-24T00:00:00Z",
