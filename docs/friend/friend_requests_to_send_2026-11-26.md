@@ -1,5 +1,7 @@
 # ขอเพื่อน: รายการเดียวที่ต้องทำ (ฉบับส่งจริง) — 2026-11-26
 
+**ตรวจโค้ดเพื่อนล่าสุด 2026-11-26** (Face `26129fa`, Photobooth `d11cffa`, All-Jao `863255f` มีแค่หน้า Help ใหม่) ข้อที่เพื่อนทำแล้วตัดออก
+
 ฉบับนี้ฉบับเดียว **แทนทุกฉบับก่อนหน้า** (`friend_requests_send_2026-11-25`, `face_f1_batch_embedding_2026-11-26`, `gpu_lease_request_2026-11-25`, `speed_requests_2026-11-25`)
 ส่วนข้อตกลง hub↔แอพ (key, `ref`, webhook) อยู่ในฉบับเต็ม `friend_requests_all_2026-11-23.md` ยังใช้ตามนั้น
 
@@ -36,7 +38,7 @@ URL: `http://127.0.0.1:8642/api/dev/cam.stream?dev=pc:<ชื่อกล้อ�
 
 **3. Face_Regonize: หลีกทางให้เสียง และขอคิว GPU จาก hub**
 ตอนทุกแอพทำงานหนักพร้อมกัน face กิน GPU ~95% ทำให้ถอดเสียงช้าจาก 0.75 เป็น 2.8 วินาที (/ask 0.06 → 2.9 วิ)
-- ให้งานเบื้องหลัง (Event Photo, import, วิดีโอ, enrollment, kiosk/camera node, `photo_processing_service.py`) เรียก `yield_to_interactive()` ที่มีอยู่แล้ว ส่วน `/api/look` ของหุ่นทำต่อ
+- ให้งานเบื้องหลัง (Event Photo, import, วิดีโอ, enrollment, kiosk/camera node, `photo_processing_service.py`) เรียก `yield_to_interactive()` ที่มีอยู่แล้ว (ตอนนี้เรียกใน engine, video_render, video_scheduler แล้ว ขาดใน recognition.py, photo_processing_service.py, video_devices.py) ส่วน `/api/look` ของหุ่นทำต่อ
 - ครอบเฉพาะส่วนโมเดล (forward pass) ด้วยการขอคิวจาก hub (ห้ามบล็อก ถ้า error หรือ 408 ให้ทำงานต่อเลย):
 ```
 POST http://127.0.0.1:8642/api/scheduler/acquire  {"class":"live","owner":"face","wait":20} -> {"ok":true,"token":"L12"}
@@ -57,7 +59,7 @@ POST http://127.0.0.1:8642/api/scheduler/release  {"token":"L12"}
 
 **5. Photobooth: เชื่อมกับ hub ได้โดยไม่ต้องจับคู่มือ**
 - รับ `Authorization: Bearer <โทเค็นบริการ>` ที่ localhost (ที่พอร์ต AdminAuthenticator ไม่ต้อง cookie/pairing/CSRF)
-- เริ่มใหม่แล้วขึ้น "Kiosk not paired" (401 `/api/booth/frames`) มือใหม่ติด ให้หน้าบอกวิธีจับคู่ หรือจับคู่เองที่ localhost
+- หน้า "Kiosk not paired" มีแล้ว ขอบคุณ แต่มือใหม่ยังติด (401 `/api/booth/frames`) ขอให้หน้านั้นบอกขั้นตอนจับคู่ หรือจับคู่เองที่ localhost
 - ส่ง event ตอนถ่ายเสร็จ (`session.finished` + session id + วิธีรับภาพที่ผู้ใช้เลือก) ให้หุ่นพูด/แจกของได้
 
 ### P2 — ควรมี
@@ -98,7 +100,7 @@ POST http://127.0.0.1:8642/api/scheduler/release  {"token":"L12"}
 
 **8. Face_Regonize: ข้อมูลและบัญชี**
 - `person_id` คงที่ใน people / history / webhook (`/api/look` มีแล้ว)
-- สร้าง machine account `robot-hub` (`scripts/manage_machine_user.py create`) ตอนนี้ไฟล์ล็อกอินของเราเป็น role admin
+- ใช้ machine account `robot-hub` (`scripts/manage_machine_user.py` ที่เพื่อนมีแล้ว ขอบคุณ) เราจะสลับไปใช้แทน role admin ฝั่งเราเอง ไม่ต้องทำอะไร
 
 **9. Face_Regonize: จำกัด VRAM และเธรดของ onnxruntime**
 `gpu_mem_limit` ~1.5-2 GB + `arena_extend_strategy=kSameAsRequested` ใน CUDA provider options, `intra_op_num_threads=2`, `inter_op_num_threads=1` ตอนนี้ VRAM 1.3-1.5 GB ขึ้นลง และ CPU พุ่งถึง 139% ตอนหนัก
