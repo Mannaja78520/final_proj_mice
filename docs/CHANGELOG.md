@@ -11,6 +11,13 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
   - *Problem:* the owner had to type a merge approval for every PR.
   - *Method:* label `auto-merge` on a ready PR; GitHub Actions squash-merges it when the light CI check `quick-qc` passes. Only owner-added labels on same-repo branches count.
 
+**Improved**
+
+- Coordination notes mention the auto-merge label — `tools`
+  - *Problem:* (optional, notable items only) what was wrong, one line.
+  - *Method:* (optional) how we solved it, one line.
+  - *Numbers:* (optional) measured before/after; link docs/experiments/.
+
 ## 2026-11-25
 
 **New**
