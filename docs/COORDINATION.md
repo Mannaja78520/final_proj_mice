@@ -67,6 +67,9 @@ agent can hand off ... for the hit limit one*. tools/plan.py enforces it:
       python tools/branch.py land  A0-24     QC gate, then one merge commit on main
       python tools/branch.py live            commit plan, logs and Studio saves
 
+  On GitHub (user 2026-11-26): a ready PR with the label `auto-merge` is squash-merged once CI
+  `quick-qc` passes. Add the label only after full QC is green.
+
   The plan, BRIDGE, prompt logs and user saves are still written live in
   main; `live` commits them. Roll a land back with `git revert -m 1 <sha>`.
 - Each session may keep its OWN tree: `python promote.py --staging

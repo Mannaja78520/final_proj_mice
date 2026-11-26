@@ -112,6 +112,9 @@ Claims, mutex, one QC driver: `docs/COORDINATION.md`; `docs/BRIDGE.md` is the cl
 3. No thesis work (dropped).
 4. No manual steps for the user: log in, rebuild, start the friend's backend yourself.
 5. Never skip or disable a test. Branch, PR, merge only when full QC is green. Say what was not tested on real hardware.
+   When full QC is green on the PC: mark the PR ready (not draft) and add the label `auto-merge`.
+   `.github/workflows/auto-merge.yml` then squash-merges it once CI `quick-qc` passes (owner-added label, same-repo
+   branch only; user 2026-11-26). Remove the label to stop it.
 6. Leave the PC's git stashes and the friend's backup branch/stash alone. Never delete `E:\final_proj\mice\_to_delete_2026-10-10` unless the user writes "ลบ".
 7. No service fixed to one provider: hear/think/speak each choose cloud or local per situation; the next is used only when the chosen one fails. Thai first, main language changeable per event.
 8. Dynamic and easy to change (user 2026-10-21): settings, lists and choices
