@@ -98,6 +98,31 @@ def run(t):
     t.ok(not u.tick(), "the switch off (0) also turns the yield off")
     apps.discard("sldworks.exe")
 
+    # a model still LOADING is never unloaded (it would race the load), and nothing loaded means nothing to free
+    b, u = make(idleUnloadMinutes=15)
+    b._llm_loading = True
+    now[0] += 3600
+    t.ok(not u.tick() and b.unloads == 0, "never while a model is still loading")
+    b._llm_loading = False
+    now[0] += 60
+    t.ok(not u.tick(), "and the idle time counts from when the loading ended")
+    now[0] += 15 * 60 + 1
+    t.ok(u.tick() and b.unloads == 1, "then it unloads as usual")
+
+    class EmptyBrain(FakeBrain):
+        _llm_loaded_model = None
+        _stt_loaded_model = None
+        _stt_own = {}
+        _llm = None
+    eb = EmptyBrain(idleUnloadMinutes=15)
+    ue = iu.IdleUnloader(eb, clock=lambda: now[0], names=lambda: apps, poll=1)
+    now[0] += 3600
+    t.ok(not ue.tick() and eb.unloads == 0 and not ue.asleep,
+         "a helper that holds no model is not 'asleep' and nothing is unloaded")
+    eb._llm_loaded_model = "m"
+    now[0] += 15 * 60 + 1
+    t.ok(ue.tick() and eb.unloads == 1, "once a model is loaded the idle rule applies")
+
     # config + wiring
     cfg = json.loads((F.CODE / "config" / "voice.json").read_text(encoding="utf-8"))
     t.ok(cfg.get("idleUnloadMinutes") == 15 and cfg.get("yieldVramWhen") == [] and

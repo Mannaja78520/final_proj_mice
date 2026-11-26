@@ -26,3 +26,11 @@ with a "warming up" state; never during a request or presence/greeter mode; opti
 - check_one_module_list (FLAKY earlier, passed alone 2/2): its driver already waits for readiness (up to 30 s for the far-PC row); with polite mode's CPU cap the
   scans can be slower, so the cheap fix is more headroom on that wait (30 s -> 60 s) once a crowd failure's text shows it timed out. Not changed without that evidence.
 - Full QC wall time under polite mode with other work on the PC: 1082 s (parallel 733 s) in the run above vs 613 s on an idle PC.
+
+## 2026-11-26 late: real-PC measurement and check_one_module_list
+- Measured on the real PC (numbers in docs/experiments/experiment-records.md): idle unload freed ~4.0 GB of 5.1 GB after 30 s idle (test setting), first request after sleep 11.8 s, then 0.4 s.
+  The run found and fixed a bug (unload during a model load / "asleep" with nothing loaded), branch claude/voice-vram-measure.
+- check_one_module_list flake NOT reproduced: 30 of 30 green with 10 concurrent copies (x3 rounds). Its page has two fixed `sleep(400)` after `scan(true)` (before SUM2 and RENAMED) and reads
+  the Home sentence `#homeSum` right after: an early read gives '' ("'4 modules' not found in ''"), which is the likely crowd failure. My attempt to replace them with wait-until-true helpers made the page
+  exceed its 45 s window (the names/sentence conditions did not become true the way I assumed: 'cabled' may not be in `#mods` at that point), so the check was left UNCHANGED.
+  Next try: capture the page's real DOM after `scan(true)` (print `#homeSum` and `#mods` text with qcMark) before choosing the conditions.

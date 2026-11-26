@@ -38,6 +38,10 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
   - *Problem:* measured 2026-11-26 on the PC: at 6 GB the small hearing model loaded first and kept the GPU while the Thai one (saves 2.5 s per visitor) ran on the CPU; at 10 GB a busy local AI sent a newcomer to the CPU, so a bigger card had fewer models on the GPU than 8 GB.
   - *Method:* an equally important model is replaced only by one that saves more time than everything it pushes out; a busy model is asked again until its idle moment (8 s, config) before the newcomer falls back to the CPU; the Thai hearing size uses the measured saving (2877 ms CPU vs 422 ms GPU).
   - *Numbers:* a QC check now walks 2 to 16 GB in 256 MiB steps and fails if a bigger card ever saves less time. Re-measurement: docs/perf_vram_2026-11-26.md.
+- Voice idle unload no longer interrupts a model that is still loading — `voice`
+  - *Problem:* measured on the real PC, the idle unload could fire while the local model was still loading and then said "asleep" with nothing in memory.
+  - *Method:* it now waits for loading to finish, counts idle time from then, does nothing when no model is loaded, and records how much GPU memory an unload freed.
+  - *Numbers:* about 4 GB of 5.1 GB freed after 30 s idle (test setting); the first answer after the sleep took 11.8 s, the next 0.4 s. See docs/experiments/experiment-records.md.
 - check_voice_bench waits for the helper to answer instead of 15 s — `qc`
   - *Problem:* check_voice_bench failed in a full run at low priority: the real Voice helper needed more than the fixed 15 seconds to start listening (green alone in 58 s).
   - *Method:* the check now waits up to 60 s for the helper to answer and stops at once if the process died.
