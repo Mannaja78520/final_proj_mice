@@ -29,6 +29,8 @@ sys.path.insert(0, str(QC))
 import qc as F  # noqa: E402
 import check_pool  # noqa: E402
 import jobguard  # noqa: E402
+sys.path.insert(0, str(CODE / "tools"))
+import polite  # noqa: E402
 
 
 # ---- proof that a particular tree passed ------------------------------
@@ -289,6 +291,12 @@ def _one(path_str):
             secs, crash or "", "", buf.getvalue())
 
 
+# The headroom governor (tools/polite.py), set up in __main__ when polite mode is on. Pools ask it
+# before starting EXTRA checks; None = polite mode off.
+GOVERNOR = None
+PAUSE_CLOCK = polite.PauseClock()
+
+
 def _timing_report(timings, phases, wall, full_run, top=12):
     """Where the time went: per-phase wall clock and the slowest checks.
 
@@ -334,8 +342,11 @@ def main(argv):
     # one core of 24 while the other 23 idled, and the user asked for the whole
     # machine to be used. Not ALL of them - each browser check starts an Edge,
     # and 24 browsers thrash a laptop rather than finishing sooner.
+    # Polite mode keeps `reserveCpus` logical CPUs free for the person using the PC.
+    _spare = int(SPEED.get("reserveCpus") or 2) if polite.enabled(argv) else 2
+    _room = max(2, (os.cpu_count() or 4) - max(2, _spare))
     jobs = _int_arg(argv, "--jobs", default=max(2, min(
-        int(SPEED.get("workers") or 10), (os.cpu_count() or 4) - 2)))
+        int(SPEED.get("workers") or 10), _room)))
     if "--serial" in argv:
         jobs = 1
     verbose = "-v" in argv or "--verbose" in argv
@@ -576,7 +587,7 @@ def main(argv):
         # Widths are DATA (qc/data/qc_speed.json), overridable per run with
         # --browsers N, so a measurement never needs a code edit.
         browser_jobs = _int_arg(argv, "--browsers",
-                                default=int(SPEED.get("browserLanes") or 3))
+                                default=min(int(SPEED.get("browserLanes") or 3), _room))
         print("%srunning %d checks on %d workers, %d browser checks on %d, "
               "%d on their own%s"
               % (B, len(para), jobs, len(heavy), browser_jobs, len(solo), D))
@@ -603,12 +614,15 @@ def main(argv):
             group = longest_first(group, durations)
             # One process per check (hub threads outlive a check), each with a
             # hard time limit - qc/lib/check_pool.py.
-            pool = check_pool.CheckPool(_one, width, on_kill=_kill_browsers)
+            pool = check_pool.CheckPool(_one, width, on_kill=_kill_browsers,
+                                        hold=GOVERNOR.holding if GOVERNOR else None,
+                                        clock=PAUSE_CLOCK)
             pools.append(pool)
             for f, m in group:
                 by_path[str(f)] = (f, m)
                 pool.submit(str(f), str(f), _budget(f))
-        beat = check_pool.Heartbeat(PROGRESS_FILE, len(para) + len(heavy), pools)
+        beat = check_pool.Heartbeat(PROGRESS_FILE, len(para) + len(heavy), pools,
+                                    held=(lambda: GOVERNOR.hold) if GOVERNOR else None)
         while any(p.busy() for p in pools):
             got = [r for p in pools for r in p.poll()]
             for key, kind, value, secs_w in got:
@@ -698,6 +712,12 @@ def main(argv):
         RECEIPT.unlink()          # this tree is not green any more
 
     _timing_report(timings, phases, time.time() - t_all, full_run)
+    if GOVERNOR:
+        st = GOVERNOR.stats()
+        peak = jobguard.job_peak_memory_gb()
+        print("QC polite: held new checks in %d of %d load samples; CPU cap %.0f%% (lowest %.0f%%)%s"
+              % (st["held_ticks"], st["ticks"], st["cap_now"], st["cap_min"],
+                 "; peak job memory %.1f GB" % peak if peak else ""), flush=True)
 
     if flaky:
         # Counted as passed, never hidden: these are the checks to make steadier.
@@ -792,8 +812,25 @@ def _take_run_lock(argv):
 if __name__ == "__main__":
     # Before anything is started, so every child belongs to the job: the browsers die
     # with the runner even if it is killed hard (qc/lib/jobguard.py).
+    _polite = polite.enabled()
+    if _polite:
+        polite.lower_priority()          # the runner, then its children inherit it
+    else:
+        print("QC: running at NORMAL priority (polite mode off); expect a busier PC.", flush=True)
     if "--no-job" not in sys.argv:
-        jobguard.install()
+        _cap = _mem = None
+        if _polite:
+            _st = polite.yield_settings()
+            _cores = os.cpu_count() or 4
+            _cap = float(_st["cpuCapPercent"] or max(25.0, (_cores - _st["reserveCpus"]) * 100.0 / _cores))
+            _ram = polite.LoadSampler.total_ram_gb()
+            if _ram:
+                _mem = max(4.0, min(_ram * float(SPEED.get("jobMemoryPct") or 50) / 100.0,
+                                    _ram - _st["reserveRamGb"]))
+        if jobguard.install(cpu_cap_percent=_cap, below_normal=_polite, job_memory_gb=_mem) and _polite:
+            GOVERNOR = polite.Governor(_st, pids=jobguard.job_pids, clock=PAUSE_CLOCK,
+                                       set_cap=jobguard.set_cpu_cap, base_cap=_cap,
+                                       say=lambda m: print(m, flush=True))
         jobguard.install_exit_hooks()
     sys.argv = [a for a in sys.argv if a != "--no-job"]
     _lock = _take_run_lock(sys.argv)

@@ -206,7 +206,7 @@ model), speech out.
 
 - [app-gacha](app-gacha.md)
 
-## Checks that test it (59)
+## Checks that test it (60)
 
 - `check_app_help`
 - `check_browser_leaks`
@@ -226,6 +226,7 @@ model), speech out.
 - `check_old_browser`
 - `check_ollama_kv`
 - `check_page_frame`
+- `check_polite`
 - `check_press_feedback`
 - `check_qc_receipt`
 - `check_rebrand`
@@ -268,4 +269,4 @@ model), speech out.
 - `check_voice_user_clips`
 - `check_voice_view`
 
-Run them: `python qc/run_qc.py --no-build check_app_help check_browser_leaks check_build_web check_face_photos check_faces_cursor check_faces_loopback check_faces_presence check_friend_api check_help_drift check_hub_stop check_job_scheduler check_local_ai_on_demand check_local_ai_warm check_login_anywhere check_no_console_window check_old_browser check_ollama_kv check_page_frame check_press_feedback check_qc_receipt check_rebrand check_resource_policy check_scale_robust check_speak check_stale_build check_studio_dialogs check_translate check_ux_audit_round2 check_voice check_voice_answers check_voice_bench check_voice_conversation check_voice_edge_fallback check_voice_fast check_voice_gestures check_voice_gpu_and_ask_speed check_voice_guard check_voice_helper check_voice_identify check_voice_idle_unload`
+Run them: `python qc/run_qc.py --no-build check_app_help check_browser_leaks check_build_web check_face_photos check_faces_cursor check_faces_loopback check_faces_presence check_friend_api check_help_drift check_hub_stop check_job_scheduler check_local_ai_on_demand check_local_ai_warm check_login_anywhere check_no_console_window check_old_browser check_ollama_kv check_page_frame check_polite check_press_feedback check_qc_receipt check_rebrand check_resource_policy check_scale_robust check_speak check_stale_build check_studio_dialogs check_translate check_ux_audit_round2 check_voice check_voice_answers check_voice_bench check_voice_conversation check_voice_edge_fallback check_voice_fast check_voice_gestures check_voice_gpu_and_ask_speed check_voice_guard check_voice_helper check_voice_identify`

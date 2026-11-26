@@ -79,4 +79,6 @@ def main():
 
 
 if __name__ == "__main__":
+    import polite  # our background tools run at low priority (tools/polite.py)
+    polite.apply("bench_sched")
     main()

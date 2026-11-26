@@ -29,5 +29,30 @@
   // browsers killed and fails with "timed out after N s", so one hung check can
   // never stall the whole run (three scheduled runs stopped at ~340/415 on
   // 2026-11-25). Generous on purpose: the slowest healthy check is ~250 s.
-  "checkTimeoutFloorSecs": 600
+  "checkTimeoutFloorSecs": 600,
+
+  // POLITE MODE (user 2026-11-26: a full QC run left the PC laggy; other programs are open
+  // in real use, so leave headroom instead of stopping). QC is background work:
+  //  - runner and every child (incl. Edge via PowerShell): BELOW_NORMAL CPU, LOW I/O and
+  //    memory priority, in a job object with a CPU hard cap and a memory limit;
+  //  - a governor samples the whole machine every ~2 s and starts no NEW check while total
+  //    CPU > targetCpuPct, free RAM < reserveRamGb or the GPU is busier than 100 - gpuReservePct
+  //    (one check per pool always runs), and tightens/relaxes the job's CPU cap;
+  //  - workers and browser lanes leave reserveCpus logical CPUs free.
+  // It never suspends or kills anything by default. Off: "polite": false or env MICE_POLITE=0
+  // (the run says so). Never applied to the real hub, Voice or Faces.
+  "polite": true,
+  "reserveCpus": 4,
+  "cpuCapPercent": null,          // null = (cores - reserveCpus) / cores
+  "targetCpuPct": 75,
+  "reserveRamGb": 6,
+  "gpuReservePct": 30,
+  "jobMemoryPct": 50,             // hard limit for the whole QC job, % of RAM
+  // Optional stronger yield (off by default): "pause" stops starting checks while a foreground
+  // app in yieldTo runs / you typed within idleSeconds; "freeze" also suspends running checks
+  // (their own timers then jump: expect flakes). Hard time limits never count frozen time.
+  "yieldMode": "none",
+  "yieldTo": [],
+  "yieldToInput": false,
+  "idleSeconds": 20
 }

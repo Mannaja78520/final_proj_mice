@@ -109,5 +109,5 @@ def run(t):
                 p.kill()
 
     src = (F.QC / "run_qc.py").read_text(encoding="utf-8")
-    t.ok("jobguard.install()" in src and "jobguard.kill_stale()" in src and "jobguard.left_behind(" in src,
+    t.ok("jobguard.install(" in src and "jobguard.kill_stale()" in src and "jobguard.left_behind(" in src,
          "run_qc.py joins the job at start, sweeps at start and checks at the end")
