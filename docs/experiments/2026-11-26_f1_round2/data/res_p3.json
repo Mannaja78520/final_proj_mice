@@ -1,0 +1,32 @@
+{
+ "loop": {
+  "gpu": 47.8,
+  "vram": 11779.0,
+  "clk": 1391.4,
+  "pw": 30.6,
+  "srv_cpu": 68.2,
+  "srv_rss": 3298.9,
+  "ram_avail": 7282.2,
+  "cpu_all": 18.0
+ },
+ "hybrid": {
+  "gpu": 28.4,
+  "vram": 11801.5,
+  "clk": 954.3,
+  "pw": 27.3,
+  "srv_cpu": 57.2,
+  "srv_rss": 3247.2,
+  "ram_avail": 8011.8,
+  "cpu_all": 14.0
+ },
+ "bucketgraph": {
+  "gpu": 24.8,
+  "vram": 11802.3,
+  "clk": 880.5,
+  "pw": 25.0,
+  "srv_cpu": 48.0,
+  "srv_rss": 3169.0,
+  "ram_avail": 8335.7,
+  "cpu_all": 12.5
+ }
+}
