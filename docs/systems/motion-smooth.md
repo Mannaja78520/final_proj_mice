@@ -24,7 +24,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 
 - nothing
 
-## Checks that test it (207)
+## Checks that test it (208)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -148,6 +148,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_partner_live`
 - `check_partner_version`
 - `check_partners`
+- `check_pc_assistant_ensure`
 - `check_peerpass`
 - `check_perf`
 - `check_persistence`
