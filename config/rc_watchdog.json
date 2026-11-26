@@ -1,0 +1,24 @@
+{
+  // The PC assistant watchdog (tools/rc_watchdog.ps1): keeps the Claude remote-control session for this
+  // folder running so nobody types the command by hand. Read by the watchdog and the install script.
+  "taskName": "Mice PC Assistant Watchdog",
+  "everyMinutes": 3,
+  // the command the watchdog relaunches (the exe path is relative to the user's profile folder)
+  "exe": ".local\\bin\\claude.exe",
+  "args": ["remote-control", "--permission-mode", "bypassPermissions", "--spawn", "same-dir"],
+  // a running session counts as connected while it holds at least this many established network connections
+  "minConnections": 1,
+  // it must look unhealthy on this many checks in a row before it is stopped and started again
+  "unhealthyChecksBeforeRestart": 2,
+  // never relaunch more than this many times in an hour (then it waits and says so in the log)
+  "maxRelaunchesPerHour": 3,
+  // do not act in the first seconds after logon, the PC may still be starting or shutting down
+  "minLogonAgeSeconds": 90,
+  // a session that has not written a heartbeat (.local/rc_heartbeat.json, tools/rc_heartbeat.py) for this long while a
+  // task file says "## Doing now" is STALLED. stallAction: "restart" (stop that one process and start it again, same
+  // back-off as above), "log" (only say so in the log) or "off".
+  "stallMinutes": 90,
+  "stallAction": "restart",
+  "logKeepFiles": 3,
+  "logMaxKB": 512
+}

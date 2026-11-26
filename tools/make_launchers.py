@@ -29,9 +29,19 @@ TEXT = ("@echo off\r\n"
         "pause\r\n")
 
 
+def extras():
+    """{file name: text} for the starters in config/extra_launchers.json (not one app each)."""
+    path = ROOT / "config" / "extra_launchers.json"
+    if not path.is_file():
+        return {}
+    data = registry.load(path)
+    crlf = chr(13) + chr(10)
+    return {name: crlf.join(lines) + crlf for name, lines in data.items()}
+
+
 def wanted():
-    """{file name: text} for every app that can run alone."""
-    out = {}
+    """{file name: text} for every app that can run alone, plus the extra starters."""
+    out = dict(extras())
     for a in registry.apps():
         if a.get("alonePort"):
             safe = re.sub(r'[\\/:*?"<>|]', "", a["name"]).strip() or a["id"]

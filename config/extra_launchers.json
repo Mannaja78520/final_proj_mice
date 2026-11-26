@@ -1,0 +1,48 @@
+{
+  // Double-click starters that are not "one app" (those come from each app's alonePort, tools/make_launchers.py).
+  // Each entry: the file name (plain words) and its lines. Paths use forward slashes: the folder is found from the
+  // .bat's own location, nothing is hardcoded. Regenerate: python tools/make_launchers.py
+  "Start PC Assistant.bat": [
+    "@echo off",
+    "title MICE - Start PC Assistant",
+    "rem Starts the PC assistant (the Claude remote-control session for this folder) now, and turns on the small",
+    "rem automatic check that keeps it running: at login and every 3 minutes. Safe to open twice.",
+    "set \"REPO=%~dp0../..\"",
+    "echo.",
+    "echo  Starting the PC assistant...",
+    "powershell -NoProfile -ExecutionPolicy Bypass -File \"%REPO%/tools/rc_watchdog_install.ps1\" -NoStart >nul 2>&1",
+    "if errorlevel 1 (",
+    "  echo  Could not turn on the automatic check. The assistant will still be started now,",
+    "  echo  but it will not restart by itself if it stops.",
+    ") else (",
+    "  echo  The automatic check is on: it looks every 3 minutes and when you log in.",
+    ")",
+    "powershell -NoProfile -ExecutionPolicy Bypass -File \"%REPO%/tools/rc_watchdog.ps1\" >nul 2>&1",
+    "python \"%REPO%/tools/ai_watch.py\" start >nul 2>&1",
+    "timeout /t 8 /nobreak >nul",
+    "for /f \"delims=\" %%S in ('powershell -NoProfile -ExecutionPolicy Bypass -File \"%REPO%/tools/rc_watchdog.ps1\" -Status') do set \"STATE=%%S\"",
+    "echo.",
+    "echo  The PC assistant is: %STATE%",
+    "echo  If a usage limit is reached, the work is handed on automatically and picked up again after the reset.",
+    "echo  You do not need to type anything. To turn it off, open \"Stop PC Assistant\".",
+    "echo.",
+    "pause"
+  ],
+  "Stop PC Assistant.bat": [
+    "@echo off",
+    "title MICE - Stop PC Assistant",
+    "rem Turns off the automatic check and stops the PC assistant session (only that one). Safe to open twice.",
+    "set \"REPO=%~dp0../..\"",
+    "echo.",
+    "echo  Turning off the automatic check...",
+    "powershell -NoProfile -ExecutionPolicy Bypass -File \"%REPO%/tools/rc_watchdog_uninstall.ps1\" >nul 2>&1",
+    "echo  Stopping the PC assistant...",
+    "powershell -NoProfile -ExecutionPolicy Bypass -File \"%REPO%/tools/rc_watchdog.ps1\" -StopSession >nul 2>&1",
+    "echo.",
+    "python \"%REPO%/tools/ai_watch.py\" stop >nul 2>&1",
+    "echo  Done. The PC assistant will not start by itself any more.",
+    "echo  To start it again, open \"Start PC Assistant\".",
+    "echo.",
+    "pause"
+  ]
+}

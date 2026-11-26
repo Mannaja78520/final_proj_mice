@@ -22,7 +22,7 @@ samples copied 2026-10-29 from ~/.codex/sessions and ~/.claude/projects):
 - a short Claude limit does nothing; a quoted limit inside a tool result is no limit;
 - a Claude weekly limit starts Codex on the task files the session named, the
   prompt points at HANDOFF.md, and a second round runs until "Status: done";
-- with Codex itself limited, the handoff goes to Gemini instead;
+- with Codex itself limited, the handoff goes to Gemini 4 Argon instead (then regular Gemini, small steps: check_ai_fallback);
 - a limit older than the history window is ignored.
 """
 import datetime as dt
@@ -284,7 +284,8 @@ def run(t):
                                 "text": "You've hit your weekly limit · resets Nov 3, 9am (Asia/Bangkok)"}]}})
         w.tick()
         g2 = [g for g in w.state["goals"].values() if any("next.md" in x for x in g["tasks"])]
-        t.ok(g2 and g2[0].get("worker") == "gemini", "Codex limited: the handoff goes to Gemini", str(g2))
+        t.ok(g2 and g2[0].get("worker") == "gemini_argon",
+             "Codex limited: the handoff goes to Gemini 4 Argon (the full fallback; regular Gemini only after it, small steps)", str(g2))
 
         # --- old notice ignored ---------------------------------------------------------
         tr3 = proj / "s3.jsonl"
