@@ -34,8 +34,12 @@ _TAG = re.compile(r"MICEQCBROWSER(\d+)END")
 _JOB = [None]                     # the handle must stay open for the life of the process
 
 
-def install():
-    """Put this process in a kill-on-close job object. True when it took effect."""
+def install(cpu_cap_percent=None, below_normal=False, job_memory_gb=None):
+    """Put this process in a kill-on-close job object. True when it took effect.
+
+    Polite mode (user 2026-11-26, the PC was laggy during QC) also makes the JOB lower every
+    process in it - including the PowerShell-launched Edge - to BELOW_NORMAL, and caps the whole
+    job at `cpu_cap_percent` of the machine so it can never be fully saturated."""
     if os.name != "nt" or _JOB[0] is not None:
         return _JOB[0] is not None
     try:
@@ -75,14 +79,91 @@ def install():
             return False
         info = _Extended()
         info.Basic.LimitFlags = 0x2000            # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        if job_memory_gb:
+            info.Basic.LimitFlags |= 0x200        # JOB_OBJECT_LIMIT_JOB_MEMORY
+            info.JobMemoryLimit = int(job_memory_gb * 2 ** 30)
+        if below_normal:
+            info.Basic.LimitFlags |= 0x20         # JOB_OBJECT_LIMIT_PRIORITY_CLASS
+            info.Basic.PriorityClass = 0x4000     # BELOW_NORMAL_PRIORITY_CLASS
         if not k32.SetInformationJobObject(job, 9, ctypes.byref(info), ctypes.sizeof(info)):
             return False
+        if cpu_cap_percent:
+            class _Cpu(ctypes.Structure):
+                _fields_ = [("ControlFlags", wintypes.DWORD), ("CpuRate", wintypes.DWORD)]
+            cpu = _Cpu(0x1 | 0x4, int(cpu_cap_percent * 100))   # ENABLE | HARD_CAP, 1/100 percent
+            k32.SetInformationJobObject(job, 15, ctypes.byref(cpu), ctypes.sizeof(cpu))  # best effort
         if not k32.AssignProcessToJobObject(job, k32.GetCurrentProcess()):
             return False
         _JOB[0] = job
         return True
     except Exception:                              # noqa: BLE001 - a guard never stops a run
         return False
+
+
+def set_cpu_cap(percent):
+    """Tighten or relax the job's hard CPU cap while it runs (the governor calls this)."""
+    if os.name != "nt" or _JOB[0] is None:
+        return False
+    try:
+        from ctypes import wintypes
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+        class _Cpu(ctypes.Structure):
+            _fields_ = [("ControlFlags", wintypes.DWORD), ("CpuRate", wintypes.DWORD)]
+        cpu = _Cpu(0x1 | 0x4, int(max(1, min(100, percent)) * 100))
+        k32.SetInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int,
+                                                ctypes.c_void_p, wintypes.DWORD]
+        return bool(k32.SetInformationJobObject(_JOB[0], 15, ctypes.byref(cpu), ctypes.sizeof(cpu)))
+    except Exception:                                  # noqa: BLE001
+        return False
+
+
+def job_peak_memory_gb():
+    """Peak memory the job (QC run) used, in GB: for the run's summary line."""
+    if os.name != "nt" or _JOB[0] is None:
+        return None
+    try:
+        from ctypes import wintypes
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+        class _Basic(ctypes.Structure):
+            _fields_ = [("a", ctypes.c_int64), ("b", ctypes.c_int64), ("flags", wintypes.DWORD),
+                        ("c", ctypes.c_size_t), ("d", ctypes.c_size_t), ("e", wintypes.DWORD),
+                        ("f", ctypes.c_size_t), ("g", wintypes.DWORD), ("h", wintypes.DWORD)]
+
+        class _Io(ctypes.Structure):
+            _fields_ = [(n, ctypes.c_uint64) for n in "abcdef"]
+
+        class _Ext(ctypes.Structure):
+            _fields_ = [("Basic", _Basic), ("Io", _Io), ("pm", ctypes.c_size_t),
+                        ("jm", ctypes.c_size_t), ("peakp", ctypes.c_size_t), ("peakj", ctypes.c_size_t)]
+        e = _Ext()
+        k32.QueryInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p,
+                                                  wintypes.DWORD, ctypes.c_void_p]
+        if not k32.QueryInformationJobObject(_JOB[0], 9, ctypes.byref(e), ctypes.sizeof(e), None):
+            return None
+        return e.peakj / 2 ** 30
+    except Exception:                                  # noqa: BLE001
+        return None
+
+
+def job_pids():
+    """Process ids in this runner's job object (the runner, pool children, Edge ...)."""
+    if os.name != "nt" or _JOB[0] is None:
+        return []
+    try:
+        from ctypes import wintypes
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        n = 4096
+        buf = (ctypes.c_size_t * (n + 2))()
+        k32.QueryInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p,
+                                                  wintypes.DWORD, ctypes.c_void_p]
+        if not k32.QueryInformationJobObject(_JOB[0], 3, buf, ctypes.sizeof(buf), None):
+            return []
+        got = min(int(buf[1]), n)                      # NumberOfProcessIdsInList
+        return [int(buf[2 + i]) for i in range(got)]
+    except Exception:                                  # noqa: BLE001
+        return []
 
 
 def _on_signal(signum, _frame):

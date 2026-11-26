@@ -794,3 +794,14 @@ Results folder .local/perf/vram_2026-11-26_placement; write-up docs/perf_vram_20
 - Calibration alone: hearing GPU 511 / CPU 3319 ms; helper GPU 541 / CPU 888 ms; ask needing the local model 2080 / 3474 ms; reload onto the GPU 5925 ms (Thai hearing), 5095 ms (local model);
   Spark speech with feeling GPU 3320 ms (25.2 s load, 3193 MiB) / CPU 10820 ms (11.2 s load) - measured for the first time.
 - Simulator (bench_vram with measured inputs) still contradicts the measurement on swap and hybrid (it does not model CPU sharing or face-app growth); use the measurements.
+
+### 2026-11-26 polite mode (always-on headroom): cost and responsiveness
+Full QC on claude/qc-polite with the governor on (runner and children BelowNormal CPU, low I/O and memory priority, job CPU cap
+83% = (24-4)/24, job memory limit 50% of RAM, governor: no new check while CPU > 75%, free RAM < 6 GB or GPU > 70%):
+- Wall 613 s (10952 passed, 0 failed) against 568 s for the same suite before polite mode (+8%); an earlier polite run before the governor: 620 s.
+- The governor held new starts in 4 of 114 load samples and tightened the job CPU cap to 43% at the lowest, then relaxed it. Peak job memory 12.2 GB (limit 15.7 GB).
+- Responsiveness while the run was going (a normal-priority sampler: 20 ms sleep + a 200k-iteration burst, 18840 samples): sleep overshoot p50 0.40 ms,
+  p95 1.01 ms, p99 1.33 ms, max 6.2 ms; burst p50 11.1 ms, p99 20.2 ms, max 125 ms. The same sampler on the idle PC: overshoot p50 0.37, p95 0.83,
+  p99 1.1, max 1.5 ms; burst p99 22.2 ms. So foreground timing stayed within about 0.3 ms of idle at p99.
+- Not measured: the same run with MICE_POLITE=0 (normal priority). It was not started because the person was at the PC and the point of the exercise is not to lag them.
+- One FLAKY: check_one_module_list (failed in the crowd, passed alone 2/2); not investigated.
