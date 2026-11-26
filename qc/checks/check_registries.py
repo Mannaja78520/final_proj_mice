@@ -19,6 +19,11 @@ import qc as F
 AREA = "registries"
 TITLE = "adding a thing costs one file"
 SLOW = False
+# It ADDS a throwaway app folder (apps/_qc_tmp_app, "QC temp app") to the real tree for a moment to prove a new app
+# needs no code. Every hub reads that folder, so while it exists any other check that lists the apps sees it:
+# check_visual_language failed in the crowd on "QC_temp_app" as leftover English on Home (2026-11-26). Alone, nothing
+# else is reading. (Copying apps/ per check, as isolate_data does for the data folders, would cost more than the 8 s.)
+SOLO = True
 
 sys.path.insert(0, str(F.CODE / "tools"))
 import registry  # noqa: E402
