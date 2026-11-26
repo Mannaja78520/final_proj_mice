@@ -3,6 +3,8 @@
 ## Start here: HANDOFF.md (user 2026-10-21)
 
 Read `HANDOFF.md` first, then your one task file in `handoff/tasks/`.
+Merging (user 2026-11-26): when full QC is green, mark the PR ready and add the label `auto-merge`;
+`.github/workflows/auto-merge.yml` squash-merges it once CI `quick-qc` passes. Details: HANDOFF.md rule 5.
 Mandatory Handoff-First & Force-Queue Reconciliation (user 2026-10-25, all AIs):
 never write code without an active task in `handoff/tasks/` (`tools/handoff.py take/new`).
 Update `## Doing now` before each step, `## Done`/`## Next` after each step, and
