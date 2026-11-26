@@ -70,13 +70,17 @@ class _Job:
         self.key, self.arg, self.budget = key, arg, budget
         self.proc = self.conn = None
         self.t0 = 0.0
+        self.p0 = 0.0
 
 
 class CheckPool:
     """`width` checks at once, each in its own process. Use submit() then poll()."""
 
-    def __init__(self, worker, width, on_kill=None, ctx=None):
+    def __init__(self, worker, width, on_kill=None, ctx=None, hold=None, clock=None):
         self.worker, self.width = worker, max(1, int(width))
+        # hold(): True while NO new check may start (the person is using the PC, tools/polite.py);
+        # clock.paused: seconds this run spent frozen, never counted against a hard limit
+        self.hold, self.clock = hold, clock
         self.on_kill = on_kill            # called with the pid of a check that was killed
         self.ctx = ctx or mp.get_context("spawn")
         self.waiting, self.running = [], []
@@ -88,6 +92,7 @@ class CheckPool:
         return bool(self.waiting or self.running)
 
     def _start(self, job):
+        job.p0 = self.clock.paused if self.clock else 0.0
         parent, child = self.ctx.Pipe(duplex=False)
         job.conn = parent
         job.proc = self.ctx.Process(target=_entry, args=(self.worker, job.arg, child))
@@ -100,10 +105,13 @@ class CheckPool:
         """Start what fits, return [(key, kind, value, secs)] finished since the
         last call. kind: "done" (value = the worker's result), "timeout", "died"."""
         out = []
-        while self.waiting and len(self.running) < self.width:
+        # `hold` (the headroom governor) only stops EXTRA starts: one check per pool always runs,
+        # so a busy PC slows QC down instead of stopping it
+        while self.waiting and len(self.running) < self.width and not (
+                self.running and self.hold and self.hold()):
             self._start(self.waiting.pop(0))
         for job in list(self.running):
-            secs = time.time() - job.t0
+            secs = time.time() - job.t0 - ((self.clock.paused - job.p0) if self.clock else 0.0)
             kind = value = None
             try:
                 if job.conn.poll():
@@ -138,15 +146,17 @@ class CheckPool:
 
     def snapshot(self):
         now = time.time()
-        return [{"check": j.key, "pid": j.proc.pid, "age": round(now - j.t0, 1),
+        return [{"check": j.key, "pid": j.proc.pid,
+                 "age": round(now - j.t0 - ((self.clock.paused - j.p0) if self.clock else 0.0), 1),
                  "budget": round(j.budget)} for j in self.running]
 
 
 class Heartbeat:
     """Writes qc/last_progress.json and speaks when nothing has finished for a while."""
 
-    def __init__(self, path, total, pools):
+    def __init__(self, path, total, pools, held=None):
         self.path, self.total, self.pools = Path(path), total, pools
+        self.held = held                     # callable: True while the run yields to the person
         self.done, self.last, self.t_last_done = 0, "", time.time()
         self.t_beat = 0.0
         self.t_stall_said = 0.0
@@ -168,6 +178,8 @@ class Heartbeat:
                  "last_finished": self.last, "running": running}, indent=1), encoding="utf-8")
         except OSError:
             pass
+        if self.held and self.held():
+            self.t_last_done = now           # yielding on purpose is not a stall
         if now - self.t_last_done > STALL_SECS and now - self.t_stall_said > STALL_SECS:
             self.t_stall_said = now
             names = ", ".join("%s (pid %s, %ss)" % (r["check"], r["pid"], int(r["age"]))
