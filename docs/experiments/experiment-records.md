@@ -805,3 +805,11 @@ Full QC on claude/qc-polite with the governor on (runner and children BelowNorma
   p99 1.1, max 1.5 ms; burst p99 22.2 ms. So foreground timing stayed within about 0.3 ms of idle at p99.
 - Not measured: the same run with MICE_POLITE=0 (normal priority). It was not started because the person was at the PC and the point of the exercise is not to lag them.
 - One FLAKY: check_one_module_list (failed in the crowd, passed alone 2/2); not investigated.
+
+### 2026-11-26 Voice idle unload on the real PC (our own helper on :8799, RTX 5070 Ti Laptop 12 GB, idleUnloadMinutes 0.5 in a temp config copy)
+Method: start the helper (BelowNormal), let the local model load, load the hearing models with a 2 s tone through /transcribe, leave it idle, wait for the unload, ask again. Nothing else used the GPU (0 MiB before).
+- GPU memory used: 0 MiB before start -> 1,140 MiB with the local Qwen2.5-0.5B loaded -> 5,146 MiB after the first /transcribe (Whisper small + medium + the Thai medium model; the planner kept the local model off the card).
+- Idle unload fired 29-32 s after the last request (setting 0.5 min). Memory after: 1,132 MiB, so it freed about 4,010 MiB of the 5,146 MiB. The remaining ~1.1 GB is the CUDA contexts of the live process; only stopping the process releases it.
+- First request after the sleep (wakes the hearing models): 11.8 s (the helper reports firstRequestMs 11,688); GPU memory after the wake 3,564 MiB. The second request: 0.4 s. A warm hearing request before the sleep also took 0.4 s (the very first one, loading from disk, 13.3 s).
+- Bug found by this run and fixed: with the helper only just started the unloader fired at 30 s while the local model was still loading, and reported "asleep" with nothing in memory. It now never unloads while a model is loading, counts the idle time from when loading ends, and does nothing when no model is in memory (check_voice_idle_unload, 3 breaks caught); /health lastUnload.freedMiB now carries the freed number (nvidia-smi before/after).
+- At the default 15 minutes this frees ~4 GB (5.4 GB seen on the real helper after heavier use) for SolidWorks and the desktop; the price is one slow answer (about 12 s) the first time someone speaks again.

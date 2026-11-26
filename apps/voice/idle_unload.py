@@ -39,13 +39,25 @@ def running_names():
         return set()
 
 
+def gpu_used_mib():
+    """GPU memory in use on the card (MiB) from nvidia-smi, or None. Used to report what an unload freed."""
+    try:
+        import subprocess
+        out = subprocess.run(["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
+                             capture_output=True, text=True, timeout=10,
+                             creationflags=0x08000000 if os.name == "nt" else 0).stdout.split()
+        return int(float(out[0]))
+    except (OSError, ValueError, IndexError, Exception):      # noqa: BLE001 - no GPU / no tool: no number
+        return None
+
+
 class IdleUnloader:
     """Watches the helper; `brain` needs unload(), a `cfg` dict and presence settings in it."""
 
     def __init__(self, brain, clock=time.monotonic, names=running_names, poll=15.0,
-                 vram_used=None):
+                 vram_used=gpu_used_mib):
         self.brain, self.clock, self.names, self.poll = brain, clock, names, poll
-        self.vram_used = vram_used                 # optional: () -> MiB used, to report what was freed
+        self.vram_used = vram_used                 # () -> MiB used on the card: what an unload freed is kept
         self.last_used = clock()
         self.inflight = 0
         self.asleep = False
@@ -91,6 +103,21 @@ class IdleUnloader:
                 self.warming = False
                 self.asleep = False
 
+    # ---- what the brain holds -----------------------------------------------------
+    def loading(self):
+        """True while a model is still loading: unloading then would race the load."""
+        b = self.brain
+        return bool(getattr(b, "_llm_loading", False) or getattr(b, "_stt_loading", False))
+
+    def holds_models(self):
+        """True when there is something in memory to free. A brain without the usual fields
+        (a test double) counts as holding models."""
+        b = self.brain
+        if not any(hasattr(b, n) for n in ("_llm_loaded_model", "_stt_loaded_model", "_stt_own", "_llm")):
+            return True
+        return bool(getattr(b, "_llm_loaded_model", None) or getattr(b, "_stt_loaded_model", None)
+                    or getattr(b, "_stt_own", None) or getattr(b, "_llm", None))
+
     # ---- the decision --------------------------------------------------------
     def limit_secs(self):
         """Seconds of idleness after which the models go, or None for never."""
@@ -107,12 +134,19 @@ class IdleUnloader:
         with self._mu:
             if self.inflight or self.asleep:
                 return False
+            if self.loading():                     # idle time counts from when loading ENDS
+                self.last_used = self.clock()
+                return False
+            if not self.holds_models():            # nothing in memory: nothing to free, not "asleep"
+                self.last_used = self.clock()
+                return False
             idle = self.clock() - self.last_used
         limit = self.limit_secs()
         if limit is None or idle < limit:
             return False
         before = self.vram_used() if self.vram_used else None
         self.brain.unload()
+        time.sleep(1.0) if self.vram_used is gpu_used_mib else None      # the driver reports the release a moment later
         after = self.vram_used() if self.vram_used else None
         with self._mu:
             if self.inflight:                      # a request arrived while unloading: it reloads
