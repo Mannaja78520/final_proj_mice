@@ -14,6 +14,7 @@ app gets the card.
 
 Settings live in config/voice.json (one source, the page and the hub read it too).
 """
+import os
 import threading
 import time
 
@@ -31,7 +32,8 @@ def running_names():
     try:
         import subprocess
         out = subprocess.run(["tasklist", "/FO", "CSV", "/NH"], capture_output=True,
-                             text=True, timeout=20).stdout
+                             text=True, timeout=20,
+                             creationflags=0x08000000 if os.name == "nt" else 0).stdout
         return {l.split(",")[0].strip('"').lower() for l in out.splitlines() if l}
     except (OSError, ValueError, Exception):       # noqa: BLE001
         return set()
@@ -51,7 +53,7 @@ class IdleUnloader:
         self.last_unload = None                    # {"at": epoch, "freedMiB": n, "why": str}
         self.first_request_ms = None
         self._woke_at = None
-        self._lock = threading.Lock()
+        self._mu = threading.Lock()
         self._stop = threading.Event()
 
     # ---- settings -----------------------------------------------------------
@@ -72,7 +74,7 @@ class IdleUnloader:
     # ---- requests -----------------------------------------------------------
     def request_start(self, path=""):
         """A request that may use the models begins. Returns True if it has to wake them."""
-        with self._lock:
+        with self._mu:
             self.inflight += 1
             self.last_used = self.clock()
             if self.asleep and not self.warming:
@@ -81,7 +83,7 @@ class IdleUnloader:
             return self.warming
 
     def request_end(self):
-        with self._lock:
+        with self._mu:
             self.inflight = max(0, self.inflight - 1)
             self.last_used = self.clock()
             if self.warming and self._woke_at is not None:
@@ -102,7 +104,7 @@ class IdleUnloader:
 
     def tick(self):
         """Unload if the helper has been idle long enough. Returns True when it unloaded."""
-        with self._lock:
+        with self._mu:
             if self.inflight or self.asleep:
                 return False
             idle = self.clock() - self.last_used
@@ -112,7 +114,7 @@ class IdleUnloader:
         before = self.vram_used() if self.vram_used else None
         self.brain.unload()
         after = self.vram_used() if self.vram_used else None
-        with self._lock:
+        with self._mu:
             if self.inflight:                      # a request arrived while unloading: it reloads
                 self.asleep = True
             else:
