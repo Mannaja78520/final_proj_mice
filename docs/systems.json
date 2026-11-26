@@ -94,7 +94,10 @@
 
     {"id": "hub-auth", "summary": "Hub logins, sessions, which pages need a login, pairing two hubs.",
      "files": ["main_python/hub_auth.py", "main_python/hub_pair.py", "config/page_access.json",
-               "config/board_logins.json"],
+               "config/board_logins.json", "main_python/hub_recovery.py", "main_python/hub_login.default.json",
+               "tools/hub_reset_password.py", "shared/web/mice-password.js",
+               "main_python/launchers/Reset Hub Password.bat", "qc/checks/check_hub_login.py",
+               "qc/checks/check_hub_login_page.py"],
      "depends": []},
 
     {"id": "hub-modules", "summary": "The one module list: every board once, with every route to it, and the fastest route chosen.",

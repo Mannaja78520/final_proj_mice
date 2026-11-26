@@ -531,7 +531,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 
 - nothing
 
-## Checks that test it (230)
+## Checks that test it (231)
 
 - `check_advanced`
 - `check_ai_status`
@@ -595,6 +595,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `check_home_pose_board`
 - `check_hub_auth`
 - `check_hub_clock`
+- `check_hub_login_page`
 - `check_hub_nav`
 - `check_hub_pair`
 - `check_hub_reach`

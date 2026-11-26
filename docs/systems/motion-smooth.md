@@ -24,7 +24,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 
 - nothing
 
-## Checks that test it (208)
+## Checks that test it (210)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -92,6 +92,8 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_handler_scope`
 - `check_hub_auth`
 - `check_hub_clock`
+- `check_hub_login`
+- `check_hub_login_page`
 - `check_hub_nav`
 - `check_hub_pair`
 - `check_hub_reach`
