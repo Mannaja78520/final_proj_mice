@@ -32,6 +32,7 @@ import collections
 import json
 import threading
 import time
+import urllib.error
 from pathlib import Path
 
 DEFAULT_CLASS = "normal"
@@ -115,10 +116,16 @@ class _Resource:
                 raise
             self.waiting.remove(g)
             self.holders.append(g)
+            if len(self.holders) < self.slots and self.waiting:
+                self.cond.notify_all()              # a slot is still free: the next in line must not sleep through it
             g.started_at = time.monotonic()
             self._note(g, "wait", g.started_at - g.queued_at)
         if g.reentrant:
             held[g] = 1
+
+    def held_here(self):
+        """True when the calling thread already holds a slot here (a nested gate)."""
+        return bool(getattr(self.local, "held", None))
 
     def _my_turn(self, g):
         if len(self.holders) >= self.slots:
@@ -218,16 +225,21 @@ class Scheduler:
         except (OSError, ValueError):
             pass                                    # a half-saved or bad file keeps the last good numbers
 
-    def gate(self, klass=DEFAULT_CLASS, reentrant=True, timeout=None):
+    def gate(self, klass=DEFAULT_CLASS, reentrant=True, timeout=None, lease=True):
         """Ask for a place for this kind of work: `with sched.gate("live"):`.
         With a lease configured, a class that names a shared resource also takes
-        a place in the hub's order across programs (fails open: no hub = no wait)."""
+        a place in the hub's order across programs (fails open: no hub = no wait).
+        No lease for a NESTED gate (this thread's outer gate already holds one:
+        a second ask waited 20 s on itself, review 2026-11-26) or with
+        lease=False (the hub's own work: its lease table IS this scheduler)."""
         self._maybe_reload()
         cls = self.config["classes"].get(klass) or self.config["classes"][DEFAULT_CLASS]
-        gate = Gate(self._resources[cls["resource"]], klass, cls["priority"], reentrant, timeout)
-        lease = self.config.get("lease")
-        if lease and lease.get("enabled") and cls["resource"] in lease.get("resources", ()) and reentrant:
-            return _Both(gate, self._lease_client(lease), klass)
+        res = self._resources[cls["resource"]]
+        gate = Gate(res, klass, cls["priority"], reentrant, timeout)
+        cfg = self.config.get("lease")
+        if (lease and cfg and cfg.get("enabled") and cls["resource"] in cfg.get("resources", ())
+                and reentrant and not res.held_here()):
+            return _Both(gate, self._lease_client(cfg), klass)
         return gate
 
     def _lease_client(self, lease):
@@ -281,7 +293,16 @@ class _Both:
         return False
 
     def checkpoint(self):
-        return self.gate.checkpoint()
+        """Step aside WITH the hub lease: keeping it made the urgent job that took
+        our local place wait its full 20 s for a lease we still held."""
+        if not self.gate.should_yield():
+            return False
+        if self.token:
+            self.client.release(self.token)
+            self.token = None
+        self.gate.checkpoint()
+        self.token = self.client.acquire(self.klass)
+        return True
 
     def should_yield(self):
         return self.gate.should_yield()
@@ -354,6 +375,10 @@ class LeaseClient:
             r = self._post("/api/scheduler/acquire", {"class": klass, "owner": "pid%d" % __import__("os").getpid(),
                                                         "wait": self.wait}, self.wait + 3)
             return r.get("token") if r.get("ok") else None
+        except urllib.error.HTTPError as exc:
+            if exc.code != 408:                     # 408 = the hub is BUSY, not gone: keep asking next time
+                self._down_until = time.monotonic() + self.down_seconds
+            return None
         except Exception:                          # noqa: BLE001 - every failure means: go on without a lease
             self._down_until = time.monotonic() + self.down_seconds
             return None

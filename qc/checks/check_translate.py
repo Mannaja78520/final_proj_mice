@@ -109,7 +109,7 @@ def run(t):
 
         # -- 4: through the hub - file a Thai complaint, then read it back -
         base, _m = F.start_hub()
-        rep_dir = F.HUB / "reports"
+        rep_dir = _m.REPORTS               # this check's own folder (qc.isolate_data)
         before = set(rep_dir.glob("*.json")) if rep_dir.is_dir() else set()
         st, body = F.post(base + "/api/report", json.dumps({
             "text": THAI, "page": "/hub.html?qc=1",

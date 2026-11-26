@@ -36,4 +36,7 @@ def run(t):
     t.ok(not (real / "projects" / (name + ".json")).exists(),
          "and never in the tree's own projects folder",
          "two overlapping runs would overwrite each other's files")
+    t.ok(Path(main.REPORTS) == box / "reports" and Path(main.REPORTS) != Path(main.HERE) / "reports",
+         "problem reports go to the check's own folder too (check_visual_language read another check's Thai reports)",
+         str(main.REPORTS))
     t.ok(F.isolate_data(main) == box, "asking again keeps the same copy (one per process)")
