@@ -179,21 +179,13 @@ class Arbiter:
             if self.strategy == "swap":
                 plan, evict = self._swap_plan(key, info, capacity, demands)
             else:
-                immovable = sum(d["mib"] for d in demands[1:] if d["priority"] <= info["priority"])
-                movable = [demands[0]] + [d for d in demands[1:] if d["priority"] > info["priority"]]
-                plan = pack(capacity - immovable, movable)
-                evict = [d["key"] for d in movable[1:] if plan[d["key"]] != "cuda"]
-                if plan[key] != "cuda":
-                    evict = []                           # losing is not a reason to push anyone else out
+                plan, evict = self._priority_plan(key, info, capacity, demands)
             done, refused = [], False
             for k in evict:
                 held = self._held.get(k)
                 ok = True
                 if held and held.get("unload"):
-                    try:
-                        ok = held["unload"]() is not False
-                    except Exception:                # noqa: BLE001 - a failing unload must not block the load
-                        ok = True
+                    ok = self._unload_when_idle(held["unload"])
                 if ok:
                     self._held.pop(k, None)
                     done.append(k)
@@ -213,6 +205,41 @@ class Arbiter:
                    "a model on the GPU is busy, so this one runs on the CPU" if refused else
                    "only %d MiB of room for %d MiB: runs on the CPU, same quality" % (max(0, capacity), info["mib"]))
             return {"device": device, "evict": done, "why": why, "card": after or card}
+
+    def _priority_plan(self, key, info, capacity, demands):
+        """Who is on the GPU after `key` loads. A MORE important model is never moved for a less important one.
+        An equally important resident is moved only when the newcomer is worth more time than ALL the ones
+        it pushes out together (measured 2026-11-26 at 6 GB: whichever hearing model loaded first kept the
+        card, so the small Whisper sat on the GPU and the Thai model, which saves 2.5 s a visitor, ran on the
+        CPU). Strictly more saved time each step = no ping-pong between two equals."""
+        def plan_with(movable_ok):
+            fixed = sum(d["mib"] for d in demands[1:] if not movable_ok(d))
+            movable = [demands[0]] + [d for d in demands[1:] if movable_ok(d)]
+            plan = pack(capacity - fixed, movable)
+            return plan, [d for d in movable[1:] if plan[d["key"]] != "cuda"]
+        plan, out = plan_with(lambda d: d["priority"] > info["priority"])
+        if plan[key] != "cuda":
+            plan2, out2 = plan_with(lambda d: d["priority"] > info["priority"] or
+                                    (d["priority"] == info["priority"] and d["savedMs"] < info["savedMs"]))
+            lost = sum(d["savedMs"] for d in out2 if d["priority"] == info["priority"])
+            if plan2[key] == "cuda" and lost < info["savedMs"]:
+                plan, out = plan2, out2
+        return plan, ([d["key"] for d in out] if plan[key] == "cuda" else [])   # losing never pushes anyone else out
+
+    def _unload_when_idle(self, unload):
+        """Ask a resident model to let go. One that is busy answering says no; wait for its idle moment
+        (config headroom.evictWaitS) instead of giving up at once: at 10 GB the busy local AI made the newcomer
+        take the CPU, so a bigger card ended with FEWER models on the GPU than 8 GB (measured 2026-11-26)."""
+        deadline = time.time() + float(self.reg.headroom.get("evictWaitS", 8))
+        while True:
+            try:
+                if unload() is not False:
+                    return True
+            except Exception:                        # noqa: BLE001 - a failing unload must not block the load
+                return True
+            if time.time() >= deadline:
+                return False
+            time.sleep(0.2)
 
     def _swap_plan(self, key, info, capacity, demands):
         """EXPERIMENT (MICE_VRAM_STRATEGY=swap): every model that fits ALONE goes on the GPU and the others are

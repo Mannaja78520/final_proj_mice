@@ -54,7 +54,8 @@ def run(t):
         card = Card(gb * 1024)
         arb = v.Arbiter(reg, card.probe, cap_mib=None)
         placed = load_all(card, arb, MODELS)
-        results[gb] = placed
+        results[gb] = {k: d for k, d in placed.items() if k in card.ours or d != "cuda"}   # final state: a pushed-out model is not on the GPU
+        results[gb].update({k: "cpu" for k in placed if placed[k] == "cuda" and k not in card.ours})
         used = sum(card.ours.values())
         t.ok(used <= card.total - reg.headroom_mib(card.total) + 1, "%d GB: never over the card" % gb, "%d MiB in use of %d" % (used, card.total))
     t.ok(results[24] == {k: "cuda" for k in MODELS}, "a big card holds everything on the GPU", str(results[24]))
@@ -81,8 +82,11 @@ def run(t):
     c2 = Card(4 * 1024)
     arb2 = v.Arbiter(reg, c2.probe)
     load_all(c2, arb2, ["stt:large-v3"])
+    r = arb2.request("stt:small", unload=lambda: None)
+    t.ok(r["evict"] == [] and r["device"] == "cpu", "an equally important newcomer that saves LESS time takes the CPU instead of thrashing the resident model", str(r))
     r = arb2.request("stt:medium-other", unload=lambda: None)
-    t.ok(r["evict"] == [] and r["device"] == "cpu", "an equally important newcomer takes the CPU instead of thrashing the resident model", str(r))
+    t.ok(r["evict"] == ["stt:large-v3"] and r["device"] == "cuda",
+         "an equally important newcomer that saves MORE time than the resident takes its place", str(r))
 
     # 3. Other apps change the room at run time: a new load sees it, no restart, no setting.
     card = Card(12 * 1024, others=0)
@@ -146,12 +150,62 @@ def run(t):
 
     # 10. A model that is busy answering refuses to be pushed off the GPU: the newcomer uses the CPU instead.
     card = Card(4 * 1024)
-    arb = v.Arbiter(fresh_reg(), card.probe)
+    reg_b = fresh_reg()
+    reg_b.headroom["evictWaitS"] = 0.3                                    # short wait: this model never goes idle
+    arb = v.Arbiter(reg_b, card.probe)
     load_all(card, arb, ["llm:Qwen2.5-0.5B-Instruct"])
     arb._held["llm:Qwen2.5-0.5B-Instruct"]["unload"] = lambda: False      # busy
     r = arb.request("stt:large-v3")
     t.ok(r["device"] == "cpu" and r["evict"] == [] and "llm:Qwen2.5-0.5B-Instruct" in arb._held,
          "a busy model is not pulled from under its answer", str(r))
+
+    # 10b. A model that is only busy for a moment: the planner waits for its idle point instead of falling back to the CPU
+    # (measured 2026-11-26 at 10 GB: the busy local AI sent the newcomer to the CPU, a bigger card had FEWER models on the GPU).
+    import threading
+    import time as _time
+    card = Card(4 * 1024)
+    arb = v.Arbiter(fresh_reg(), card.probe)
+    load_all(card, arb, ["llm:Qwen2.5-0.5B-Instruct"])
+    idle_at = _time.time() + 0.6
+    def drop_when_idle():
+        if _time.time() < idle_at:
+            return False
+        card.ours.pop("llm:Qwen2.5-0.5B-Instruct", None)
+        return True
+    arb._held["llm:Qwen2.5-0.5B-Instruct"]["unload"] = drop_when_idle
+    r = arb.request("stt:large-v3")
+    t.ok(r["device"] == "cuda" and r["evict"] == ["llm:Qwen2.5-0.5B-Instruct"],
+         "a model that is busy for a moment is pushed off at its idle point, the newcomer still gets the GPU", str(r))
+
+    # 10c. Two equally important hearing models: the one that saves more time wins the card, whichever loaded first
+    # (measured 2026-11-26 at 6 GB: small Whisper loaded first and kept the GPU, the Thai model ran on the CPU).
+    for first, second in (("stt:small", "stt:Thaweewat/whisper-th-medium-ct2"), ("stt:Thaweewat/whisper-th-medium-ct2", "stt:small")):
+        card = Card(3 * 1024)
+        reg5 = fresh_reg()
+        arb = v.Arbiter(reg5, card.probe)
+        placed = load_all(card, arb, [first, second])
+        t.ok(placed["stt:Thaweewat/whisper-th-medium-ct2"] == "cuda",
+             "the Thai hearing model gets the GPU when it loads %s" % ("first" if first.startswith("stt:Th") else "after the small one"),
+             str(placed))
+    card = Card(3 * 1024)
+    arb = v.Arbiter(fresh_reg(), card.probe)
+    placed = load_all(card, arb, ["stt:Thaweewat/whisper-th-medium-ct2", "stt:small"])
+    t.ok(placed["stt:small"] == "cpu" or 700 + 1900 <= 3 * 1024 - reg.headroom_mib(3 * 1024),
+         "a lower-value equal never pushes the better one off", str(placed))
+
+    # 10d. More VRAM never means less time saved on the GPU, in either load order, all sizes 2..16 GB in 256 MiB steps.
+    orders = (MODELS, list(reversed(MODELS)), ["stt:small", "stt:Thaweewat/whisper-th-medium-ct2", "llm:Qwen2.5-0.5B-Instruct", "tts:spark"])
+    for order in orders:
+        prev, bad = -1, None
+        for mib in range(2048, 16 * 1024 + 1, 256):
+            card = Card(mib)
+            arb = v.Arbiter(fresh_reg(), card.probe)
+            placed = load_all(card, arb, order)
+            now = sum(reg.info(k)["savedMs"] for k, d in placed.items() if d == "cuda" and k in card.ours)
+            if now < prev and bad is None:
+                bad = (mib, prev, now)
+            prev = now
+        t.ok(bad is None, "a bigger card never saves less time (load order %s)" % order[0], str(bad))
 
     # 11. Room that another program (the face app) was seen to grow into stays free for it.
     with tempfile.TemporaryDirectory() as d:

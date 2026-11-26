@@ -64,6 +64,7 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--out2", default="")
     ap.add_argument("--md", default="")
+    ap.add_argument("--before", default="", help="an earlier session folder: drawn grey beside the new numbers in the size chart")
     a = ap.parse_args()
     root = Path(a.folder)
     settings = {}
@@ -75,11 +76,20 @@ def main():
     if not sizes:
         raise SystemExit("no settings with perf files in " + str(root))
 
+    before = {}
+    if a.before:
+        for d in sorted(Path(a.before).iterdir()):
+            if d.is_dir() and parse(d.name) and parse(d.name)[0] == "spill" and list(d.glob("perf*.json")):
+                before[parse(d.name)[1]] = load(d)
+
     # 1. against the card size (spill)
     spill = [s for s in sizes if "spill" in settings[s]]
     fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.6), dpi=150)
     for ax, work in zip(axes, ("stt", "voice")):
         for field, style in (("med_ms", "o-"), ("p95_ms", "s--"), ("p99_ms", "^:")):
+            if before and field != "p99_ms":
+                bys = [mean(before[s][0], work, field) if s in before else float("nan") for s in spill]
+                ax.plot(range(len(spill)), bys, style, color="#9aa0a6", alpha=0.9, label="before the fix " + field[:3])
             ys = [mean(settings[s]["spill"][0], work, field) for s in spill]
             ax.plot(range(len(spill)), ys, style, color=COLORS["spill"], label=field[:3], alpha=1.0 if field != "p99_ms" else 0.7)
             for i, y in enumerate(ys):

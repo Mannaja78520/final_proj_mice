@@ -774,3 +774,23 @@ Full write-up: docs/perf_vram_2026-11-26.md. All numbers measured; the simulator
   against 576 MiB); (5) swap did not swap (same placement as spill, within noise); (6) hybrid is 3 times slower for hearing and about 5 times faster for
   background jobs at 2 to 6 GB; (7) the simulator with measured inputs says swap is 4 to 6 times worse and hybrid best at 6 to 8 GB: both wrong against the measurement.
 - Winner by live p95/p99: spill (shipped default). Not measured: Spark on the GPU, hybrid with the live models on the GPU (8 GB and up), the planner's memory use by speech.
+
+### 2026-11-26 GPU-memory planner AFTER the placement fix (PR #282): full run, real PC, real Voice stopped for the run
+Same setup as the entry above (RTX 5070 Ti Laptop 12227 MiB, CUDA torch 2.11.0+cu128, face look 10 Hz, ask and hearing 0.5 Hz, camera, 4 background helper
+threads, 60 s x 2 runs, PC QC lock, 0 request errors). Planner at ffd537b3 (equal-saving models ranked by saved time, wait for a busy model's idle moment, monotone placement check).
+Results folder .local/perf/vram_2026-11-26_placement; write-up docs/perf_vram_2026-11-26.md.
+- Spill by card size, mean of 2 runs, ms (ask p50/p95/p99 | hearing p50/p95/p99 | background jobs | on the GPU):
+  - 2 GB:  71/5124/5269 | 4145/5008/5080 | 13 | none
+  - 4 GB:  70/2248/2578 | 1041/1563/1774 | 50 | Thai hearing model
+  - 6 GB:  68/2185/2482 | 1110/1542/1747 | 50 | Thai hearing model, English medium
+  - 8 GB:  68/1444/1802 | 1025/1307/1421 | 84 | all four
+  - 10 GB: 69/1543/1774 | 1036/1328/1421 | 81 | all four
+  - 12 GB: 67/1699/2020 | 1064/1347/1466 | 78 | all four
+  - whole card: 72/1517/2027 | 997/1326/1518 | 81 | all four
+- Before -> after (hearing p50 / ask p95): 4 GB 3668 -> 1040 / 3621 -> 2248; 6 GB 4291 -> 1109 / 4949 -> 2185; 8 GB 1087 -> 1025 / 1871 -> 1443; 10 GB 1235 -> 1035 / 2141 -> 1543;
+  2 GB and 12 GB unchanged within noise (2 GB: nothing fits, room -153 MiB; 12 GB hearing 855 -> 1063). GPU models by size before 0,0,1,3,3,4,4, after 0,1,2,4,4,4,4: never fewer on a bigger card.
+- Strategies (ask p95 | hearing p50 | background jobs): 2 GB spill 5124/4145/13, swap 4231/3990/14, hybrid 9919/8037/86; 4 GB spill 2248/1041/50, swap 4266/3981/14,
+  hybrid 3849/1593/96; 6 GB spill 2185/1110/50, swap 3180/3666/16, hybrid 4540/1525/96. Spill wins by live p95/p99; swap puts the wrong models on the GPU; hybrid does 2 times more background jobs and is worse for live work.
+- Calibration alone: hearing GPU 511 / CPU 3319 ms; helper GPU 541 / CPU 888 ms; ask needing the local model 2080 / 3474 ms; reload onto the GPU 5925 ms (Thai hearing), 5095 ms (local model);
+  Spark speech with feeling GPU 3320 ms (25.2 s load, 3193 MiB) / CPU 10820 ms (11.2 s load) - measured for the first time.
+- Simulator (bench_vram with measured inputs) still contradicts the measurement on swap and hybrid (it does not model CPU sharing or face-app growth); use the measurements.
