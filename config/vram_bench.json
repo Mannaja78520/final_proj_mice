@@ -19,10 +19,10 @@
     },
     "tts": {
       "key": "tts:spark",
-      "gpuMs": 1200,
-      "cpuMs": 9450,
-      "swapOverheadMs": 600,
-      "source": "cpuMs measured 2026-11-26 (Spark, 15 s to load); gpuMs and swapOverheadMs still ESTIMATE: the Spark GPU run was invalid (a stale CPU server answered)"
+      "gpuMs": 3320,
+      "cpuMs": 10820,
+      "swapOverheadMs": 25200,
+      "source": "measured 2026-11-26 (Spark, one 5 s line alone): GPU 3320 ms (25.2 s to load, 3193 MiB), CPU 10820 ms (11.2 s to load)"
     },
     "bg": {
       "key": "llm:Qwen2.5-0.5B-Instruct-bg",

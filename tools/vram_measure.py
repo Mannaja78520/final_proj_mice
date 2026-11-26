@@ -17,6 +17,8 @@ What it does, and what it touches:
     `MICE_VRAM_CAP_MIB` pretends the smaller card: every program's real use counts as used, so the
     room the Voice has is cap minus what the others hold (printed per run).
   * Results: .local/perf/vram_<date>/ (calibration.json, one folder per setting with perf*.json and info.json).
+Options: --tag NAME  results go to vram_<date>_NAME (keeps an earlier run for before/after); --date YYYY-MM-DD; --resume  keep every
+setting that already has an info.json and run only the missing ones (a run that was cut off continues).
 Windows only (it makes its speech clips with System.Speech and uses nvidia-smi).
 """
 import json
@@ -34,7 +36,14 @@ sys.path.insert(0, str(ROOT / "qc" / "lib"))
 VOICE = "http://127.0.0.1:8768"
 NOWIN = 0x08000000
 DETACHED = 0x00000008
-OUT = ROOT / ".local" / "perf" / ("vram_" + time.strftime("%Y-%m-%d"))
+def _flag(name, default=""):
+    """`--name value` anywhere on the command line."""
+    a = sys.argv
+    return a[a.index(name) + 1] if name in a and a.index(name) + 1 < len(a) else default
+
+
+RESUME = "--resume" in sys.argv                      # keep the settings that already have results, run only the missing ones
+OUT = ROOT / ".local" / "perf" / ("vram_" + (_flag("--date") or time.strftime("%Y-%m-%d")) + ("_" + _flag("--tag") if _flag("--tag") else ""))
 CLIP_DIR = ROOT / ".local" / "perf" / "clips"
 SPARK_ROOTS = []                                  # more places to look for .local/tts_spark (set from the real Voice's tree)
 
@@ -250,6 +259,10 @@ def spark_times(device, n=3):
 
 
 def calibrate(quick=False):
+    done = OUT / "calibration.json"
+    if RESUME and done.exists():
+        say("calibration already done, kept")
+        return json.loads(done.read_text(encoding="utf-8"))
     n = 3 if quick else 6
     res = {"date": time.strftime("%Y-%m-%d %H:%M")}
     learned = OUT / "learned_calib.json"
@@ -342,6 +355,9 @@ def perf(tag, seconds, runs, helpers=4):
 
 
 def one_setting(tag, env, seconds, runs):
+    if RESUME and (OUT / tag / "info.json").exists():
+        say(tag, "already done, kept")
+        return
     learned, work = OUT / "learned_calib.json", OUT / ("learned_%s.json" % tag)
     if learned.exists():
         shutil.copy(learned, work)
