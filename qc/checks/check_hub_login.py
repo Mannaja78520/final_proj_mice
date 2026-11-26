@@ -209,8 +209,12 @@ def unit(t):
         shutil.rmtree(box, ignore_errors=True)
 
 
+_MAIN = []
+
+
 def over_http(t):
     base, main = F.start_hub()
+    _MAIN[:] = [main]
     auth = main.auth()
     auth.add_user("newbie", "admin123")
     code, cookie = _login(base, "newbie", "admin123")
@@ -303,4 +307,11 @@ def over_http(t):
 
 def run(t):
     unit(t)
-    over_http(t)
+    try:
+        over_http(t)
+    finally:
+        # the accounts must not outlive this check: Home lists them, and another
+        # check's page would show a stray English name (a flake seen 2026-11-27)
+        for main in _MAIN:
+            for name in ("newbie",):
+                main.auth().remove_user(name)

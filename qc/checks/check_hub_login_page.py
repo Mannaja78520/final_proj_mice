@@ -152,3 +152,5 @@ def run(t):
     t.ok(auth.must_change("later") and not auth.has_recovery("later"),
          "'Remind me later' changed nothing on the account")
     browser.kill()
+    for name in ("shipped", "later", "zhuser"):
+        auth.remove_user(name)

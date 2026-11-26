@@ -3,6 +3,7 @@
 Owner: claude (project thread, branch claude/hub-login)
 Updated: 2026-11-27
 Branch: claude/hub-login
+Last commit: see git log
 Plan: A58-1 (user ask 2026-11-27, relayed by the coordinator)
 
 ## Goal

@@ -628,6 +628,20 @@
    "file": "hub_api_apps.py"
   },
   {
+   "path": "/api/recovery/code",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
+   "path": "/api/recovery/use",
+   "method": "GET",
+   "what": "",
+   "params": [],
+   "file": "main.py"
+  },
+  {
    "path": "/api/report",
    "method": "POST",
    "what": "",
