@@ -346,6 +346,12 @@ window.miceTheme = new MiceThemeManager();
       .then(function (r) { return r.json(); })
       .then(function (j) {
         say(el, j.ok ? done : (j.error || "not changed"));
+        // A new password of your own comes with a recovery code, shown once
+        // (shared/web/mice-password.js draws it; a board never sends one).
+        if (j.ok && j.recoveryCode) {
+          document.dispatchEvent(new CustomEvent("mice-recovery-code",
+                                                 { detail: { code: j.recoveryCode } }));
+        }
         if (j.ok) {
           ["mlOld", "mlNew", "mlNewName"].forEach(function (c) {
             var i = el.querySelector("." + c); if (i) i.value = ""; });
@@ -416,6 +422,16 @@ window.miceTheme = new MiceThemeManager();
     };
     mounts.push(el);
     refresh();
+    // Forgot password / recovery code / first-login prompt live in their own
+    // file so a board's flash does not carry them. A board has none: the
+    // request just fails and the login box stays as it was.
+    try {
+      if (!window.micePassword && !document.querySelector('script[src="/mice-password.js"]')) {
+        var sp = document.createElement("script");
+        sp.src = "/mice-password.js";
+        document.head.appendChild(sp);
+      }
+    } catch (e) { /* the box works without it */ }
   }
 
   /* An action came back refused. Show the control, put the person in the

@@ -445,6 +445,15 @@
       document.head.appendChild(l);
     }
   } catch (e) { /* no language switch, the page still works */ }
+  // Choose-your-own-password, recovery code and Forgot password (hub pages only).
+  try {
+    if (document.head && document.querySelector &&
+        !document.querySelector('script[src="/mice-password.js"]')) {
+      const p = document.createElement("script");
+      p.src = "/mice-password.js";
+      document.head.appendChild(p);
+    }
+  } catch (e) { /* the login box works without it */ }
   // Pictures that follow the theme (dark twins, theme-pack pictures).
   try {
     if (document.head && document.querySelector &&

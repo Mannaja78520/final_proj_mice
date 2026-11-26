@@ -80,9 +80,11 @@ same WiFi -> http://<this-pc>:8642/     from a phone or another laptop
 by name   -> http://mice.local:8642/
 ```
 
-The first run makes a password and writes it to
-`main_python/hub_password.txt`. Read it there. Reading the hub needs no
-password; anything that CHANGES something does.
+The first login is `admin` (or `super_admin`) with the password `admin123`;
+the hub asks you to change it. Forgot it later? Use the recovery code the hub
+showed when you set it, or double-click `main_python/launchers/Reset Hub
+Password.bat` on the hub PC. Reading the hub needs no password; anything that
+CHANGES something does.
 
 ## What this can and cannot do
 

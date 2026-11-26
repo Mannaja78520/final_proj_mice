@@ -2199,7 +2199,8 @@ class Handler(hub_api_scheduler.SchedulerRoutes, hub_api_resources.ResourceRoute
             if path in ("/api/login", "/api/logout", "/api/whoami",
                         "/api/version",
                         "/api/users", "/api/users/add", "/api/users/remove",
-                        "/api/users/rename", "/api/users/password"):
+                        "/api/users/rename", "/api/users/password",
+                        "/api/recovery/code", "/api/recovery/use"):
                 return self.auth_route(method, path)
             if hub_auth.gated(path, method) and not self.logged_in() \
                     and not (hub_auth.local_ok(path, method)
@@ -2575,6 +2576,10 @@ class Handler(hub_api_scheduler.SchedulerRoutes, hub_api_resources.ResourceRoute
                 "user": self.logged_in_user() if self.logged_in() else "",
                 "role": a.role_of(self.logged_in_user()) if self.logged_in() else "",
                 "mustChange": a.must_change(self.logged_in_user()) if self.logged_in() else False,
+                # does this account have a recovery code on file (never the code)
+                "hasRecovery": a.has_recovery(self.logged_in_user()) if self.logged_in() else False,
+                # the shipped login still works AND this browser is on the hub PC itself
+                "shippedHint": bool(a.any_shipped() and is_self(self.client_address[0])),
                 "locked_for": a.locked_for(self.client_address[0]),
                 "lock_seconds": hub_auth._LOCK_SECONDS,   # noqa: SLF001
             })
@@ -2636,16 +2641,58 @@ class Handler(hub_api_scheduler.SchedulerRoutes, hub_api_resources.ResourceRoute
                 ok, why = False, "only super_admin can change someone else's account"
             elif path.endswith("/rename"):
                 ok, why = a.rename_user(target, str(body.get("new") or "").strip())
-            elif target == me and not a.check_password(me, str(body.get("old") or "")):
+            elif target == me and not a.must_change(me)                     and not a.check_password(me, str(body.get("old") or "")):
+                # An account still on the SHIPPED password is not asked for it:
+                # the password is public, so asking proves nothing, and the
+                # first-login dialog would only have a field nobody can fill.
                 ok, why = False, "your current password was not right"
             else:
                 ok, why = a.change_password(
                     target, str(body.get("password") or ""),
                     keep_token=a.token_of(self.headers.get("Cookie", "")))
-            return self.send_bytes(
-                json.dumps({"ok": ok, "error": why,
-                            "me": self.logged_in_user()}).encode(),
-                MIME[".json"], 200 if ok else 400)
+            answer = {"ok": ok, "error": why, "me": self.logged_in_user()}
+            # Your OWN new password comes with a recovery code, shown this once.
+            # (Someone else's password, set by super_admin, has no code: the
+            # person it belongs to has not chosen it.)
+            if ok and path.endswith("/password") and target == me \
+                    and not a.must_change(me):
+                answer["recoveryCode"] = a.issue_recovery_code(me)
+            return self.send_bytes(json.dumps(answer).encode(),
+                                   MIME[".json"], 200 if ok else 400)
+
+        if path == "/api/recovery/code":
+            # A NEW code for the account you are logged in as; the password is
+            # asked again so a walk-up at an open tab cannot read or replace it.
+            if not self.logged_in():
+                return self.send_bytes(json.dumps(
+                    {"ok": False, "need_login": True,
+                     "error": "log in first"}).encode(), MIME[".json"], 401)
+            try:
+                body = json.loads(self.body().decode() or "{}")
+            except ValueError:
+                body = {}
+            me = self.logged_in_user()
+            if not a.check_password(me, str(body.get("password") or "")):
+                return self.send_bytes(json.dumps(
+                    {"ok": False, "error": "your password was not right"}).encode(),
+                    MIME[".json"], 400)
+            return self.send_json({"ok": True, "recoveryCode": a.issue_recovery_code(me)})
+
+        if path == "/api/recovery/use":
+            # FORGOT PASSWORD. No login needed (that is the point), so it is
+            # rate-limited in hub_recovery.Throttle by caller AND for everyone.
+            try:
+                body = json.loads(self.body().decode() or "{}")
+            except ValueError:
+                body = {}
+            ok, why, fresh, wait = a.recover(
+                str(body.get("user") or "")[:64], str(body.get("code") or "")[:64],
+                str(body.get("password") or "")[:200], self.client_address[0])
+            out = {"ok": ok, "error": why, "wait": wait}
+            if ok:
+                out["recoveryCode"] = fresh
+            return self.send_bytes(json.dumps(out).encode(), MIME[".json"],
+                                   200 if ok else (429 if wait else 400))
 
         if path == "/api/logout":
             a.logout(a.token_of(self.headers.get("Cookie", "")))

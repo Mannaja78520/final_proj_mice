@@ -1,0 +1,8 @@
+{
+  "_why": "The shipped hub login. Public on purpose: it is what the first login types, and the hub asks to change it. A changed password lives only in the git-ignored hub_auth.json, as a salted hash.",
+  "password": "admin123",
+  "accounts": [
+    { "name": "super_admin", "role": "super_admin" },
+    { "name": "admin", "role": "user" }
+  ]
+}

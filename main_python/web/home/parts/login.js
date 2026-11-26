@@ -31,6 +31,9 @@ async function refreshAuth(){
   const a = await Mice.Api.get('/api/whoami');
   if (!a.ok) return;          // unreachable: the module list says so already
   setAuthed(a.data.authed);
+  // The hub says so only to a browser on the hub PC itself, and only while a
+  // shipped login still works: a stranger on the WiFi is never told it exists.
+  $('loginFirstRun').hidden = !(a.data.shippedHint && !a.data.authed);
   if (a.data.locked_for > 0) showLock(a.data.locked_for);
 }
 
@@ -64,6 +67,8 @@ async function doLogin(ev){
   if (a.ok){
     $('loginPass').value = '';
     setAuthed(true);
+    // lets mice-password.js offer "choose your own password" on the shipped one
+    document.dispatchEvent(new CustomEvent('mice-login', {detail: {user: who}}));
     scan(true);                       // the page can do more now — show it
     pairPaint();                      // ...including pairing this PC
   } else if (a.data.locked_for > 0){

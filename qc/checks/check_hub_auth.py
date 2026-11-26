@@ -187,18 +187,13 @@ def run(t):
     t.ok(F.HUB_PASSWORD not in body, "and the answer does not contain the password")
     t.ok(json.loads(body)["authed"] is False, "a stranger is told they are not")
 
-    # ---- the readable copy is on the PC, and ONLY on the PC ------------
-    # The password is written in plain text next to the hash, on purpose: it is
-    # printed once at first run and an operator who missed it was locked out of
-    # their own robot. That is only acceptable while it stays off the network,
-    # so every way a URL could reach it is tried here.
-    plain = main.auth().plain_file()
-    t.ok(plain.is_file(), "the password is written where a person can read it",
-         "a password nobody can look up is a locked door with the key thrown away")
-    if plain.is_file():
-        t.contains(plain.read_text(encoding="utf-8"), F.HUB_PASSWORD,
-                   "and it really is readable")
-
+    # ---- no readable copy of the password exists, and no URL reaches one ----
+    # Until 2026-11 the hub wrote the password in plain text next to the hash,
+    # and a copy under dist/ was committed to a public repo. Now only hashes are
+    # kept. The old file names are still tried: a URL must never reach them.
+    t.ok(not hasattr(main.auth(), "plain_file"),
+         "the hub has no plain-text password file any more",
+         "a readable password is a leaked password the day a folder is shared")
     for url in ("/hub_password.txt",
                 "/hubweb/hub_password.txt",
                 "/hubweb/../hub_password.txt",
@@ -275,31 +270,26 @@ def run(t):
     code, _ = F.get(base + "/api/usb/cmd?port=COM99&c=PING")
     t.eq(code, 200, "logged in, the same call goes through")
 
-    # ---- the password file belongs to ITS OWN store --------------------
-    # Every QC run makes a throwaway store (mice_qc_auth_<pid>.json) and used
-    # to write its random password into main_python/hub_password.txt - the one
-    # file that tells the operator this PC's real hub login. Found 2026-09-07
-    # when the user could not log in and that file offered a password their hub
-    # had never had, "set" a day before the real one.
+    # ---- an old plain-text password file is deleted, and only that file -----
+    # An older hub wrote hub_password.txt beside the store. Nothing reads it for
+    # logging in, so a hub that starts now deletes it - but only when it still
+    # has the old header, and only for the real store (a QC throwaway store
+    # must never delete somebody's file).
     import hub_auth as HA
-    # In the system temp folder, NOT inside main_python: a folder appearing
-    # there mid-run is a folder the build-stamp checks are busy enumerating,
-    # and this crashed check_stale_build in the full suite while passing on
-    # its own (2026-09-07).
     tmp = Path(tempfile.mkdtemp(prefix="qc_authnames_"))
     try:
-        real = HA.Auth(tmp / HA.DEFAULT_STORE_NAME, out=lambda *x: None)
-        t.eq(real.plain_file().name, "hub_password.txt",
-             "the real store still writes the file people are told to read")
-        throwaway = HA.Auth(tmp / "mice_qc_auth_31337.json", out=lambda *x: None)
-        t.eq(throwaway.plain_file().name, "mice_qc_auth_31337.txt",
-             "a throwaway store writes beside ITSELF, never over the real one")
-        throwaway.set_password("not-the-real-one")
-        t.ok(not (tmp / "hub_password.txt").exists()
-             or (tmp / "hub_password.txt").read_text(encoding="utf-8")
-             .find("not-the-real-one") < 0,
-             "and setting a password on it leaves the real file alone",
-             "the operator reads that file to get into their own hub")
+        old = tmp / "hub_password.txt"
+        old.write_text("This PC's MICE hub login:\n\n    user: admin\n    Old-Secret-1\n",
+                       encoding="utf-8")
+        HA.Auth(tmp / "mice_qc_auth_31337.json", out=lambda *x: None)
+        t.ok(old.is_file(), "a throwaway store leaves that file alone",
+             "it must never delete a file that is not its own")
+        HA.Auth(tmp / HA.DEFAULT_STORE_NAME, out=lambda *x: None)
+        HA.Auth(tmp / HA.DEFAULT_STORE_NAME, out=lambda *x: None)   # the second start loads a store
+        t.ok(not old.exists(), "the real store deletes the old plain-text password file")
+        old.write_text("my own notes about the show\n", encoding="utf-8")
+        HA.Auth(tmp / HA.DEFAULT_STORE_NAME, out=lambda *x: None)
+        t.ok(old.is_file(), "but a file with that name that is not the old one is kept")
     finally:
         import shutil
         shutil.rmtree(tmp, ignore_errors=True)
