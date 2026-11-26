@@ -65,6 +65,7 @@
       "PATCHES.md": "index of the numbered code patches (tools/save_code_patch.py)",
       "promt.md": "the user's prompt log, written by the .claude hook",
       ".gitignore": "what git never keeps",
+      ".github": "GitHub pull request template (change-log checkbox)",
       ".qc-receipt.json": "this PC's last green QC (git-ignored)"
     },
     "dirs": {

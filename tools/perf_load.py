@@ -124,7 +124,8 @@ def summary(res):
     for n, r in res.items():
         v = sorted(r["ms"])
         out[n] = {"calls": len(v), "med_ms": round(statistics.median(v), 1) if v else None,
-                  "p95_ms": round(v[int(len(v) * 0.95) - 1], 1) if len(v) > 1 else None, "err": r["err"]}
+                  "p95_ms": round(v[int(len(v) * 0.95) - 1], 1) if len(v) > 1 else None,
+                  "p99_ms": round(v[min(len(v) - 1, int(len(v) * 0.99))], 1) if len(v) > 1 else None, "err": r["err"]}
     return out
 
 

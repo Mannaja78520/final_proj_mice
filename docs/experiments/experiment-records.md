@@ -695,6 +695,31 @@ Model file declares output batch = 1; bound output of N fails (`Got invalid dime
 Resources while measuring (mean of all windows, per mode): {"loop": {"gpu": 47.8, "vram": 11779.0, "clk": 1391.4, "pw": 30.6, "srv_cpu": 68.2, "srv_rss": 3298.9, "ram_avail": 7282.2, "cpu_all": 18.0}, "hybrid": {"gpu": 28.4, "vram": 11801.5, "clk": 954.3, "pw": 27.3, "srv_cpu": 57.2, "srv_rss": 3247.2, "ram_avail": 8011.8, "cpu_all": 14.0}, "bucketgraph": {"gpu": 24.8, "vram": 11802.3, "clk": 880.5, "pw": 25.0, "srv_cpu": 48.0, "srv_rss": 3169.0, "ram_avail": 8335.7, "cpu_all": 12.5}}
 
 
+
+### 2026-11-26 GPU-memory planner at a 2 GB Voice budget: spill vs swap vs hybrid (REDUCED run, real PC, real Voice left running)
+Setup: branch claude/project-thread-q4yvte (planner 17788d89 + MICE_VRAM_STRATEGY and MICE_VRAM_VOICE_BUDGET_MIB switches, default
+unchanged). RTX 5070 Ti Laptop 12227 MiB; 9060 MiB already used by the real Voice, face app and others before the side Voice started.
+Side Voice 8768 and side hub 8650; face look 10 Hz, ask and hearing 0.5 Hz, camera stream, 4 background helper threads flat out;
+60 s per run, 2 runs per setting, PC QC lock held. Full write-up: docs/perf_vram_2026-11-26.md (marked REDUCED).
+- Planner placement at 2 GB (same in all 3 settings): Whisper small on the GPU; Whisper Thai medium (1.9 GB), Whisper medium
+  and the local model (Qwen2.5-0.5B, 1.2 GB) on the CPU. Headroom 384 MiB, room 1664 MiB.
+- Mean of 2 runs, ms (p50 / p95 / p99), background jobs in 60 s:
+  - spill:  ask 137/6788/8521, hearing 4644/7165/7636, face 75/179/197, camera 114/136/146, jobs 36
+  - swap:   ask 144/6230/8250, hearing 4571/7028/7588, face 74/176/193, camera 114/136/146, jobs 36
+  - hybrid: ask  88/6765/7763, hearing 7177/8100/8602, face 82/198/215, camera 114/137/147, jobs 80
+- Per run (ask p95 / hearing p50): spill 8623/4287, 4953/5001; swap 7648/4174, 4811/4969; hybrid 7747/7147, 5783/7207.
+  Run-to-run spread inside one setting (3.7 s on ask p95) is larger than the spill-swap gap (0.6 s): equal within noise.
+- Calibration (CPU alone, whole Voice on a 300 MiB budget): hearing 2789 ms, helper 786 ms, ask needing the model 3219 ms,
+  ask from saved answers 35 ms, Spark speech 9450 ms per line (15.2 s load). Reload from disk cache after /unload: Thai hearing
+  7873 ms, local model 5169 ms (both loaded to the CPU). The "GPU alone" calibration at 2 GB timed the CPU (hearing 2837 ms,
+  helper 846 ms): the Thai hearing model does not fit 2 GB even alone.
+- Comparison with the same PC when the models are on the GPU (other session, real Voice, CUDA torch): hearing 445 ms, helper 256 ms.
+  Hearing on the CPU is about 6 times slower, which is the cost of a 2 GB budget here.
+- Result: spill (shipped) is the choice by live p95/p99. Swap did not swap in this test (identical placement), so it is
+  not measured. Hybrid gave 2.2 times more background jobs but +55% hearing p50 and +13% hearing p95, because the CPU copies of the
+  local model compete with the Thai hearing model that sits on the CPU at this budget.
+- Not done: 4 to 12 GB, GPU service times, real swap cost to the GPU, GPU Spark, bench_vram rerun with measured times.
+  `python tools\vram_measure.py all` (needs the real Voice stopped) completes it.
 ### 2026-11-26 final summary: full QC on this PC, 1524 s -> 406 s
 | step | wall | what changed |
 |---|---|---|

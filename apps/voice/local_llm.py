@@ -26,6 +26,41 @@ CODE = Path(__file__).resolve().parents[2]
 class LocalLlm:
     """The local language model: loading, preloading, warming, unloading and one completion."""
 
+    def _drop_llm(self):
+        """The GPU planner needs this room for something more valuable: let the model go, it reloads when next asked."""
+        try:
+            with self._evict_gate():
+                self._llm = None
+                self._llm_loaded_model = None
+        except TimeoutError:
+            return False                             # busy answering: keep it, the newcomer uses the CPU
+        try:
+            import torch
+            torch.cuda.empty_cache()
+        except Exception:                            # noqa: BLE001
+            pass
+        return True
+
+    def _cpu_llm(self):
+        """EXPERIMENT (MICE_VRAM_STRATEGY=hybrid): a second copy of the local model on the CPU for background
+        helper jobs that would otherwise queue behind live work on the GPU."""
+        got = self.__dict__.get("_llm_cpu_copy")
+        if got:
+            return got
+        lock = self.__dict__.setdefault("_load_lock_llm_cpu", threading.Lock())
+        with lock:
+            got = self.__dict__.get("_llm_cpu_copy")
+            if got:
+                return got
+            import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+            mid = self.cfg.get("llm", {}).get("model", str(CODE / "llm"))
+            tok = AutoTokenizer.from_pretrained(mid, trust_remote_code=True)
+            mdl = AutoModelForCausalLM.from_pretrained(mid, torch_dtype=torch.float32, low_cpu_mem_usage=True,
+                                                       trust_remote_code=True).to("cpu")
+            self._llm_cpu_copy = (tok, mdl)
+            return self._llm_cpu_copy
+
     def llm_device(self):
         """Where the local model runs and, if it is the CPU, why (GPU first)."""
         where, why = getattr(self, "_llm_where", ("", ""))
@@ -90,6 +125,14 @@ class LocalLlm:
             mdl = None
             resource_plan, memory_budget = self._resources.torch_plan(torch)
             why = []        # why this model is not on the GPU: shown in status, GPU first (user 2026-11-25)
+            free_before = None
+            if resource_plan["device"] == "cuda":
+                # Live free VRAM + priority decide, not a fixed budget: a model that does not fit runs on the
+                # CPU (same quality), and a less valuable resident model is pushed out for a more valuable one.
+                placed = self._resources.place("llm:" + mid, self._drop_llm)
+                free_before = (placed.get("card") or {}).get("freeMiB")
+                if placed["device"] != "cuda":
+                    resource_plan = {**resource_plan, "device": "cpu", "warning": placed["why"]}
             if resource_plan["device"] != "cuda":
                 gpus = resource_plan.get("hardwareGpuCount", 0)
                 why.append("no usable GPU in the plan (%d seen, torch.cuda=%s, budget: %s)" % (
@@ -120,6 +163,8 @@ class LocalLlm:
             self._resources.mark("llm:" + mid, resource_plan, str(mdl.device))
             self._llm = (tok, mdl)
             self._llm_loaded_model = mid
+            self._resources.vram().loaded("llm:" + mid, "cuda" if str(mdl.device).startswith("cuda") else "cpu",
+                                          self._drop_llm, free_before)
             self._llm_where = (str(mdl.device), "; ".join(why) if str(mdl.device) == "cpu" else "")
             if torch.cuda.is_available():
                 try:
@@ -130,6 +175,7 @@ class LocalLlm:
                     pass
         except Exception as e:                              # noqa: BLE001
             self._llm_err = "%s: %s" % (e.__class__.__name__, e)
+            self._resources.vram().released("llm:" + mid) if "mid" in locals() else None
         finally:
             self._llm_loading = False
 
@@ -210,7 +256,7 @@ class LocalLlm:
                 pass
         return True
 
-    def _complete(self, messages, max_tokens=None, details=False):
+    def _complete(self, messages, max_tokens=None, details=False, model=None):
         """One model call on exactly the messages given - no persona added.
 
         Callers hold the lock and have already checked the model is loaded.
@@ -222,7 +268,7 @@ class LocalLlm:
         to look for (user 2026-09-18: *it cuts replies off*).
         """
         import torch
-        tok, mdl = self._llm
+        tok, mdl = model or self._llm
         try:
             text = tok.apply_chat_template(
                 messages, tokenize=False, add_generation_prompt=True,

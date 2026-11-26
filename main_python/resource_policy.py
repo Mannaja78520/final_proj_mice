@@ -14,6 +14,11 @@ class ResourcePolicy:
         self.registry = json.loads(self.registry_path.read_text(encoding="utf-8"))
         self._validate_registry()
         self.capabilities = capabilities or Capabilities(self.registry["probeSeconds"])
+        # Automatic VRAM headroom = the same numbers the live planner uses (one source).
+        try:
+            self.vram_headroom = json.loads(self.registry_path.with_name("vram_models.json").read_text(encoding="utf-8"))["headroom"]
+        except (OSError, ValueError, KeyError):
+            self.vram_headroom = {"fraction": 0.05, "minMiB": 256}
         self.store = ResourceSettings(settings, self.registry["defaults"], self.validate)
 
     def _validate_registry(self):
@@ -90,7 +95,12 @@ class ResourcePolicy:
         workers = min(cfg["workers"] or profile["workers"], threads)
         available = h.get("availableMemoryMiB")
         ram = max(0, available - cfg["ramReserveMiB"]) if available is not None else None
-        gpu = [{**g, "budgetMiB": max(0, g["freeMiB"] - cfg["vramReserveMiB"])} for g in visible_gpus(h.get("gpus", []), h.get("visibleDevices"))]
+        # Reserve = what the user asked for, but never less than the automatic headroom of THIS card
+        # (a share of its size, no fixed GB): the live planner (tools/vramplan.py) places each model.
+        def reserve(g):
+            auto = max(int(self.vram_headroom["minMiB"]), int(g["totalMiB"] * self.vram_headroom["fraction"]))
+            return max(cfg["vramReserveMiB"], auto)
+        gpu = [{**g, "budgetMiB": max(0, g["freeMiB"] - reserve(g))} for g in visible_gpus(h.get("gpus", []), h.get("visibleDevices"))]
         usable = [g for g in gpu if g["budgetMiB"] >= 512]
         device = "cuda" if cfg["device"] != "cpu" and usable else "cpu"
         warning = saved.get("warning", "")

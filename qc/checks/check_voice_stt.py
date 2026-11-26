@@ -255,13 +255,13 @@ def run(t):
     brain_fb._stt = gen
     brain_fb._stt_loaded_model = "small"
     brain_fb._cfg_mtime = brain_fb.cfg_path.stat().st_mtime_ns
-    def fail_model(mid):
+    def fail_model(mid, unload=None):
         raise OSError("temporary download failure")
     brain_fb._whisper_model = fail_model
     brain_fb.preload()
     brain_fb._preload_thread.join(5)
     t.contains(brain_fb.stt_status(), "temporary download failure", "preload reports a model failure")
-    brain_fb._whisper_model = lambda mid: thai
+    brain_fb._whisper_model = lambda mid, unload=None: thai
     brain_fb.preload()
     brain_fb._preload_thread.join(5)
     t.ok("could not load" not in brain_fb.stt_status() and brain_fb._stt_own.get("thai-model") is thai,
