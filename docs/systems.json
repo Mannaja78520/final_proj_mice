@@ -234,7 +234,7 @@
     {"id": "agents", "summary": "Plan, handoff and multi-AI tooling: plan.py, bridge, review panel, AI entry files.",
      "files": ["tools/plan.py", "tools/bridge.py", "tools/handover.py", "tools/ai_panel.py",
                "tools/local_panel.py", "tools/ai_brief.txt", "tools/next_batch.py",
-               "tools/branch.py", "tools/make_app_branch.py", "tools/livedoc.py", "tools/changelog.py", ".github/pull_request_template.md",
+               "tools/branch.py", "tools/make_app_branch.py", "tools/livedoc.py", "tools/changelog.py", ".github/pull_request_template.md", ".github/workflows/",
                "tools/reports.py", "tools/make_diary.py", "tools/systems.py",
                "CLAUDE.md", "AGENTS.md", "GEMINI.md", "README.md",
                "docs/systems.json", "config/layout.json", "tools/layout.py", "tools/tidy_pc.py", "docs/LAYOUT.md",
