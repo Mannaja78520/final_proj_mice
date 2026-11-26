@@ -28,6 +28,7 @@ sys.path.insert(0, str(QC))
 
 import qc as F  # noqa: E402
 import check_pool  # noqa: E402
+import jobguard  # noqa: E402
 
 
 # ---- proof that a particular tree passed ------------------------------
@@ -395,6 +396,11 @@ def main(argv):
     try:                       # clear anything a killed run left behind
         import browser
         browser.sweep()
+        # browsers whose runner is gone (or older than 6 h): 119 were still alive on the PC
+        # 2026-11-26. A live run's browsers are never touched (qc/lib/jobguard.py).
+        dead = jobguard.kill_stale()
+        if dead:
+            print("QC cleaned up %d browser process(es) left by earlier runs" % len(dead))
     except Exception:
         pass
 
@@ -664,6 +670,14 @@ def main(argv):
         print("%sBROKEN CHECK%s %s: %s" % (R, D, name, err))
     if skipped:
         print("%sskipped (--quick):%s %s" % (Y, D, ", ".join(skipped)))
+    if full_run:
+        # QC must leave no browser behind (qc/lib/jobguard.py): a leak fails the run
+        left = jobguard.left_behind(t_all)
+        if left:
+            total_fail += 1
+            failures.append("QC left %d browser process(es) behind (killed now): owners %s"
+                            % (len(left), sorted({o for _p, o, _a in left})))
+            print("%sFAIL%s QC left %d browser process(es) behind" % (R, D, len(left)))
     ok = total_fail == 0 and not broken
     after_tree = None
     if ok and full_run:
@@ -776,6 +790,12 @@ def _take_run_lock(argv):
 
 
 if __name__ == "__main__":
+    # Before anything is started, so every child belongs to the job: the browsers die
+    # with the runner even if it is killed hard (qc/lib/jobguard.py).
+    if "--no-job" not in sys.argv:
+        jobguard.install()
+        jobguard.install_exit_hooks()
+    sys.argv = [a for a in sys.argv if a != "--no-job"]
     _lock = _take_run_lock(sys.argv)
     sys.argv = [a for a in sys.argv if a != "--no-lock"]
     _df = _done_file(sys.argv)
