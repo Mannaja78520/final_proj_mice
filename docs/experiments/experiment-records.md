@@ -813,3 +813,35 @@ Method: start the helper (BelowNormal), let the local model load, load the heari
 - First request after the sleep (wakes the hearing models): 11.8 s (the helper reports firstRequestMs 11,688); GPU memory after the wake 3,564 MiB. The second request: 0.4 s. A warm hearing request before the sleep also took 0.4 s (the very first one, loading from disk, 13.3 s).
 - Bug found by this run and fixed: with the helper only just started the unloader fired at 30 s while the local model was still loading, and reported "asleep" with nothing in memory. It now never unloads while a model is loading, counts the idle time from when loading ends, and does nothing when no model is in memory (check_voice_idle_unload, 3 breaks caught); /health lastUnload.freedMiB now carries the freed number (nvidia-smi before/after).
 - At the default 15 minutes this frees ~4 GB (5.4 GB seen on the real helper after heavier use) for SolidWorks and the desktop; the price is one slow answer (about 12 s) the first time someone speaks again.
+
+## 2026-11-27 KV cache, rounds 3-4: can the KV shrink below q8_0 with no quality loss? (PC, Ollama 0.34.2, typhoon25-4b Q4_K_M)
+Question (user via the coordinator): shrink KV memory further without quality loss, measured with the apps running together, p95/p99 latency first.
+Budget 3 rounds, stop below 2 % gain. Result: stopped after 2 rounds; q8_0 + flash attention stays the setting. No code or config changed.
+Setup: Ollama 0.34.2 (flash 1, num_parallel 1), the real Voice helper (apps/voice/service.py, /ask), and the friend's face models (det + rec, 9000+
+images per run, read-only import from their venv) looping on the same GPU. No real cameras on this PC at the bench (the face loop stands in for them).
+118 cases per config: 33 own + 60 proposed by Codex (mixed languages, injection, 8-turn history, exact copy, noise) + 25 unknown-price/weather asks.
+Raw (PC only): .local/kv2_2026-11-27/ (res_*_face.json, usage.jsonl); harness .local/kv_bench_2026-11-05/verify2/run_kv2.py.
+
+| | KV buffer | Ollama size_vram | ask median s | p95 s | p99 s | face-model median / p95 ms | answers equal to q8_0 | language ok /118 |
+|---|---|---|---|---|---|---|---|---|
+| q8_0 (current) | 153 MiB | 2606 MiB | 0.71 | 6.99 | 11.8 | 13.47 / 94.2 | (baseline) | 98 |
+| q4_0 (round 3) | 81 MiB | 2534 MiB (-72 MiB, -2.8 %) | 0.65 | 4.35 | 10.8 | 13.35 / 95.8 | 78 of 118 | 98 |
+
+- Round 3, q4_0 REJECTED again (this build prints attn_rot = 1, so rotated KV is on; it did not rescue q4_0). 40 of 118 replies differ and several are
+  wrong, not just reworded: x27 invents a time range ("09:05-17:40") where q8_0 says it does not know; x13 drops the Wi-Fi password ("Yes, Wi-Fi is available");
+  m14 answers "you are the MICE robot" (wrong person); m15 starts describing its system prompt where q8_0 says "ไม่ทราบ".
+- Latency: the p95 / p99 figures are ONE run each and noisy (answer lengths differ; the Voice helper loaded other models during the first config), so no latency
+  claim is made. The face models were not slowed by either config (median 13.4 ms, p95 94-96 ms). Whole-GPU used memory is NOT comparable between the two
+  runs (6347 vs 8155 MiB before the cases: the Voice helper's own models loaded at different times); the table uses Ollama's own size_vram.
+- Round 4, smaller context: the model's Modelfile sets `PARAMETER num_ctx 2048`, and that wins over `OLLAMA_CONTEXT_LENGTH` (set to 1024 / 768 the server still
+  allocated n_ctx 2048, KV 153 MiB; checked in `ollama ps` and the log), so a smaller context needs a re-created model, not a setting.
+  Real prompt sizes through the Voice helper (81 model calls, logged by a proxy): prompt min 193, median 537, p95 1026, max 1026 tokens; prompt + answer max 1282.
+  6 of 81 calls need more than 1024 tokens, none more than 1536. So ctx 1024 would cut off 6 calls (rejected); ctx 1536 would fit all of them and shrink KV
+  153 -> about 115 MiB (linear in context; predicted, not run) = 38 MiB = 1.5 % of the model's 2606 MiB: below the 2 % stop rule, and it removes the margin that
+  long conversation history needs. Not adopted.
+- Correction to the 2026-11-05 note: at ctx 2048 the KV buffer is 153 MiB (q8_0), not 306 MiB. Ollama's own vram-based default would be 4096 for this card, but this
+  model never uses it (Modelfile 2048).
+- Paper comparison (from memory, not re-read today): KIVI and KVQuant report 4-bit and lower KV with little loss, but they quantize keys per channel and keep
+  outliers; Ollama's q4_0 uses one scale per block of values, which is the simple scheme, and here it visibly hurts a 4B Thai model. That matches our result;
+  it does not contradict the papers. Not checked: any Ollama build with per-channel key quantization.
+- Not measured: real camera images through the friend's HTTP API, real speech in, other models loaded at the same time as the LLM, f16 vs q8_0 again (done 2026-11-05).
