@@ -54,8 +54,7 @@ def server_env(cfg, base=None):
     if kv != "f16" and not flash:
         raise ValueError("kvCache %s needs flashAttention true (Ollama ignores it otherwise)" % kv)
     env = dict(os.environ if base is None else base)
-    for k in ("OLLAMA_KV_CACHE_TYPE", "OLLAMA_FLASH_ATTENTION", "OLLAMA_KEEP_ALIVE", "OLLAMA_NUM_PARALLEL",
-              "OLLAMA_CONTEXT_LENGTH"):
+    for k in ("OLLAMA_KV_CACHE_TYPE", "OLLAMA_FLASH_ATTENTION", "OLLAMA_KEEP_ALIVE", "OLLAMA_NUM_PARALLEL"):
         env.pop(k, None)
     if cfg.get("host"):
         env["OLLAMA_HOST"] = cfg["host"]
@@ -73,13 +72,6 @@ def server_env(cfg, base=None):
     # One voice question at a time (Brain holds one lock): extra slots only cost VRAM.
     if cfg.get("numParallel"):
         env["OLLAMA_NUM_PARALLEL"] = str(int(cfg["numParallel"]))
-    # The context window decides how much KV memory is reserved (the cache grows with it), whatever the cache type.
-    # null/absent = Ollama's own choice (it picks by free VRAM). A number = that many tokens for every request.
-    ctx = cfg.get("contextLength")
-    if ctx is not None:
-        if not isinstance(ctx, int) or isinstance(ctx, bool) or not 512 <= ctx <= 131072:
-            raise ValueError("contextLength must be a whole number of tokens from 512 to 131072, got %r" % (ctx,))
-        env["OLLAMA_CONTEXT_LENGTH"] = str(ctx)
     if kv != "f16":
         env["OLLAMA_KV_CACHE_TYPE"] = kv
     return env
@@ -91,18 +83,15 @@ def main(argv=None):
     ap.add_argument("--show", action="store_true")
     ap.add_argument("--kv", choices=KV_TYPES)
     ap.add_argument("--flash", choices=("0", "1"))
-    ap.add_argument("--ctx", type=int, help="one-off context length in tokens (config: contextLength)")
     a = ap.parse_args(argv)
     cfg = load(a.config)
     if a.kv:
         cfg["kvCache"] = a.kv
     if a.flash:
         cfg["flashAttention"] = a.flash == "1"
-    if a.ctx:
-        cfg["contextLength"] = a.ctx
     env = server_env(cfg)
     keys = ("OLLAMA_HOST", "OLLAMA_MODELS", "OLLAMA_FLASH_ATTENTION", "OLLAMA_KV_CACHE_TYPE",
-            "OLLAMA_KEEP_ALIVE", "OLLAMA_NUM_PARALLEL", "OLLAMA_CONTEXT_LENGTH")
+            "OLLAMA_KEEP_ALIVE", "OLLAMA_NUM_PARALLEL")
     if a.show:
         for k in keys:
             print("%s=%s" % (k, env.get(k, "(unset)")))

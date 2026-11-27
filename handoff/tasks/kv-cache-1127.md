@@ -21,16 +21,22 @@ measured beside the other apps (voice helper + the friend's face models in a loo
 Harness: .local/kv_bench_2026-11-05/verify2/run_kv2.py (PC only); raw: .local/kv2_2026-11-27/.
 
 ## Doing now
-Round 1 running (C = q8_0 baseline, D = q4_0, each beside the face-model loop, 118 cases through the voice helper /ask).
+Nothing: finished (stop rule reached after 2 rounds). Waiting only for the docs PR to merge.
 
 ## Done
-- tools/ollama_serve.py: contextLength config key + --ctx flag (new; default unset = unchanged behaviour).
+- Round 3: q4_0 vs q8_0 beside the Voice helper and a face-model loop, 118 cases: q4_0 saves 72 MiB (2.8 %) but 40 of 118 answers differ and some are wrong
+  (invented opening hours, lost Wi-Fi password, wrong person). Rejected again.
+- Round 4: smaller context. The model's Modelfile num_ctx 2048 wins over OLLAMA_CONTEXT_LENGTH (the setting I first added to tools/ollama_serve.py was removed: it did nothing).
+  Real prompts: max 1026 tokens, with answer 1282; ctx 1536 would save 38 MiB = 1.5 % < 2 % stop rule; ctx 1024 would cut off 6 of 81 calls.
+- Numbers, setup and a paper comparison: docs/experiments/experiment-records.md (section 2026-11-27 KV cache rounds 3-4). Raw files: .local/kv2_2026-11-27/ (PC only).
+- No code or config change. q8_0 + flash attention stays. All my test services (Ollama on 11436, the logging proxy, the Voice helper, the face loop) are stopped; GPU back to 0 MiB.
 
 ## Next
-Read res_C_face.json / res_D_face.json; compare answers (compare script), p50/p95/p99, VRAM; record in docs/experiments/experiment-records.md.
+Nothing planned. A future round could re-create the model with num_ctx 1536 only if long-conversation history is proven short in real use.
 
 ## File status
 | File | Change | State | Verification | Commit |
 |---|---|---|---|---|
-| tools/ollama_serve.py | contextLength + --ctx | uncommitted | --show output checked by hand; QC check_ollama_kv not run yet | - |
-| handoff/tasks/kv-cache-1127.md | new | uncommitted | n/a | - |
+| docs/experiments/experiment-records.md | new section | committed | check_changelog, check_systems | see git log |
+| handoff/tasks/kv-cache-1127.md | new | committed | n/a | see git log |
+| docs/changelog/entries/2026-11-27-kv-cache-rounds-3-4.md | new | committed | check_changelog | see git log |
