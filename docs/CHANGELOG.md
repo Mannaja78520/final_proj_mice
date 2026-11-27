@@ -36,6 +36,9 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
 - System map no longer lists the git-ignored qc/last_timing.json — `qc`
   - *Problem:* the system map listed qc/last_timing.json, a git-ignored file that exists only on a PC that ran QC, so docs/systems/qc.md differed between the PC and a clean checkout and GitHub quick-qc failed.
   - *Method:* last_timing.json joins the excluded names in docs/systems.json, like last_progress.json.
+- QC: the voice and face helper checks wait until the helper answers instead of for a fixed few seconds — `qc`
+  - *Problem:* full QC runs failed in different voice and face checks each time (the helper took longer than a fixed 15 s or 6 s to start when many checks started together, and copying the shared sequences folder crashed when another check deleted a file at that moment); each passed alone.
+  - *Method:* the voice and face helper checks now wait while the helper process is alive until it answers (a dead helper ends the wait at once), and the data-isolation copy skips a file that vanished mid-copy (tested with a vanishing file, break proven).
 
 ## 2026-11-26
 

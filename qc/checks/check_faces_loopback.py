@@ -48,10 +48,16 @@ SOLO = True
 CFG = "config/faces.json"
 
 
-def _get(base, path, tries=25):
-    """Wait for the helper to come up, then read one answer."""
+def _get(base, path, tries=25, alive=None):
+    """Wait for the helper to come up, then read one answer.
+
+    With `alive` (a function that says the helper process still runs) it waits for READY: up to 120 s, and a helper that
+    exited ends the wait at once. A fixed ~6 s was too short when many checks started processes together (QC 2026-11-27).
+    """
     last = ""
-    for _ in range(tries):
+    for _ in range(480 if alive else tries):
+        if alive and not alive():
+            return None, last or "the watcher exited"
         try:
             with urllib.request.urlopen(base + path, timeout=2) as r:
                 return json.loads(r.read().decode("utf-8")), ""
@@ -81,7 +87,7 @@ def run(t):
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             text=True, encoding="utf-8", errors="replace")
     try:
-        health, why = _get(base, "/health")
+        health, why = _get(base, "/health", alive=lambda: proc.poll() is None)
         t.ok(health, "the watcher answers /health", why)
         if health:
             t.eq(health.get("watching"), False,

@@ -205,6 +205,25 @@ import collections  # noqa: E402
 HUB_REQUESTS = collections.deque(maxlen=3000)      # see start_hub / browser.diagnose
 
 
+def copy_tree_tolerant(src, dst):
+    """copytree that does not die when a file vanishes between listing and copying.
+
+    The shared studio folders are written by checks that run at the same moment (a transient _qc_move_*.yaml is created
+    and deleted within a second). copytree listed the file, the other check deleted it, and copying raised
+    "WinError 2" for it: check_voice_profiles crashed in the crowd while its own code was fine (2026-11-27). A file that is
+    gone was never part of the data this check wanted, so it is skipped; every other error still raises.
+    """
+    import shutil
+
+    def copy(s, d):
+        try:
+            return shutil.copy2(s, d)
+        except FileNotFoundError:
+            return d
+
+    return shutil.copytree(src, dst, copy_function=copy)
+
+
 def isolate_data(main):
     """Give THIS check process its own copy of the studio data folders.
 
@@ -229,7 +248,7 @@ def isolate_data(main):
     for name in ("projects", "sequences", "shows"):
         src = root / name
         if src.is_dir():
-            shutil.copytree(src, box / name)
+            copy_tree_tolerant(src, box / name)
         else:
             (box / name).mkdir()
     # models/ holds 27 MB of robot meshes the checks only READ; copying that

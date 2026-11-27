@@ -53,8 +53,9 @@ def boot_helper(cfg, tmp):
          "--port", str(PORT)],
         stdout=log, stderr=subprocess.STDOUT,
         env=dict(os.environ, PYTHONUNBUFFERED="1"))
-    deadline = time.time() + 15
-    while time.time() < deadline:
+    # ready, not "15 seconds": see check_voice.py (the helper is slow to import when many checks start together)
+    deadline = time.time() + 120
+    while time.time() < deadline and proc.poll() is None:
         try:
             with urllib.request.urlopen(
                     "http://127.0.0.1:%d/health" % PORT, timeout=2) as r:
