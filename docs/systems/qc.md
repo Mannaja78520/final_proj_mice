@@ -531,7 +531,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 
 - nothing
 
-## Checks that test it (231)
+## Checks that test it (232)
 
 - `check_advanced`
 - `check_ai_status`
@@ -759,6 +759,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `check_voice_move`
 - `check_voice_multi`
 - `check_voice_profiles`
+- `check_voice_tts`
 - `check_watch_main`
 - `check_wifi_live`
 - `check_wifi_ssid`
