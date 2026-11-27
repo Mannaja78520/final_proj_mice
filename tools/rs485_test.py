@@ -32,6 +32,7 @@ are dirty too, the problem is not the bus.
 import argparse
 import http.cookiejar
 import json
+import sys
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -57,15 +58,12 @@ def opener(password):
 
 
 def password_here():
-    """The hub writes it in plain text beside itself, for exactly this."""
-    f = Path(__file__).resolve().parent.parent / "main_python" / "hub_password.txt"
-    if not f.is_file():
-        return ""
-    for line in f.read_text(encoding="utf-8", errors="replace").splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and " " not in line:
-            return line
-    return ""
+    """The shipped hub password (main_python/hub_login.default.json). The hub no
+    longer writes the password to a file; a changed one is not known here, so
+    pass --password for that."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "main_python"))
+    import hub_auth
+    return hub_auth.DEFAULT_PASSWORD
 
 
 def cmd(op, dev, c, timeout=40):

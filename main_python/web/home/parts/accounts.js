@@ -67,7 +67,12 @@ async function addUser(){
 // super_admin edits someone's name or password; the hub says why if not
 async function userAction(path, name, body){
   if (body['new'] === '') return;
-  uSay().from(await Mice.Api.post(path, Object.assign({user: name}, body)), 'saved');
+  const r = await Mice.Api.post(path, Object.assign({user: name}, body));
+  uSay().from(r, 'saved');
+  // your own new password comes with a recovery code, shown once (mice-password.js)
+  if (r.ok && r.data && r.data.recoveryCode) {
+    document.dispatchEvent(new CustomEvent('mice-recovery-code', {detail: {code: r.data.recoveryCode}}));
+  }
   loadUsers();
 }
 

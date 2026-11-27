@@ -66,18 +66,6 @@ def _bare(url, data=None):
         return 0, repr(e)
 
 
-def _password_in(auth):
-    """The generated password, read the way a person at that PC would.
-
-    Through plain_file(), never a fixed name: the file is named after its own
-    store since 2026-09-07, so that a QC run cannot write its throwaway
-    password over the real hub_password.txt.
-    """
-    m = re.search(r"user: \S+\s+(\S+)",
-                  auth.plain_file().read_text(encoding="utf-8"))
-    return m.group(1) if m else ""
-
-
 def run(t):
     # ---- 1. two hubs, no HTTP: the accounts really move ---------------
     # Separate folders on purpose: hub_password.txt sits beside the store, so
@@ -134,15 +122,6 @@ def run(t):
     t.ok("eve" not in b.users(),
          "and never written",
          "a salt that is not hex raises inside the login and takes it down")
-
-    # ---- 4. the readable file stops lying -----------------------------
-    # hub_password.txt says THIS PC's login. After pairing that is no longer
-    # the whole truth, and someone reading it to get in would be told about
-    # one account out of five.
-    b.note_paired("MSI", ["bob"])
-    note = b.plain_file().read_text(encoding="utf-8")
-    t.contains(note, "MSI", "the password file says which PC was paired with")
-    t.contains(note, "bob", "and which accounts came from it")
 
     # ---- 5. the code itself --------------------------------------------
     p = hub_pair.Pairing()

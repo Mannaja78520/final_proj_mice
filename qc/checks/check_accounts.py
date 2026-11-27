@@ -88,13 +88,19 @@ def run(t):
     code, j = user.call("/api/users/rename", {"user": "super_admin", "new": "mine"})
     t.ok(code >= 400 and not j.get("ok"), "nor rename someone else", j)
 
-    code, j = user.call("/api/users/password", {"old": "wrong-one", "password": "newpass123"})
-    t.ok(code >= 400 and not j.get("ok"), "changing your own password needs the current one", j)
-    code, j = user.call("/api/users/password", {"old": "admin123", "password": "newpass123"})
-    t.ok(code == 200 and j.get("ok"), "a user changes their own password", j)
+    # An account still on the SHIPPED password is not asked for it (it is public, and
+    # the first-login box would have a field nobody can fill); once it is the
+    # person's own, the current password is asked every time.
+    code, j = user.call("/api/users/password", {"password": "newpass123"})
+    t.ok(code == 200 and j.get("ok"),
+         "a user on the shipped password chooses their own without typing the shipped one", j)
     code, who = user.call("/api/whoami")
     t.ok(who.get("authed") and who.get("mustChange") is False,
          "and stays logged in, no longer marked as default", who)
+    code, j = user.call("/api/users/password", {"old": "wrong-one", "password": "otherpass123"})
+    t.ok(code >= 400 and not j.get("ok"), "changing your own password needs the current one", j)
+    code, j = user.call("/api/users/password", {"old": "newpass123", "password": "newpass456"})
+    t.ok(code == 200 and j.get("ok"), "a user changes their own password with the right current one", j)
 
     code, j = user.call("/api/users/rename", {"new": "qc_user_b"})
     code2, who = user.call("/api/whoami")

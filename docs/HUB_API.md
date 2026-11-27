@@ -99,6 +99,8 @@ A `-` in the table means the code has no comment for that URL yet.
 | GET | `/api/questions` | - | csv, day | hub_api_gacha.py |
 | GET | `/api/questions/topics` | - | - | hub_api_gacha.py |
 | GET | `/api/quit` | - | - | hub_api_apps.py |
+| GET | `/api/recovery/code` | - | - | main.py |
+| GET | `/api/recovery/use` | - | - | main.py |
 | POST | `/api/report` | - | - | hub_api_support.py |
 | GET | `/api/report/image` | - | id, n | hub_api_support.py |
 | GET | `/api/reports` | - | - | hub_api_support.py |

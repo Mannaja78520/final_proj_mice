@@ -295,8 +295,8 @@
     board or deleting a file needs the hub password.</div>
 
   <div class="banner info" id="loginFirstRun" role="status" hidden>
-    🔑 First run — the hub printed a password in the window it is running in,
-    on the PC itself. It is not shown here and never travels over the network.
+    🔑 First time? Log in with the user admin and the password admin123.
+    The hub then asks you to choose your own password. This hint is only shown on this PC.
   </div>
   <div class="banner err" id="loginErr" role="alert" hidden></div>
   <div class="banner warn" id="loginLock" role="alert" hidden></div>
@@ -2935,6 +2935,9 @@ async function refreshAuth(){
   const a = await Mice.Api.get('/api/whoami');
   if (!a.ok) return;          // unreachable: the module list says so already
   setAuthed(a.data.authed);
+  // The hub says so only to a browser on the hub PC itself, and only while a
+  // shipped login still works: a stranger on the WiFi is never told it exists.
+  $('loginFirstRun').hidden = !(a.data.shippedHint && !a.data.authed);
   if (a.data.locked_for > 0) showLock(a.data.locked_for);
 }
 
@@ -2968,6 +2971,8 @@ async function doLogin(ev){
   if (a.ok){
     $('loginPass').value = '';
     setAuthed(true);
+    // lets mice-password.js offer "choose your own password" on the shipped one
+    document.dispatchEvent(new CustomEvent('mice-login', {detail: {user: who}}));
     scan(true);                       // the page can do more now — show it
     pairPaint();                      // ...including pairing this PC
   } else if (a.data.locked_for > 0){
@@ -3504,7 +3509,12 @@ async function addUser(){
 // super_admin edits someone's name or password; the hub says why if not
 async function userAction(path, name, body){
   if (body['new'] === '') return;
-  uSay().from(await Mice.Api.post(path, Object.assign({user: name}, body)), 'saved');
+  const r = await Mice.Api.post(path, Object.assign({user: name}, body));
+  uSay().from(r, 'saved');
+  // your own new password comes with a recovery code, shown once (mice-password.js)
+  if (r.ok && r.data && r.data.recoveryCode) {
+    document.dispatchEvent(new CustomEvent('mice-recovery-code', {detail: {code: r.data.recoveryCode}}));
+  }
   loadUsers();
 }
 

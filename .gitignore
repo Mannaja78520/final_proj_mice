@@ -52,13 +52,16 @@ qc/**/__pycache__/
 .claude/settings.local.json
 
 # ---- Secrets. These belong to ONE machine and must never travel ----
-# hub_auth.json is the hub password as a salted hash; hub_password.txt is the
-# same password in plain text, written so nobody gets locked out of their own
-# robot. Both are per-machine, both are already in promote.py's SKIP_FILES,
-# and neither may reach a commit — history keeps what you delete later.
+# hub_auth.json is the hub password as a salted hash (and its recovery-code hash).
+# It is per-machine, already in promote.py's SKIP_FILES, and may never reach a
+# commit — history keeps what you delete later. hub_password.txt was the same
+# password in plain text from an older hub; a copy under dist/ WAS committed
+# once (2026-08), so both places are ignored now and the hub deletes the file.
+# The shipped login is main_python/hub_login.default.json (public on purpose).
 main_python/hub_auth.json
 main_python/hub_auth.json.*
 main_python/hub_password.txt
+dist/hub_password.txt
 # Keys to outside voice services (A45-1) and the face app's login: one PC's.
 main_python/voice_keys.json
 main_python/voice_keys.part

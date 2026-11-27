@@ -11,6 +11,10 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
   - *Problem:* the remote-control session dropped and came back with unfinished work, and someone had to type the start command by hand each time; a usage limit left the work stuck.
   - *Method:* double-click "Start PC Assistant" (and "Stop PC Assistant"): a low-priority check every 3 minutes keeps one session running, restarts it if it lost its connection or stopped writing its heartbeat, never touches other Claude windows, backs off after 3 starts an hour, and removes itself when the PC shuts down, restarts or you log in again. A new session is told which tasks are still "Doing now". At a usage limit the existing AI watcher hands the work on in order: GPT Codex, Gemini 4 Argon (full), regular Gemini (small steps only), one AI at a time, back to Claude when it is free.
   - *Numbers:* how to use and turn it off: docs/pc_assistant.md. Not turned on by the change itself; you start it with the .bat.
+- The hub ships admin / admin123, asks you to choose your own password, and has a recovery code and a reset for a forgotten one — `hub`
+  - *Problem:* dist/hub_password.txt, an old random hub password in plain text, had been committed to the public repo, and a forgotten password had no way back except deleting a file by hand.
+  - *Method:* the shipped login is the tracked main_python/hub_login.default.json (admin and super_admin, admin123); a changed password lives only as a salted hash in the git-ignored hub_auth.json. The first login on the shipped password opens a plain "choose your own password" box (skippable with Remind me later). Choosing one shows a recovery code once (only its hash is kept; it works once and is replaced). "Forgot password?" on the login box takes name, code and a new password, with a growing lockout per source and for everyone. "Reset Hub Password.bat" puts the shipped logins back, and only works on the hub PC (it edits the local file; there is no network route). The plain-text password file is no longer written and an old one is deleted. Help in four languages.
+  - *Numbers:* check_hub_login (77 asserts, 10 breaks caught) and check_hub_login_page (real browser at 360 px, 20 asserts); the old committed password counts as leaked.
 
 **Improved**
 
@@ -32,6 +36,9 @@ One heading per day (the version), changes grouped New / Improved / Fixed, one p
 - System map no longer lists the git-ignored qc/last_timing.json — `qc`
   - *Problem:* the system map listed qc/last_timing.json, a git-ignored file that exists only on a PC that ran QC, so docs/systems/qc.md differed between the PC and a clean checkout and GitHub quick-qc failed.
   - *Method:* last_timing.json joins the excluded names in docs/systems.json, like last_progress.json.
+- QC: the voice and face helper checks wait until the helper answers instead of for a fixed few seconds — `qc`
+  - *Problem:* full QC runs failed in different voice and face checks each time (the helper took longer than a fixed 15 s or 6 s to start when many checks started together, and copying the shared sequences folder crashed when another check deleted a file at that moment); each passed alone.
+  - *Method:* the voice and face helper checks now wait while the helper process is alive until it answers (a dead helper ends the wait at once), and the data-isolation copy skips a file that vanished mid-copy (tested with a vanishing file, break proven).
 
 ## 2026-11-26
 

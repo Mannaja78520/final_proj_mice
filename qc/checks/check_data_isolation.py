@@ -18,6 +18,32 @@ TITLE = "a hub's saved projects and sequences land in this check's own copy, not
 
 
 def run(t):
+    # ---- a file another check deletes while this one copies is skipped, not fatal ------
+    import shutil
+    import tempfile
+    box = Path(tempfile.mkdtemp(prefix="qc_isocopy_"))
+    try:
+        (box / "from").mkdir()
+        for n in ("keep.yaml", "_qc_move_gone.yaml", "other.yaml"):
+            (box / "from" / n).write_text("x", encoding="utf-8")
+        real_copy = shutil.copy2
+
+        def vanishing(s, d, **kw):
+            if "_qc_move_gone" in str(s):
+                raise FileNotFoundError(2, "gone", str(s))      # deleted by another check just now
+            return real_copy(s, d, **kw)
+
+        shutil.copy2 = vanishing
+        try:
+            F.copy_tree_tolerant(box / "from", box / "to")
+            copied = sorted(p.name for p in (box / "to").iterdir())
+        finally:
+            shutil.copy2 = real_copy
+        t.ok(copied == ["keep.yaml", "other.yaml"],
+             "a file that vanishes mid-copy is skipped and the rest is copied", str(copied))
+    finally:
+        shutil.rmtree(box, ignore_errors=True)
+
     fake_serial.reset()
     base, main = F.start_hub()
     real = F.STUDIO

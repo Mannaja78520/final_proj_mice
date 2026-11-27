@@ -93,9 +93,12 @@ def run(t):
          "--faq", str(faq), "--port", str(PORT)],
         stdout=svc_log, stderr=subprocess.STDOUT, env=env)
     try:
-        deadline = time.time() + 15
+        # READY, not "15 seconds": the helper imports its stack and preloads before it answers, which took
+        # longer than 15 s when sixteen checks started at once (QC 2026-11-27). Wait while the process is
+        # alive; a dead helper ends the wait at once, and 120 s only stops a hang.
+        deadline = time.time() + 120
         up = False
-        while time.time() < deadline:
+        while time.time() < deadline and proc.poll() is None:
             try:
                 with urllib.request.urlopen(
                         "http://127.0.0.1:%d/health" % PORT, timeout=2) as r:

@@ -39,9 +39,12 @@ import hmac
 import json
 import os
 import secrets
+import sys
 import threading
 import time
 from pathlib import Path
+
+import hub_recovery
 
 # Every route that CHANGES something: the robot moves, a file is written or
 # deleted, firmware is replaced, a port is taken. Anything not here is readable
@@ -323,14 +326,40 @@ NAME_MAX = 20
 PASS_MIN = 8
 PASS_MAX = 32
 MAX_USERS = 16
+ROLE_SUPER, ROLE_USER = "super_admin", "user"
+
+
+def _factory():
+    """-> (password, [(name, role), ...]) the hub ships with.
+
+    THE SHIPPED LOGIN (user 2026-09-17: super_admin/admin123 and admin/admin123
+    everywhere, shown as default until changed; user 2026-11-27: kept in a
+    tracked default file like the face app's). It is public on purpose: it is
+    what a first login types, and the hub asks to change it. A customer's own
+    password lives only in the git-ignored hub_auth.json, as a salted hash.
+    The values below are used only when the file cannot be found (a frozen exe
+    built without it), and check_hub_login proves they match the file.
+    """
+    password, accounts = "admin123", [("super_admin", ROLE_SUPER), ("admin", ROLE_USER)]
+    places = [Path(__file__).resolve().parent / "hub_login.default.json"]
+    if getattr(sys, "_MEIPASS", None):
+        places.append(Path(sys._MEIPASS) / "main_python" / "hub_login.default.json")  # noqa: SLF001
+    for place in places:
+        try:
+            data = json.loads(place.read_text(encoding="utf-8"))
+            got = [(str(a["name"]), a.get("role") if a.get("role") in (ROLE_SUPER, ROLE_USER)
+                    else ROLE_USER) for a in data["accounts"]]
+            if str(data["password"]) and got and any(r == ROLE_SUPER for _, r in got):
+                return str(data["password"]), got
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+    return password, accounts
+
+
+DEFAULT_PASSWORD, FACTORY_ACCOUNTS = _factory()
 # What the single password becomes when an older hub is opened for the first
 # time by this version. Also the account a bare password logs into.
-DEFAULT_USER = "super_admin"
-# THE SHIPPED LOGIN (user 2026-09-17: super_admin/admin123 and admin/admin123
-# everywhere, shown as default until changed). Any account still on it has
-# must_change set, and every page says so.
-DEFAULT_PASSWORD = "admin123"
-ROLE_SUPER, ROLE_USER = "super_admin", "user"
+DEFAULT_USER = next(n for n, r in FACTORY_ACCOUNTS if r == ROLE_SUPER)
 # The real hub's store. Any OTHER name is somebody's throwaway (a QC run
 # makes one per process), and its password file is named after it.
 DEFAULT_STORE_NAME = "hub_auth.json"
@@ -376,6 +405,7 @@ class Auth:
         self._count_lock = threading.Lock()             # who -> [count, locked until]
         self._out = out
         self.first_run_password = None
+        self._recovery_throttle = hub_recovery.Throttle()
         self._load()
 
     # ---------------------------------------------------------- the secret
@@ -402,6 +432,7 @@ class Auth:
                         users["admin"] = self._hash(pw)
                     self._save()
                 self._normalise()
+                self._drop_old_plain_file()
                 return
             except (OSError, ValueError):
                 self._out("[auth] password file unreadable — generating a new one")
@@ -443,76 +474,41 @@ class Auth:
     def _generate(self):
         pw = DEFAULT_PASSWORD
         self._data = {"users": {
-            "admin": self._hash(pw),
-            "super_admin": self._hash(pw)
-        }}
+            name: dict(self._hash(pw), role=role, must_change=True)
+            for name, role in FACTORY_ACCOUNTS}}
         self._normalise()
         self._save()
-        self._write_plain(pw, "admin")
-        self._write_plain(pw, "super_admin")
         self.first_run_password = pw
         self._out("")
-        self._out("  This hub now needs a password before anything can be moved,")
+        self._out("  This hub now needs a login before anything can be moved,")
         self._out("  flashed or deleted. Reading stays open.")
         self._out("")
-        self._out("      admin password:  %s" % pw)
-        self._out("      super_admin password:  %s" % pw)
+        self._out("      first login:  %s  /  %s" % (
+            " or ".join(n for n, _ in FACTORY_ACCOUNTS), pw))
         self._out("")
-        self._out("  Stored hashed in %s, and written in plain text in %s"
-                  % (self.store.name, self.plain_file().name))
-        self._out("  so it cannot be lost. Both stay on this PC.")
-        self._out("")
-        self._out("  This hub now needs a password before anything can be moved,")
-        self._out("  flashed or deleted. Reading stays open.")
-        self._out("")
-        self._out("      admin password:  %s" % pw)
-        self._out("      super_admin password:  %s" % pw)
-        self._out("")
-        self._out("  Stored hashed in %s, and written in plain text in %s"
-                  % (self.store.name, self.plain_file().name))
-        self._out("  so it cannot be lost. Both stay on this PC.")
+        self._out("  The hub asks to change it at the first login. Only a salted")
+        self._out("  hash of the new password is kept, in %s on this PC." % self.store.name)
+        self._out("  Forgot it? Open \"Reset Hub Password\" on this PC, or use the")
+        self._out("  recovery code shown when the password was set.")
         self._out("")
 
-    def plain_file(self) -> Path:
-        """Where the password is written so a person can read it.
+    def _drop_old_plain_file(self):
+        """Delete the plain-text password file an older hub wrote beside the store.
 
-        Deliberate, and asked for after a lockout: the generated password is
-        printed once, in the window the hub started in, and if that window is
-        closed or missed the operator cannot drive their own robot. A password
-        nobody can look up is not security, it is a locked door with the key
-        thrown away.
-
-        What this does NOT do is put it on the network. The hub serves
-        main_python/web, never main_python itself, and check_hub_auth asserts
-        that no URL reaches this file. Someone who can read this file can
-        already read everything else on the PC.
-
-        THE NAME FOLLOWS THE STORE. It used to be hub_password.txt for every
-        store, so each QC run - which makes its own mice_qc_auth_<pid>.json -
-        wrote its throwaway password over the real one. Found 2026-09-07 when
-        the file offered a password the hub had never had, and the user could
-        not log in.
+        It held the password in clear text (and one copy was committed to a
+        public repo by mistake). Nothing reads it for logging in: the store
+        holds the hash. Only a file that still carries the old header is
+        removed, never a file that merely has that name.
         """
-        if self.store.name == DEFAULT_STORE_NAME:
-            return self.store.with_name("hub_password.txt")
-        return self.store.with_suffix(".txt")
-
-    def _write_plain(self, password: str, user: str = DEFAULT_USER):
-        text = (
-            "This PC's MICE hub login:\n\n"
-            "    user: %s\n"
-            "    %s\n\n"
-            "Set %s. Anyone at this PC can read this file. Nobody on the\n"
-            "network can: the hub serves main_python/web, never this folder,\n"
-            "and QC asserts that no URL reaches it.\n\n"
-            "Lost it anyway? Delete hub_auth.json and restart the hub - it\n"
-            "generates a new one and writes it here again.\n"
-            % (user, password, time.strftime("%Y-%m-%d %H:%M")))
+        if self.store.name != DEFAULT_STORE_NAME:
+            return
+        old = self.store.with_name("hub_password.txt")
         try:
-            self.plain_file().write_text(text, encoding="utf-8")
-        except OSError as e:                    # a read-only folder is not fatal
-            self._out("[auth] could not write %s: %s"
-                      % (self.plain_file().name, e))
+            if old.is_file() and old.read_text(encoding="utf-8", errors="replace")                     .lstrip().startswith("This PC's"):
+                old.unlink()
+                self._out("[auth] removed the old plain-text password file %s" % old.name)
+        except OSError:
+            pass
 
     # ------------------------------------------------------------ accounts
     @staticmethod
@@ -576,6 +572,10 @@ class Auth:
 
     def must_change(self, name: str) -> bool:
         return bool((self._data.get("users", {}).get(name) or {}).get("must_change"))
+
+    def any_shipped(self) -> bool:
+        """Does any account still use the shipped password?"""
+        return any(r.get("must_change") for r in self._data.get("users", {}).values())
 
     def accounts(self):
         """name, role and whether it still has the shipped password. Never a hash."""
@@ -663,6 +663,81 @@ class Auth:
                 self._sessions.pop(token, None)
         return True, None
 
+    # ------------------------------------------------------------ recovery
+    # See hub_recovery.py for the two ways back in and the lockout numbers.
+    def has_recovery(self, name: str) -> bool:
+        return bool(((self._data.get("users", {}).get(name) or {}).get("recovery")))
+
+    def issue_recovery_code(self, name: str):
+        """-> the code, ONCE (only its hash is kept), or None if no such account.
+
+        Replaces any earlier code: a person who loses the paper asks for a new
+        one and the old one stops working at the same moment.
+        """
+        rec = self._data.get("users", {}).get(name)
+        if rec is None:
+            return None
+        code = hub_recovery.new_code()
+        rec["recovery"] = hub_recovery.hash_code(code)
+        self._save()
+        return code
+
+    def recovery_wait(self, who: str) -> int:
+        return self._recovery_throttle.wait_for(who)
+
+    def recover(self, name: str, code: str, password: str, who: str):
+        """Forgot password -> (ok, why, new_code, wait_seconds).
+
+        The refusal sentence is the same for an unknown name, an account with
+        no code and a wrong code, and each costs one slow hash, so the answer
+        tells a stranger nothing about which names exist.
+        """
+        wait = self._recovery_throttle.wait_for(who)
+        if wait:
+            return False, "too many tries - wait before trying again", None, wait
+        self._resync()
+        rec = self._data.get("users", {}).get(name or "")
+        good = hub_recovery.check_code((rec or {}).get("recovery"), code or "")
+        if not (rec and good):
+            self._recovery_throttle.wrong(who)
+            return (False, "that name and code did not work", None,
+                    self._recovery_throttle.wait_for(who))
+        # the code was right: a bad new password must not burn it
+        if not self.valid_password(password):
+            return (False, "a password is %d to %d characters, no spaces"
+                    % (PASS_MIN, PASS_MAX), None, 0)
+        if password == DEFAULT_PASSWORD:
+            return False, "choose a password other than the one the hub ships with", None, 0
+        rec.update(self._hash(password))
+        rec["must_change"] = False
+        fresh = hub_recovery.new_code()
+        rec["recovery"] = hub_recovery.hash_code(fresh)         # single use: replaced
+        self._save()
+        for token, (_seen, who_) in list(self._sessions.items()):
+            if who_ == name:
+                self._sessions.pop(token, None)
+        self._fails.clear()
+        self._recovery_throttle.right(who)
+        return True, None, fresh, 0
+
+    def reset_to_factory(self):
+        """Put the shipped accounts back on the shipped password -> their names.
+
+        Used only by tools/hub_reset_password.py, which runs ON the hub PC and
+        edits the local file. Accounts people added keep their own passwords.
+        A reset account has no recovery code (it would belong to a password
+        that no longer exists) and is asked to change its password again.
+        """
+        users = self._data.setdefault("users", {})
+        done = []
+        for name, role in FACTORY_ACCOUNTS:
+            users[name] = dict(self._hash(DEFAULT_PASSWORD), role=role, must_change=True)
+            done.append(name)
+        self._save()
+        self._sessions.clear()
+        self._fails.clear()
+        return done
+
     # ------------------------------------------------------------- pairing
     # One login on every PC (A14-1). The accounts are COPIED once, after a
     # person proved a pairing code on both machines — see hub_pair.py.
@@ -736,25 +811,9 @@ class Auth:
         return out
 
     def note_paired(self, host: str, names):
-        """Append to the readable password file: these logins live elsewhere.
-
-        hub_password.txt says *this PC's login*, and after pairing that is no
-        longer the whole truth — the imported accounts have no password on
-        this machine to write down. Someone reading the file to get into the
-        hub would otherwise be told about one account out of five.
-        """
-        if not names:
-            return
-        try:
-            with open(self.plain_file(), "a", encoding="utf-8",
-                      newline="") as f:
-                f.write("\nPaired with %s on %s: %s\nTheir passwords are set "
-                        "on %s, not here.\n"
-                        % (host or "another PC",
-                           time.strftime("%Y-%m-%d %H:%M"),
-                           ", ".join(sorted(names)), host or "that PC"))
-        except OSError:                     # a read-only folder is not fatal
-            pass
+        """Kept so callers stay valid. There is no readable password file to
+        keep honest any more (the hub stores only hashes), so nothing is written."""
+        return None
 
     def _save(self):
         self._data["set_at"] = time.strftime("%Y-%m-%d %H:%M")
@@ -774,7 +833,6 @@ class Auth:
         users[user]["must_change"] = password == DEFAULT_PASSWORD
         self._normalise()                 # a new record still gets its role
         self._save()
-        self._write_plain(password, user)
         # Changing a password ends every session: if it changed because one
         # leaked, leaving the leaked sessions alive defeats the change.
         self._sessions.clear()
